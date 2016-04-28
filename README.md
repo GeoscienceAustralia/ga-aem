@@ -21,9 +21,18 @@ Third party software dependencies
 
 Currently included programs
 
-1.	GALEISBSTDEM - deterministic sample by sample inversion of AEM data
-	To build
+1.	GAFORWARDMODELTDEM - 1D forward modelling program for AEM data
+	To build on linux
+		cd makefiles
+		make -f gaforwardmodeltdem.make allclean
+
+2.	GALEISBSTDEM - deterministic 1D sample by sample inversion of AEM data
+	To build on linux
 		cd makefiles
 		make -f galeisbstdem.make allclean
 
+3.	GARJMCMCTDEM - stochastic 1D sample by sample inversion of AEM data
+	To build on linux
+		cd makefiles
+		make -f garjmcmctdem.make allclean
 
