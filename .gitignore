@@ -1,7 +1,9 @@
 #File patterns that are ignored
 
-!third_party/
-!bin/x64/Release/*.exe
+*.exe #Exclude all exes
+!bin/x64/Release/*.exe #Make exception for these
+!third_party/          #Make exception for these
+
 
 #Compiled executables on linux
 bin/raijin-intel/*
