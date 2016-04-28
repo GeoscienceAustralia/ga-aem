@@ -103,10 +103,10 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-!bin/x64/Release/*      #Make exception for these
-!third_party/*          #Make exception for these
+!/bin/x64/Release/*      #Make exception for these
+!/third_party/*          #Make exception for these
 
 #Compiled executables on linux
-bin/raijin-intel/*
-bin/raijin-gnu/*
+/bin/raijin-intel/*
+/bin/raijin-gnu/*
 
