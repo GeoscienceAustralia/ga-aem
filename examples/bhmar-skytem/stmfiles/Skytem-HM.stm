@@ -1,0 +1,82 @@
+System Begin
+	Name = SkyTem-HighMoment
+	Type = Time Domain
+
+	Transmitter Begin
+		NumberOfTurns = 1
+		PeakCurrent   = 1
+		LoopArea      = 1
+		BaseFrequency = 25
+		WaveformDigitisingFrequency = 819200
+		WaveFormCurrent Begin
+			-1.000E-02 0.000E+00
+			-8.386E-03 4.568E-01
+			-6.380E-03 7.526E-01
+			-3.783E-03 9.204E-01
+			0.000E+00 1.000E+00
+			3.960E-07 9.984E-01
+			7.782E-07 9.914E-01
+			1.212E-06 9.799E-01
+			3.440E-06 9.175E-01
+			1.981E-05 4.587E-01
+			3.619E-05 7.675E-03
+			3.664E-05 3.072E-03
+			3.719E-05 8.319E-04
+			3.798E-05 1.190E-04
+			3.997E-05 0.000E+00
+			1.000E-02 0.000E+00
+		WaveFormCurrent End
+	Transmitter End
+
+	Receiver Begin
+		NumberOfWindows = 21
+		WindowWeightingScheme = AreaUnderCurve
+
+		//Gate11 (5.93900E-05	7.50000E-05) was removed as too close to 59us front gate
+		WindowTimes Begin
+			7.53900E-05 9.60000E-05
+			9.63900E-05 1.22000E-04
+			1.22390E-04 1.54000E-04
+			1.54390E-04 1.96000E-04
+			1.96390E-04 2.47000E-04
+			2.47390E-04 3.12000E-04
+			3.12390E-04 3.94000E-04
+			3.94390E-04 4.97000E-04
+			4.97390E-04 6.27000E-04
+			6.27390E-04 7.90000E-04
+			7.90390E-04 9.96000E-04
+			9.96390E-04 1.25500E-03
+			1.25539E-03 1.58100E-03
+			1.58139E-03 1.99100E-03
+			1.99139E-03 2.50800E-03
+			2.50839E-03 3.15800E-03
+			3.15839E-03 3.97700E-03
+			3.97739E-03 5.00800E-03
+			5.00839E-03 6.30600E-03
+			6.30639E-03 7.93900E-03
+			7.93939E-03 9.73900E-03
+		WindowTimes End
+
+		LowPassFilter Begin
+			//Rx Coils 1st order at 300Khz 
+			//Rx Electronics 2nd order at 450Khz
+			CutOffFrequency = 300000 450000
+			Order           = 1      2
+		LowPassFilter End
+
+	Receiver End
+
+	ForwardModelling Begin
+		//TX loop area was 314.0 m^2 -> r = sqrt(314/pi)
+		ModellingLoopRadius = 9.9975
+		OutputType = dB/dt
+		SaveDiagnosticFiles = no
+		XOutputScaling = 1
+		YOutputScaling = 1
+		ZOutputScaling = 1
+		SecondaryFieldNormalisation  =  none
+		FrequenciesPerDecade = 5
+		NumberOfAbsiccaInHankelTransformEvaluation = 21
+	ForwardModelling End
+
+System End

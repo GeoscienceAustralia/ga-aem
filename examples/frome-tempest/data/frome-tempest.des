@@ -1,0 +1,287 @@
+COMM GA PROJECT NUMBER                                                 1231
+COMM FAS PROJECT NUMBER                                                2125
+COMM AREA NUMBER:                                               1,2,3,4,5,8
+COMM SURVEY COMPANY:                                 Fugro Airborne Surveys
+COMM CLIENT:                                           Geoscience Australia
+COMM SURVEY TYPE:                                       25Hz TEMPEST Survey
+COMM AREA NAME:                                                       Frome      
+COMM STATE:                                                              SA
+COMM COUNTRY:                                                     Australia
+COMM SURVEY FLOWN:                                     May to November 2010
+COMM LOCATED DATA CREATED:                                    December 2010
+COMM
+COMM DATUM:                                                           GDA94
+COMM PROJECTION:                                                        MGA
+COMM ZONE:                                                               54
+COMM
+COMM SURVEY SPECIFICATIONS
+COMM
+COMM TRAVERSE LINE SPACING:                         5000m with 2500m infill
+COMM TRAVERSE LINE DIRECTION:                                 090 / 270 deg
+COMM TIE LINE SPACING:                                                  n/a
+COMM TIE LINE DIRECTION:                                                n/a
+COMM NOMINAL TRANSMITTER TERRAIN CLEARANCE:                           100 m
+COMM FINAL LINE KILOMETRES (TRIMMED TO GA BOUNDARIES):             31127 km
+COMM
+COMM LINE NUMBERING
+COMM
+COMM TRAVERSE LINE NUMBERS:                               1000101 - 1004901
+COMM                                                      2000101 - 2007201
+COMM                                                      3000101 - 3007601
+COMM                                                      4000101 - 4004201
+COMM                                                      5000101 - 5003501
+COMM                                                      8000101 - 8001101
+COMM
+COMM SURVEY EQUIPMENT
+COMM
+COMM AIRCRAFT:                                Shorts Skyvan SC3-200, VH-WGT
+COMM
+COMM MAGNETOMETER:                         Geometrics GR820 CV Magnetometer
+COMM INSTALLATION:                                          Stinger mounted
+COMM RESOLUTION:                                                   0.001 nT
+COMM RECORDING INTERVAL:                                              0.2 s
+COMM
+COMM ELECTROMAGNETIC SYSTEM:                                   25Hz TEMPEST
+COMM INSTALLATION:                 Transmitter loop mounted on the aircraft
+COMM                                         Receiver coils in a towed bird
+COMM COIL ORIENTATION:                                                X,Y,Z
+COMM RECORDING INTERVAL:                                              0.2 s
+COMM SYSTEM GEOMETRY:
+COMM RECEIVER DISTANCE BEHIND THE TRANSMITTER:                       -115 m
+COMM RECEIVER DISTANCE BELOW THE TRANSMITTER:                         -40 m
+COMM
+COMM RADAR ALTIMETER:                                        Collins Alt-50
+COMM RECORDING INTERVAL:                                              0.2 s
+COMM
+COMM LASER ALTIMETER:                                          Optech 501SB
+COMM RECORDING INTERVAL:                                              0.2 s
+COMM
+COMM NAVIGATION:                                 Real-time differential GPS
+COMM RECORDING INTERVAL:                                              1.0 s
+COMM
+COMM ACQUISITION SYSTEM:                                             FASDAS
+COMM
+COMM DATA PROCESSING
+COMM
+COMM MAGNETIC DATA
+COMM DIURNAL CORRECTION APPLIED                         base value 57250 nT
+COMM PARALLAX CORRECTION APPLIED                                      0.0 s
+COMM IGRF CORRECTION APPLIED                            base value 57029 nT
+COMM IGRF MODEL 2010 EXTRAPOLATED TO                             2010/05/15
+COMM DATA HAVE BEEN MICROLEVELLED
+COMM
+COMM TERRAIN CLEARANCE DATA                                                   
+COMM LASER ALTIMETER: PARALLAX CORRECTION APPLIED                     0.0 s
+COMM RADAR ALTIMETER: PARALLAX CORRECTION APPLIED                     0.0 s
+COMM                                                                       
+COMM GPS ALTITUDE DATA                                                     
+COMM PARALLAX CORRECTION APPLIED                                      0.0 s
+COMM 
+COMM DIGITAL TERRAIN DATA
+COMM DTM CALCULATED [DTM = GPS ALTITUDE - (LASER ALT + SENSOR SEPARATION)] 
+COMM DATA CORRECTED TO AUSTRALIAN HEIGHT DATUM                             
+COMM DATA HAVE BEEN MICROLEVELLED
+COMM
+COMM ELECTROMAGNETIC DATA
+COMM SYSTEM PARALLAX REMOVED, AS FOLLOWS
+COMM X-COMPONENT EM DATA                                             -6.6 s
+COMM Z-COMPONENT EM DATA                                             -6.8 s
+COMM DATA CORRECTED FOR TRANSMITTER HEIGHT, PITCH AND ROLL
+COMM DATA CORRECTED FOR TRANSMITTER-RECEIVER GEOMETRY VARIATIONS
+COMM DATA HAVE BEEN MICROLEVELLED
+COMM CONDUCTIVITY DEPTH INVERSION CALCULATED                   EMFlow V5.10
+COMM CONDUCTIVITY DEPTH RANGE                                   000 - 200 m
+COMM CONDUCTIVITY DEPTH INTERVAL                                        5 m
+COMM CONDUCTIVITIES CALCULATED USING HPRG CORRECTED EM X & Z DATA
+COMM
+COMM ----------------------------------------------------------------------
+COMM DISCLAIMER
+COMM ----------------------------------------------------------------------
+COMM It is Fugro Airborne Survey’s understanding that the data provided to
+COMM the client is to be used for the purpose agreed between the parties.
+COMM That purpose was a significant factor in determining the scope and
+COMM level of the Services being offered to the Client. Should the purpose
+COMM for which the data is used change, the data may no longer be valid or
+COMM appropriate and any further use of, or reliance upon, the data in
+COMM those circumstances by the Client without Fugro Airborne Survey's
+COMM review and advice shall be at the Client's own or sole risk.
+COMM
+COMM The Services were performed by Fugro Airborne Survey exclusively for
+COMM the purposes of the Client. Should the data be made available in whole
+COMM or part to any third party, and such party relies thereon, that party
+COMM does so wholly at its own and sole risk and Fugro Airborne Survey
+COMM disclaims any liability to such party.
+COMM
+COMM Where the Services have involved Fugro Airborne Survey's use of any
+COMM information provided by the Client or third parties, upon which
+COMM Fugro Airborne Survey was reasonably entitled to rely, then the
+COMM Services are limited by the accuracy of such information. Fugro
+COMM Airborne Survey is not liable for any inaccuracies (including any
+COMM incompleteness) in the said information, save as otherwise provided
+COMM in the terms of the contract between the Client and Fugro Airborne
+COMM Survey.
+COMM
+COMM With regard to DIGITAL TERRAIN DATA, the accuracy of the elevation
+COMM calculation is directly dependent on the accuracy of the two input
+COMM parameters laser altitude and GPS altitude. The laser and radar altitude
+COMM value may be erroneous in areas of heavy tree cover, where the altimeters
+COMM reflect the distance to the tree canopy rather than the ground. The GPS
+COMM altitude value is primarily dependent on the number of available satellites. 
+COMM Although post-processing of GPS data will yield X and Y accuracies in the
+COMM order of 1-2 metres, the accuracy of the altitude value is usually
+COMM much less, sometimes in the ±5 metre range.  Further inaccuracies
+COMM may be introduced during the interpolation and gridding process.
+COMM Because of the inherent inaccuracies of this method, no guarantee is
+COMM made or implied that the information displayed is a true
+COMM representation of the height above sea level.  Although this product
+COMM may be of some use as a general reference,
+COMM THIS PRODUCT MUST NOT BE USED FOR NAVIGATION PURPOSES.
+COMM ----------------------------------------------------------------------
+COMM
+COMM ELECTROMAGNETIC SYSTEM
+COMM
+COMM TEMPEST IS A TIME-DOMAIN SQUARE-WAVE SYSTEM,
+COMM TRANSMITTING AT A BASE FREQUENCY OF 25Hz,
+COMM WITH 2 ORTHOGONAL-AXIS RECEIVER COILS IN A TOWED BIRD.
+COMM FINAL EM OUTPUT IS RECORDED 5 TIMES PER SECOND.
+COMM THE TIMES (IN MILLISECONDS) FOR THE 15 WINDOWS ARE:
+COMM
+COMM WINDOW      START       END      CENTRE
+COMM    1        0.007      0.020      0.013
+COMM    2        0.033      0.047      0.040
+COMM    3        0.060      0.073      0.067
+COMM    4        0.087      0.127      0.107
+COMM    5        0.140      0.207      0.173
+COMM    6        0.220      0.340      0.280
+COMM    7        0.353      0.553      0.453
+COMM    8        0.567      0.873      0.720
+COMM    9        0.887      1.353      1.120
+COMM   10        1.367      2.100      1.733
+COMM   11        2.113      3.273      2.693
+COMM   12        3.287      5.113      4.200
+COMM   13        5.127      7.993      6.560
+COMM   14        8.007     12.393     10.200
+COMM   15       12.407     19.993     16.200
+COMM
+COMM PULSE WIDTH: 10 ms
+COMM
+COMM TEMPEST EM data are transformed to the response that would be
+COMM obtained with a B-field sensor for a 100% duty cycle square
+COMM waveform at the base frequency, involving a 1A change in
+COMM current (from -0.5A to +0.5A to -0.5A) in a 1sq.m transmitter.
+COMM It is this configuration, rather than the actual acquisition
+COMM configuration, which must be specified when modelling TEMPEST data.
+COMM
+COMM
+COMM LOCATED DATA FORMAT
+COMM
+COMM  Output field format : ASCII ASEG-GDF
+COMM
+COMM Field  Channel         Description                       Units  Undefined    Format
+COMM -----  -------         -----------                       -----  ---------    ------
+COMM
+COMM     1  LINE            Line                                      -99999999      i10
+COMM     2  FLIGHT          Flight                                    -99             i4
+COMM     3  FID             Fiducial                            (s)   -999999.9     f8.1
+COMM     4  PROJECT_FAS     FAS Project Number                        -9999           i6
+COMM     5  PROJECT_GA      GA Project Number                         -9999           i6
+COMM     6  AIRCRAFT        System Number                             -9              i3
+COMM     7  DATE            Date                           ddmmyyyy   -9999999        i9
+COMM     8  TIME            Time - local midnight               (s)   -9999.9       f8.1
+COMM     9  BEARING         Line Bearing                      (deg)   -99             i4
+COMM    10  LATITUDE        Latitude  GDA94                   (deg)   -99.9999999  f12.7
+COMM    11  LONGITUDE       Longitude GDA94                   (deg)   -999.9999999 f13.7
+COMM    12  EASTING         Easting   MGA54                     (m)   -99999.99    f10.2
+COMM    13  NORTHING        Northing  MGA54                     (m)   -999999.99   f11.2
+COMM    14  LIDAR           Final Lidar altimeter               (m)   -999.99       f8.2
+COMM    15  RADALT          Final Radar altimeter               (m)   -999.99       f8.2
+COMM    16  TX_ELEVATION    Final Transmitter Elevation - AHD   (m)   -999.99       f8.2
+COMM    17  DTM             Final Ground Elevation - AHD        (m)   -999.99       f8.2
+COMM    18  MAG             Final TMI                          (nT)   -99999.999   f11.3
+COMM    19  TX_PITCH        Transmitter loop pitch            (deg)   -999.99       f8.2
+COMM    20  TX_ROLL         Transmitter loop roll             (deg)   -999.99       f8.2
+COMM    21  TX_HEIGHT       Transmitter terrain clearance       (m)   -999.99       f8.2
+COMM    22  HSep_Raw        Tx-Rx horizontal separation         (m)   -999.99       f8.2
+COMM    23  VSep_Raw        Tx-Rx vertical separation           (m)   -999.99       f8.2
+COMM    24  HSep_gps        Tx-Rx horizontal GPS separation     (m)   -999.99       f8.2
+COMM    25  TSep_gps        Tx-Rx transverse GPS separation     (m)   -999.99       f8.2
+COMM    26  VSep_gps        Tx-Rx vertical GPS separation       (m)   -999.99       f8.2
+COMM    27  TX_HEIGHT_std   Tx HPRG terrain clearance           (m)   -999.99       f8.2
+COMM    28  HSep_std        Tx-Rx HPRG horizontal separation    (m)   -999.99       f8.2
+COMM    29  VSep_std        Tx-Rx HPRG vertical separation      (m)   -999.99       f8.2
+COMM    30  EMX_nonhprg[1]  Raw (non-HPRG) EMX01 Window        (fT)   -999.999999  f12.6
+COMM    31  EMX_nonhprg[2]  Raw (non-HPRG) EMX02 Window        (fT)   -999.999999  f12.6
+COMM    32  EMX_nonhprg[3]  Raw (non-HPRG) EMX03 Window        (fT)   -999.999999  f12.6
+COMM    33  EMX_nonhprg[4]  Raw (non-HPRG) EMX04 Window        (fT)   -999.999999  f12.6
+COMM    34  EMX_nonhprg[5]  Raw (non-HPRG) EMX05 Window        (fT)   -999.999999  f12.6
+COMM    35  EMX_nonhprg[6]  Raw (non-HPRG) EMX06 Window        (fT)   -999.999999  f12.6
+COMM    36  EMX_nonhprg[7]  Raw (non-HPRG) EMX07 Window        (fT)   -999.999999  f12.6
+COMM    37  EMX_nonhprg[8]  Raw (non-HPRG) EMX08 Window        (fT)   -999.999999  f12.6
+COMM    38  EMX_nonhprg[9]  Raw (non-HPRG) EMX09 Window        (fT)   -999.999999  f12.6
+COMM    39  EMX_nonhprg[10] Raw (non-HPRG) EMX10 Window        (fT)   -999.999999  f12.6
+COMM    40  EMX_nonhprg[11] Raw (non-HPRG) EMX11 Window        (fT)   -999.999999  f12.6
+COMM    41  EMX_nonhprg[12] Raw (non-HPRG) EMX12 Window        (fT)   -999.999999  f12.6
+COMM    42  EMX_nonhprg[13] Raw (non-HPRG) EMX13 Window        (fT)   -999.999999  f12.6
+COMM    43  EMX_nonhprg[14] Raw (non-HPRG) EMX14 Window        (fT)   -999.999999  f12.6
+COMM    44  EMX_nonhprg[15] Raw (non-HPRG) EMX15 Window        (fT)   -999.999999  f12.6
+COMM    45  EMX_hprg[1]     Final HPRG EMX01 Window            (fT)   -999.999999  f12.6
+COMM    46  EMX_hprg[2]     Final HPRG EMX02 Window            (fT)   -999.999999  f12.6
+COMM    47  EMX_hprg[3]     Final HPRG EMX03 Window            (fT)   -999.999999  f12.6
+COMM    48  EMX_hprg[4]     Final HPRG EMX04 Window            (fT)   -999.999999  f12.6
+COMM    49  EMX_hprg[5]     Final HPRG EMX05 Window            (fT)   -999.999999  f12.6
+COMM    50  EMX_hprg[6]     Final HPRG EMX06 Window            (fT)   -999.999999  f12.6
+COMM    51  EMX_hprg[7]     Final HPRG EMX07 Window            (fT)   -999.999999  f12.6
+COMM    52  EMX_hprg[8]     Final HPRG EMX08 Window            (fT)   -999.999999  f12.6
+COMM    53  EMX_hprg[9]     Final HPRG EMX09 Window            (fT)   -999.999999  f12.6
+COMM    54  EMX_hprg[10]    Final HPRG EMX10 Window            (fT)   -999.999999  f12.6
+COMM    55  EMX_hprg[11]    Final HPRG EMX11 Window            (fT)   -999.999999  f12.6
+COMM    56  EMX_hprg[12]    Final HPRG EMX12 Window            (fT)   -999.999999  f12.6
+COMM    57  EMX_hprg[13]    Final HPRG EMX13 Window            (fT)   -999.999999  f12.6
+COMM    58  EMX_hprg[14]    Final HPRG EMX14 Window            (fT)   -999.999999  f12.6
+COMM    59  EMX_hprg[15]    Final HPRG EMX15 Window            (fT)   -999.999999  f12.6
+COMM    60  X_Sferics       X_Sferics                                 -9999.999    f10.3
+COMM    61  X_Lowfreq       X_Lowfreq                                 -9999.999    f10.3
+COMM    62  X_Powerline     X_Powerline                               -9999.999    f10.3
+COMM    63  X_VLF1          X_18.2kHz                                 -9999.999    f10.3
+COMM    64  X_VLF2          X_19.8kHz                                 -9999.999    f10.3
+COMM    65  X_VLF3          X_21.4kHz                                 -9999.999    f10.3
+COMM    66  X_VLF4          X_22.2kHz                                 -9999.999    f10.3
+COMM    67  X_Geofact       X_Geometric factor                        -9999.999    f10.3
+COMM    68  EMZ_nonhprg[1]  Raw (non-HPRG) EMZ01 Window        (fT)   -999.999999  f12.6
+COMM    69  EMZ_nonhprg[2]  Raw (non-HPRG) EMZ02 Window        (fT)   -999.999999  f12.6
+COMM    70  EMZ_nonhprg[3]  Raw (non-HPRG) EMZ03 Window        (fT)   -999.999999  f12.6
+COMM    71  EMZ_nonhprg[4]  Raw (non-HPRG) EMZ04 Window        (fT)   -999.999999  f12.6
+COMM    72  EMZ_nonhprg[5]  Raw (non-HPRG) EMZ05 Window        (fT)   -999.999999  f12.6
+COMM    73  EMZ_nonhprg[6]  Raw (non-HPRG) EMZ06 Window        (fT)   -999.999999  f12.6
+COMM    74  EMZ_nonhprg[7]  Raw (non-HPRG) EMZ07 Window        (fT)   -999.999999  f12.6
+COMM    75  EMZ_nonhprg[8]  Raw (non-HPRG) EMZ08 Window        (fT)   -999.999999  f12.6
+COMM    76  EMZ_nonhprg[9]  Raw (non-HPRG) EMZ09 Window        (fT)   -999.999999  f12.6
+COMM    77  EMZ_nonhprg[10] Raw (non-HPRG) EMZ10 Window        (fT)   -999.999999  f12.6
+COMM    78  EMZ_nonhprg[11] Raw (non-HPRG) EMZ11 Window        (fT)   -999.999999  f12.6
+COMM    79  EMZ_nonhprg[12] Raw (non-HPRG) EMZ12 Window        (fT)   -999.999999  f12.6
+COMM    80  EMZ_nonhprg[13] Raw (non-HPRG) EMZ13 Window        (fT)   -999.999999  f12.6
+COMM    81  EMZ_nonhprg[14] Raw (non-HPRG) EMZ14 Window        (fT)   -999.999999  f12.6
+COMM    82  EMZ_nonhprg[15] Raw (non-HPRG) EMZ15 Window        (fT)   -999.999999  f12.6
+COMM    83  EMZ_hprg[1]     Final HPRG EMZ01 Window            (fT)   -999.999999  f12.6
+COMM    84  EMZ_hprg[2]     Final HPRG EMZ02 Window            (fT)   -999.999999  f12.6
+COMM    85  EMZ_hprg[3]     Final HPRG EMZ03 Window            (fT)   -999.999999  f12.6
+COMM    86  EMZ_hprg[4]     Final HPRG EMZ04 Window            (fT)   -999.999999  f12.6
+COMM    87  EMZ_hprg[5]     Final HPRG EMZ05 Window            (fT)   -999.999999  f12.6
+COMM    88  EMZ_hprg[6]     Final HPRG EMZ06 Window            (fT)   -999.999999  f12.6
+COMM    89  EMZ_hprg[7]     Final HPRG EMZ07 Window            (fT)   -999.999999  f12.6
+COMM    90  EMZ_hprg[8]     Final HPRG EMZ08 Window            (fT)   -999.999999  f12.6
+COMM    91  EMZ_hprg[9]     Final HPRG EMZ09 Window            (fT)   -999.999999  f12.6
+COMM    92  EMZ_hprg[10]    Final HPRG EMZ10 Window            (fT)   -999.999999  f12.6
+COMM    93  EMZ_hprg[11]    Final HPRG EMZ11 Window            (fT)   -999.999999  f12.6
+COMM    94  EMZ_hprg[12]    Final HPRG EMZ12 Window            (fT)   -999.999999  f12.6
+COMM    95  EMZ_hprg[13]    Final HPRG EMZ13 Window            (fT)   -999.999999  f12.6
+COMM    96  EMZ_hprg[14]    Final HPRG EMZ14 Window            (fT)   -999.999999  f12.6
+COMM    97  EMZ_hprg[15]    Final HPRG EMZ15 Window            (fT)   -999.999999  f12.6
+COMM    98  Z_Sferics       Z_Sferics                                 -9999.999    f10.3
+COMM    99  Z_Lowfreq       Z_Lowfreq                                 -9999.999    f10.3
+COMM   100  Z_Powerline     Z_Powerline                               -9999.999    f10.3
+COMM   101  Z_VLF1          Z_18.2kHz                                 -9999.999    f10.3
+COMM   102  Z_VLF2          Z_19.8kHz                                 -9999.999    f10.3
+COMM   103  Z_VLF3          Z_21.4kHz                                 -9999.999    f10.3
+COMM   104  Z_VLF4          Z_22.2kHz                                 -9999.999    f10.3
+COMM   105  Z_Geofact       Z_Geometric factor                        -9999.999    f10.3

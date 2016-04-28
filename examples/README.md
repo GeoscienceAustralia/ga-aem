@@ -1,0 +1,5 @@
+examples
+========
+
+Directory for examples
+

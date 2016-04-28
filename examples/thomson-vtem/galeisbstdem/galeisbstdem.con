@@ -1,0 +1,99 @@
+Control Begin
+
+	NumberOfSystems = 1
+	
+	EMSystem1 Begin
+		SystemFile      = ../stmfiles/VTEM-plus-7.3ms-pulse-southernthomson.stm
+		UseXComponent   = no
+		UseYComponent   = no
+		UseZComponent   = yes
+		InvertTotalField = no
+		ReconstructPrimaryFieldFromInputGeometry = no
+
+		EstimateNoiseFromModel = yes
+		ZMultiplicativeNoise   = 3.0
+		ZAdditiveNoise         = 0.161167  0.124984  0.094229  0.073026  0.058675  0.045173  0.038207  0.026160  0.019157  0.014366  0.011281  0.009552  0.008378  0.007234  0.006111  0.005186  0.004356  0.003580  0.003004  0.002447  0.002047  0.001648  0.001398  0.001154  0.000957  0.000809  0.000687  0.000589  0.000507  0.000444  0.000405  0.000352  0.000328  0.000303  0.000301  0.000319  0.000348  0.000360  0.000344  0.000310  0.000245  0.000196  0.000219  0.000177  0.000159
+		ZComponentSecondary    = -Column 177
+	EMSystem1 End
+	
+	Earth Begin
+		NumberOfLayers = 30
+	Earth End
+
+	Options Begin
+		SolveConductivity = yes
+		SolveThickness    = no
+
+		SolveTX_Height = no
+		SolveTX_Roll   = no
+		SolveTX_Pitch  = no
+		SolveTX_Yaw    = no
+		SolveTXRX_DX   = no
+		SolveTXRX_DY   = no
+		SolveTXRX_DZ   = no
+		SolveRX_Roll   = no
+		SolveRX_Pitch  = no
+		SolveRX_Yaw    = no
+
+		AlphaConductivity = 1.0
+		AlphaThickness    = 0.0
+		AlphaGeometry     = 0.0
+		AlphaSmoothness   = 3333 //Set to 0 for no vertical conductivity smoothing
+		SmoothnessMethod  = Minimise2ndDerivatives
+
+		MinimumPhiD = 1.0
+		MinimumPercentageImprovement = 1.0
+		MaximumIterations = 100
+	Options End
+
+	Input Begin
+		DataFile = ..\data\thomson-vtem.dat
+		HeaderLines = 0
+		Subsample   = 1
+
+		Columns Begin
+			SurveyNumber    = Column 1
+			DateNumber      = Column 6
+			FlightNumber    = Column 3
+			LineNumber      = Column 4
+			FidNumber       = Column 5
+			Easting         = Column 28
+			Northing        = Column 29
+			GroundElevation = Column 32
+			Altimeter       = Column 22
+
+			TX_Height       = Column 30
+			TX_Roll         = Column 23
+			TX_Pitch        = Column 24
+			TX_Yaw          = Column 25
+			TXRX_DX         = 0
+			TXRX_DY         = 0
+			TXRX_DZ         = 0
+			RX_Roll         = Column 23
+			RX_Pitch        = Column 24
+			RX_Yaw          = Column 25
+
+			ReferenceModel Begin
+				Conductivity   = 0.001
+				Thickness      = 3.00  3.30  3.62  4.00  4.40  4.84  5.32  5.84  6.42  7.08  7.78  8.56  9.42 10.36 11.40 12.54 13.78 15.16 16.68 18.34 20.18 22.20 24.42 26.86 29.54 32.50 35.76 39.32 43.26 
+			ReferenceModel End
+
+			StdDevReferenceModel Begin
+				Conductivity   = 3.0
+			StdDevReferenceModel End
+		Columns End
+	Input End
+
+	Output Begin
+		DataFile = inversion.output.asc
+		LogFile  = inversion.output.log
+
+		PositiveLayerBottomDepths = no
+		NegativeLayerBottomDepths = yes
+		InterfaceElevations       = no
+		ParameterSensitivity      = no
+		ParameterUncertainty      = no
+		PredictedData             = no
+	Output End
+
+Control End

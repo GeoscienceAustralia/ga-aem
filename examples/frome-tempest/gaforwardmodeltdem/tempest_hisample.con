@@ -1,0 +1,6 @@
+Control Begin
+	SystemFile        = ../stmfiles/Tempest-hisample.stm
+	InputModelFile    = input_model_tempest.txt
+	OutputDataFile    = output_tempest-hisample.asc
+	OutputDataHeader  = output_tempest-hisample.hdr
+Control End

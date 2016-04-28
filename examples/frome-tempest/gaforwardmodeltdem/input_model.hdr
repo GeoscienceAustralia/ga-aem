@@ -1,0 +1,21 @@
+Column	Label 		Description and Units
+1	tx_height	TX height above ground m
+2	tx_roll		TX roll degrees, left wing up is +ve
+3	tx_pitch	TX pitch degrees, nose down is +ve
+4	tx_yaw		TX yaw degrees degrees, turn left is +ve
+5	txrx_dx		TX-RX inline separation m, RX in front of TX +ve
+6	txrx_dy		TX-RX transverse separation m, RX left of TX +ve
+7	txrx_dz		TX-RX vertical separation m, RX above TX is +ve
+8	rx_roll		RX roll degrees degrees, left wing up is +ve
+9	rx_pitch	RX pitch degrees degrees, nose down is +ve
+10	rx_yaw		RX yaw degrees degrees, turn left is +ve
+11	N		number of layers
+12	cond:1		layer 1 conductivity S/m
+13	cond:2		layer 2 conductivity S/m
+...
+12+N-1	cond:N		layer N conductivity S/m
+12+N	thickness:1	layer 1 thickness m
+12+N+1	thickness:2	layer 2 thickness m	
+...
+12+2N-1	thickness:N-1	layer N-1 thickness m
+

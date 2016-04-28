@@ -1,0 +1,114 @@
+140005-Geoscience Australia
+June/14
+
+VTEM PLUS Wide (7.3 ms) Pulse System with Full Waveform Processing
+
+Final Processed Databases are in ASCII column format, containing the following fields:
+	
+Field name		Units			Description
+GA_project		N/A			Geoscience Australia Project Number
+GT_project		N/A			Geotech Ltd. Project Number
+Flight			N/A			Flight Number
+Line			N/A			Line Number
+Fiducial		N/A			Fiducial Number
+Date			yyyymmdd		Date
+Time			seconds  		Seconds since midnight local time
+Bearing			degrees			Flight Direction Azimuth East of North
+Heli_Longitude		degrees			Helicopter GPS Longitude (GDA94)
+Heli_Latitude		degrees			Helicopter GPS Latitude (GDA94)
+Heli_Easting		metres			Helicopter GPS Easting (GDA94, Map Grid of Australia Zone 55)
+Heli_Northing		metres			Helicopter GPS Northing (GDA94, Map Grid of Australia Zone 55)
+Heli_Height		metres			Helicopter GPS height above EGM96 Geoid
+Heli_GPSTime		seconds  		Helicopter GPS second of the GPS week
+Radar_altimeter		metres			Helicopter radar altimeter height above ground
+GradLoop_Longitude	degrees			Gradiometer Loop GPS Longitude (GDA94)
+GradLoop_Latitude	degrees			Gradiometer Loop GPS Latitude (GDA94)
+GradLoop_Easting	metres			Gradiometer Loop GPS Easting (GDA94, Map Grid of Australia Zone 55)
+GradLoop_Northing	metres			Gradiometer Loop GPS Northing (GDA94, Map Grid of Australia Zone 55)
+GradLoop_Height		metres			Gradiometer Loop GPS height above EGM96 Geoid
+GradLoop_GPSTime	seconds  		Gradiometer Loop GPS second of the GPS week
+Laser_altimeter		metres			Gradiometer Loop laser altimeter height above ground
+Roll			degrees			Gradiometer Loop rotation about the in-line (x) axis
+Pitch			degrees			Gradiometer Loop rotation about the cross-line (y) axis
+Yaw			degrees			Gradiometer Loop rotation about the vertical (z) axis
+EM_Mag_Data_Longitude	degrees			Reference Longitude for EM and magnetic data - derived centre of magnetic gradiometer loop (GDA94)
+EM_Mag_Data_Latitude	degrees			Reference Latitude  for EM and magnetic data - derived centre of magnetic gradiometer loop (GDA94)
+EM_Mag_Data_Easting	metres			Reference Easting for EM and magnetic data - derived centre of magnetic gradiometer loop (GDA94, Map Grid of Australia Zone 55)
+EM_Mag_Data_Northing	metres			Reference Northing for EM and magnetic data - derived centre of magnetic gradiometer loop (GDA94, Map Grid of Australia Zone 55)
+EM_Loop_Height		metres			Derived height of EM loop above ground
+Ground_elevation_laser	metres			Digital Elevation Model (Australian Height Datum) derived from laser altimeter and Gradiometer Loop GPS
+Ground_elevation_radar	metres			Digital Elevation Model (Australian Height Datum) derived from radar altimeter and Helicopter GPS
+Mag1L			nT			Measured Total Magnetic field - left sensor
+Mag1R			nT			Measured Total Magnetic field - right sensor
+Mag2L			nT			Diurnal and IGRF corrected Total Magnetic field - left sensor
+Mag2R			nT			Diurnal and IGRF corrected Total Magnetic field - right sensor
+Mag_average		nT			Total Magnetic field (average of left and right sensors)
+Basemag			nT    			Base station magnetic diurnal
+IGRF_Tot		nT			IGRF Total Field
+TX_Current		Amperes			Transmitter Current
+Powerline_monitor	N/A			50 Hz power line monitor
+SRawz[4-48]		pV/(A*m4)		Z dB/dt data for time channels 4 to 48
+SCompz[4-48]		pV/(A*m4)		Z dB/dt data for time channels 4 to 48
+SFltz[4-48]		pV/(A*m4)		Z dB/dt data for time channels 4 to 48
+SFz[4-48]		pV/(A*m4)		Z dB/dt data for time channels 4 to 48
+BRawz[4-48]		(pV*ms)/(A*m4)		Z B-Field data for time channels 4 to 48
+BCompz[4-48]		(pV*ms)/(A*m4)		Z B-Field data for time channels 4 to 48
+BFltz[4-48]		(pV*ms)/(A*m4)		Z B-Field data for time channels 4 to 48
+BFz[4-48]		(pV*ms)/(A*m4)		Z B-Field data for time channels 4 to 48
+SRawx[20-48]		pV/(A*m4)		X dB/dt data for time channels 20 to 48
+SCompx[20-48]		pV/(A*m4)		X dB/dt data for time channels 20 to 48
+SFltx[20-48]		pV/(A*m4)		X dB/dt data for time channels 20 to 48
+SFx[20-48]		pV/(A*m4)		X dB/dt data for time channels 20 to 48
+BRawx[20-48]		(pV*ms)/(A*m4)		X B-Field data for time channels 20 to 48
+BCompx[20-48]		(pV*ms)/(A*m4)		X B-Field data for time channels 20 to 48
+BFltx[20-48]		(pV*ms)/(A*m4)		X B-Field data for time channels 20 to 48
+BFx[20-48]		(pV*ms)/(A*m4)		X B-Field data for time channels 20 to 48
+
+EM Channel/Window Start, Centre and End times in seconds
+Window#	 Start(s)	Centre(s)	  End(s)
+=================================================
+4	0.0000180	0.0000205	0.0000230
+5	0.0000230	0.0000260	0.0000290
+6	0.0000290	0.0000315	0.0000340
+7	0.0000340	0.0000365	0.0000390
+8	0.0000390	0.0000420	0.0000450
+9	0.0000450	0.0000480	0.0000510
+10	0.0000510	0.0000550	0.0000590
+11	0.0000590	0.0000635	0.0000680
+12	0.0000680	0.0000730	0.0000780
+13	0.0000780	0.0000840	0.0000900
+14	0.0000900	0.0000965	0.0001030
+15	0.0001030	0.0001105	0.0001180
+16	0.0001180	0.0001270	0.0001360
+17	0.0001360	0.0001460	0.0001560
+18	0.0001560	0.0001675	0.0001790
+19	0.0001790	0.0001925	0.0002060
+20	0.0002060	0.0002210	0.0002360
+21	0.0002360	0.0002535	0.0002710
+22	0.0002710	0.0002915	0.0003120
+23	0.0003120	0.0003350	0.0003580
+24	0.0003580	0.0003845	0.0004110
+25	0.0004110	0.0004415	0.0004720
+26	0.0004720	0.0005075	0.0005430
+27	0.0005430	0.0005830	0.0006230
+28	0.0006230	0.0006695	0.0007160
+29	0.0007160	0.0007695	0.0008230
+30	0.0008230	0.0008840	0.0009450
+31	0.0009450	0.0010155	0.0010860
+32	0.0010860	0.0011665	0.0012470
+33	0.0012470	0.0013395	0.0014320
+34	0.0014320	0.0015390	0.0016460
+35	0.0016460	0.0017685	0.0018910
+36	0.0018910	0.0020315	0.0021720
+37	0.0021720	0.0023335	0.0024950
+38	0.0024950	0.0026800	0.0028650
+39	0.0028650	0.0030785	0.0032920
+40	0.0032920	0.0035365	0.0037810
+41	0.0037810	0.0040610	0.0043410
+42	0.0043410	0.0046640	0.0049870
+43	0.0049870	0.0053580	0.0057290
+44	0.0057290	0.0061550	0.0065810
+45	0.0065810	0.0070705	0.0075600
+46	0.0075600	0.0081225	0.0086850
+47	0.0086850	0.0093310	0.0099770
+48	0.0099770	0.0107175	0.0114580

@@ -1,0 +1,6 @@
+Control Begin
+	SystemFile        = ..\stmfiles\Skytem-HM.stm
+	InputModelFile    = input_model_skytem.txt
+	OutputDataFile    = output_model_Skytem-HM.asc
+	OutputDataHeader  = output_model_Skytem-HM.hdr
+Control End

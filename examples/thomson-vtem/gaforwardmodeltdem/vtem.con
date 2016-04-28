@@ -1,0 +1,6 @@
+Control Begin
+	SystemFile        = ../stmfiles/VTEM-plus-7.3ms-pulse-southernthomson.stm
+	InputModelFile    = input_model_vtem.txt
+	OutputDataFile    = output_vtem.asc
+	OutputDataHeader  = output_vtem.hdr
+Control End

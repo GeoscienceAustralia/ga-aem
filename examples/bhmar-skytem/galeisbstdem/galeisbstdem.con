@@ -1,0 +1,109 @@
+Control Begin
+
+	NumberOfSystems = 2
+	
+	EMSystem1 Begin
+		SystemFile      = ../stmfiles/Skytem-LM.stm
+		UseXComponent   = no
+		UseYComponent   = no
+		UseZComponent   = yes
+		InvertTotalField = no
+		ReconstructPrimaryFieldFromInputGeometry = no
+		EstimateNoiseFromModel = no
+		ZComponentSecondary    = -Column 33
+		ZComponentNoise        = Column 72
+	EMSystem1 End
+	
+	EMSystem2 Begin
+		SystemFile      = ../stmfiles/Skytem-HM.stm
+		UseXComponent   = no
+		UseYComponent   = no
+		UseZComponent   = yes
+		InvertTotalField = no
+		ReconstructPrimaryFieldFromInputGeometry = no
+		EstimateNoiseFromModel = no
+		ZComponentSecondary    = -Column 51
+		ZComponentNoise        = Column 90
+	EMSystem2 End
+
+	Earth Begin
+		NumberOfLayers = 30
+	Earth End
+
+	Options Begin
+		SolveConductivity = yes
+		SolveThickness    = no
+
+		SolveTX_Height = no
+		SolveTX_Roll   = no
+		SolveTX_Pitch  = no
+		SolveTX_Yaw    = no
+		SolveTXRX_DX   = no
+		SolveTXRX_DY   = no
+		SolveTXRX_DZ   = no
+		SolveRX_Roll   = no
+		SolveRX_Pitch  = no
+		SolveRX_Yaw    = no
+
+		AlphaConductivity = 1.0
+		AlphaThickness    = 0.0
+		AlphaGeometry     = 1.0
+		AlphaSmoothness   = 333 //Set to 0 for no vertical conductivity smoothing
+		SmoothnessMethod  = Minimise2ndDerivatives
+
+		MinimumPhiD = 1.0
+		MinimumPercentageImprovement = 1.0
+		MaximumIterations = 100
+	Options End
+
+	Input Begin
+		DataFile   = ..\data\bhmar-skytem.dat
+		HeaderLines = 0
+		Subsample   = 1
+
+		Columns Begin
+			SurveyNumber    = Column 1
+			DateNumber      = Column 4
+			FlightNumber    = Column 5
+			LineNumber      = Column 6
+			FidNumber       = Column 7
+			Easting         = Column 12
+			Northing        = Column 13
+			GroundElevation = Column 21
+			Altimeter       = Column 19
+
+			TX_Height       = Column 19
+			TX_Roll         = Column 24
+			TX_Pitch        = Column 25
+			TX_Yaw          = Column 26
+			TXRX_DX         = Column 27
+			TXRX_DY         = Column 28
+			TXRX_DZ         = Column 29
+			RX_Roll         = Column 24
+			RX_Pitch        = Column 25
+			RX_Yaw          = Column 26
+
+			ReferenceModel Begin
+				Conductivity   = 0.001
+				Thickness      = 1.50  1.65  1.81  2.00  2.20  2.42  2.66  2.92  3.21  3.54  3.89  4.28  4.71  5.18  5.70  6.27  6.89  7.58  8.34  9.17 10.09 11.10 12.21 13.43 14.77 16.25 17.88 19.66 21.63
+			ReferenceModel End
+
+			StdDevReferenceModel Begin
+				Conductivity   = 3.0
+			StdDevReferenceModel End
+		Columns End
+	Input End
+
+	Output Begin
+		DataFile = inversion.output.asc
+		LogFile  = inversion.output.log
+
+		PositiveLayerBottomDepths = no
+		NegativeLayerBottomDepths = yes
+		InterfaceElevations       = no
+		ParameterSensitivity      = yes
+		ParameterUncertainty      = yes
+		PredictedData             = no
+	Output End
+
+Control End
