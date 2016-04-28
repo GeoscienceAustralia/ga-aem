@@ -1,7 +1,7 @@
 #File patterns that are ignored
 
 *.exe #Exclude all exes
-!bin/x64/Release/*.exe #Make exception for these
+!bin/x64/Release/      #Make exception for these
 !third_party/          #Make exception for these
 
 
