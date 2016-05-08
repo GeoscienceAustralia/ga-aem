@@ -7,7 +7,7 @@
     <ClCompile Include="..\..\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
-    <ClCompile Include="..\..\matlab\src\gatdaem1d.cpp" />
+    <ClCompile Include="..\..\src\gatdaem1d.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\blocklanguage.h">
@@ -28,7 +28,7 @@
     <ClInclude Include="..\..\src\tdemsystem.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\matlab\src\gatdaem1d.h">
+    <ClInclude Include="..\..\src\gatdaem1d.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

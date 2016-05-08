@@ -11,18 +11,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\matlab\src\gatdaem1d.cpp" />
     <ClCompile Include="..\..\src\blocklanguage.cpp" />
     <ClCompile Include="..\..\src\file_utils.cpp" />
+    <ClCompile Include="..\..\src\gatdaem1d.cpp" />
     <ClCompile Include="..\..\src\general_utils.cpp" />
     <ClCompile Include="..\..\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\matlab\src\gatdaem1d.h" />
     <ClInclude Include="..\..\src\blocklanguage.h" />
     <ClInclude Include="..\..\src\file_utils.h" />
+    <ClInclude Include="..\..\src\gatdaem1d.h" />
     <ClInclude Include="..\..\src\general_utils.h" />
     <ClInclude Include="..\..\src\geometry3d.h" />
     <ClInclude Include="..\..\src\le.h" />
