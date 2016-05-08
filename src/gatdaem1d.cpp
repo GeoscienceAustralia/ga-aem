@@ -38,8 +38,8 @@ int nsamplesperwaveform(void* hS)
 void waveform(void* hS, double* time, double* currentwaveform, double* voltagewaveform)
 {			
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	for(int i=0; i<T.SamplesPerWaveform; i++){
-		time[i]             = T.WaveformTime[i];
+	for(size_t i=0; i<T.SamplesPerWaveform; i++){
+		time[i] = T.WaveformTime[i];
 		if(T.WaveformType == WAVEFORMTYPE_CURRENT){
 			currentwaveform[i]  = T.WaveformCurrent[i];
 		}
@@ -65,7 +65,7 @@ int nlayers(void* hS)
 void windowtimes(void* hS, double* low, double* high)
 {		
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	for(int i=0; i<T.NumberOfWindows; i++){
+	for(size_t i=0; i<T.NumberOfWindows; i++){
 		low[i]   = T.WinSpec[i].TimeLow;
 		high[i]  = T.WinSpec[i].TimeHigh;
 	}
@@ -147,7 +147,7 @@ void fm_dlogc(void* hS, struct sTDEmGeometry G, int nlayers, double* conductivit
 	*p=T.PrimaryZ; p++;			
 	memcpy(p,&(T.Z[0]),sz); p+=nw;	
 
-	for(size_t k=0;k<nlayers;k++){
+	for(size_t k=0;k<(size_t)nlayers;k++){
 		T.Earth.calculation_type = CT_CONDUCTIVITYDERIVATIVE;		
 		T.Earth.derivative_layer = (int)k;
 		T.setprimaryfields();	
