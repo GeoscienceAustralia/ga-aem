@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\src\file_utils.cpp" />
+    <ClCompile Include="..\..\src\general_utils.cpp" />
+    <ClCompile Include="..\..\src\geometry3d.cpp" />
+    <ClCompile Include="..\..\src\le.cpp" />
+    <ClCompile Include="..\..\src\tdemsystem.cpp" />
+    <ClCompile Include="..\..\matlab\src\gatdaem1d.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\blocklanguage.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\file_utils.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\general_utils.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\geometry3d.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\le.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\tdemsystem.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\matlab\src\gatdaem1d.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{091f22ee-c67e-456f-81e3-124a65625ab4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
