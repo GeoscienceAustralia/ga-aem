@@ -69,9 +69,6 @@ TestResult.xml
 *.plg
 *.opt
 *.ncb
-*.mexw32
-*.mexw64
-*.mexa64
 
 # Chutzpah Test files
 _Chutzpah*
