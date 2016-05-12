@@ -8,13 +8,13 @@ SHELL = /bin/sh
 cxx        = mpiCC
 cxxflags   = -D_MPI_ENABLED -std=c++11 -O3 -Wall
 libs       = -L$(FFTW_DIR) -lfftw3
-exedir     = ../bin/raijin-gnu
+exedir     = ../bin/raijin/gnu
 
 #Intel compiler on raijin.nci.org.au
 #cxx        = mpiCC
 #cxxflags   = -D_MPI_ENABLED -std=c++11 -O3 -Wall -diag-disable remark
 #libs       = -L$(FFTW_DIR) -lfftw3
-#exedir     = ../bin/raijin-intel
+#exedir     = ../bin/raijin/intel
 
 srcdir     = ../src
 tntdir     = ../third_party/tnt

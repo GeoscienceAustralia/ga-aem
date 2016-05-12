@@ -9,14 +9,14 @@ cxx        = g++
 cxxflags   = -std=c++11 -O3 -Wall -fPIC
 libs       = -L$(FFTW_DIR) -lfftw3
 ldflags    = -shared
-bindir     = ../matlab/bin/raijin-gnu
+bindir     = ../matlab/bin/raijin/gnu
 
 #Intel compiler on raijin.nci.org.au
 #cxx        = icpc
 #cxxflags   = -std=c++11 -O3 -Wall -fPIC -diag-disable remark
 #libs       = -L$(FFTW_DIR) -lfftw3
 ldflags     = -shared
-#bindir     = ../matlab/bin/raijin-intel
+#bindir     = ../matlab/bin/raijin/intel
 
 srcdir     = ../src
 tntdir     = ../third_party/tnt

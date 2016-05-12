@@ -1,26 +1,24 @@
 from ctypes import *;
 
+import os;
 from gatdaem1d import tdlib;
 from gatdaem1d import WaveForm;
 from gatdaem1d import Geometry;
 from gatdaem1d import Response;
 
-
 #Get the AEM system's handle
-hs  = tdlib.createhandle("/short/public/rcb547/apps/ga-aem/examples/bhmar-skytem/stmfiles/Skytem-LM.stm");
-wfm = WaveForm(hs)
-print wfm.__dict__
-
+hs  = tdlib.createhandle("../examples/bhmar-skytem/stmfiles/Skytem-LM.stm");
+W = WaveForm(hs)
+#print W.__dict__
+#print "Number of waveform samples = %d" % W.ns;
+#for i in range(0, W.ns):#
+#	print '{0:5d} {1:10.8f} {2:10.8f}'.format(i+1,W.time[i],W.current[i]);
 
 #Get the number of receiver windows and the start/end times
 nw     = tdlib.nwindows(hs);
 wtlow  = (c_double * nw)();
 wthigh = (c_double * nw)();
 tdlib.windowtimes(hs,byref(wtlow),byref(wthigh));
-
-#print "Number of waveform samples = %d" % ns;
-#for i in range(0, ns):
-#	print '{0:5d} {1:10.8f} {2:10.8f}'.format(i+1,wftime[i],wfcurrent[i]);
 
 #print "Number of windows =",nw;
 #for i in range(0, nw):
