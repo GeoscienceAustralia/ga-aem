@@ -1,6 +1,6 @@
 import os.path;
 from ctypes import *;
-import matplotlib.pyplot as plt;
+#import matplotlib.pyplot as plt;
 
 #Function to load the shared library
 def load_library():
@@ -15,19 +15,16 @@ tdlib = load_library();
 
 class Earth:
     """Earth Class"""
-    def __init__(self, c, t):
-        self.nlayers = len(c);
-        self.conductivity = c;
-        self.thickness    = t;
-        #self.conductivity = (c_double * self.nlayers)();
-        #self.thickness    = (c_double * (self.nlayers-1))();        
-        #for i in range(0, self.nlayers):
-        #    self.conductivity[i]=c[i];
-        #for i in range(0, (self.nlayers-1)):
-        #    self.thickness[i]=t[i];
+    def __init__(self, conductivity, thickness):
+        nl = len(conductivity);
+        self.conductivity = (c_double * nl)(*conductivity);
+        self.thickness    = (c_double * (nl-1))(*thickness);
+
+    def nlayers(self):
+        return len(self.conductivity);
 
     def print(self):
-        print("nlayers      =",self.nlayers)
+        print("nlayers      =",self.nlayers())
         print("conductivity =",self.conductivity[:]);
         print("thickness    =",self.thickness[:]);
 
@@ -94,14 +91,13 @@ class Response(Structure):
         for i in range(0, self.nwindows):
             print('{0:5d} {1:16.6e} {2:16.6e} {3:16.6e}'.format(i+1,self.SX[i],self.SY[i],self.SZ[i]));
 
-
 class Waveform:
     """Waveform Class"""
     def __init__(self, handle):
-        self.nsamples = tdlib.nsamplesperwaveform(handle);
-        self.time     = (c_double * self.nsamples)();
-        self.current  = (c_double * self.nsamples)();
-        self.voltage  = (c_double * self.nsamples)();
+        self.nasmaples = tdlib.nsamplesperwaveform(handle);
+        self.time      = (c_double * self.nasmaples)();
+        self.current   = (c_double * self.nasmaples)();
+        self.voltage   = (c_double * self.nasmaples)();
         tdlib.waveform(handle,self.time,self.current,self.voltage);
 
     def print(self):
@@ -153,6 +149,10 @@ tdlib.windowtimes.restype  = None;
 tdlib.forwardmodel.argtypes = [c_void_p, Geometry, c_int, POINTER(c_double), POINTER(c_double), POINTER(Response)];
 tdlib.forwardmodel.restype  = None;
 
+#void derivative(void* hS, int dtype, int dlayer, struct sTDEmResponseML* pR);
+tdlib.derivative.argtypes = [c_void_p, c_int, c_int, POINTER(Response)];
+tdlib.derivative.restype  = None;
+
 class TDAEMSystem:
     """TDAEMSystem Class"""
     
@@ -162,29 +162,42 @@ class TDAEMSystem:
         self.waveform = Waveform(self.handle);
         self.windows  = Windows(self.handle);
 
+        #Following are defioned in le.h #enum eCalculationType { CT_FORWARDMODEL, CT_CONDUCTIVITYDERIVATIVE, CT_THICKNESSDERIVATIVE, CT_HDERIVATIVE, CT_RDERIVATIVE, CT_XDERIVATIVE,	CT_YDERIVATIVE, CT_ZDERIVATIVE };
+        self.FORWARDMODEL=0;
+        self.CONDUCTIVITYDERIVATIVE=1;
+        self.THICKNESSDERIVATIVE=2;
+        self.HDERIVATIVE=3;
+        self.RDERIVATIVE=4;
+        self.XDERIVATIVE=5;
+        self.YDERIVATIVE=6;
+        self.ZDERIVATIVE=7;
+
     def __del__(self):
         """Delete the handle to free up internal resources"""
         tdlib.deletehandle(self.handle);
         
-    def plot_waveform_windows(self):
-        fig1 = plt.figure(1);
-        ax1  = fig1.add_subplot(1,1,1);
-        ax1.plot(self.waveform.time,self.waveform.current,'-k');
-        for i in range(0, self.windows.nwindows, 2):
-            x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
-            y=[0,0.1,0.1,0];
-            ax1.plot(x,y,'-r');
-        for i in range(1, self.windows.nwindows, 2):
-            x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
-            y=[0,-0.1,-0.1,0];
-            ax1.plot(x,y,'-b');
-        plt.ylabel('Time (s)');
-        plt.ylabel('Normalized Current (A)');
-        plt.show();
+#    def plot_waveform_windows(self):
+#        fig1 = plt.figure(1);
+#        ax1  = fig1.add_subplot(1,1,1);
+#        ax1.plot(self.waveform.time,self.waveform.current,'-k');
+#        for i in range(0, self.windows.nwindows, 2):
+#            x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
+#            y=[0,0.1,0.1,0];
+#            ax1.plot(x,y,'-r');
+#        for i in range(1, self.windows.nwindows, 2):
+#            x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
+#            y=[0,-0.1,-0.1,0];
+#            ax1.plot(x,y,'-b');
+#        plt.ylabel('Time (s)');
+#        plt.ylabel('Normalized Current (A)');
+#        plt.show();
 
     def forwardmodel(self,G,E,R):
-        tdlib.forwardmodel(self.handle,G,E.nlayers,E.conductivity,E.thickness,pointer(R));
-                   
+        tdlib.forwardmodel(self.handle,G,E.nlayers(),E.conductivity,E.thickness,R);
+
+    def derivative(self,dtype,dlayer,R):
+        tdlib.derivative(self.handle,dtype,dlayer,R);
+
 #void setgeometry(void* hS, struct sTDEmGeometry G);
 #void setearth(void* hS, int nlayers, double* conductivity, double* thickness);
 #void forwardmodel(void* hS, struct sTDEmGeometry G, int nlayers, double* conductivity, double* thickness, struct sTDEmResponseML* pR);

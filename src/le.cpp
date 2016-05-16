@@ -584,7 +584,7 @@ inline PropogationMatrix LE::dPdTj(const size_t& fi, const size_t& ai, const siz
 		return M * A.Layer[li + 1].LayerPostMatrix;		
 	}
 	else if (li > 0 && li < NumLayers - 1){		
-		if (li == NumLayers - 2) A.Layer[li].LayerPreMatrix * M;
+		if (li == NumLayers - 2) return A.Layer[li].LayerPreMatrix * M;
 		return A.Layer[li].LayerPreMatrix * M * A.Layer[li + 1].LayerPostMatrix;
 	}
 	//Last layer case
