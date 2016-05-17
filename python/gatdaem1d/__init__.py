@@ -1,6 +1,6 @@
 import os.path;
 from ctypes import *;
-#import matplotlib.pyplot as plt;
+import matplotlib.pyplot as plt;
 
 #Function to load the shared library
 def load_library():
@@ -176,21 +176,19 @@ class TDAEMSystem:
         """Delete the handle to free up internal resources"""
         tdlib.deletehandle(self.handle);
         
-#    def plot_waveform_windows(self):
-#        fig1 = plt.figure(1);
-#        ax1  = fig1.add_subplot(1,1,1);
-#        ax1.plot(self.waveform.time,self.waveform.current,'-k');
-#        for i in range(0, self.windows.nwindows, 2):
-#            x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
-#            y=[0,0.1,0.1,0];
-#            ax1.plot(x,y,'-r');
-#        for i in range(1, self.windows.nwindows, 2):
-#            x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
-#            y=[0,-0.1,-0.1,0];
-#            ax1.plot(x,y,'-b');
-#        plt.ylabel('Time (s)');
-#        plt.ylabel('Normalized Current (A)');
-#        plt.show();
+    def waveform_windows_plot(self,fig):
+        ax1 = fig.add_subplot(1,1,1);
+        ax1.plot(self.waveform.time,self.waveform.current,'-k');
+        for i in range(0, self.windows.nwindows, 2):
+            x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
+            y=[0,0.1,0.1,0];
+            ax1.plot(x,y,'-r');
+        for i in range(1, self.windows.nwindows, 2):
+            x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
+            y=[0,-0.1,-0.1,0];
+            ax1.plot(x,y,'-b');
+        plt.ylabel('Time (s)');
+        plt.ylabel('Normalized Current (A)');
 
     def forwardmodel(self,G,E,R):
         tdlib.forwardmodel(self.handle,G,E.nlayers(),E.conductivity,E.thickness,R);
