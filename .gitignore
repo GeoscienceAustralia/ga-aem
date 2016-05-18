@@ -100,6 +100,10 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
+# Python
+*.pyc
+*.pyo
+
 !/bin/x64/Release/*      #Make exception for these
 !/third_party/*          #Make exception for these
 
