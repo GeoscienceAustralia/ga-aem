@@ -1,8 +1,7 @@
-#from ctypes import *;
 import os;
 import time;
 import random;
-#from array import array;
+
 import numpy;
 import matplotlib.pyplot as plt;
 
@@ -13,8 +12,8 @@ from gatdaem1d import Geometry;
 from gatdaem1d import Response;
 
 #Construct the AEM system class instance
-#stmfile = "../examples/bhmar-skytem/stmfiles/Skytem-HM.stm";
-stmfile  = "..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm";
+#stmfile = "../../examples/bhmar-skytem/stmfiles/Skytem-HM.stm";
+stmfile  = "..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm";
 
 S = TDAEMSystem(stmfile);
 S.windows.print();
