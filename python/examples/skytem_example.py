@@ -1,8 +1,5 @@
-import os;
 import time;
 import random;
-
-import numpy;
 import matplotlib.pyplot as plt;
 
 from gatdaem1d import tdlib;
@@ -16,10 +13,13 @@ from gatdaem1d import Response;
 stmfile  = "..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm";
 
 S = TDAEMSystem(stmfile);
+
+#Print the window times
 S.windows.print();
 
-if False:
+if True:
     fig1 = plt.figure(1);
+    #S.waveform.print(); #Too much printing
     S.waveform_windows_plot(fig1);
     plt.show(fig1);
 
@@ -33,68 +33,69 @@ E.print();
 G = Geometry(tx_height=35, txrx_dx = -12.62, txrx_dz = +2.16);
 G.print();
 
-#Run a forward model
-R = Response(S.windows.nwindows);
-
+#Run a few random forward models in a loop
 t1=time.clock()
-for i in range(1):
+for i in range(10):
     conductivity[0] = 10**(random.uniform(-3, 0));
     conductivity[1] = 10**(random.uniform(-3, 0));
     conductivity[2] = 10**(random.uniform(-3, 0));
     thickness       = [40, 20];
     E = Earth(conductivity,thickness);
-    S.forwardmodel(G,E,R);
+    E.print();
+    fm = S.forwardmodel(G,E);
 t2=time.clock()
-print(t2-t1);
+print("time = ",t2-t1);
 
-conductivity = [0.05, 0.01, 0.1];
-thickness    = [10, 10];
+#Set the earth nodel
+conductivity = [0.005, 0.2, 0.01];
+thickness    = [20, 10];
 E = Earth(conductivity,thickness);
-E.print();
 
+#Do a forward model
 print("\nForward model");
-S.forwardmodel(G,E,R); R.print();
-fm = numpy.ctypeslib.as_array(R.SZ,shape=(S.windows.nwindows,1)).copy();
+fm = S.forwardmodel(G,E); fm.print();
 
+#Then these derivative apply to the last forward model computed
 print("\nLayer 1 conductivity derivative");
-S.derivative(S.CONDUCTIVITYDERIVATIVE,1,R); R.print();
-dl1c = numpy.ctypeslib.as_array(R.SZ,shape=(S.windows.nwindows,1)).copy();
-
+dl1c = S.derivative(S.CONDUCTIVITYDERIVATIVE,1); dl1c.print();
 print("\nLayer 2 conductivity derivative");
-S.derivative(S.CONDUCTIVITYDERIVATIVE,2,R); R.print();
-dl2c = numpy.ctypeslib.as_array(R.SZ,shape=(S.windows.nwindows,1)).copy();
-
+dl2c = S.derivative(S.CONDUCTIVITYDERIVATIVE,2); dl2c.print();
 print("\nLayer 3 conductivity derivative");
-S.derivative(S.CONDUCTIVITYDERIVATIVE,3,R); R.print();
-dl3c = numpy.ctypeslib.as_array(R.SZ,shape=(S.windows.nwindows,1)).copy();
-
+dl3c = S.derivative(S.CONDUCTIVITYDERIVATIVE,3); dl3c.print();
 print("\nLayer 1 thickness derivative");
-S.derivative(S.THICKNESSDERIVATIVE,1,R); R.print();
-dl1t = numpy.ctypeslib.as_array(R.SZ,shape=(S.windows.nwindows,1)).copy();
-
+dl1t = S.derivative(S.THICKNESSDERIVATIVE,1); dl1t.print();
 print("\nLayer 2 thickness derivative");
-S.derivative(S.THICKNESSDERIVATIVE,2,R); R.print();
-dl2t = numpy.ctypeslib.as_array(R.SZ,shape=(S.windows.nwindows,1)).copy();
+dl2t=S.derivative(S.THICKNESSDERIVATIVE,2); dl2t.print();
 
 print("\nHeight derivative");
-S.derivative(S.HDERIVATIVE,-1,R); R.print();
+ddh=S.derivative(S.HDERIVATIVE,-1); ddh.print();
 print("\nHorizontal radial-distance derivative");
-S.derivative(S.RDERIVATIVE,-1,R); R.print();
+ddr=S.derivative(S.RDERIVATIVE,-1); ddr.print();
 print("\nHorizontal dx distance derivative");
-S.derivative(S.XDERIVATIVE,-1,R); R.print();
+ddx=S.derivative(S.XDERIVATIVE,-1); ddx.print();
 print("\nHorizontal dy distance derivative");
-S.derivative(S.YDERIVATIVE,-1,R); R.print();
+ddy=S.derivative(S.YDERIVATIVE,-1); ddy.print();
 print("\nVertical dz distance derivative");
-S.derivative(S.ZDERIVATIVE,-1,R); R.print();
+ddz=S.derivative(S.ZDERIVATIVE,-1); ddz.print();
+
 
 fig2 = plt.figure(2);
-ax1 = fig2.add_subplot(1,1,1);
-ax1.semilogx(S.windows.centre,-fm,'-k',linewidth=2);
-ax1.semilogx(S.windows.centre,-dl1c,'-r',linewidth=2);
-ax1.semilogx(S.windows.centre,-dl2c,'-g',linewidth=2);
-ax1.semilogx(S.windows.centre,-dl3c,'-b',linewidth=2);
-ax1.semilogx(S.windows.centre,-dl1t,'-c',linewidth=2);
-ax1.semilogx(S.windows.centre,-dl2t,'-m',linewidth=2);
+ax1 = plt.subplot2grid((2,2), (0,0), rowspan=2);
+ax1.loglog(S.windows.centre,-fm.SZ,'-k',linewidth=2,label='Forward model');
+ax1.legend(fontsize=10);
+
+ax2 = fig2.add_subplot(2,2,2);
+ax2.semilogx(S.windows.centre,-dl1c.SZ,'-r',linewidth=2,label='dL1C');
+ax2.semilogx(S.windows.centre,-dl2c.SZ,'-g',linewidth=2,label='dL2C');
+ax2.semilogx(S.windows.centre,-dl3c.SZ,'-b',linewidth=2,label='dL3C');
+ax2.legend(fontsize=10);
+
+ax3 = fig2.add_subplot(2,2,4);
+ax3.semilogx(S.windows.centre,-dl1t.SZ,'-c',linewidth=2,label='dL1T');
+ax3.semilogx(S.windows.centre,-dl2t.SZ,'-m',linewidth=2,label='dL2T');
+ax3.legend(fontsize=10);
+
 plt.show(fig2);
+
 quit();
 

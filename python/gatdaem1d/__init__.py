@@ -1,5 +1,13 @@
 import os.path;
-from ctypes import *;
+import ctypes;
+from ctypes import c_char_p;
+from ctypes import c_void_p;
+from ctypes import c_int;
+from ctypes import c_double;
+from ctypes import Structure;
+from ctypes import POINTER;
+
+import numpy as np;
 import matplotlib.pyplot as plt;
 
 #Function to load the shared library
@@ -7,7 +15,7 @@ def load_library():
     #libname = os.path.dirname(os.path.realpath(__file__)) + "/gatdaem1d.so";
     libname = os.path.dirname(os.path.realpath(__file__)) + "\gatdaem1d.dll";
     print("Loading shared library ",libname);
-    lib = CDLL(libname)
+    lib = ctypes.CDLL(libname)
     return lib;
 
 #Load the shared library
@@ -16,18 +24,17 @@ tdlib = load_library();
 class Earth:
     """Earth Class"""
     def __init__(self, conductivity, thickness):
-        nl = len(conductivity);
-        self.conductivity = (c_double * nl)(*conductivity);
-        self.thickness    = (c_double * (nl-1))(*thickness);
+        assert len(conductivity) == 1 + len(thickness);
+        self.conductivity = np.array(conductivity,dtype=np.double,order='C');
+        self.thickness    = np.array(thickness,dtype=np.double,order='C');
 
     def nlayers(self):
-        return len(self.conductivity);
+        return self.conductivity.size;
 
     def print(self):
         print("nlayers      =",self.nlayers())
         print("conductivity =",self.conductivity[:]);
         print("thickness    =",self.thickness[:]);
-
 
 class Geometry(Structure):
     _fields_ = [("tx_height", c_double),
@@ -73,50 +80,63 @@ class Response(Structure):
     _fields_ = [("PX", c_double),
                 ("PY", c_double),
                 ("PZ", c_double),
-                ("SX", POINTER(c_double)),
-                ("SY", POINTER(c_double)),
-                ("SZ", POINTER(c_double))];
+                ("pSX", POINTER(c_double)),
+                ("pSY", POINTER(c_double)),
+                ("pSZ", POINTER(c_double))];
 
     def __init__(self, nwindows):
-        self.nwindows = nwindows;
         self.PX = c_double(0);
         self.PY = c_double(0);
         self.PZ = c_double(0);
-        self.SX = (c_double * nwindows)();
-        self.SY = (c_double * nwindows)();
-        self.SZ = (c_double * nwindows)();
+        self.SX = np.zeros(nwindows,dtype=np.double,order='C');
+        self.SY = np.zeros(nwindows,dtype=np.double,order='C');
+        self.SZ = np.zeros(nwindows,dtype=np.double,order='C');
+        self.pSX = np.ctypeslib.as_ctypes(self.SX);
+        self.pSY = np.ctypeslib.as_ctypes(self.SY);
+        self.pSZ = np.ctypeslib.as_ctypes(self.SZ);
 
     def print(self):
         print(" Window       SX               SY               SZ");
-        for i in range(0, self.nwindows):
+        for i in range(0, self.SX.size):
             print('{0:5d} {1:16.6e} {2:16.6e} {3:16.6e}'.format(i+1,self.SX[i],self.SY[i],self.SZ[i]));
 
 class Waveform:
     """Waveform Class"""
     def __init__(self, handle):
-        self.nasmaples = tdlib.nsamplesperwaveform(handle);
-        self.time      = (c_double * self.nasmaples)();
-        self.current   = (c_double * self.nasmaples)();
-        self.voltage   = (c_double * self.nasmaples)();
-        tdlib.waveform(handle,self.time,self.current,self.voltage);
+        n = tdlib.nsamplesperwaveform(handle);
+        self.time      = np.zeros(n,dtype=np.double,order='C');
+        self.current   = np.zeros(n,dtype=np.double,order='C');
+        self.voltage   = np.zeros(n,dtype=np.double,order='C');
+        tdlib.waveform(handle,
+            np.ctypeslib.as_ctypes(self.time),
+            np.ctypeslib.as_ctypes(self.current),
+            np.ctypeslib.as_ctypes(self.voltage));
+
+    def nsamples(self):
+        return self.time.size;
 
     def print(self):
-        print("Number of waveform samples = %d",self.nsamples);
-        for i in range(0, self.nsamples):
+        print("Number of waveform samples = ",self.nsamples());
+        for i in range(0, self.nsamples()):
             print('{0:5d} {1:10.8f} {2:10.8f}'.format(i+1,self.time[i],self.current[i]));
 
 class Windows:
     """Receiver Windows Class"""
     def __init__(self, handle):
-        self.nwindows = tdlib.nwindows(handle);
-        self.low      = (c_double * self.nwindows)();
-        self.high     = (c_double * self.nwindows)();
-        tdlib.windowtimes(handle,self.low,self.high);
-        self.centre = [sum(i)/2.0 for i in zip(self.low,self.high)];
+        n = tdlib.nwindows(handle);
+        self.low      = np.zeros(n,dtype=np.double,order='C');
+        self.high     = np.zeros(n,dtype=np.double,order='C');
+        tdlib.windowtimes(handle,
+            np.ctypeslib.as_ctypes(self.low),
+            np.ctypeslib.as_ctypes(self.high));
+        self.centre = (self.low+self.high)/2.0;
+
+    def nwindows(self):
+        return self.low.size;
 
     def print(self):
-        print("Number of windows =",self.nwindows);
-        for i in range(0, self.nwindows):
+        print("Number of windows = ",self.nwindows());
+        for i in range(0, self.nwindows()):
             print("{0:5d} {1:10.8f} {2:10.8f}".format(i+1,self.low[i],self.high[i]));
 
 ###########################
@@ -179,22 +199,29 @@ class TDAEMSystem:
     def waveform_windows_plot(self,fig):
         ax1 = fig.add_subplot(1,1,1);
         ax1.plot(self.waveform.time,self.waveform.current,'-k');
-        for i in range(0, self.windows.nwindows, 2):
+        for i in range(0, self.windows.nwindows(), 2):
             x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
             y=[0,0.1,0.1,0];
             ax1.plot(x,y,'-r');
-        for i in range(1, self.windows.nwindows, 2):
+        for i in range(1, self.windows.nwindows(), 2):
             x=[self.windows.low[i],self.windows.low[i],self.windows.high[i],self.windows.high[i]];
             y=[0,-0.1,-0.1,0];
             ax1.plot(x,y,'-b');
         plt.ylabel('Time (s)');
         plt.ylabel('Normalized Current (A)');
 
-    def forwardmodel(self,G,E,R):
-        tdlib.forwardmodel(self.handle,G,E.nlayers(),E.conductivity,E.thickness,R);
+    def nwindows(self):
+        return self.windows.nwindows();
 
-    def derivative(self,dtype,dlayer,R):
+    def forwardmodel(self,G,E):
+        R = Response(self.nwindows());
+        tdlib.forwardmodel(self.handle,G,E.nlayers(),np.ctypeslib.as_ctypes(E.conductivity),np.ctypeslib.as_ctypes(E.thickness),R);
+        return R;
+
+    def derivative(self,dtype,dlayer):
+        R = Response(self.nwindows());
         tdlib.derivative(self.handle,dtype,dlayer,R);
+        return R;
 
 #void setgeometry(void* hS, struct sTDEmGeometry G);
 #void setearth(void* hS, int nlayers, double* conductivity, double* thickness);
