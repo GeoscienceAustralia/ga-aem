@@ -9,11 +9,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <stdio.h>
 #include "tdemsystem.h"
 
-#ifndef TESTOUTSIDEMATLAB
 #define  EXPORT_FCNS
 #include "shrhelp.h"
-#endif
-
 #include "gatdaem1d.h"
 
 void* createhandle(const char* systemfile)
@@ -179,14 +176,4 @@ void fm_dlogc(void* hS,
 
 	}
 }
-
-
-
-
-
-
-
-
-
-
 

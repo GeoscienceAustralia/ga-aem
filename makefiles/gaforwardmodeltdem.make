@@ -32,7 +32,6 @@ objects = \
 	$(objdir)/general_utils.o \
 	$(objdir)/file_utils.o \
 	$(objdir)/tdemsystem.o \
-	$(objdir)/tdem1dmodel.o \
 	$(objdir)/gaforwardmodeltdem.o 
 
 $(objects): $(objdir)/%.o: $(srcdir)/%.cpp

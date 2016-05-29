@@ -11,13 +11,13 @@ from gatdaem1d import Response;
 #Construct the AEM system class instance
 #stmfile = "../../examples/bhmar-skytem/stmfiles/Skytem-HM.stm";
 stmfile  = "..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm";
-
 S = TDAEMSystem(stmfile);
 
 #Print the window times
 S.windows.print();
 
-if True:
+if False:
+    #Plot the waveform and window positions
     fig1 = plt.figure(1);
     #S.waveform.print(); #Too much printing
     S.waveform_windows_plot(fig1);
@@ -41,15 +41,16 @@ for i in range(10):
     conductivity[2] = 10**(random.uniform(-3, 0));
     thickness       = [40, 20];
     E = Earth(conductivity,thickness);
-    E.print();
     fm = S.forwardmodel(G,E);
 t2=time.clock()
-print("time = ",t2-t1);
+print("Time = ",t2-t1);
 
-#Set the earth nodel
+#Set another earth nodel
 conductivity = [0.005, 0.2, 0.01];
 thickness    = [20, 10];
 E = Earth(conductivity,thickness);
+print("\nEarth model");
+E.print();
 
 #Do a forward model
 print("\nForward model");
@@ -79,23 +80,25 @@ print("\nVertical dz distance derivative");
 ddz=S.derivative(S.ZDERIVATIVE,-1); ddz.print();
 
 
-fig2 = plt.figure(2);
-ax1 = plt.subplot2grid((2,2), (0,0), rowspan=2);
-ax1.loglog(S.windows.centre,-fm.SZ,'-k',linewidth=2,label='Forward model');
-ax1.legend(fontsize=10);
+if False:
+    #Plot the responses
+    fig2 = plt.figure(2);
+    ax1 = plt.subplot2grid((2,2), (0,0), rowspan=2);
+    ax1.loglog(S.windows.centre,-fm.SZ,'-k',linewidth=2,label='Forward model');
+    ax1.legend(fontsize=10);
 
-ax2 = fig2.add_subplot(2,2,2);
-ax2.semilogx(S.windows.centre,-dl1c.SZ,'-r',linewidth=2,label='dL1C');
-ax2.semilogx(S.windows.centre,-dl2c.SZ,'-g',linewidth=2,label='dL2C');
-ax2.semilogx(S.windows.centre,-dl3c.SZ,'-b',linewidth=2,label='dL3C');
-ax2.legend(fontsize=10);
+    ax2 = fig2.add_subplot(2,2,2);
+    ax2.semilogx(S.windows.centre,-dl1c.SZ,'-r',linewidth=2,label='dL1C');
+    ax2.semilogx(S.windows.centre,-dl2c.SZ,'-g',linewidth=2,label='dL2C');
+    ax2.semilogx(S.windows.centre,-dl3c.SZ,'-b',linewidth=2,label='dL3C');
+    ax2.legend(fontsize=10);
 
-ax3 = fig2.add_subplot(2,2,4);
-ax3.semilogx(S.windows.centre,-dl1t.SZ,'-c',linewidth=2,label='dL1T');
-ax3.semilogx(S.windows.centre,-dl2t.SZ,'-m',linewidth=2,label='dL2T');
-ax3.legend(fontsize=10);
+    ax3 = fig2.add_subplot(2,2,4);
+    ax3.semilogx(S.windows.centre,-dl1t.SZ,'-c',linewidth=2,label='dL1T');
+    ax3.semilogx(S.windows.centre,-dl2t.SZ,'-m',linewidth=2,label='dL2T');
+    ax3.legend(fontsize=10);
 
-plt.show(fig2);
+    plt.show(fig2);
 
 quit();
 

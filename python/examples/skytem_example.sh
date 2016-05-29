@@ -1,13 +1,12 @@
 #!/bin/bash
 
+module load gcc/5.2.0
+#module load openmpi/1.6.3
 #module load fftw3/3.3.3
+module load python3/3.3.0
+module load python3/3.3.0-matplotlib
 
-#export PYTHONPATH=/short/public/rcb547/apps/gaaem-1.0/python
-export PYTHONPATH=/short/public/rcb547/apps/gaaem-1.0/python/gatdaem1d
+export PYTHONPATH=/short/public/rcb547/apps/gaaem-1.0/python
 
-#export PATH=$PATH:/short/public/rcb547/apps/gaaem-1.0/python/bin/raijin/gnu
-#export PATH=$PATH:/short/public/rcb547/apps/gaaem-1.0/python/gatdaem1d
-#echo $PATH
-
-python skytem_example.py
+python3 skytem_example.py
 
