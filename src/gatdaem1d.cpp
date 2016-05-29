@@ -40,11 +40,11 @@ void waveform(void* hS, double* time, double* currentwaveform, double* voltagewa
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	for(size_t i=0; i<T.SamplesPerWaveform; i++){
 		time[i] = T.WaveformTime[i];
-		if(T.WaveformType == WAVEFORMTYPE_CURRENT){
+		if(T.WaveformType == WT_TX){
 			currentwaveform[i]  = T.WaveformCurrent[i];
 		}
 
-		if(T.WaveformType == WAVEFORMTYPE_RECEIVER){
+		if(T.WaveformType == WT_RX){
 			voltagewaveform[i]  = T.WaveformReceived[i];
 		}
 	}		
@@ -71,10 +71,10 @@ void windowtimes(void* hS, double* low, double* high)
 	}
 }
 
-void setgeometry(void* hS, struct sTDEmGeometry G)
-{		
+void setgeometry(void* hS, const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
+{
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	T.setgeometry(G);	
+	T.setgeometry(tx_height,tx_roll,tx_pitch,tx_yaw,txrx_dx,txrx_dy,txrx_dz,rx_roll,rx_pitch,rx_yaw);
 }
 
 void setearth(void* hS, int nlayers, double* conductivity, double* thickness)
@@ -83,10 +83,13 @@ void setearth(void* hS, int nlayers, double* conductivity, double* thickness)
 	T.Earth.setconductivitythickness(nlayers,conductivity,thickness);
 }
 
-void forwardmodel(void* hS, struct sTDEmGeometry G, int nlayers, double* conductivity, double* thickness, struct sTDEmResponseML* pR)
+void forwardmodel(void* hS,
+	const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw,
+	const int nlayers, const double* conductivity, const double* thickness,
+	double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
 {		
 	cTDEmSystem& T = *(cTDEmSystem*)hS;	
-	T.setgeometry(G);
+	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.Earth.setconductivitythickness(nlayers,conductivity,thickness);
 	T.setupcomputations();
 	T.Earth.calculation_type = CT_FORWARDMODEL;
@@ -96,17 +99,17 @@ void forwardmodel(void* hS, struct sTDEmGeometry G, int nlayers, double* conduct
 
 	size_t nw=T.NumberOfWindows;
 	size_t sz=sizeof(double)*nw;
-
-	sTDEmResponseML& R=*pR;
-	R.PX=T.PrimaryX;
-	R.PY=T.PrimaryY;
-	R.PZ=T.PrimaryZ;		
-	memcpy(R.SX,&(T.X[0]),sz);
-	memcpy(R.SY,&(T.Y[0]),sz);
-	memcpy(R.SZ,&(T.Z[0]),sz);
+	
+	*PX=T.PrimaryX;
+	*PY=T.PrimaryY;
+	*PZ=T.PrimaryZ;
+	memcpy(SX, T.X.data(), sz);
+	memcpy(SY, T.Y.data(), sz);
+	memcpy(SZ, T.Z.data(), sz);
 }
 
-void derivative(void* hS, int dtype, int dlayer, struct sTDEmResponseML* pR)
+void derivative(void* hS, int dtype, int dlayer,
+	double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
 {		
 	cTDEmSystem& T = *(cTDEmSystem*)hS;		
 	T.Earth.calculation_type = (eCalculationType)dtype;
@@ -116,20 +119,22 @@ void derivative(void* hS, int dtype, int dlayer, struct sTDEmResponseML* pR)
 
 	size_t nw=T.NumberOfWindows;
 	size_t sz=sizeof(double)*nw;
-
-	sTDEmResponseML& R=*pR;
-	R.PX=T.PrimaryX;
-	R.PY=T.PrimaryY;
-	R.PZ=T.PrimaryZ;
-	memcpy(R.SX,&(T.X[0]),sz);
-	memcpy(R.SY,&(T.Y[0]),sz);
-	memcpy(R.SZ,&(T.Z[0]),sz);
+	
+	*PX = T.PrimaryX;
+	*PY = T.PrimaryY;
+	*PZ = T.PrimaryZ;
+	memcpy(SX, T.X.data(), sz);
+	memcpy(SY, T.Y.data(), sz);
+	memcpy(SZ, T.Z.data(), sz);
 }
 
-void fm_dlogc(void* hS, struct sTDEmGeometry G, int nlayers, double* conductivity, double* thickness, double* R)
+void fm_dlogc(void* hS,
+	const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw,
+	const int nlayers, const double* conductivity, const double* thickness,
+	double* R)
 {				
 	cTDEmSystem& T = *(cTDEmSystem*)hS;				
-	T.setgeometry(G);
+	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.Earth.setconductivitythickness(nlayers,conductivity,thickness);		
 	T.setupcomputations();
 	T.Earth.calculation_type = CT_FORWARDMODEL;		
@@ -141,15 +146,15 @@ void fm_dlogc(void* hS, struct sTDEmGeometry G, int nlayers, double* conductivit
 	size_t sz=sizeof(double)*nw;
 	double* p = R;
 	*p=T.PrimaryX; p++;
-	memcpy(p,&(T.X[0]),sz); p+=nw;
+	memcpy(p,T.X.data(),sz); p+=nw;
 	*p=T.PrimaryY; p++;
-	memcpy(p,&(T.Y[0]),sz); p+=nw;
+	memcpy(p,T.Y.data(),sz); p+=nw;
 	*p=T.PrimaryZ; p++;			
-	memcpy(p,&(T.Z[0]),sz); p+=nw;	
+	memcpy(p,T.Z.data(),sz); p+=nw;	
 
 	for(size_t k=0;k<(size_t)nlayers;k++){
 		T.Earth.calculation_type = CT_CONDUCTIVITYDERIVATIVE;		
-		T.Earth.derivative_layer = (int)k;
+		T.Earth.derivative_layer = k;
 		T.setprimaryfields();	
 		T.setsecondaryfields();
 		

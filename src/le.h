@@ -153,9 +153,9 @@ class LE{
   //Utility
   void printearth();
   void initialise();
-  void setconductivitythickness(size_t nlayers, double* conductivity, double* thickness);
-  void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness);
-  void setlog10conductivitylog10thickness(size_t nlayers, double* log10conductivity, double* log10thickness);
+  void setconductivitythickness(const size_t nlayers, const double* conductivity, const double* thickness);
+  void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness);  
+  void setlog10conductivitylog10thickness(const size_t nlayers, const double* log10conductivity, const double* log10thickness);
 
   void setfrequencies(const std::vector<double>& frequencies);    
   double meanconductivity;

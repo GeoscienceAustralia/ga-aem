@@ -57,7 +57,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		
 	std::vector<rjMcMCNuisance> ntemplate;
 	std::vector<std::string> ninitial;
-	sTDEmGeometry  IG;	
+	cTDEmGeometry  IG;	
 	cOutputFileInfo OI;
 		
 	void initialise(const std::string& executable, const std::string& controlfilename);
@@ -80,7 +80,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	void writemapstofile();
 	void writechainstofile();
 
-	sTDEmGeometry getgeometry(const rjMcMC1DModel& m);
+	cTDEmGeometry getgeometry(const rjMcMC1DModel& m);
 	std::vector<double> collect(const sTDEmSystemInfo& S, const cTDEmSystem& T);	
 	std::vector<double> forwardmodel(const rjMcMC1DModel& m);		
 	double misfit(const std::vector<double>& g);

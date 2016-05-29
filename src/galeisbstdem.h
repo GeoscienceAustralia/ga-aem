@@ -134,6 +134,13 @@ public:
 	void parseoptions();
 	void parsecolumns();
 
+	static bool contains_non_numeric_characters(const std::string &str)
+	{
+		size_t pos = str.find_first_not_of("0123456789.+-eE ,\t");
+		if (pos == std::string::npos)return false;
+		else return true;
+	}
+
 	bool readnextrecord();
 	bool parserecord();
 
@@ -142,9 +149,8 @@ public:
 	void setup_data();
 	void setup_parameters();
 	void resize_matrices();	
-		
 	
-	void replacegeometry(const sTDEmGeometry& a, sTDEmGeometry& b);	
+	//void replacegeometry(const sTDEmGeometry& a, sTDEmGeometry& b);	
 	void initialise_sample();
 	void initialise_data();
 	void initialise_parameters();
@@ -153,7 +159,7 @@ public:
 	double doublevalue(const FieldDefinition& coldef);
 	std::vector<double> doublevector(const FieldDefinition& coldef, const size_t& n);
 	std::vector<int> intvector(const FieldDefinition& coldef, const size_t& n);	
-	sTDEmGeometry readgeometry(const std::vector<FieldDefinition>& gfd);	
+	cTDEmGeometry readgeometry(const std::vector<FieldDefinition>& gfd);	
 	void readsystemdata(size_t sysindex);
 			
 	void writeresult();	
@@ -206,11 +212,11 @@ public:
 			
 	sAirborneSampleId Id;
 	sAirborneSampleLocation Location; 	
-	sTDEmGeometry GI;
-	sTDEmGeometry GM;
-	sTDEmGeometry GR;
-	sTDEmGeometry GS;
-	sTDEmGeometry GTFR;
+	cTDEmGeometry GI;
+	cTDEmGeometry GM;
+	cTDEmGeometry GR;
+	cTDEmGeometry GS;
+	cTDEmGeometry GTFR;
 	cEarth1D EM;
 	cEarth1D ER;	
 	cEarth1D ES;	
@@ -312,10 +318,10 @@ public:
 
 	void dumptofile(const std::vector<double>& v, std::string path);
 	void dumptofile(const cEarth1D& e, std::string path);
-	void dumptofile(const sTDEmGeometry& g, std::string path);
+	void dumptofile(const cTDEmGeometry& g, std::string path);
 		
 	cEarth1D get_earth(const std::vector<double>& parameters);
-	sTDEmGeometry get_geometry(const std::vector<double>& parameters);	
+	cTDEmGeometry get_geometry(const std::vector<double>& parameters);	
 	void set_predicted();
 
 	

@@ -139,7 +139,7 @@ void debug(const char* msg)
 
 std::string strprint_va(const char* fmt, va_list vargs)
 {
-	size_t bufsize = 2048;
+	size_t bufsize = 8192;
 	std::string str;
 	str.resize(bufsize);
 
@@ -1241,6 +1241,15 @@ std::vector<double> linspace(const double x1, const double x2, const size_t n)
 		xi[i] += xi[i - 1] + dx;
 	}
 	return xi;
+};
+
+std::vector<double> log10space(const double x1, const double x2, const size_t n)
+{
+	vector<double> v = linspace(std::log10(x1), std::log10(x2), n);
+	for (size_t i = 0; i < n; i++){
+		v[i] = std::pow(10.0,v[i]);
+	}
+	return v;
 };
 
 bool filegetline(FILE* fp, std::string& str)

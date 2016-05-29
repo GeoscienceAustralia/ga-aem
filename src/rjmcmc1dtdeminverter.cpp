@@ -764,9 +764,9 @@ void rjmcmc1dTDEmInverter::writechainstofile()
 	fclose(fp);
 }
 
-sTDEmGeometry  rjmcmc1dTDEmInverter::getgeometry(const rjMcMC1DModel& m)
+cTDEmGeometry  rjmcmc1dTDEmInverter::getgeometry(const rjMcMC1DModel& m)
 {
-	sTDEmGeometry  OG = IG;
+	cTDEmGeometry  OG = IG;
 
 	bool angledistance = false;
 	double angle = 0.0;
@@ -846,7 +846,7 @@ std::vector<double> rjmcmc1dTDEmInverter::forwardmodel(const rjMcMC1DModel& m)
 	}
 
 	std::vector<double> t = m.getthicknesses();
-	sTDEmGeometry  G = getgeometry(m);
+	cTDEmGeometry  G = getgeometry(m);
 	std::vector<double> pred(ndata);
 
 	size_t di = 0;

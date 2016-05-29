@@ -308,7 +308,7 @@ bool bwrite(FILE* fp, const std::vector<T>& v){
 std::vector<float> dvec2fvec(std::vector<double>& vd);
 
 std::vector<double> linspace(const double x1, const double x2, const size_t n);
-
+std::vector<double> log10space(const double x1, const double x2, const size_t n);
 
 bool filegetline(FILE* fp, std::string& str);
 

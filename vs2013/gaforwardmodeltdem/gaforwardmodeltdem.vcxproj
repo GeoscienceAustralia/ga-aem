@@ -87,7 +87,6 @@
     <ClCompile Include="..\..\src\general_utils.cpp" />
     <ClCompile Include="..\..\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
-    <ClCompile Include="..\..\src\tdem1dmodel.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

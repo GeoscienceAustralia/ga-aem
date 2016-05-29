@@ -29,7 +29,7 @@
     <ClInclude Include="..\..\src\tdemsystem.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{6610ABFE-3E97-4F45-887C-C882873D6207}</ProjectGuid>
+    <ProjectGuid>{DF188472-9E4B-4F60-A96E-9D17134646B6}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>mltdem</RootNamespace>
     <ProjectName>gatdaem1d_python</ProjectName>
@@ -91,6 +91,12 @@
       <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>del $(OutDir)$(TargetName).lib
+del $(OutDir)$(TargetName).exp
+</Command>
+      <Message>Delete the .lib and .exp files</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -112,6 +118,14 @@
       <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>del $(OutDir)$(TargetName).lib
+del $(OutDir)$(TargetName).exp
+</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Delete the .lib and .exp files</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

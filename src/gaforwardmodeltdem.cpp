@@ -11,14 +11,14 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "le.h"
 #include "general_utils.h"
 #include "file_utils.h"
-#include "tdem1dmodel.h"
+//#include "tdem1dmodel.h"
 #include "blocklanguage.h"
 #include "tdemsystem.h"
 
 #define VERSION "1.0"
 int process(std::string controlfile);
-int parseinputrecord(const char* record, sTDEmGeometry& G, cEarth1D& E);
-int writeoutputrecord(FILE* fout, FILE* fhdr, size_t recnum, void* S, const sTDEmResponse& R);
+int parseinputrecord(const char* record, cTDEmGeometry& G, cEarth1D& E);
+int writeoutputrecord(FILE* fout, FILE* fhdr, size_t recnum, const cTDEmSystem& T, const cTDEmResponse& R);
 int writeheaderentry(FILE* fhdr, size_t recnum, const char* s, size_t& colnum, size_t nbands);
 
 int main(int argc, char* argv[])
@@ -53,7 +53,7 @@ int process(std::string controlfilename)
 
 	std::string sysfile = C.getstringvalue("Control.SystemFile");
 	printf("Opening AEM system file %s\n", sysfile.c_str());
-	void* S = tdem_create(sysfile.c_str());
+	cTDEmSystem T(sysfile.c_str());
 
 	std::string inputfile = C.getstringvalue("Control.InputModelFile");
 	std::string outputfile = C.getstringvalue("Control.OutputDataFile");
@@ -65,28 +65,21 @@ int process(std::string controlfilename)
 	FILE* fout = fileopen(outputfile, "w");
 	printf("Opening output header file %s\n", outputhdr.c_str());
 	FILE* fhdr = fileopen(outputhdr, "w");
-
-	sTDEmResponse R;
-	size_t nw = (size_t)tdem_nwindows(S);
-	R.SX.resize(nw);
-	R.SY.resize(nw);
-	R.SZ.resize(nw);
-
-
+	
+	cTDEmResponse R;	
 	size_t recnum = 1;
 	char* CurrentRecordStr = new char[5001];
 	while (fgets(CurrentRecordStr, 5000, fin) != NULL){
 		printf("Processing record %lu\n", recnum);
-		sTDEmGeometry G;
+		cTDEmGeometry G;
 		cEarth1D E;
 		parseinputrecord(CurrentRecordStr, G, E);
 		printf("%s", CurrentRecordStr);				
-		tdem_1Dmodel(S, G, E, R);				
-		writeoutputrecord(fout, fhdr, recnum, S, R);
+		T.forwardmodel(G, E, R);
+		writeoutputrecord(fout, fhdr, recnum, T, R);
 		recnum++;
 	};
-	printf("End of input\n");
-	tdem_delete(S);
+	printf("End of input\n");	
 	delete[]CurrentRecordStr;
 	fclose(fin);
 	fclose(fout);
@@ -94,7 +87,7 @@ int process(std::string controlfilename)
 	return 0;
 }
 
-int parseinputrecord(const char* record, sTDEmGeometry& G, cEarth1D& E)
+int parseinputrecord(const char* record, cTDEmGeometry& G, cEarth1D& E)
 {
 	std::vector<double> v = getdoublevector(record," ,\t\r\n");
 	G.tx_height = v[0];
@@ -127,20 +120,16 @@ int parseinputrecord(const char* record, sTDEmGeometry& G, cEarth1D& E)
 	return 0;
 }
 
-int writeoutputrecord(FILE* fout, FILE* fhdr, size_t recnum, void* S, const sTDEmResponse& R)
+int writeoutputrecord(FILE* fout, FILE* fhdr, size_t recnum, const cTDEmSystem& T, const cTDEmResponse& R)
 {
-
-	size_t colnum = 1;
-	cTDEmSystem* T = (cTDEmSystem*)S;
-
-	if (strcasecmp(T->OutputType, "dB/dt")){
-		writeheaderentry(fhdr, recnum, "X_Primary", colnum, 1);
-		fprintf(fout, " %15g", R.PX);
-		writeheaderentry(fhdr, recnum, "Y_Primary", colnum, 1);
-		fprintf(fout, " %15g", R.PY);
-		writeheaderentry(fhdr, recnum, "Z_Primary", colnum, 1);
-		fprintf(fout, " %15g", R.PZ);
-	}
+	size_t colnum = 1;	
+	
+	writeheaderentry(fhdr, recnum, "X_Primary", colnum, 1);
+	fprintf(fout, " %15g", R.PX);
+	writeheaderentry(fhdr, recnum, "Y_Primary", colnum, 1);
+	fprintf(fout, " %15g", R.PY);
+	writeheaderentry(fhdr, recnum, "Z_Primary", colnum, 1);
+	fprintf(fout, " %15g", R.PZ);
 
 	size_t nw = R.SX.size();
 	writeheaderentry(fhdr, recnum, "X_Secondary", colnum, nw);

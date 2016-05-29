@@ -15,6 +15,7 @@ xcopy %src%\file_utils.*
 xcopy %src%\gaforwardmodeltdem.*
 xcopy %src%\galeisbstdem.*
 xcopy %src%\garjmcmctdem.*
+xcopy %src%\gatdaem1d.*
 xcopy %src%\general_utils.*
 xcopy %src%\geometry3d.*
 xcopy %src%\le.*
@@ -22,7 +23,7 @@ xcopy %src%\matrix_ops.*
 xcopy %src%\random.*
 xcopy %src%\rjmcmc1d.*
 xcopy %src%\rjmcmc1dtdeminverter.*
-xcopy %src%\tdem1dmodel.*
+xcopy %src%\shrhelp.h
 xcopy %src%\tdemsystem.*
 xcopy %src%\vector_utils.*
 pause

@@ -67,14 +67,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>Z:\code\C++\shrlib\tdaem1d_shrlib;C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
-    <OutDir>..\..\matlab\bin\x64</OutDir>
+    <OutDir>..\..\matlab\bin\x64\</OutDir>
     <TargetExt>.mexw64</TargetExt>
     <TargetName>gatdaem1d_debug</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>Z:\code\C++\shrlib\tdaem1d_shrlib;C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
-    <OutDir>..\..\matlab\bin\x64</OutDir>
+    <OutDir>..\..\matlab\bin\x64\</OutDir>
     <TargetExt>.mexw64</TargetExt>
     <TargetName>gatdaem1d</TargetName>
   </PropertyGroup>
@@ -93,6 +93,14 @@
       <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>del $(OutDir)$(TargetName).lib
+del $(OutDir)$(TargetName).exp
+</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Delete the .exp and .lib files</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -114,6 +122,14 @@
       <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent>
+      <Command>del $(OutDir)$(TargetName).lib
+del $(OutDir)$(TargetName).exp
+</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Delete the .exp and .lib files</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

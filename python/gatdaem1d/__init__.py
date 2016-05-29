@@ -1,19 +1,17 @@
 import os.path;
+import matplotlib.pyplot as plt;
 import ctypes;
 from ctypes import c_char_p;
 from ctypes import c_void_p;
 from ctypes import c_int;
 from ctypes import c_double;
-from ctypes import Structure;
 from ctypes import POINTER;
-
 import numpy as np;
-import matplotlib.pyplot as plt;
+cptr = np.ctypeslib.as_ctypes;
 
 #Function to load the shared library
 def load_library():
-    #libname = os.path.dirname(os.path.realpath(__file__)) + "/gatdaem1d.so";
-    libname = os.path.dirname(os.path.realpath(__file__)) + "\gatdaem1d.dll";
+    libname = os.path.dirname(os.path.realpath(__file__)) + "/gatdaem1d";
     print("Loading shared library ",libname);
     lib = ctypes.CDLL(libname)
     return lib;
@@ -36,32 +34,21 @@ class Earth:
         print("conductivity =",self.conductivity[:]);
         print("thickness    =",self.thickness[:]);
 
-class Geometry(Structure):
-    _fields_ = [("tx_height", c_double),
-                ("tx_roll", c_double),
-                ("tx_pitch", c_double),
-                ("tx_yaw", c_double),
-                ("txrx_dx", c_double),
-                ("txrx_dy", c_double),
-                ("txrx_dz", c_double),
-                ("rx_roll", c_double),
-                ("rx_pitch", c_double),
-                ("rx_yaw", c_double)];
-    
+class Geometry:
     def __init__(self,tx_height=0,
                  tx_roll=0,tx_pitch=0,tx_yaw=0,
                  txrx_dx=0,txrx_dy=0,txrx_dz=0,
                  rx_roll=0,rx_pitch=0,rx_yaw=0):
-        self.tx_height = c_double(tx_height);
-        self.tx_roll   = c_double(tx_roll);
-        self.tx_pitch  = c_double(tx_pitch);
-        self.tx_yaw    = c_double(tx_yaw);
-        self.txrx_dx   = c_double(txrx_dx);
-        self.txrx_dy   = c_double(txrx_dy);
-        self.txrx_dz   = c_double(txrx_dz);        
-        self.rx_roll   = c_double(rx_roll);
-        self.rx_pitch  = c_double(rx_pitch);
-        self.rx_yaw    = c_double(rx_yaw);
+        self.tx_height = tx_height;
+        self.tx_roll   = tx_roll;
+        self.tx_pitch  = tx_pitch;
+        self.tx_yaw    = tx_yaw;
+        self.txrx_dx   = txrx_dx;
+        self.txrx_dy   = txrx_dy;
+        self.txrx_dz   = txrx_dz;
+        self.rx_roll   = rx_roll;
+        self.rx_pitch  = rx_pitch;
+        self.rx_yaw    = rx_yaw;
         
     def print(self):
         print("Tx height ",self.tx_height);
@@ -75,25 +62,16 @@ class Geometry(Structure):
         print("Rx pitch  ",self.rx_pitch);
         print("Rx yaw    ",self.rx_yaw);
         
-class Response(Structure):
+class Response:
     """Response Class"""
-    _fields_ = [("PX", c_double),
-                ("PY", c_double),
-                ("PZ", c_double),
-                ("pSX", POINTER(c_double)),
-                ("pSY", POINTER(c_double)),
-                ("pSZ", POINTER(c_double))];
 
     def __init__(self, nwindows):
-        self.PX = c_double(0);
-        self.PY = c_double(0);
-        self.PZ = c_double(0);
+        self.PX = np.double(0);
+        self.PY = np.double(0);
+        self.PZ = np.double(0);
         self.SX = np.zeros(nwindows,dtype=np.double,order='C');
         self.SY = np.zeros(nwindows,dtype=np.double,order='C');
         self.SZ = np.zeros(nwindows,dtype=np.double,order='C');
-        self.pSX = np.ctypeslib.as_ctypes(self.SX);
-        self.pSY = np.ctypeslib.as_ctypes(self.SY);
-        self.pSZ = np.ctypeslib.as_ctypes(self.SZ);
 
     def print(self):
         print(" Window       SX               SY               SZ");
@@ -107,10 +85,7 @@ class Waveform:
         self.time      = np.zeros(n,dtype=np.double,order='C');
         self.current   = np.zeros(n,dtype=np.double,order='C');
         self.voltage   = np.zeros(n,dtype=np.double,order='C');
-        tdlib.waveform(handle,
-            np.ctypeslib.as_ctypes(self.time),
-            np.ctypeslib.as_ctypes(self.current),
-            np.ctypeslib.as_ctypes(self.voltage));
+        tdlib.waveform(handle,cptr(self.time),cptr(self.current),cptr(self.voltage));
 
     def nsamples(self):
         return self.time.size;
@@ -124,11 +99,9 @@ class Windows:
     """Receiver Windows Class"""
     def __init__(self, handle):
         n = tdlib.nwindows(handle);
-        self.low      = np.zeros(n,dtype=np.double,order='C');
-        self.high     = np.zeros(n,dtype=np.double,order='C');
-        tdlib.windowtimes(handle,
-            np.ctypeslib.as_ctypes(self.low),
-            np.ctypeslib.as_ctypes(self.high));
+        self.low  = np.zeros(n,dtype=np.double,order='C');
+        self.high = np.zeros(n,dtype=np.double,order='C');
+        tdlib.windowtimes(handle,cptr(self.low),cptr(self.high));
         self.centre = (self.low+self.high)/2.0;
 
     def nwindows(self):
@@ -165,12 +138,16 @@ tdlib.nwindows.restype  = c_int;
 tdlib.windowtimes.argtypes = [c_void_p, POINTER(c_double), POINTER(c_double)];
 tdlib.windowtimes.restype  = None;
 
-#void forwardmodel(void* hS, struct sTDEmGeometry G, int nlayers, double* conductivity, double* thickness, struct sTDEmResponseML* pR);
-tdlib.forwardmodel.argtypes = [c_void_p, Geometry, c_int, POINTER(c_double), POINTER(c_double), POINTER(Response)];
+#void forwardmodel(void* hS,
+#	const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw,
+#	const int nlayers, const double* conductivity, const double* thickness,
+#	double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
+#{
+tdlib.forwardmodel.argtypes = [c_void_p,c_double,c_double,c_double,c_double,c_double,c_double,c_double,c_double,c_double,c_double,c_int, POINTER(c_double), POINTER(c_double), POINTER(c_double),POINTER(c_double),POINTER(c_double),POINTER(c_double),POINTER(c_double),POINTER(c_double)];
 tdlib.forwardmodel.restype  = None;
 
-#void derivative(void* hS, int dtype, int dlayer, struct sTDEmResponseML* pR);
-tdlib.derivative.argtypes = [c_void_p, c_int, c_int, POINTER(Response)];
+#void derivative(void* hS, int dtype, int dlayer, double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
+tdlib.derivative.argtypes = [c_void_p, c_int, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double)];
 tdlib.derivative.restype  = None;
 
 class TDAEMSystem:
@@ -215,17 +192,12 @@ class TDAEMSystem:
 
     def forwardmodel(self,G,E):
         R = Response(self.nwindows());
-        tdlib.forwardmodel(self.handle,G,E.nlayers(),np.ctypeslib.as_ctypes(E.conductivity),np.ctypeslib.as_ctypes(E.thickness),R);
+        tdlib.forwardmodel(self.handle,G.tx_height,G.tx_roll,G.tx_pitch,G.tx_yaw,G.txrx_dx,G.txrx_dy,G.txrx_dz,G.rx_roll,G.rx_pitch,G.rx_yaw,
+        E.nlayers(),cptr(E.conductivity),cptr(E.thickness),cptr(R.PX),cptr(R.PY),cptr(R.PZ),cptr(R.SX),cptr(R.SY),cptr(R.SZ));
         return R;
 
     def derivative(self,dtype,dlayer):
         R = Response(self.nwindows());
-        tdlib.derivative(self.handle,dtype,dlayer,R);
+        tdlib.derivative(self.handle,dtype,dlayer,cptr(R.PX),cptr(R.PY),cptr(R.PZ),cptr(R.SX),cptr(R.SY),cptr(R.SZ));
         return R;
 
-#void setgeometry(void* hS, struct sTDEmGeometry G);
-#void setearth(void* hS, int nlayers, double* conductivity, double* thickness);
-#void forwardmodel(void* hS, struct sTDEmGeometry G, int nlayers, double* conductivity, double* thickness, struct sTDEmResponseML* pR);
-#void derivative(void* hS, int dtype, int dlayer, struct sTDEmResponseML* pR);
-#void fm_dlogc(void* hS, struct sTDEmGeometry G, int nlayers, double* conductivity, double* thickness, double* R);
-#int nlayers(void* hS);

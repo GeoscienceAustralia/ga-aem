@@ -400,19 +400,6 @@ void cSBSInverter::resize_matrices()
 	JtWd  = MatrixDouble(nparam, ndata);
 	JtWdJ = MatrixDouble(nparam, nparam);	
 }
-void cSBSInverter::replacegeometry(const sTDEmGeometry& a, sTDEmGeometry& b)
-{
-	if (a.tx_height != cBlock::ud_double())b.tx_height = a.tx_height;
-	if (a.tx_roll != cBlock::ud_double())b.tx_roll = a.tx_roll;
-	if (a.tx_pitch != cBlock::ud_double())b.tx_pitch = a.tx_pitch;
-	if (a.tx_yaw != cBlock::ud_double())b.tx_yaw = a.tx_yaw;
-	if (a.txrx_dx != cBlock::ud_double())b.txrx_dx = a.txrx_dx;
-	if (a.txrx_dy != cBlock::ud_double())b.txrx_dy = a.txrx_dy;
-	if (a.txrx_dz != cBlock::ud_double())b.txrx_dz = a.txrx_dz;
-	if (a.rx_roll != cBlock::ud_double())b.rx_roll = a.rx_roll;
-	if (a.rx_pitch != cBlock::ud_double())b.rx_pitch = a.rx_pitch;
-	if (a.rx_yaw != cBlock::ud_double())b.rx_yaw = a.rx_yaw;
-}
 bool cSBSInverter::readnextrecord(){
 	if (DataFileRecord == 0){
 		//Skip header lines
@@ -430,9 +417,9 @@ bool cSBSInverter::readnextrecord(){
 			DataFileRecord++;
 		}
 	}
-	
-	bool status = filegetline(DataFilePointer, DataFileRecordString);
-	if (status == false)return status;
+		
+	bool status = filegetline(DataFilePointer, DataFileRecordString);	
+	if (status == false)return status;	
 	DataFileRecord++;
 	return true;
 }
@@ -453,16 +440,16 @@ bool cSBSInverter::parserecord()
 	Location.groundelevation = doublevalue(elevation);
 	Location.z      = doublevalue(altimeter);
 
-	sTDEmGeometry v;
+	cTDEmGeometry v;
 
 	GI = readgeometry(fd_GI);
 	GR = GI;
 	v = readgeometry(fd_GR);
-	replacegeometry(v, GR);
+	v.fillundefined(GR);
 
 	GTFR = GI;
 	v = readgeometry(fd_GTFR);
-	replacegeometry(v, GTFR);
+	v.fillundefined(GTFR);
 
 	GS = readgeometry(fd_GS);
 
@@ -972,9 +959,9 @@ cEarth1D cSBSInverter::get_earth(const std::vector<double>& parameters)
 	}
 	return e;
 }
-sTDEmGeometry cSBSInverter::get_geometry(const std::vector<double>& parameters)
+cTDEmGeometry cSBSInverter::get_geometry(const std::vector<double>& parameters)
 {
-	sTDEmGeometry& g = GI;
+	cTDEmGeometry& g = GI;
 	if (solve_tx_height)g.tx_height = parameters[tx_heightIndex];
 	if (solve_txrx_dx)g.txrx_dx = parameters[txrx_dxIndex];
 	if (solve_txrx_dy)g.txrx_dy = parameters[txrx_dyIndex];
@@ -1001,7 +988,7 @@ void cSBSInverter::set_predicted()
 void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vector<double>& predicted, bool computederivatives)
 {
 	cEarth1D      e = get_earth(parameters);
-	sTDEmGeometry g = get_geometry(parameters);
+	cTDEmGeometry g = get_geometry(parameters);
 	for (size_t si = 0; si < nsystems; si++){
 		cTDEmSystemInfo& S = SV[si];
 		cTDEmSystem& T = S.T;
@@ -1252,7 +1239,7 @@ void cSBSInverter::iterate()
 	
 	TerminationReason = "Has not terminated";
 	cEarth1D earth = get_earth(vParam);
-	sTDEmGeometry geometry = get_geometry(vParam);
+	cTDEmGeometry geometry = get_geometry(vParam);
 
 	bool keepiterating = true;	
 	size_t iteration = 0;
@@ -2022,9 +2009,9 @@ std::vector<double> cSBSInverter::doublevector(const FieldDefinition& cd, const 
 {
 	return cd.doublevector(DataFileFieldStrings, n);
 }
-sTDEmGeometry cSBSInverter::readgeometry(const std::vector<FieldDefinition>& gfd)
+cTDEmGeometry cSBSInverter::readgeometry(const std::vector<FieldDefinition>& gfd)
 {
-	sTDEmGeometry g;
+	cTDEmGeometry g;
 	g.tx_height = doublevalue(gfd[0]);
 	g.tx_roll = doublevalue(gfd[1]);
 	g.tx_pitch = doublevalue(gfd[2]);
@@ -2059,7 +2046,7 @@ void cSBSInverter::dumptofile(const cEarth1D& e, std::string path)
 	}
 	fclose(fp);
 }
-void cSBSInverter::dumptofile(const sTDEmGeometry& g, std::string path)
+void cSBSInverter::dumptofile(const cTDEmGeometry& g, std::string path)
 {
 	FILE* fp = fileopen(DumpPath + path, "w");
 	fprintf(fp, "tx_height\t%lf\n", g.tx_height);
@@ -2102,6 +2089,13 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 		record++;
 		if ((record - 1) % (Size) != Rank)continue;
 		
+		bool nonnumeric = I.contains_non_numeric_characters(I.DataFileRecordString);
+		if (nonnumeric){
+			rootmessage(I.fp_log, "Skipping non-numeric record at line %lu of Input DataFile %s\n", I.DataFileRecord,I.DataFileName.c_str());
+			rootmessage(I.fp_log, "\n%s\n\n", I.DataFileRecordString.c_str());
+			continue;
+		}
+
 		if (I.Dump){
 			FILE* fp = fileopen(I.DumpPath + "record.dat", "w");
 			fprintf(fp, "Record\t%lu", I.DataFileRecord);

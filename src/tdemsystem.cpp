@@ -75,14 +75,14 @@ void cTDEmSystem::createwaveform()
 
 	bool convert_B_2_dBdT = false;
 	bool convert_dBdT_2_B = false;
-	if (WaveformType == WAVEFORMTYPE_CURRENT){
-		if (strcasecmp(OutputType, "dB/dt") == 0){
+	if (WaveformType == WT_TX){
+		if (OutputType==OT_DBDT){
 			convert_B_2_dBdT = true;
 		}
 	}
 
-	if (WaveformType == WAVEFORMTYPE_RECEIVER){
-		if (strcasecmp(OutputType, "B") == 0){
+	if (WaveformType == WT_RX){
+		if (OutputType==OT_BFIELD){
 			convert_dBdT_2_B = true;
 		}
 	}
@@ -242,7 +242,7 @@ void cTDEmSystem::setup_splineinterp(const std::vector<double>& xn, const std::v
 	}
 
 }
-void cTDEmSystem::splineinterp()
+void cTDEmSystem::spline_interp()
 {
 	//y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;			
 	for (size_t k = 0; k < NumberOfSplinedFrequencies; k++){
@@ -254,21 +254,21 @@ void cTDEmSystem::splineinterp()
 		const size_t& khi = khi_spline[k];
 		const double& scale = (h2_spline[k]) / 6.0;
 
-		if (XOutputScaling != 0.0){
+		if (XScale != 0.0){
 			double rv, iv;
 			rv = (a*HxR[klo] + b*HxR[khi] + scale * (a3*HxR_spline[klo] + b3*HxR_spline[khi])),
 			iv = (a*HxI[klo] + b*HxI[khi] + scale * (a3*HxI_spline[klo] + b3*HxI_spline[khi]));
 			X_splined[k] = cdouble(rv, iv);
 		}
 
-		if (YOutputScaling != 0.0){
+		if (YScale != 0.0){
 			double rv, iv;
 			rv = (a*HyR[klo] + b*HyR[khi] + scale * (a3*HyR_spline[klo] + b3*HyR_spline[khi]));
 			iv = (a*HyI[klo] + b*HyI[khi] + scale * (a3*HyI_spline[klo] + b3*HyI_spline[khi]));
 			Y_splined[k] = cdouble(rv, iv);
 		}
 
-		if (ZOutputScaling != 0.0){
+		if (ZScale != 0.0){
 			double rv, iv;
 			rv = (a*HzR[klo] + b*HzR[khi] + scale * (a3*HzR_spline[klo] + b3*HzR_spline[khi]));
 			iv = (a*HzI[klo] + b*HzI[khi] + scale * (a3*HzI_spline[klo] + b3*HzI_spline[khi]));
@@ -281,11 +281,7 @@ void cTDEmSystem::setconductivitythickness(const std::vector<double>& conductivi
 {
 	Earth.setconductivitythickness(conductivity, thickness);
 }
-void cTDEmSystem::setgeometry(const sTDEmGeometry& g)
-{
-	setgeometry(g.tx_height, g.tx_pitch, g.tx_roll, g.rx_pitch, g.rx_roll, g.txrx_dx, g.txrx_dy, g.txrx_dz);
-}
-void cTDEmSystem::setgeometry(const double& tx_height, const double& tx_pitch, const double& tx_roll, const double& rx_pitch, const double& rx_roll, const double& txrx_dx, const double& txrx_dy, const double& txrx_dz)
+void cTDEmSystem::setgeometry(const cTDEmGeometry& g)
 {
 	//X = +ve in flight direction
 	//Y = +ve on left wing
@@ -296,22 +292,26 @@ void cTDEmSystem::setgeometry(const double& tx_height, const double& tx_pitch, c
 	//Left wing up is positive roll  Y->Z axis
 	//Nose down is positive pitch	 Z->X axis
 
-	TX_height = tx_height;
-	TX_pitch = tx_pitch;
-	TX_roll = tx_roll;
+	TX_height = g.tx_height;
+	TX_pitch = g.tx_pitch;
+	TX_roll = g.tx_roll;
 	TX_orientation = cVec(0.0, 0.0, 1.0);
 	if (TX_pitch != 0.0) TX_orientation = TX_orientation.rotate(TX_pitch, yaxis);
 	if (TX_roll != 0.0) TX_orientation = TX_orientation.rotate(TX_roll, xaxis);
 
-	TX_RX_separation = cVec(txrx_dx, txrx_dy, txrx_dz);
+	TX_RX_separation = cVec(g.txrx_dx, g.txrx_dy, g.txrx_dz);
 
 	Earth.setgeometry(Earth.pitchrolldipole(TX_pitch, TX_roll), TX_height, TX_RX_separation.x, TX_RX_separation.y, TX_height + TX_RX_separation.z);
 
-	RX_height = TX_height + txrx_dz;
-	RX_pitch = rx_pitch;
-	RX_roll = rx_roll;
+	RX_height = TX_height + g.txrx_dz;
+	RX_pitch = g.rx_pitch;
+	RX_roll = g.rx_roll;
 };
-
+void cTDEmSystem::setgeometry(const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
+{	
+	cTDEmGeometry g(tx_height,tx_roll,tx_pitch,tx_yaw,txrx_dx,txrx_dy,txrx_dz,rx_roll,rx_pitch,rx_yaw);
+	setgeometry(g);
+}
 void cTDEmSystem::setupcomputations()
 {
 	for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++){
@@ -325,25 +325,25 @@ void cTDEmSystem::setprimaryfields()
 	PrimaryY = Earth.Fields.t.p.y;
 	PrimaryZ = Earth.Fields.t.p.z;
 
+	if (OutputType == OT_DBDT){
+		//Must convert to dB/dt. This happens implicitly for the secondary via the waveform.
+		PrimaryX *= TX_PeakdIdT;
+		PrimaryY *= TX_PeakdIdT;
+		PrimaryZ *= TX_PeakdIdT;
+	}
+
 	if (RX_pitch != 0.0 || RX_roll != 0.0){
 		cVec field = cVec(PrimaryX, PrimaryY, PrimaryZ);
 		cVec rotatedfield = rotatetoreceiverorientation(field);
-
 		PrimaryX = rotatedfield.x;
 		PrimaryY = rotatedfield.y;
 		PrimaryZ = rotatedfield.z;
 	}
+			
+	PrimaryX *= XScale;
+	PrimaryY *= YScale;
+	PrimaryZ *= ZScale;
 
-	double sf = MUZERO*TX_LoopArea*TX_NumberOfTurns*TX_PeakCurrent;
-	PrimaryX *= (XOutputScaling*sf);
-	PrimaryY *= (YOutputScaling*sf);
-	PrimaryZ *= (ZOutputScaling*sf);
-
-	if (Earth.calculation_type == CT_FORWARDMODEL){
-		PrimaryXforward = PrimaryX;
-		PrimaryYforward = PrimaryY;
-		PrimaryZforward = PrimaryZ;
-	}
 }
 cVec cTDEmSystem::rotatetoreceiverorientation(cVec v)
 {
@@ -354,8 +354,6 @@ cVec cTDEmSystem::rotatetoreceiverorientation(cVec v)
 }
 void cTDEmSystem::setsecondaryfields()
 {
-	double factor = MUZERO*TX_NumberOfTurns*TX_PeakCurrent*TX_LoopArea;
-
 	//Computation for discrete frequencies 	
 	for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++){
 		Earth.dointegrals(fi);
@@ -366,8 +364,8 @@ void cTDEmSystem::setsecondaryfields()
 		cVec vr = cVec(x.real(), y.real(), z.real());
 		cVec vi = cVec(x.imag(), y.imag(), z.imag());
 
-		vr = factor * rotatetoreceiverorientation(vr);
-		vi = factor * rotatetoreceiverorientation(vi);
+		vr = rotatetoreceiverorientation(vr);
+		vi = rotatetoreceiverorientation(vi);
 
 		HxR[fi] = vr.x;
 		HxI[fi] = vi.x;
@@ -378,21 +376,21 @@ void cTDEmSystem::setsecondaryfields()
 	}
 
 	//Spline discreet frequencies		
-	if (XOutputScaling != 0.0){
+	if (XScale != 0.0){
 		spline(DiscreteFrequenciesLog10, HxR, 1e-30, 1e-30, HxR_spline);
 		spline(DiscreteFrequenciesLog10, HxI, 1e-30, 1e-30, HxI_spline);
 	}
-	if (YOutputScaling != 0.0){
+	if (YScale != 0.0){
 		spline(DiscreteFrequenciesLog10, HyR, 1e-30, 1e-30, HyR_spline);
 		spline(DiscreteFrequenciesLog10, HyI, 1e-30, 1e-30, HyI_spline);
 	}
-	if (ZOutputScaling != 0.0){
+	if (ZScale != 0.0){
 		spline(DiscreteFrequenciesLog10, HzR, 1e-30, 1e-30, HzR_spline);
 		spline(DiscreteFrequenciesLog10, HzI, 1e-30, 1e-30, HzI_spline);
 	}
 
 	//Interpolate 	
-	splineinterp();
+	spline_interp();
 	
 	if (SaveDiagnosticFiles){
 		write_discretefrequencies("diag_discretefrequencies.txt");
@@ -401,7 +399,7 @@ void cTDEmSystem::setsecondaryfields()
 	}
 
 	//Filter - splining only every second value (even index) of the Waveform filter is always zero	
-	if (XOutputScaling != 0.0){
+	if (XScale != 0.0){
 		size_t n = 0;
 		FFTWork = Transfer;
 		for (size_t k = 1; k < NumberOfFFTFrequencies; k += 2){
@@ -409,15 +407,15 @@ void cTDEmSystem::setsecondaryfields()
 			n++;
 		}
 		//Inverse FFT		
-		fftw_execute(fftwplan_backward);
-		double* t = (double*)&(FFTWork[0]);
-		computewindow(t, X);
+		fftw_execute(fftwplan_backward);		
+		computewindow((double*)FFTWork.data(), X);
 		if (SaveDiagnosticFiles){
 			write_timesseries("diag_xtimeseries.txt");
 		}
+		X *= XScale;
 	}
 
-	if (YOutputScaling != 0.0){
+	if (YScale != 0.0){
 		size_t n = 0;
 		FFTWork = Transfer;
 		for (size_t k = 1; k < NumberOfFFTFrequencies; k += 2){
@@ -425,15 +423,15 @@ void cTDEmSystem::setsecondaryfields()
 			n++;
 		}
 		//Inverse FFT		
-		fftw_execute(fftwplan_backward);
-		double* t = (double*)&(FFTWork[0]);
-		computewindow(t, Y);
+		fftw_execute(fftwplan_backward);		
+		computewindow((double*)FFTWork.data(), Y);
 		if (SaveDiagnosticFiles){
 			write_timesseries("diag_ytimeseries.txt");
 		}
+		Y *= YScale;
 	}
 
-	if (ZOutputScaling != 0.0){
+	if (ZScale != 0.0){
 		size_t n = 0;
 		FFTWork = Transfer;
 		for (size_t k = 1; k < NumberOfFFTFrequencies; k += 2){
@@ -441,34 +439,12 @@ void cTDEmSystem::setsecondaryfields()
 			n++;
 		}		
 		//Inverse FFT				
-		fftw_execute(fftwplan_backward);
-		double* t = (double*)&(FFTWork[0]);
-		computewindow(t, Z);
-
+		fftw_execute(fftwplan_backward);		
+		computewindow((double*)FFTWork.data(), Z);
 		if (SaveDiagnosticFiles){
 			write_timesseries("diag_ztimeseries.txt");
 		}
-	}
-
-	for (size_t w = 0; w < NumberOfWindows; w++){
-		X[w] *= XOutputScaling;
-		Y[w] *= YOutputScaling;
-		Z[w] *= ZOutputScaling;
-	}
-
-	if (strcasecmp(Normalisation, "PPM") == 0){
-		for (size_t w = 0; w < NumberOfWindows; w++){
-			X[w] /= 1e-6*PrimaryXforward;
-			Y[w] /= 1e-6*PrimaryYforward;
-			Z[w] /= 1e-6*PrimaryZforward;
-		}
-	}
-	else if (strcasecmp(Normalisation, "PP2M") == 0){
-		for (size_t w = 0; w < NumberOfWindows; w++){
-			X[w] /= 2e-6*PrimaryXforward;
-			Y[w] /= 2e-6*PrimaryYforward;
-			Z[w] /= 2e-6*PrimaryZforward;
-		}
+		Z *= ZScale;
 	}
 
 	if (SaveDiagnosticFiles){
@@ -657,7 +633,7 @@ void cTDEmSystem::initialise_windows_lineartaper()
 	}
 }
 
-void cTDEmSystem::computewindow(double* timeseries, std::vector<double>& W)
+void cTDEmSystem::computewindow(const double* timeseries, std::vector<double>& W)
 {
 	for (size_t w = 0; w < NumberOfWindows; w++){
 		W[w] = 0.0;
@@ -743,7 +719,7 @@ void cTDEmSystem::write_timesseries(const std::string& path)
 	fclose(fp);
 }
 
-void cTDEmSystem::forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const sTDEmGeometry& geometry)
+void cTDEmSystem::forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry)
 {
 	setconductivitythickness(conductivity, thickness);
 	setgeometry(geometry);
@@ -837,13 +813,13 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		errormessage("cTDEmSystem::readsystemdescriptorfile(): System Type is not Time Domain\n");
 	}
 	BaseFrequency = STM.getdoublevalue("Transmitter.BaseFrequency");
+	BasePeriod = 1.0 / BaseFrequency;
+	SampleFrequency = STM.getdoublevalue("Transmitter.WaveformDigitisingFrequency");
+
 	TX_NumberOfTurns = STM.getdoublevalue("Transmitter.NumberOfTurns");
 	TX_PeakCurrent = STM.getdoublevalue("Transmitter.PeakCurrent");
 	TX_LoopArea = STM.getdoublevalue("Transmitter.LoopArea");
-	SampleFrequency = STM.getdoublevalue("Transmitter.WaveformDigitisingFrequency");
-
-	BasePeriod = 1.0 / BaseFrequency;
-
+	
 	bool wavformdefined = false;
 
 	if (wavformdefined == false){
@@ -853,7 +829,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 			dmatrix wp = readwaveformfile(fpp.directory + path);
 			if (wp.size() > 0){
 				digitisewaveform(wp, WaveformTime, WaveformReceived);
-				WaveformType = WAVEFORMTYPE_RECEIVER;
+				WaveformType = WT_RX;
 				T_Waveform = WaveformReceived;
 				wavformdefined = true;
 			}
@@ -867,7 +843,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 			dmatrix wp = readwaveformfile(fpp.directory + path);
 			if (wp.size() > 0){
 				digitisewaveform(wp, WaveformTime, WaveformCurrent);
-				WaveformType = WAVEFORMTYPE_CURRENT;
+				WaveformType = WT_TX;
 				T_Waveform = WaveformCurrent;
 				wavformdefined = true;				
 			}
@@ -878,7 +854,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		dmatrix wp = STM.getdoublematrix("Transmitter.WaveformCurrent");
 		if (wp.size() > 0){
 			digitisewaveform(wp, WaveformTime, WaveformCurrent);
-			WaveformType = WAVEFORMTYPE_CURRENT;
+			WaveformType = WT_TX;
 			T_Waveform = WaveformCurrent;
 			wavformdefined = true;			
 		}
@@ -888,7 +864,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		dmatrix wp = STM.getdoublematrix("Transmitter.WaveformReceived");
 		if (wp.size() > 0){
 			digitisewaveform(wp, WaveformTime, WaveformReceived);
-			WaveformType = WAVEFORMTYPE_RECEIVER;
+			WaveformType = WT_RX;
 			T_Waveform = WaveformReceived;
 			wavformdefined = true;
 		}
@@ -907,9 +883,15 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		Earth.ModellingLoopRadius = 0.0;
 	}
 
-	OutputType = STM.getstringvalue("ForwardModelling.OutputType");
-	if (strcasecmp(OutputType, "B") != 0 && strcasecmp(OutputType, "dB/dt") != 0){
-		errormessage("cTDEmSystem::readsystemdescriptorfile(): OutputType %s unknown (must be \"B\" or \"dB/dt\")\n", OutputType.c_str());
+	std::string ot = STM.getstringvalue("ForwardModelling.OutputType");
+	if (strcasecmp(ot, "B") == 0){
+		OutputType = OT_BFIELD;
+	}
+	else if (strcasecmp(ot, "dB/dt") == 0){
+		OutputType = OT_DBDT;
+	}
+	else{		
+		errormessage("cTDEmSystem::readsystemdescriptorfile(): OutputType %s unknown (must be one of \"B\" or \"dB/dt\")\n", ot.c_str());
 	}
 
 	FrequenciesPerDecade = (size_t)STM.getintvalue("ForwardModelling.FrequenciesPerDecade");
@@ -918,13 +900,19 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 	}
 
 	Earth.NumAbscissa = (size_t)STM.getintvalue("ForwardModelling.NumberOfAbsiccaInHankelTransformEvaluation");
-	XOutputScaling = STM.getdoublevalue("ForwardModelling.XOutputScaling");
-	YOutputScaling = STM.getdoublevalue("ForwardModelling.YOutputScaling");
-	ZOutputScaling = STM.getdoublevalue("ForwardModelling.ZOutputScaling");
 
-	Normalisation = STM.getstringvalue("ForwardModelling.SecondaryFieldNormalisation");
-	if (strcasecmp(Normalisation, "None") != 0 && strcasecmp(Normalisation, "PPM") != 0 && strcasecmp(Normalisation, "PP2M") != 0){
-		errormessage("cTDEmSystem::readsystemdescriptorfile(): Normalisation %s unknown (must be \"None,PPM,PP2M\")\n", Normalisation.c_str());
+	std::string n = STM.getstringvalue("ForwardModelling.SecondaryFieldNormalisation");
+	if (strcasecmp(n, "None")==0){
+		Normalisation = NT_NONE;
+	}
+	else if (strcasecmp(n, "PPM") == 0){
+		Normalisation = NT_PPM;
+	}
+	else if (strcasecmp(n, "PP2M") == 0){
+		Normalisation = NT_PP2M;
+	}
+	else{	
+		errormessage("cTDEmSystem::readsystemdescriptorfile(): Normalisation %s unknown (must be one of \"None,PPM,PP2M\")\n", n.c_str());
 	}
 	
 	SaveDiagnosticFiles = STM.getboolvalue("ForwardModelling.SaveDiagnosticFiles");
@@ -947,6 +935,55 @@ void cTDEmSystem::systeminitialise()
 	createwaveform();
 	setupdiscretefrequencies();
 	setup_splines();
+	setup_scaling();	
+}
+
+double cTDEmSystem::compute_peak_didt()
+{
+	double maxdidt = 0.0;
+	for (size_t i = 1; i < WaveformCurrent.size(); i++){
+		double dt = WaveformTime[i] - WaveformTime[i - 1];
+		double dc = WaveformCurrent[i] - WaveformCurrent[i - 1];
+		double didt = std::fabs(dc / dt);
+		//double didt = (dc / dt);
+		if (didt > maxdidt) maxdidt = didt;
+	}
+	return maxdidt;
+}
+
+void cTDEmSystem::setup_scaling(){
+
+	TX_PeakdIdT = compute_peak_didt();
+	double txscale = MUZERO*TX_LoopArea*TX_NumberOfTurns*TX_PeakCurrent;
+	double xos = STM.getdoublevalue("ForwardModelling.XOutputScaling");
+	double yos = STM.getdoublevalue("ForwardModelling.YOutputScaling");
+	double zos = STM.getdoublevalue("ForwardModelling.ZOutputScaling");
+	
+	XScale  = txscale*xos;
+	YScale  = txscale*yos;
+	ZScale  = txscale*zos;
+	
+	if (Normalisation==NT_PPM || Normalisation==NT_PP2M){
+		cBlock b = STM.findblock("ReferenceGeometry");
+		if (b.Entries.size() == 0){
+			errormessage("cTDEmSystem::setup_ppm_normalisation(): Must define a ReferenceGeometry for PPM or PP2M normalisation\n");
+		}
+		NormalizationGeometry = cTDEmGeometry(b);
+		setgeometry(NormalizationGeometry);
+		setprimaryfields();
+
+		double s = 1.0;
+		if (Normalisation == NT_PPM)  s *= 1.0e6;
+		if (Normalisation == NT_PP2M) s *= 2.0e6;
+
+		if (PrimaryX == 0.0) XScale = 0.0;
+		else XScale  *= (s/PrimaryX);
+		if (PrimaryY == 0.0) YScale = 0.0;
+		else YScale  *= (s/PrimaryY);
+		if (PrimaryZ == 0.0) ZScale = 0.0;					
+		else ZScale  *=  (s/PrimaryZ);		
+	}
+		
 }
 
 void cTDEmSystem::setupdiscretefrequencies()
@@ -1055,4 +1092,20 @@ dmatrix cTDEmSystem::readwaveformfile(const std::string& filename)
 	fclose(fp);
 	return w;
 
+}
+
+void cTDEmSystem::forwardmodel(const cTDEmGeometry& G, const cEarth1D& E, cTDEmResponse& R)
+{	
+	setconductivitythickness(E.conductivity, E.thickness);
+	setgeometry(G);
+	setupcomputations();
+	setprimaryfields();
+	setsecondaryfields();
+
+	R.PX = PrimaryX;
+	R.PY = PrimaryY;
+	R.PZ = PrimaryZ;
+	R.SX = X;
+	R.SY = Y;
+	R.SZ = Z;	
 }
