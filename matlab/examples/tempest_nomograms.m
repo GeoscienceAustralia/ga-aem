@@ -1,7 +1,7 @@
 clc;
 clear all;
 
-%Add path to the tdaem1d_shrlib wrapper .m files and the shared library
+%Add path to the gatdaem1d wrapper .m files and the shared library
 addpath('..\bin\x64');
 addpath('..\gatdaem1d_functions');
 

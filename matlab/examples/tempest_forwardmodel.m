@@ -47,9 +47,14 @@ disp(num2str([R.SX R.SZ]));
 
 %%Plotting
 figure;
-hold on;
+hold on;box on;
 plot(S.wfm.time,S.wfm.current,'-r.','linewidth',2);
 t=S.wfm.time;dt=t(end)-t(1);xl = [t(1)-0.1*dt t(end)+0.1*dt];xlim(xl);ylim([-1.1 1.1]);
+for w=1:1:S.nw    
+    x=[S.wt.low(w) S.wt.high(w)];
+    y=[0.1 0.1] * sign(mod(w,2)-0.5);
+    plot(x,y,'g');
+end
 xlabel('Time (s)');
 ylabel('Normalised current (A)');
 

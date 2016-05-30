@@ -11,10 +11,10 @@ len = (nchan*ncomp*ncalc);
 
 D = zeros(1,len);
 pD = libpointer('doublePtr',D);
-calllib(libname,'fm_dlogc',hS,G,nlayers,E.conductivity,E.thickness,pD);
+calllib(libname,'fm_dlogc',hS,G.tx_height, G.tx_roll, G.tx_pitch, G.tx_yaw, G.txrx_dx, G.txrx_dy, G.txrx_dz, G.rx_roll, G.rx_pitch, G.rx_yaw, nlayers, E.conductivity, E.thickness, pD);
 D=get(pD,'Value');
 delete(pD);
-clear  pD;
+clear pD;
 
 D=reshape(D,[nchan,ncomp,ncalc]);
 w=2:nw+1;

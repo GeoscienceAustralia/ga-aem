@@ -36,7 +36,7 @@ for k=1:1:10
     G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
     
     %Setup earth
-    E.conductivity = [0.05 0.1 0.05 0.001];        
+    E.conductivity = [5.05 0.1 0.05 0.001];        
     E.thickness    = [20   50  20];        
             
     %LR = gatdaem1d_forwardmodel(LM.hS,G,E);
@@ -89,15 +89,27 @@ legend([h1 h2],'d(LM Z)/dlogC','d(HM Z)/dC');
 %%
 figure;
 subplot(2,1,1);
+hold on;box on;
 plot(LM.wfm.time,LM.wfm.current,'-r','linewidth',2);
 t=LM.wfm.time;dt=t(end)-t(1);xl = [t(1)-0.1*dt t(end)+0.1*dt];xlim(xl);
+for w=1:1:LM.nw    
+    x=[LM.wt.low(w) LM.wt.high(w)];
+    y=[0.1 0.1] * sign(mod(w,2)-0.5);
+    plot(x,y,'g');
+end
 xlabel('Time (s)');
 ylabel('Normalised current (A)');
 title('Low momemnt');
 
 subplot(2,1,2);
+hold on;box on;
 plot(HM.wfm.time,HM.wfm.current,'-b','linewidth',2);
 t=HM.wfm.time;dt=t(end)-t(1);xl = [t(1)-0.1*dt t(end)+0.1*dt];xlim(xl);
+for w=1:1:HM.nw    
+    x=[HM.wt.low(w) HM.wt.high(w)];
+    y=[0.1 0.1] * sign(mod(w,2)-0.5);
+    plot(x,y,'g');
+end
 xlabel('Time (s)');
 ylabel('Normalised current (A)');
 title('High momemnt');

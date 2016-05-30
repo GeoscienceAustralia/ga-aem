@@ -56,8 +56,8 @@ System Begin
 		WindowTimes End
 
 		LowPassFilter Begin
-			//Rx Coils 1st order at 300Khz 
-			//Rx Electronics 2nd order at 450Khz
+			//Rx Electronics 1st order at 300Khz 
+			//Rx Coils 2nd order at 450Khz
 			CutOffFrequency = 300000 450000
 			Order           = 1      2
 		LowPassFilter End

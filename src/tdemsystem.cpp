@@ -908,11 +908,11 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 	else if (strcasecmp(n, "PPM") == 0){
 		Normalisation = NT_PPM;
 	}
-	else if (strcasecmp(n, "PP2M") == 0){
-		Normalisation = NT_PP2M;
+	else if (strcasecmp(n, "PPMPEAKTOPEAK") == 0){
+		Normalisation = NT_PPM_PEAKTOPEAK;
 	}
 	else{	
-		errormessage("cTDEmSystem::readsystemdescriptorfile(): Normalisation %s unknown (must be one of \"None,PPM,PP2M\")\n", n.c_str());
+		errormessage("cTDEmSystem::readsystemdescriptorfile(): Normalisation %s unknown (must be one of \"None,PPM,PPMPEAKTOPEAK\")\n", n.c_str());
 	}
 	
 	SaveDiagnosticFiles = STM.getboolvalue("ForwardModelling.SaveDiagnosticFiles");
@@ -963,10 +963,10 @@ void cTDEmSystem::setup_scaling(){
 	YScale  = txscale*yos;
 	ZScale  = txscale*zos;
 	
-	if (Normalisation==NT_PPM || Normalisation==NT_PP2M){
+	if (Normalisation == NT_PPM || Normalisation == NT_PPM_PEAKTOPEAK){
 		cBlock b = STM.findblock("ReferenceGeometry");
 		if (b.Entries.size() == 0){
-			errormessage("cTDEmSystem::setup_ppm_normalisation(): Must define a ReferenceGeometry for PPM or PP2M normalisation\n");
+			errormessage("cTDEmSystem::setup_ppm_normalisation(): Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
 		}
 		NormalizationGeometry = cTDEmGeometry(b);
 		setgeometry(NormalizationGeometry);
@@ -974,7 +974,12 @@ void cTDEmSystem::setup_scaling(){
 
 		double s = 1.0;
 		if (Normalisation == NT_PPM)  s *= 1.0e6;
-		if (Normalisation == NT_PP2M) s *= 2.0e6;
+		if (Normalisation == NT_PPM_PEAKTOPEAK){
+			PrimaryX *= 2.0;
+			PrimaryY *= 2.0;
+			PrimaryZ *= 2.0;
+			s *= 1.0e6;
+		}
 
 		if (PrimaryX == 0.0) XScale = 0.0;
 		else XScale  *= (s/PrimaryX);

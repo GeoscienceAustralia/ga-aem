@@ -19,7 +19,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 enum eWaveFormType { WT_TX, WT_RX };
 enum eOutputType { OT_BFIELD, OT_DBDT};
-enum eNormalizationType { NT_NONE, NT_PPM, NT_PP2M};
+enum eNormalizationType { NT_NONE, NT_PPM, NT_PPM_PEAKTOPEAK};
 
 struct sTDEmNoiseModelComponent{	
 	double MultiplicativeNoise;
