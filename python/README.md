@@ -1,5 +1,5 @@
 #ga-aem/python
-======
+==============
 
   * Directory for the PYTHON(3) interface module gatdaem1d which contains time domain forward modelling and derivative functions.
 
@@ -7,7 +7,7 @@
   * ga-aem/python/gatdaem1d/
   * Contains the C/C++ code compiled into a shared library module  
   * The shared library (.so on linux or .dll on Windows) is called by PYTHON  
-  * The ,pyc file(s) contain the Python classes and functions  
+  * The __init__.py file contain the Python classes and functions
 
 ##Examples
   * ga-aem/python/examples
