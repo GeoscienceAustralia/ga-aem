@@ -3,7 +3,7 @@
 #This is an example PBS shell script for running on raijin.nci.org.au
 
 #PBS -P r17
-#PBS -q normal
+#PBS -q express
 #PBS -l ncpus=16
 #PBS -l mem=16GB
 #PBS -l walltime=01:00:00
@@ -13,7 +13,8 @@
 #PBS -e galeisbstdem.err
 #PBS -j oe
 
-cd $PBS_O_WORKDIR
-module load gaaem/1.0.beta
+module load ga-aem/1.0/gnu
+module list
+
 mpirun galeisbstdem.exe galeisbstdem.con
 

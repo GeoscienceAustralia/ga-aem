@@ -4,22 +4,11 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-#GNU compiler on raijin.nci.org.au
-cxx        = g++
-cxxflags   = -std=c++11 -O3 -Wall
-libs       = -L$(FFTW_DIR) -lfftw3
-exedir     = ../bin/raijin/gnu
-
-#Intel compiler on raijin.nci.org.au
-#cxx        = icpc
-#cxxflags   = -std=c++11 -O3 -Wall -diag-disable remark
-#libs       = -L$(FFTW_DIR) -lfftw3
-#exedir     = ../bin/raijin/intel
-
 srcdir     = ../src
 tntdir     = ../third_party/tnt
 objdir     = ./obj
 includes   = -I$(srcdir) -I$(tntdir)
+libs       = -L$(FFTW_DIR) -lfftw3
 executable = $(exedir)/gaforwardmodeltdem.exe
 
 all: compile link

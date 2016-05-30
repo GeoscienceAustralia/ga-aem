@@ -1,7 +1,19 @@
-import time;
-import random;
+# Displaying plots with plt.show() does not work on a remote connection
+# But does work on Windows and presumably on X11 displays
+# Can save a pdf on remote connection though
+
+display_plots = False;
+save_pdfs     = True;
+
+import matplotlib;
+if save_pdfs == True:
+    #Need to do this to save pdf plots when using remote connection
+    matplotlib.use("pdf");
+
 import matplotlib.pyplot as plt;
 
+import time;
+import random;
 from gatdaem1d import tdlib;
 from gatdaem1d import TDAEMSystem;
 from gatdaem1d import Earth;
@@ -16,12 +28,13 @@ S = TDAEMSystem(stmfile);
 #Print the window times
 S.windows.print();
 
-if False:
+if True:
     #Plot the waveform and window positions
     fig1 = plt.figure(1);
     #S.waveform.print(); #Too much printing
     S.waveform_windows_plot(fig1);
-    plt.show(fig1);
+    if display_plots: plt.show(fig1);
+    if save_pdfs: plt.savefig("figure1.pdf", dpi=300, facecolor='w', edgecolor='w',           orientation='portrait', papertype=None, format=None, transparent=False, bbox_inches=None, pad_inches=0.1, frameon=None);
 
 #Set the conductivity and thicknesses
 conductivity = [0.01, 0.1, 0.001];
@@ -80,7 +93,8 @@ print("\nVertical dz distance derivative");
 ddz=S.derivative(S.ZDERIVATIVE,-1); ddz.print();
 
 
-if False:
+
+if True:
     #Plot the responses
     fig2 = plt.figure(2);
     ax1 = plt.subplot2grid((2,2), (0,0), rowspan=2);
@@ -97,8 +111,8 @@ if False:
     ax3.semilogx(S.windows.centre,-dl1t.SZ,'-c',linewidth=2,label='dL1T');
     ax3.semilogx(S.windows.centre,-dl2t.SZ,'-m',linewidth=2,label='dL2T');
     ax3.legend(fontsize=10);
-
-    plt.show(fig2);
+    if display_plots: plt.show(fig2);
+    if save_pdfs: plt.savefig("figure2.pdf", dpi=300, facecolor='w', edgecolor='w', orientation='portrait', papertype=None, format=None, transparent=False, bbox_inches=None, pad_inches=0.1, frameon=None);
 
 quit();
 

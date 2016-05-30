@@ -4,24 +4,15 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-#GNU compiler on raijin.nci.org.au
-cxx        = g++
-cxxflags   = -std=c++11 -O3 -Wall -fPIC
-libs       = -L$(FFTW_DIR) -lfftw3
+cxxflags   += -fPIC
 ldflags    = -shared
-bindir     = ../matlab/bin/raijin/gnu
-
-#Intel compiler on raijin.nci.org.au
-#cxx        = icpc
-#cxxflags   = -std=c++11 -O3 -Wall -fPIC -diag-disable remark
-#libs       = -L$(FFTW_DIR) -lfftw3
-ldflags     = -shared
-#bindir     = ../matlab/bin/raijin/intel
+bindir     = ../matlab/bin/linux
 
 srcdir     = ../src
 tntdir     = ../third_party/tnt
 objdir     = ./obj
 includes   = -I$(srcdir) -I$(tntdir)
+libs       = -L$(FFTW_DIR) -lfftw3
 library    = $(bindir)/gatdaem1d.so
 
 all: compile link
@@ -55,3 +46,4 @@ clean:
 	@echo Cleaning
 	rm -f $(objects)
 	rm -f $(library)
+
