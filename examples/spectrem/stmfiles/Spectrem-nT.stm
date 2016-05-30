@@ -1,0 +1,57 @@
+System Begin
+	Name = Spectrem-nT
+	Type = Time Domain
+
+	Transmitter Begin
+		NumberOfTurns = 1
+		PeakCurrent   = 1
+		LoopArea      = 1
+		BaseFrequency = 25
+		WaveFormCurrent Begin
+			-0.0200000000000    0.0
+			-0.0199869791667    1.0
+			-0.0000130208333    1.0
+			 0.0000000000000    0.0
+			 0.0000130208333   -1.0
+			 0.0199869791667   -1.0
+			 0.0200000000000    0.0
+		WaveFormCurrent End
+		WaveformDigitisingFrequency = 1638400
+	Transmitter End
+
+	Receiver Begin
+
+		NumberOfWindows = 11
+		WindowWeightingScheme = Boxcar
+
+		WindowTimes Begin
+			0.0000065		0.0000195
+			0.0000260		0.0000391
+			0.0000521		0.0000911
+			0.0001042		0.0001953
+			0.0002083		0.0004036
+			0.0004167		0.0008203
+			0.0008333		0.0016536
+			0.0016667		0.0033203
+			0.0033333		0.0066536
+			0.0066667		0.0133203
+			0.0133333		0.0199870
+		WindowTimes End
+
+	Receiver End	
+
+	ForwardModelling Begin
+
+		OutputType = B
+
+		XOutputScaling = 1e9
+		YOutputScaling = 1e9
+		ZOutputScaling = 1e9
+		SecondaryFieldNormalisation  =  none
+
+		FrequenciesPerDecade = 6
+		NumberOfAbsiccaInHankelTransformEvaluation = 41
+
+	ForwardModelling End
+
+System End

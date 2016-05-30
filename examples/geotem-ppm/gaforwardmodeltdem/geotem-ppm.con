@@ -1,0 +1,6 @@
+Control Begin
+	SystemFile        = ../stmfiles/Geotem-ppm.stm
+	InputModelFile    = input_model_geotem-ppm.txt
+	OutputDataFile    = output_geotem-ppm.asc
+	OutputDataHeader  = output_geotem-ppm.hdr
+Control End

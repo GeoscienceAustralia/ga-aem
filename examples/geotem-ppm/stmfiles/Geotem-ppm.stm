@@ -1,0 +1,92 @@
+System Begin
+	Name = Geotem-ppm
+	Type = Time Domain
+	Transmitter Begin
+		NumberOfTurns = 1
+		PeakCurrent   = 1.0
+		LoopArea      = 1
+		BaseFrequency = 25
+		WaveFormCurrent Begin
+			-0.00410800  0.00000000
+			-0.00397962  0.09801714
+			-0.00385125  0.19509032
+			-0.00372287  0.29028468
+			-0.00359450  0.38268343
+			-0.00346612  0.47139674
+			-0.00333775  0.55557023
+			-0.00320937  0.63439328
+			-0.00308100  0.70710678
+			-0.00295262  0.77301045
+			-0.00282425  0.83146961
+			-0.00269587  0.88192126
+			-0.00256750  0.92387953
+			-0.00243912  0.95694034
+			-0.00231075  0.98078528
+			-0.00218237  0.99518473
+			-0.00205400  1.00000000
+			-0.00192562  0.99518473
+			-0.00179725  0.98078528
+			-0.00166887  0.95694034
+			-0.00154050  0.92387953
+			-0.00141212  0.88192126
+			-0.00128375  0.83146961
+			-0.00115537  0.77301045
+			-0.00102700  0.70710678
+			-0.00089863  0.63439328
+			-0.00077025  0.55557023
+			-0.00064188  0.47139674
+			-0.00051350  0.38268343
+			-0.00038513  0.29028468
+			-0.00025675  0.19509032
+			-0.00012838  0.09801714
+			 0.00000000  0.00000000
+			 0.00012838  0.00000000
+			 0.01589200  0.00000000
+		WaveFormCurrent End
+		WaveformDigitisingFrequency = 1638400
+	Transmitter End
+
+	Receiver Begin
+		NumberOfWindows = 16
+		WindowWeightingScheme = Boxcar
+		WindowTimes Begin
+			0.00027400	0.00043000
+			0.00043100	0.00058700
+			0.00058700	0.00074300
+			0.00074250	0.00105550
+			0.00105550	0.00136850
+			0.00136750	0.00183650
+			0.00183650	0.00230550
+			0.00230550	0.00293050
+			0.00293050	0.00371150
+			0.00371200	0.00465000
+			0.00464900	0.00574300
+			0.00574300	0.00699300
+			0.00699250	0.00855550
+			0.00855550	0.01043050
+			0.01043100	0.01293100
+			0.01293050	0.01574350
+		WindowTimes End
+	Receiver End
+
+	ForwardModelling Begin
+		OutputType = dB/dt
+		XOutputScaling = 1
+		YOutputScaling = 1
+		ZOutputScaling = 1
+		SecondaryFieldNormalisation  =  ppm
+		FrequenciesPerDecade = 6
+		NumberOfAbsiccaInHankelTransformEvaluation = 21
+	ForwardModelling End
+
+	ReferenceGeometry Begin
+		//This block is only required for normalization by PPM or PPMPEAKTOPEAK
+		//Specify the (estimated) geometry at which the primary field(s) that
+		//which the data are to be normalized by, was measured. Normalizatuion
+		//is by component. TX_HEIGHT is not relevant and unspecified geometry
+		//attributes (TX_ROLL, TX_PITCH, ...) values are taken to be zero.
+		TXRX_DX = -120
+		TXRX_DZ = -45
+	ReferenceGeometry End
+
+System End
