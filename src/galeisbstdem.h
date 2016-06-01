@@ -136,7 +136,7 @@ public:
 
 	static bool contains_non_numeric_characters(const std::string &str)
 	{
-		size_t pos = str.find_first_not_of("0123456789.+-eE ,\t");
+		size_t pos = str.find_first_not_of("0123456789.+-eE ,\t\r\n");
 		if (pos == std::string::npos)return false;
 		else return true;
 	}
