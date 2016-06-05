@@ -1,0 +1,6 @@
+Control Begin
+	SystemFile        = ../stmfiles/Spectrem-ppm.stm
+	InputModelFile    = input_model_spectrem.txt
+	OutputDataFile    = output_spectrem.asc
+	OutputDataHeader  = output_spectrem.hdr
+Control End

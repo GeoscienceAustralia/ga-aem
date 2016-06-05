@@ -6,8 +6,8 @@
 - Language:	mostly C++, some matlab, some python
 
 ## Releases
-### Release-20160603
-	- Added Python 3 interface for simple forward modelling and derivatives only.
+### Release-20160606
+	- Added Python 3.x interface for simple forward modelling and derivatives only.
 	- Added Matlab interface for simple forward modelling and derivatives only.
 	- Changed how the PPM normalisation is carried out. Now PPM normalisation is by directional-component-wise with respect to the maximum primary dB/dt or B-field at the receiver for a reference system geometry (which is usually estimated on a per flight or per survey basis). Previously PPM normalisation was with respect to the system geometry for the forward model being run.
 	- Added GEOTEM (1996 ppm system) and SPECTREM (ppm system) examples.
