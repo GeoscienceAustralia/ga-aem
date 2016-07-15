@@ -248,7 +248,19 @@ class cEarth1D{
 	public:
 	std::vector<double> conductivity;	
 	std::vector<double> thickness;
+
+	cEarth1D(const size_t nlayers){
+		conductivity.resize(nlayers);
+		thickness.resize(nlayers-1);
+	}
+
+	cEarth1D(const std::vector<double>& _conductivity, const std::vector<double>& _thickness){		
+		conductivity = _conductivity;
+		thickness    = _thickness;
+	}
+
 	size_t nlayers(){return conductivity.size();}
+
 	void print(){
 		for(size_t i=0; i<nlayers()-1; i++){
 			printf("%d\t%8.6lf\t%6.2lf\n",(int)i,conductivity[i],thickness[i]);
