@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2013 for Windows Desktop
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gaforwardmodeltdem", "..\gaforwardmodeltdem\gaforwardmodeltdem.vcxproj", "{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}"
 EndProject
@@ -24,6 +24,7 @@ Global
 		{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}.Release|x64.ActiveCfg = Release|x64
 		{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}.Release|x64.Build.0 = Release|x64
 		{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}.Release-nompi|x64.ActiveCfg = Release|x64
+		{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}.Release-nompi|x64.Build.0 = Release|x64
 		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Debug|x64.ActiveCfg = Debug|x64
 		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Release|x64.ActiveCfg = Release|x64
 		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Release|x64.Build.0 = Release|x64
@@ -33,14 +34,17 @@ Global
 		{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}.Release|x64.ActiveCfg = Release|x64
 		{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}.Release|x64.Build.0 = Release|x64
 		{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}.Release-nompi|x64.ActiveCfg = Release|x64
+		{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}.Release-nompi|x64.Build.0 = Release|x64
 		{6610ABFE-3E97-4F45-887C-C882873D6207}.Debug|x64.ActiveCfg = Debug|x64
 		{6610ABFE-3E97-4F45-887C-C882873D6207}.Release|x64.ActiveCfg = Release|x64
 		{6610ABFE-3E97-4F45-887C-C882873D6207}.Release|x64.Build.0 = Release|x64
 		{6610ABFE-3E97-4F45-887C-C882873D6207}.Release-nompi|x64.ActiveCfg = Release|x64
+		{6610ABFE-3E97-4F45-887C-C882873D6207}.Release-nompi|x64.Build.0 = Release|x64
 		{DF188472-9E4B-4F60-A96E-9D17134646B6}.Debug|x64.ActiveCfg = Debug|x64
 		{DF188472-9E4B-4F60-A96E-9D17134646B6}.Release|x64.ActiveCfg = Release|x64
 		{DF188472-9E4B-4F60-A96E-9D17134646B6}.Release|x64.Build.0 = Release|x64
 		{DF188472-9E4B-4F60-A96E-9D17134646B6}.Release-nompi|x64.ActiveCfg = Release|x64
+		{DF188472-9E4B-4F60-A96E-9D17134646B6}.Release-nompi|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

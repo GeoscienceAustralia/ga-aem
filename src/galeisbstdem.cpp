@@ -440,16 +440,11 @@ bool cSBSInverter::parserecord()
 	Location.groundelevation = doublevalue(elevation);
 	Location.z      = doublevalue(altimeter);
 
-	cTDEmGeometry v;
-
-	GI = readgeometry(fd_GI);
-	GR = GI;
-	v = readgeometry(fd_GR);
-	v.fillundefined(GR);
-
-	GTFR = GI;
-	v = readgeometry(fd_GTFR);
-	v.fillundefined(GTFR);
+	GI = readgeometry(fd_GI);	
+	GR = readgeometry(fd_GR);
+	GR.fillundefined(GI);	
+	GTFR = readgeometry(fd_GTFR);
+	GTFR.fillundefined(GI);
 
 	GS = readgeometry(fd_GS);
 
@@ -1223,9 +1218,10 @@ void cSBSInverter::iterate()
 	std::vector<double> gtemp(ndata);
 	std::vector<double> mtemp(nparam);	
 	double phidtemp, phimtemp, phictemp, phittemp, phigtemp, phistemp;
-
 	
 	vParam = vRefParam;
+	EM = get_earth(vParam);
+	GM = get_geometry(vParam);
 	forwardmodel(vParam, vPred, false);
 	LastPhiD = phiData(vPred);
 	LastPhiM = phiModel(vParam, phictemp, phittemp, phigtemp, phistemp);
@@ -1240,9 +1236,15 @@ void cSBSInverter::iterate()
 	TerminationReason = "Has not terminated";
 	cEarth1D earth = get_earth(vParam);
 	cTDEmGeometry geometry = get_geometry(vParam);
-
-	bool keepiterating = true;	
+	
 	size_t iteration = 0;
+	bool keepiterating = true;
+	//Check if starting model fits even before first iteration
+	if (LastPhiD <= MinimumPhiD){
+		keepiterating = false;		
+		TerminationReason = "Reached minimum";
+	}
+	
 	while (keepiterating == true){		
 		iteration++;
 		TargetPhiD = LastPhiD * 0.7;
@@ -1297,7 +1299,6 @@ void cSBSInverter::iterate()
 			TerminationReason = "Too many iterations";
 		}
 	}
-
 
 	forwardmodel(vParam, gtemp, true);
 	ParameterSensitivity = compute_parameter_sensitivity();

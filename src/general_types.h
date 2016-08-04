@@ -245,9 +245,12 @@ public:
 };
 
 class cEarth1D{ 
-	public:
+	
+public:
 	std::vector<double> conductivity;	
 	std::vector<double> thickness;
+	
+	cEarth1D(){};
 
 	cEarth1D(const size_t nlayers){
 		conductivity.resize(nlayers);

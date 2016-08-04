@@ -100,17 +100,17 @@ public:
 
 	void fillundefined(const cTDEmGeometry& g)
 	{
-		if (g.tx_height != cBlock::ud_double())tx_height = g.tx_height;
-		if (g.tx_roll != cBlock::ud_double())tx_roll = g.tx_roll;
-		if (g.tx_pitch != cBlock::ud_double())tx_pitch = g.tx_pitch;
-		if (g.tx_yaw != cBlock::ud_double())tx_yaw = g.tx_yaw;
-		if (g.txrx_dx != cBlock::ud_double())txrx_dx = g.txrx_dx;
-		if (g.txrx_dy != cBlock::ud_double())txrx_dy = g.txrx_dy;
-		if (g.txrx_dz != cBlock::ud_double())txrx_dz = g.txrx_dz;
-		if (g.rx_roll != cBlock::ud_double())rx_roll = g.rx_roll;
-		if (g.rx_pitch != cBlock::ud_double())rx_pitch = g.rx_pitch;
-		if (g.rx_yaw != cBlock::ud_double())rx_yaw = g.rx_yaw;
-	}
+		if (tx_height == cBlock::ud_double())tx_height = g.tx_height;
+		if (tx_roll == cBlock::ud_double())tx_roll = g.tx_roll;
+		if (tx_pitch == cBlock::ud_double())tx_pitch = g.tx_pitch;
+		if (tx_yaw == cBlock::ud_double())tx_yaw = g.tx_yaw;
+		if (txrx_dx == cBlock::ud_double())txrx_dx = g.txrx_dx;
+		if (txrx_dy == cBlock::ud_double())txrx_dy = g.txrx_dy;
+		if (txrx_dz == cBlock::ud_double())txrx_dz = g.txrx_dz;
+		if (rx_roll == cBlock::ud_double())rx_roll = g.rx_roll;		
+		if (rx_pitch == cBlock::ud_double())rx_pitch = g.rx_pitch;
+		if (rx_yaw == cBlock::ud_double())rx_yaw = g.rx_yaw;
+	}	
 };
 
 struct WindowSpecification{
