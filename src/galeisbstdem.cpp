@@ -1214,6 +1214,7 @@ void cSBSInverter::invert()
 }
 void cSBSInverter::iterate()
 {
+	//#develop
 	std::vector<double> dm(nparam);
 	std::vector<double> gtemp(ndata);
 	std::vector<double> mtemp(nparam);	
