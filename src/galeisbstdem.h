@@ -212,14 +212,15 @@ public:
 			
 	sAirborneSampleId Id;
 	sAirborneSampleLocation Location; 	
-	cTDEmGeometry GI;
-	cTDEmGeometry GM;
-	cTDEmGeometry GR;
-	cTDEmGeometry GS;
-	cTDEmGeometry GTFR;
-	cEarth1D EM;
-	cEarth1D ER;	
-	cEarth1D ES;	
+	cTDEmGeometry GI;//Input geometry	
+	cTDEmGeometry GR;//Reference model geometry
+	cTDEmGeometry GS;//Standard deviation geometry
+	cTDEmGeometry GTFR;//Total field reconstruction geometry
+	cTDEmGeometry GM;//Final inversion geometry
+	
+	cEarth1D ER;//Reference model earth
+	cEarth1D ES;//Standard deviation earth
+	cEarth1D EM;//Final inversion earth
 
 	bool solve_conductivity;
 	bool solve_thickness;	

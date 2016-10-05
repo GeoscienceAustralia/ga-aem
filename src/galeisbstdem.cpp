@@ -1207,107 +1207,75 @@ std::vector<double> cSBSInverter::compute_parameter_uncertainty()
 	}	
 	return s;
 }
+
 void cSBSInverter::invert()
 {
 	parserecord();
 	iterate();
 }
+
 void cSBSInverter::iterate()
-{
-	//#develop
-	std::vector<double> dm(nparam);
-	std::vector<double> gtemp(ndata);
-	std::vector<double> mtemp(nparam);	
-	double phidtemp, phimtemp, phictemp, phittemp, phigtemp, phistemp;
-	
+{		
+	double percentchange = 100.0;
 	vParam = vRefParam;
-	EM = get_earth(vParam);
-	GM = get_geometry(vParam);
-	forwardmodel(vParam, vPred, false);
-	LastPhiD = phiData(vPred);
-	LastPhiM = phiModel(vParam, phictemp, phittemp, phigtemp, phistemp);
-	LastPhiC = phictemp;
-	LastPhiT = phittemp;
-	LastPhiG = phigtemp;
-	LastPhiS = phistemp;
 	LastLambda = 1e8;
-	TargetPhiD = LastPhiD * 0.7;
-	LastIteration = 0;
-	
+	LastIteration = 0;	
+	LastPhiM   = phiModel(vParam, LastPhiC, LastPhiT, LastPhiG, LastPhiS);
 	TerminationReason = "Has not terminated";
-	cEarth1D earth = get_earth(vParam);
-	cTDEmGeometry geometry = get_geometry(vParam);
 	
-	size_t iteration = 0;
-	bool keepiterating = true;
-	//Check if starting model fits even before first iteration
-	if (LastPhiD <= MinimumPhiD){
-		keepiterating = false;		
-		TerminationReason = "Reached minimum";
-	}
-	
-	while (keepiterating == true){		
-		iteration++;
-		TargetPhiD = LastPhiD * 0.7;
-		if (TargetPhiD < MinimumPhiD)TargetPhiD = MinimumPhiD;
-
-		mtemp = vParam;
-		gtemp = vPred;
-		forwardmodel(mtemp, gtemp, true);
-
-		sTrial t = targetsearch(LastLambda, TargetPhiD);
-
-		dm = parameterchange(t.lambda);
-		mtemp = vParam + (t.stepfactor*dm);
-		forwardmodel(mtemp, gtemp, false);
-		phidtemp = phiData(gtemp);
-		phimtemp = phiModel(mtemp, phictemp, phittemp, phigtemp, phistemp);
-		double percentchange = 100.0*(LastPhiD - phidtemp) / (LastPhiD);
-
-		if (phidtemp < LastPhiD){
-			vParam = mtemp;
-			vPred  = gtemp;
-
-			EM = get_earth(vParam);
-			GM = get_geometry(vParam);
-
-			set_predicted();
-			LastPhiD = phidtemp;
-			LastPhiM = phimtemp;
-			LastPhiC = phictemp;
-			LastPhiT = phittemp;
-			LastPhiG = phigtemp;
-			LastPhiS = phistemp;
-			LastLambda = t.lambda;
-			LastIteration = iteration;
-
-			if (LastPhiD <= MinimumPhiD){
-				keepiterating = false;
-				TerminationReason = "Reached minimum";
-			}
-			else if (percentchange < MinimumImprovement){
-				keepiterating = false;
-				TerminationReason = "Small % improvement";
-			}
-		}
-		else{
-			keepiterating = false;
-			TerminationReason = "No improvement";
-		}
-
+	size_t iteration = 0;	
+	bool keepiterating = true;		
+	do{		
+		forwardmodel(vParam, vPred, true);
+		LastPhiD = phiData(vPred);
+		
 		if (iteration >= MaxIterations){
 			keepiterating = false;
-			TerminationReason = "Too many iterations";
+			TerminationReason = "Too many iterations";			
 		}
-	}
+		else if (LastPhiD <= MinimumPhiD){
+			keepiterating = false;
+			TerminationReason = "Reached minimum";			
+		}				
+		else if (percentchange < MinimumImprovement){
+			keepiterating = false;
+			TerminationReason = "Small % improvement";
+		}		
+		else{			
+			TargetPhiD = std::max(LastPhiD * 0.7, MinimumPhiD);
+			sTrial t = targetsearch(LastLambda, TargetPhiD);
 
-	forwardmodel(vParam, gtemp, true);
+			std::vector<double> dm    = parameterchange(t.lambda);
+			std::vector<double> mtemp = vParam + (t.stepfactor*dm);
+			std::vector<double> gtemp(ndata);
+			forwardmodel(mtemp, gtemp, false);
+			double phidtemp = phiData(gtemp);
+			percentchange = 100.0*(LastPhiD - phidtemp) / (LastPhiD);
+
+			if (phidtemp < LastPhiD){	
+				iteration++;
+				vParam = mtemp;
+				vPred  = gtemp;
+				LastPhiD = phidtemp;
+				LastLambda = t.lambda;
+				LastIteration = iteration;
+				LastPhiM = phiModel(vParam, LastPhiC, LastPhiT, LastPhiG, LastPhiS);								
+				//printf("%d %lf %lf %lf\n", LastIteration, LastLambda, LastPhiD, LastPhiM);
+			}	
+		}		
+	}
+	while (keepiterating == true);
+
+	EM = get_earth(vParam);
+	GM = get_geometry(vParam);
+	forwardmodel(vParam, vPred, true);	
+	set_predicted();
 	ParameterSensitivity = compute_parameter_sensitivity();
 	ParameterUncertainty = compute_parameter_uncertainty();
 
-	if (Dump){
-		dumptofile(earth, "earth_inv.dat");
-		dumptofile(geometry, "geometry_inv.dat");
+	if (Dump){		
+		dumptofile(EM, "earth_inv.dat");
+		dumptofile(GM, "geometry_inv.dat");
 		dumptofile(vPred, "predicted.dat");
 		FILE* fp = fileopen(DumpPath + "iteration.dat", "w");
 		fprintf(fp, "Iteration\t%lu\n", LastIteration);
