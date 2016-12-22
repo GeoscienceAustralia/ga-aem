@@ -3,6 +3,9 @@
   <PropertyGroup>
     <IncludePath>$(MATLABROOT)\extern\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(MATLABROOT)\extern\lib\win64\microsoft;$(LibraryPath)</LibraryPath>
+    <OutDir>
+    </OutDir>
+    <TargetExt>.mexw64</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

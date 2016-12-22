@@ -11,20 +11,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\blocklanguage.cpp" />
-    <ClCompile Include="..\..\src\file_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\gatdaem1d.cpp" />
-    <ClCompile Include="..\..\src\general_utils.cpp" />
-    <ClCompile Include="..\..\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\blocklanguage.h" />
-    <ClInclude Include="..\..\src\file_utils.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
     <ClInclude Include="..\..\src\gatdaem1d.h" />
-    <ClInclude Include="..\..\src\general_utils.h" />
-    <ClInclude Include="..\..\src\geometry3d.h" />
     <ClInclude Include="..\..\src\le.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
   </ItemGroup>
@@ -53,25 +53,25 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\ga-aem.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\ga-aem.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>Z:\code\C++\shrlib\tdaem1d_shrlib;C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
-    <OutDir>..\..\matlab\bin\x64</OutDir>
-    <TargetExt>.mexw64</TargetExt>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <OutDir>..\..\python\gatdaem1d</OutDir>
+    <TargetExt>.dll</TargetExt>
     <TargetName>gatdaem1d_debug</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>Z:\code\C++\shrlib\tdaem1d_shrlib;C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <OutDir>..\..\python\gatdaem1d</OutDir>
     <TargetExt>.dll</TargetExt>
     <TargetName>gatdaem1d</TargetName>
@@ -91,10 +91,13 @@
       <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent />
     <PostBuildEvent>
       <Command>del $(OutDir)$(TargetName).lib
 del $(OutDir)$(TargetName).exp
 </Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
       <Message>Delete the .lib and .exp files</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -118,6 +121,8 @@ del $(OutDir)$(TargetName).exp
       <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent />
+    <PostBuildEvent />
     <PostBuildEvent>
       <Command>del $(OutDir)$(TargetName).lib
 del $(OutDir)$(TargetName).exp

@@ -11,20 +11,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\blocklanguage.cpp" />
-    <ClCompile Include="..\..\src\file_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\gatdaem1d.cpp" />
-    <ClCompile Include="..\..\src\general_utils.cpp" />
-    <ClCompile Include="..\..\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\blocklanguage.h" />
-    <ClInclude Include="..\..\src\file_utils.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
     <ClInclude Include="..\..\src\gatdaem1d.h" />
-    <ClInclude Include="..\..\src\general_utils.h" />
-    <ClInclude Include="..\..\src\geometry3d.h" />
     <ClInclude Include="..\..\src\le.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
   </ItemGroup>
@@ -53,30 +53,28 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\ga-aem.props" />
     <Import Project="..\propertysheets\matlab.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\ga-aem.props" />
     <Import Project="..\propertysheets\matlab.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>Z:\code\C++\shrlib\tdaem1d_shrlib;C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
-    <OutDir>..\..\matlab\bin\x64\</OutDir>
-    <TargetExt>.mexw64</TargetExt>
+    <IncludePath>C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
     <TargetName>gatdaem1d_debug</TargetName>
+    <OutDir>..\..\matlab\bin\x64\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>Z:\code\C++\shrlib\tdaem1d_shrlib;C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
-    <OutDir>..\..\matlab\bin\x64\</OutDir>
-    <TargetExt>.mexw64</TargetExt>
+    <IncludePath>C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
     <TargetName>gatdaem1d</TargetName>
+    <OutDir>..\..\matlab\bin\x64\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -90,16 +88,18 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent />
+    <PostBuildEvent />
     <PostBuildEvent>
       <Command>del $(OutDir)$(TargetName).lib
 del $(OutDir)$(TargetName).exp
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Delete the .exp and .lib files</Message>
+      <Message>Delete the .lib and .exp files</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -119,16 +119,18 @@ del $(OutDir)$(TargetName).exp
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PostBuildEvent />
+    <PostBuildEvent />
     <PostBuildEvent>
       <Command>del $(OutDir)$(TargetName).lib
 del $(OutDir)$(TargetName).exp
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Delete the .exp and .lib files</Message>
+      <Message>Delete the .lib and .exp files</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

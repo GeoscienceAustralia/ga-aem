@@ -4,10 +4,10 @@
     <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp">
+    <ClCompile Include="..\..\src\ctlinedata2sgrid.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\gatdaem1d.cpp">
+    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp">
@@ -16,23 +16,8 @@
     <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\le.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\tdemsystem.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\le.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\tdemsystem.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\gatdaem1d.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -48,10 +33,10 @@
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Headers">
-      <UniqueIdentifier>{091f22ee-c67e-456f-81e3-124a65625ab4}</UniqueIdentifier>
+      <UniqueIdentifier>{125bca9e-7e48-41b6-9c0d-74b423f213a4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source">
-      <UniqueIdentifier>{48423c18-9f79-4f2c-b22a-a08e7890417a}</UniqueIdentifier>
+      <UniqueIdentifier>{f3284823-c7f8-4707-8239-d3b082ca7cc0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

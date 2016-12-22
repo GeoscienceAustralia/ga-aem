@@ -35,15 +35,15 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\x64.props" />
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\ga-aem.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\x64.props" />
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\ga-aem.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -84,18 +84,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\blocklanguage.cpp" />
-    <ClCompile Include="..\..\src\fielddefinition.cpp" />
-    <ClCompile Include="..\..\src\file_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\fielddefinition.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\matrix_ops.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\random.cpp" />
     <ClCompile Include="..\..\src\garjmcmctdem.cpp" />
-    <ClCompile Include="..\..\src\general_utils.cpp" />
-    <ClCompile Include="..\..\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
-    <ClCompile Include="..\..\src\matrix_ops.cpp" />
-    <ClCompile Include="..\..\src\random.cpp" />
     <ClCompile Include="..\..\src\rjmcmc1d.cpp" />
     <ClCompile Include="..\..\src\rjmcmc1dtdeminverter.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\fielddefinition.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\matrix_ops.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\random.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

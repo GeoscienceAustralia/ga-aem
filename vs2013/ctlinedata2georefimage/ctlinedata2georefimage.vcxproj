@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}</ProjectGuid>
+    <ProjectGuid>{BC29E294-2FFF-45E2-BDF1-6D98691142D6}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>gaforwardmodeltdem</RootNamespace>
+    <RootNamespace>ctlinedata2georefimage</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -34,12 +34,10 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\fftw.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\fftw.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -84,16 +82,12 @@
     <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
     <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
-    <ClCompile Include="..\..\src\gaforwardmodeltdem.cpp" />
-    <ClCompile Include="..\..\src\le.cpp" />
-    <ClCompile Include="..\..\src\tdemsystem.cpp" />
+    <ClCompile Include="..\..\src\ctlinedata2georefimage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
     <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
     <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}</ProjectGuid>
+    <ProjectGuid>{D255C3C7-D023-48E9-BEFB-89BD0E34E631}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>gaforwardmodeltdem</RootNamespace>
+    <RootNamespace>galeisbsfdem</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -34,12 +34,14 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\x64.props" />
+    <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\x64.props" />
+    <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -55,7 +57,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MPI_ENABLED;WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -64,14 +66,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PreprocessorDefinitions>_MPI_ENABLED;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -82,18 +82,26 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\fielddefinition.cpp" />
     <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
-    <ClCompile Include="..\..\src\gaforwardmodeltdem.cpp" />
-    <ClCompile Include="..\..\src\le.cpp" />
-    <ClCompile Include="..\..\src\tdemsystem.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\matrix_ops.cpp" />
+    <ClCompile Include="..\..\..\cpp-utils\src\rollpitchyaw.cpp" />
+    <ClCompile Include="..\..\src\fdemsystem.cpp" />
+    <ClCompile Include="..\..\src\galeisbsfdem.cpp" />
+    <ClCompile Include="..\..\src\layeredearthmodeller.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\cpp-utils\src\asciicolumnfile.h" />
     <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\fielddefinition.h" />
     <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
     <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\matrix_ops.h" />
+    <ClInclude Include="..\..\..\cpp-utils\src\rollpitchyaw.h" />
+    <ClInclude Include="..\..\src\fdemsystem.h" />
+    <ClInclude Include="..\..\src\galeisbsfdem.h" />
+    <ClInclude Include="..\..\src\layeredearthmodeller.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
