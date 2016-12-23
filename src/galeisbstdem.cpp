@@ -37,6 +37,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 	omp_lock_t fftw_thread_lock;
 #endif
 
+FILE* global_log_file = NULL;
+
 int triallambdacompare(const void *pa, const void *pb)
 {
 	const sTrial& a = *((sTrial*)pa);
