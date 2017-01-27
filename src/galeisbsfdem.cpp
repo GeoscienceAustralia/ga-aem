@@ -962,7 +962,7 @@ void FDEmSampleInverter::invert()
 {
 	if (Dump){
 		FILE* fp = fileopen(DumpPath + "record.dat", "w");
-		fprintf(fp, "Record\t%d", DataFileRecord);
+		fprintf(fp, "Record\t%lu", DataFileRecord);
 		fclose(fp);
 	}
 

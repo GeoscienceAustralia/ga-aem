@@ -4,7 +4,6 @@
 module load openmpi/1.6.3
 module load fftw3/3.3.3   #required for forward modelling and inversion
 module load petsc/3.4.3   #required for galeiallatonce only
-module load petsc/3.4.3   #required for galeiallatonce only
 module load gdal/1.11.1   #required for ctlinedata2slicegrids only
 
 #Set the directory path for dependencies
@@ -28,13 +27,18 @@ export mpicxx=mpiCC
 export cxxflags='-std=c++11 -O3 -Wall -diag-disable remark'
 export exedir='../bin/raijin/intel'
 
-make -f gaforwardmodeltdem.make allclean
-make -f gatdaem1d_python.make allclean
-make -f gatdaem1d_matlab.make allclean
-make -f galeisbstdem.make allclean
-make -f garjmcmctdem.make allclean
-make -f galeiallatonce.make allclean
-make -f ctlinedata2sgrid.make allclean
-make -f ctlinedata2slicegrids.make allclean
-make -f example_forward_model.make allclean
+
+#make -f example_forward_model.make allclean
+#make -f gaforwardmodeltdem.make allclean
+#make -f gatdaem1d_python.make allclean
+#make -f gatdaem1d_matlab.make allclean
+
+#make -f galeisbstdem.make allclean
+#make -f garjmcmctdem.make allclean
+#make -f galeiallatonce.make allclean
+
+#make -f ctlinedata2sgrid.make allclean
+#make -f ctlinedata2slicegrids.make allclean
+
+make -f galeisbsfdem.make allclean
 
