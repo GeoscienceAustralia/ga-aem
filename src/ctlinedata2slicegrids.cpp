@@ -28,6 +28,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #define VERSION "1.0"
 using namespace std;
 
+FILE* global_log_file = NULL;
+
 class cGridOptions{
 
 public:	
@@ -62,14 +64,12 @@ public:
 
 	void setextents(const std::vector<double>& x, const std::vector<double>& y){
 
-		double t1 = gettime();
 		auto result = std::minmax_element(x.begin(), x.end());
 		xmin = *result.first;
 		xmax = *result.second;
 		result = std::minmax_element(y.begin(), y.end());
 		ymin = *result.first;
 		ymax = *result.second;
-		double t2 = gettime();
 		
 		xmin = rounddownnearest(xmin, cellsize) - cellsize / 2.0;
 		xmax = roundupnearest(xmax, cellsize) + cellsize / 2.0;
@@ -185,7 +185,7 @@ public:
 
 	std::vector<std::vector<double>> interpretstrides(const std::string& str){
 		double x1, dx, x2;
-		int n = sscanf(str.c_str(), "%lf:%lf:%lf", &x1, &dx, &x2);
+		sscanf(str.c_str(), "%lf:%lf:%lf", &x1, &dx, &x2);
 		std::vector<std::vector<double>> m;
 
 		if (x1 <= x2){
@@ -397,12 +397,12 @@ public:
 			std::vector<double> v;
 			A.getfield(findex_c, v);
 			if (haveconductivity){
-				for (int i = 0; i < nlayers; i++){
+				for (int i = 0; i < (int) nlayers; i++){
 					cdata[i].push_back(cscale*v[i]);
 				}
 			}
 			else{
-				for (int i = 0; i < nlayers; i++){
+				for (int i = 0; i < (int) nlayers; i++){
 					cdata[i].push_back(1.0/(rscale*v[i]));
 				}
 			}
@@ -410,14 +410,14 @@ public:
 			std::vector<double> w;
 			A.getfield(findex_d, w);
 			if (havedepth){
-				for (int i = 0; i < nlayers; i++){
+				for (int i = 0; i < (int) nlayers; i++){
 					ddata[i].push_back(w[i]);
 				}
 			}
 			else if(havethickness){
 				double sum = 0.0;
 				ddata[0].push_back(sum);
-				for (int i = 0; i < nlayers-1; i++){
+				for (int i = 0; i < (int) nlayers-1; i++){
 					sum += w[i];
 					ddata[i+1].push_back(sum);
 				}
@@ -425,7 +425,7 @@ public:
 			else if (haveelevationtop){
 				double sum = 0.0;
 				ddata[0].push_back(sum);				
-				for (int i = 0; i < nlayers - 1; i++){
+				for (int i = 0; i < (int) nlayers - 1; i++){
 					sum += w[i]-w[i+1];
 					ddata[i + 1].push_back(sum);
 				}

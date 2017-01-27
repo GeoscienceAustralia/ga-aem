@@ -12,7 +12,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cstring>
 #include <vector>
 #include <iostream>
+#include <stdexcept>
 #include <mpi.h>
+
 
 #include "radius_searcher.h"
 
@@ -281,7 +283,14 @@ public:
 
 		bool status;
 		status = b.getvalue("InvertTotalField", InvertTotalField);
+		if (status == false){
+			InvertTotalField = false;
+		}
+
 		status = b.getvalue("ReconstructPrimaryFieldFromInputGeometry", ReconstructPrimaryFieldFromInputGeometry);
+		if (status == false){
+			ReconstructPrimaryFieldFromInputGeometry = false;
+		}
 
 		Comp[0] = cComponentInfo(b.findblock("XComponent"), nw);
 		Comp[1] = cComponentInfo(b.findblock("YComponent"), nw);
@@ -490,9 +499,19 @@ public:
 	cInputOptions(){};
 
 	cInputOptions(const cBlock& b){
+
 		bool status;
+		
 		status = b.getvalue("HeaderLines", HeaderLines);
+		if (status == false){
+			HeaderLines = 0;
+		}
+
 		status = b.getvalue("Subsample", SubSample);
+		if (status == false){
+			SubSample = 1;
+		}
+
 		if (b.getvalue("DataFile", DataFile) == false){
 			rootmessage(mylogfile, "Input DataFile was not specified\n");
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
@@ -674,22 +693,43 @@ public:
 
 	cAllAtOnceInverter(int argc, char** argv)
 	{
-		cStopWatch stopwatch;
+		if(argc < 2){
+			rootmessage("Usage: %s control_file_name\n", argv[0]);
+			rootmessage("Too few command line arguments\n");
+			exit(1);
+		}
+		else if(argc > 2){
+			rootmessage("Usage: %s control_file_name\n", argv[0]);
+			rootmessage("Too many command line arguments\n");
+			exit(1);
+		}
 
-		mpipname = mpienv.pname;
+		cStopWatch stopwatch;
+		mpipname = mpienv.pname();
 		mpicomm.set(MPI_COMM_WORLD);
 		mpisize = mpicomm.size();
 		mpirank = mpicomm.rank();
 
 		ControlFile = std::string(argv[1]);
+		if(exists(ControlFile) == false){
+			rootmessage("Controlfile %s was not found\n", ControlFile.c_str());
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+		}
 		Control = cBlock(ControlFile);
 
 		OutputOp = cOutputOptions(Control.findblock("Output"));
 		std::string s = strprint(".%04d", mpirank);
 		OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
 		mylogfile = fileopen(OutputOp.LogFile, "w");
-		rootmessage(mylogfile, "Starting at %s\n", timestamp().c_str());
-		rootmessage(mylogfile, "MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
+		
+		rootmessage("Opening log file %s\n", OutputOp.LogFile.c_str());
+		rootmessage(mylogfile, "Logfile opened on %s\n", timestamp().c_str());
+		rootmessage(mylogfile, "Control file %s\n", Control.Filename.c_str());
+		rootmessage(mylogfile, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		rootmessage(mylogfile, "Working directory %s\n", getcurrentdirectory().c_str());
+		rootmessage(mylogfile, "Processes=%lu\tRank=%lu\n", mpisize, mpirank);
+		rootmessage(mylogfile, "Processor name = %s\n", mpipname.c_str());
 		Control.write(mylogfile);
 
 		InputOp = cInputOptions(Control.findblock("Input"));
@@ -1190,7 +1230,6 @@ public:
 			for (size_t li = 0; li < nlayers; li++){
 
 				PetscInt gri = pindex(gsi, li);
-				PetscInt lri = H.lri(gri);
 
 				//Loop over each neighbour/layer
 				double wsum = 0.0;
@@ -1948,9 +1987,9 @@ public:
 			OI.setcomment("Number of iterations");
 			buf += strprint("%4lu", mLastIteration);
 
-			//Carriage return		
+			//Carriage return
 			buf += strprint("\n");
-			if (lsi == sown.nlocal() - 1 || buf.size() >= 2048){
+			if ((int)lsi == sown.nlocal() - 1 || buf.size() >= 2048){
 				fprintf(fp, buf.c_str());
 				fflush(fp);
 				buf.resize(0);
@@ -1997,23 +2036,31 @@ public:
 int main(int argc, char** argv)
 {
 	PetscErrorCode ierr;
-	ierr = PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
-
 	try{
-		cAllAtOnceInverter(argc, argv);
+		ierr = PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
+		if(argc < 2){
+			rootmessage("Usage: %s control_file_name\n", argv[0]);
+			rootmessage("Too few command line arguments\n");
+		}
+		else if(argc > 2){
+			rootmessage("Usage: %s control_file_name\n", argv[0]);
+			rootmessage("Too many command line arguments\n");
+		}
+		else{
+			cAllAtOnceInverter(argc, argv);
+		}
+		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
 	catch (const std::string msg){
 		rootmessage(mylogfile, "%s", msg.c_str());
+		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
 	catch (const std::exception e){
 		rootmessage(mylogfile, "%s", e.what());
+		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
 
-	ierr = PetscFinalize();
-	CHKERRQ(ierr);
-
 	fflush(stdout);
-	//prompttocontinue();
 	return 0;
 };
 

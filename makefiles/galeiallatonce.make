@@ -4,10 +4,10 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-cxxflags   += -D_MPI_ENABLED -fopenmp
+cxxflags   += -D_MPI_ENABLED
 includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
-libs       = -L$(FFTW_DIR) -lfftw3 -fopenmp
-executable = $(exedir)/galeisbstdem.exe
+libs       = -L$(FFTW_DIR) -lfftw3 -lpetsc
+executable = $(exedir)/galeiallatonce.exe
 
 all: compile link
 allclean: clean compile link
@@ -16,16 +16,14 @@ objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
 objects += $(cpputilssrc)/blocklanguage.o
 objects += $(cpputilssrc)/geometry3d.o
-objects += $(cpputilssrc)/fielddefinition.o
-objects += $(cpputilssrc)/matrix_ops.o
 objects += $(srcdir)/le.o
 objects += $(srcdir)/tdemsystem.o
-objects += $(srcdir)/galeisbstdem.o
+objects += $(srcdir)/galeiallatonce.o
 
 %.o : %.cpp
 	@echo ' '
 	@echo 'Compiling ' $<
-	$(cxx) -c $(includes) $(cxxflags) $< -o $@
+	$(mpicxx) -c $(includes) $(cxxflags) $< -o $@
 
 compile: $(objects)
 

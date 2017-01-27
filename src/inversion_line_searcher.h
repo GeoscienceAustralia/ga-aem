@@ -34,7 +34,7 @@ public:
 		if (trials.size() >= 10)return false;
 
 		double xnearest, ynearest;
-		size_t inear = nearestindex(xnearest, ynearest);
+		nearestindex(xnearest, ynearest);
 		if (std::fabs(ynearest - target) <= ytol){
 			return false;
 		}

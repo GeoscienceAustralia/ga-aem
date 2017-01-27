@@ -8,31 +8,33 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 /* Example driver program for simple forward model*/
 
+#include <vector>
 #include <cstring>
 
 #include "general_utils.h"
 #include "file_utils.h"
-#include "vector_utils.h"
 #include "blocklanguage.h"
+#include "vector_utils.h"
 #include "le.h"
 #include "tdemsystem.h"
 
+FILE* global_log_file = NULL;
 
 int main(int argc, char* argv[])
 {	
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
-	//LM = Low moment pulse and 
-	cTDEmSystem LM("..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm");
+	//LM = Low moment pulse
+	cTDEmSystem LM("examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm");
 	//HM = high moment pulse	
-	cTDEmSystem HM("..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-HM.stm");
+	cTDEmSystem HM("examples\\bhmar-skytem\\stmfiles\\Skytem-HM.stm");
 
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
 	cTDEmGeometry G;	
 	G.tx_height = 30;
 	G.tx_roll = 0;       G.tx_pitch = 0; G.tx_yaw = 0;
-	G.txrx_dx = -12.62;  G.txrx_dy  = 0;  G.txrx_dz = +2.16;
+	G.txrx_dx = -12.62;  G.txrx_dy  = 0; G.txrx_dz = +2.16;
 	G.rx_roll = 0;       G.rx_pitch = 0; G.rx_yaw = 0;
 
 	//Create the earth structure
@@ -50,14 +52,15 @@ int main(int argc, char* argv[])
 	cTDEmResponse HMR;
 
 	//Run the forward model for each moment
-	LM.forwardmodel(G, E, LMR);		
+	LM.forwardmodel(G, E, LMR);
 	HM.forwardmodel(G, E, HMR);
 
 	//Merge the secondary field vertical (Z) components data into one data vector
 	std::vector<double> data = concaternate(LMR.SZ, HMR.SZ);
-	
+
 	for (size_t i = 0; i < data.size(); i++){
-		printf("%d %g\n", i, data[i]);
+		printf("%lu %g\n", i, data[i]);
 	}
+
 }
 

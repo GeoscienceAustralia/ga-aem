@@ -8,29 +8,24 @@ cxxflags   += -fPIC
 ldflags    += -shared
 bindir     = ../python/gatdaem1d
 
-srcdir     = ../src
-tntdir     = ../third_party/tnt
-objdir     = ./obj
-includes   = -I$(srcdir) -I$(tntdir)
+includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
 libs       = -L$(FFTW_DIR) -lfftw3
 library    = $(bindir)/gatdaem1d.so
 
 all: compile link
 allclean: clean compile link
 
-objects = \
-	$(objdir)/blocklanguage.o \
-	$(objdir)/geometry3d.o \
-	$(objdir)/le.o \
-	$(objdir)/general_utils.o \
-	$(objdir)/file_utils.o \
-	$(objdir)/tdemsystem.o \
-	$(objdir)/gatdaem1d.o 
+objects += $(cpputilssrc)/general_utils.o
+objects += $(cpputilssrc)/file_utils.o
+objects += $(cpputilssrc)/blocklanguage.o
+objects += $(cpputilssrc)/geometry3d.o
+objects += $(srcdir)/le.o
+objects += $(srcdir)/tdemsystem.o
+objects += $(srcdir)/gatdaem1d.o
 
-$(objects): $(objdir)/%.o: $(srcdir)/%.cpp
-	mkdir -p $(objdir)
+%.o : %.cpp
 	@echo ' '
-	@echo Compiling $<
+	@echo 'Compiling ' $<
 	$(cxx) -c $(includes) $(cxxflags) $< -o $@
 
 compile: $(objects)

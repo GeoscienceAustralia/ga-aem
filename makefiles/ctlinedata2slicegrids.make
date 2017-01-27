@@ -4,10 +4,9 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-cxxflags   += -D_MPI_ENABLED -fopenmp
-includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
-libs       = -L$(FFTW_DIR) -lfftw3 -fopenmp
-executable = $(exedir)/galeisbstdem.exe
+includes   = -I$(srcdir) -I$(cpputilssrc)
+libs       = -lgdal
+executable = $(exedir)/ctlinedata2slicegrids.exe
 
 all: compile link
 allclean: clean compile link
@@ -15,12 +14,7 @@ allclean: clean compile link
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
 objects += $(cpputilssrc)/blocklanguage.o
-objects += $(cpputilssrc)/geometry3d.o
-objects += $(cpputilssrc)/fielddefinition.o
-objects += $(cpputilssrc)/matrix_ops.o
-objects += $(srcdir)/le.o
-objects += $(srcdir)/tdemsystem.o
-objects += $(srcdir)/galeisbstdem.o
+objects += $(srcdir)/ctlinedata2slicegrids.o
 
 %.o : %.cpp
 	@echo ' '
@@ -33,11 +27,12 @@ link: $(objects)
 	mkdir -p $(exedir)
 	@echo ' '
 	@echo Linking
-	$(mpicxx) $(objects) $(libs) -o $(executable)
+	$(cxx) $(objects) $(libs) -o $(executable)
 
-clean:
+clean: 
 	@echo ' '
 	@echo Cleaning
 	rm -f $(objects)
 	rm -f $(executable)
+
 

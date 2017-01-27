@@ -8,11 +8,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <cstring>
 
-#include "le.h"
 #include "general_utils.h"
 #include "file_utils.h"
-//#include "tdem1dmodel.h"
 #include "blocklanguage.h"
+#include "le.h"
 #include "tdemsystem.h"
 
 #define VERSION "1.0"
@@ -21,9 +20,11 @@ int parseinputrecord(const char* record, cTDEmGeometry& G, cEarth1D& E);
 int writeoutputrecord(FILE* fout, FILE* fhdr, size_t recnum, const cTDEmSystem& T, const cTDEmResponse& R);
 int writeheaderentry(FILE* fhdr, size_t recnum, const char* s, size_t& colnum, size_t nbands);
 
+FILE* global_log_file = NULL;
+
 int main(int argc, char* argv[])
 {			
-	if (argc < 2){		
+	if (argc < 2){
 		printf("Usage: %s control_file_name\n", argv[0]);
 		return EXIT_FAILURE;
 	}

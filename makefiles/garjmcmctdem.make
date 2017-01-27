@@ -5,46 +5,41 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 
 cxxflags   += -D_MPI_ENABLED
-srcdir     = ../src
-tntdir     = ../third_party/tnt
-objdir     = ./obj
-includes   = -I$(srcdir) -I$(tntdir)
+includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
 libs       = -L$(FFTW_DIR) -lfftw3
 executable = $(exedir)/garjmcmctdem.exe
 
 all: compile link
 allclean: clean compile link
 
-objects = \
-	$(objdir)/blocklanguage.o \
-	$(objdir)/fielddefinition.o \
-	$(objdir)/geometry3d.o \
-	$(objdir)/le.o \
-	$(objdir)/matrix_ops.o \
-	$(objdir)/general_utils.o \
-	$(objdir)/file_utils.o \
-	$(objdir)/tdemsystem.o \
-	$(objdir)/random.o \
-	$(objdir)/rjmcmc1d.o \
-	$(objdir)/rjmcmc1dtdeminverter.o \
-	$(objdir)/garjmcmctdem.o
+objects += $(cpputilssrc)/general_utils.o
+objects += $(cpputilssrc)/file_utils.o
+objects += $(cpputilssrc)/blocklanguage.o
+objects += $(cpputilssrc)/geometry3d.o
+objects += $(cpputilssrc)/fielddefinition.o
+objects += $(cpputilssrc)/matrix_ops.o
+objects += $(cpputilssrc)/random.o
+objects += $(srcdir)/le.o
+objects += $(srcdir)/tdemsystem.o
+objects += $(srcdir)/rjmcmc1d.o
+objects += $(srcdir)/rjmcmc1dtdeminverter.o
+objects += $(srcdir)/garjmcmctdem.o
 
-$(objects): $(objdir)/%.o: $(srcdir)/%.cpp
-	mkdir -p $(objdir)
+%.o : %.cpp
 	@echo ' '
-	@echo Compiling $<
-	$(mpicxx) -c $(includes) $(cxxflags) $< -o $@
+	@echo 'Compiling ' $<
+	$(cxx) -c $(includes) $(cxxflags) $< -o $@
 
 compile: $(objects)
 
 link: $(objects)
 	mkdir -p $(exedir)
-	@echo
+	@echo ' '
 	@echo Linking
 	$(mpicxx) $(objects) $(libs) -o $(executable)
 
 clean:
-	@echo
+	@echo ' '
 	@echo Cleaning
 	rm -f $(objects)
 	rm -f $(executable)

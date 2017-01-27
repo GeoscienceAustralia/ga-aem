@@ -19,6 +19,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #define VERSION "1.0"
 
+FILE* global_log_file = NULL;
+
 class cSGridCreator{
 
 private:	
@@ -145,7 +147,7 @@ public:
 			if(constantthickness.size() == 0){
 				errormessage("Thickness not set\n");
 			}
-			else if(constantthickness.size() > 1 && constantthickness.size() < nlayers - 1){
+			else if((int)constantthickness.size() > 1 && (int)constantthickness.size() < (int) nlayers - 1){
 				errormessage("Thickness not set correctly\n");
 			}
 			else if(constantthickness.size() == 1){
@@ -372,7 +374,7 @@ int main(int argc, char** argv)
 	std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
 	double t1 = gettime();	
 	for (size_t i = 0; i < filelist.size(); i++){
-		printf("Processing file %s   %3d of %3d\n", filelist[i].c_str(),i+1,filelist.size());
+		printf("Processing file %s   %3lu of %3lu\n", filelist[i].c_str(),i+1,filelist.size());
 		cSGridCreator S(control);
 		S.process(filelist[i]);
 	}
