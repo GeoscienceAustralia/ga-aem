@@ -17,7 +17,7 @@ using namespace std;
 #include "rjmcmc1dtdeminverter.h"
 
 #if defined _MPI_ENABLED
-	#include "mpi.h"
+	#include "mpi_wrapper.h"
 #endif
 
 int main(int argc, char* argv[])
@@ -28,9 +28,9 @@ int main(int argc, char* argv[])
 	std::string mpipname = "Standalone";
 	#if defined _MPI_ENABLED			
 		MPI_Init(&argc, &argv);
-		MPI_Comm_size(MPI_COMM_WORLD, &mpisize);
-		MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
-		mpipname = mpi_processername();
+		mpirank = cMpiEnv::world_rank();
+		mpisize = cMpiEnv::world_size();
+		mpipname = cMpiEnv::processor_name();				
 		if (mpirank == 0)printf("MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
 	#endif
 

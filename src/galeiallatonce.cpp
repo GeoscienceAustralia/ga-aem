@@ -704,7 +704,7 @@ public:
 		}
 
 		cStopWatch stopwatch;
-		mpipname = mpienv.pname();
+		mpipname = mpienv.processor_name();
 		mpicomm.set(MPI_COMM_WORLD);
 		mpisize = mpicomm.size();
 		mpirank = mpicomm.rank();

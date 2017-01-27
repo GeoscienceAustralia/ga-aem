@@ -14,7 +14,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <numeric>
 #include <vector>
 #include <random>
-//using namespace std;
 
 #include "file_utils.h"
 #include "file_formats.h"
@@ -28,7 +27,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #define VERSION "1.0"
 
 #if defined _MPI_ENABLED
-	#include <mpi.h>
+	#include "mpi_wrapper.h"
 #endif
 
 #if defined _OPENMP
@@ -2052,7 +2051,7 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 		#endif	
 	}
 		
-	my_barrier();
+	//my_barrier();
 	
 	size_t record = 0;
 	while (I.readnextrecord()){
@@ -2082,7 +2081,7 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 		message(I.fp_log, "Rec %6lu  %3lu  %5lu  %10lf  ", I.DataFileRecord, I.Id.flightnumber, I.Id.linenumber, I.Id.fidnumber);
 		message(I.fp_log, "Its=%3lu  PhiD=%6.2lf  time=%.1lfs %s\n", I.LastIteration, I.LastPhiD, etime, I.TerminationReason.c_str());
 	}	
-	my_barrier();	
+	//my_barrier();	
 	rootmessage(I.fp_log, "Logfile closing at %s\n", timestamp().c_str());
 	return 0;
 };
@@ -2094,9 +2093,9 @@ int main(int argc, char** argv)
 	std::string mpipname = "Standalone";
 #if defined _MPI_ENABLED			
 	MPI_Init(&argc, &argv);
-	MPI_Comm_size(MPI_COMM_WORLD, &mpisize);
-	MPI_Comm_rank(MPI_COMM_WORLD, &mpirank);
-	mpipname = mpi_processername();
+	mpirank  = cMpiEnv::world_rank();
+	mpisize  = cMpiEnv::world_size();
+	mpipname = cMpiEnv::processor_name();
 	if (mpirank == 0)printf("MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
 #endif
 
