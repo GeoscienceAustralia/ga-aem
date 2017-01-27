@@ -28,8 +28,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #define VERSION "1.0"
 using namespace std;
 
-FILE* global_log_file = NULL;
-
 class cGridOptions{
 
 public:	

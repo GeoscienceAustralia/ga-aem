@@ -18,8 +18,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "le.h"
 #include "tdemsystem.h"
 
-FILE* global_log_file = NULL;
-
 int main(int argc, char* argv[])
 {	
 	//Load the AEM system specification files for the Skytem moments

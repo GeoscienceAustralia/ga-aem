@@ -19,8 +19,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #define VERSION "1.0"
 
-FILE* global_log_file = NULL;
-
 class cSGridCreator{
 
 private:	

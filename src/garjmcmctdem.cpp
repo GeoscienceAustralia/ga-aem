@@ -20,9 +20,6 @@ using namespace std;
 	#include "mpi.h"
 #endif
 
-FILE* global_log_file = NULL;
-
-
 int main(int argc, char* argv[])
 {
 	int exitstatus;

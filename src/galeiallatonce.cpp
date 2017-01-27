@@ -35,7 +35,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #define VERSION "1.0"
 
 FILE* mylogfile = (FILE*)NULL;
-FILE* global_log_file = (FILE*)NULL;
 
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 

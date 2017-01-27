@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7B2ABFFB-3AD0-4546-A41B-67F78766418F}</ProjectGuid>
+    <ProjectGuid>{4C0C6699-2660-402B-B688-344C21AF9F7C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>galeiallatonce</RootNamespace>
   </PropertyGroup>

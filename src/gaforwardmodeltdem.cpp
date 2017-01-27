@@ -20,8 +20,6 @@ int parseinputrecord(const char* record, cTDEmGeometry& G, cEarth1D& E);
 int writeoutputrecord(FILE* fout, FILE* fhdr, size_t recnum, const cTDEmSystem& T, const cTDEmResponse& R);
 int writeheaderentry(FILE* fhdr, size_t recnum, const char* s, size_t& colnum, size_t nbands);
 
-FILE* global_log_file = NULL;
-
 int main(int argc, char* argv[])
 {			
 	if (argc < 2){
