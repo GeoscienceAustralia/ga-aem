@@ -24,9 +24,8 @@
 *.sln.docstates
 
 # Build results
+vs2013/*/x64
 [Dd]ebug/
-[Rr]elease/
-[Rr]elease-nompi/
 [Oo]bj/
 
 
@@ -109,7 +108,6 @@ $RECYCLE.BIN/
 !/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
 
 # Keep the Windows x64 Release and FFTW binaries
-!/bin/x64/Release/*      #Make exception for these
 !/third_party/*          #Make exception for these
 
 # Renove all raijin.nci.org.au binaries
