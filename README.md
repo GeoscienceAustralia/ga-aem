@@ -5,8 +5,8 @@
 - Author:	Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au)
 - Language:	mostly C++, some matlab, some python
 
-[Submodules](.\submodules\README.md)  
-[User Manual](.\docs\GA-AEM_Programs_User_Manual.pdf)  
+[Submodules](submodules\README.md)  
+[User Manual](docs\GA-AEM_Programs_User_Manual.pdf)  
 
 ## Releases
 ### Release-20160606
