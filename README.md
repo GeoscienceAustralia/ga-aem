@@ -5,6 +5,9 @@
 - Author:	Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au)
 - Language:	mostly C++, some matlab, some python
 
+[Submodules](.\submodules\README.md)  
+[User Manual](.\docs\GA-AEM_Programs_User_Manual.pdf)  
+
 ## Releases
 ### Release-20160606
 	- Added Python 3.x interface for simple forward modelling and derivatives only.
@@ -41,21 +44,54 @@
 - Open ga-aem\vs2013\ga-aem-all\ga-aem-all.sln to compile all programs plus the matlab and python shared libraries.
 - Alternatively open individual program solutions files in their respective directories.
 
-## Third party software dependencies
-1. Template Numerical Toolkit (TNT)
-	- see http://math.nist.gov/tnt/index.html
-	- TNT is included in this repositiry, there is no need to download it.
+## Additional source code and library dependencies
 
-2. The Fastest Fourier Transform in the West (FFTW)
-	- see http://www.fftw.org
-	- Windows binaries (dlls) are include in the repository.
+The programs required additional code or libraries as described below.
+
+1. CPP-UTILS
+	- CPP-UTILS is a repository of C++ utility classes and functions that are used across this and several other other projects.
+	- Up until Release-20160606 these source files were included in the src\ directory but were moved into a separate submodule so that they can be used and maintained easily across several different projects.
+	- CPP-UTILS is included as a git submodule of this repository (see [submodules](submodules\Readme.md)).
+	- Only required if you are compiling the code.
+	- Not required if you are just going to use the precompiled executables.
+
+2. Template Numerical Toolkit (TNT)
+	- TNT is a C++ linear algebra package developed by the National Institute of Standards and Technology (NIST).
+	- See http://math.nist.gov/tnt/index.html.
+	- TNT is included as a git submodule of this repository (see [submodules](submodules\Readme.md)).
+	- TNT is only required if you are compiling the code.
+	- TNT is not required if you are just going to use the precompiled executables.
+
+3. The Fastest Fourier Transform in the West (FFTW)
+	- FFTW is an optimised Fast Fourier Transform package developed at MIT by Matteo Frigo and Steven Johnson.
+	- See http://www.fftw.org
+	- For Windows users the header files and libraries (dlls) are included as a git submodule of this repository (see [submodules](submodules\Readme.md)).  
+	- FFTW is required if you are compiling the code on Windows.
+	- FFTW is also required if you are just going to use the precompiled executables on Windows.  The 64 bit dlls need to be in your Windows search path.
 	- Linux users will need to install a suitable FFTW for your system.
 
-3. Message Passing Interface (MPI)
-	- see https://www.mpi-forum.org
+4. Message Passing Interface (MPI)
+	- MPI is a standard used for parallel computation.  The MPI standard has been implemented in several different flavours by different consortia.
+	- See https://www.mpi-forum.org
 	- Both Windows and Linux users will need to install a suitable MPI for your system.
-	- The pre-compiled Windows inversion programs require Microsoft HPC Pack 2012 because thats the flavour of MPI they have been compiled and linked with.
-		- They can be recompiled using MPICH or other flouvours of MPI if required.
-		- If you do not want to install MPI on your Windows system, you can use the galeisbstdem-nompi.exe.
-		- This program has not been linked with MPI but uses OpenMP shared memory parallelism instead (see manual for details).
+	- MPI is used in the following parallel enabled programs:
+		- galeisbstdem.exe
+		- galeisbsfdem.exe
+		- garjmcmctdem.exe
+		- galeiallatonce.exe
+	- The pre-compiled Windows inversion programs require Microsoft HPC Pack 2012 because that is the flavour of MPI they have been compiled and linked with.
+	- They can be recompiled using MPICH or other flavours of MPI if required.
+	- If you do not want to install MPI on your Windows system, you can use the galeisbstdem-nompi.exe, which has not been linked with MPI but uses OpenMP shared memory parallelism instead (see manual for details).
+
+5. Portable, Extensible Toolkit for Scientific Computation (PETSc)
+	- PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the scalable (parallel) solution of scientific applications modeled by partial differential equations.
+	- See https://www.mcs.anl.gov/petsc.
+	- PETSc is only used by the program galeiallatonce.exe.
+	- PETSc is only required for compiling galeiallatonce.exe, not executing it.
+	- PETSc is not required for executing the precompiled Windows programs.
+	- Linux users will need to install PETSc on your system.
+	- Windows users can obtain the header files and precompiled libraries from the GitHub
+		- https://github.com/rcb547/petsc-3.4.3-vs2013, or
+		- git clone git@github.com:rcb547/petsc-3.4.3-vs2013.git.
+
 
