@@ -14,24 +14,24 @@
     <ClCompile Include="..\..\src\ctlinedata2georefimage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,16 +4,16 @@
     <ClCompile Include="..\..\src\ctlinedata2slicegrids.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -26,16 +26,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

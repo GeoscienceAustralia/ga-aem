@@ -80,17 +80,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\ctlinedata2sgrid.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

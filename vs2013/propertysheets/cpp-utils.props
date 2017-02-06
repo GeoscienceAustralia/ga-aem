@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>Z:\code\repos\cpp-utils\src;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\submodules\cpp-utils\src;$(IncludePath)</IncludePath>
     <OutDir />
   </PropertyGroup>
   <ItemDefinitionGroup />

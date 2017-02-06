@@ -89,24 +89,24 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\galeiallatonce.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\conductivity_logs.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\mpi_wrapper.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\petsc_wrapper.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\radius_searcher.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\stopwatch.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\conductivity_logs.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\petsc_wrapper.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\stacktrace.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\stopwatch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

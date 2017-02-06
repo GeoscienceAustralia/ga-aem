@@ -4,9 +4,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LibraryPath>..\..\third_party\fftw3.2.2.dlls\64bit;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\..\submodules\fftw3.2.2.dlls\64bit;$(LibraryPath)</LibraryPath>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>..\..\third_party\fftw3.2.2.dlls\64bit;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\submodules\fftw3.2.2.dlls\64bit;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

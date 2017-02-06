@@ -84,27 +84,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\fielddefinition.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\matrix_ops.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\random.cpp" />
     <ClCompile Include="..\..\src\garjmcmctdem.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\rjmcmc1d.cpp" />
     <ClCompile Include="..\..\src\rjmcmc1dtdeminverter.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\fielddefinition.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\random.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\fielddefinition.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\matrix_ops.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\random.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\random.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

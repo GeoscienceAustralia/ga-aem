@@ -20,45 +20,45 @@
     <ClCompile Include="..\..\src\galeiallatonce.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\conductivity_logs.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\conductivity_logs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\radius_searcher.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\mpi_wrapper.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\petsc_wrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\petsc_wrapper.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\stacktrace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\stopwatch.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\stopwatch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

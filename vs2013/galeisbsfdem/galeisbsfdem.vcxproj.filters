@@ -14,47 +14,32 @@
     <ClCompile Include="..\..\src\galeisbsfdem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\matrix_ops.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\fielddefinition.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\fdemsystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\layeredearthmodeller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\rollpitchyaw.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp">
+    <ClCompile Include="..\..\submodules\cpp-utils\src\fielddefinition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\cpp-utils\src\rollpitchyaw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp-utils\src\asciicolumnfile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\fielddefinition.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\matrix_ops.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\fdemsystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -64,10 +49,25 @@
     <ClInclude Include="..\..\src\layeredearthmodeller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\rollpitchyaw.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\rollpitchyaw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\asciicolumnfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

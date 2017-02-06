@@ -11,22 +11,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\cpp-utils\src\blocklanguage.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\..\cpp-utils\src\geometry3d.cpp" />
     <ClCompile Include="..\..\src\gatdaem1d.cpp" />
     <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\..\cpp-utils\src\geometry3d.h" />
     <ClInclude Include="..\..\src\gatdaem1d.h" />
     <ClInclude Include="..\..\src\le.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6610ABFE-3E97-4F45-887C-C882873D6207}</ProjectGuid>
