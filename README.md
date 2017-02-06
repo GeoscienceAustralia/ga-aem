@@ -5,9 +5,6 @@
 - Author:	Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au)
 - Language:	mostly C++, some matlab, some python
 
-[Submodules](submodules/README.md)  
-[User Manual](docs/GA-AEM_Programs_User_Manual.pdf)  
-
 ## Releases
 ### Release-20160606
 	- Added Python 3.x interface for simple forward modelling and derivatives only.
@@ -24,8 +21,8 @@
 3. GARJMCMCTDEM - stochastic 1D sample by sample inversion of AEM data
 
 ## Documentation
-- User manual (see ga-aem/docs/GA AEM Programs User Manual.pdf)
-- Theoretical details for GALEISBSTDEM (see ga-aem/docs/GALEISBSTDEM Inversion Algorithm Theoretical Details .pdf)
+- [User Manual](docs/GA-AEM_Programs_User_Manual.pdf)
+- [Theoretical details for GALEISBSTDEM](docs/GALEISBSTDEM_Inversion_Algorithm_Theoretical_Details.pdf)
 
 ## Building on Linux
 - cd makefiles
@@ -51,21 +48,21 @@ The programs required additional code or libraries as described below.
 1. CPP-UTILS
 	- CPP-UTILS is a repository of C++ utility classes and functions that are used across this and several other other projects.
 	- Up until Release-20160606 these source files were included in the src\ directory but were moved into a separate submodule so that they can be used and maintained easily across several different projects.
-	- CPP-UTILS is included as a git submodule of this repository (see [submodules](submodules\Readme.md)).
+	- CPP-UTILS is included as a git submodule of this repository (see [submodules](submodules/Readme.md)).
 	- Only required if you are compiling the code.
 	- Not required if you are just going to use the precompiled executables.
 
 2. Template Numerical Toolkit (TNT)
 	- TNT is a C++ linear algebra package developed by the National Institute of Standards and Technology (NIST).
 	- See http://math.nist.gov/tnt/index.html.
-	- TNT is included as a git submodule of this repository (see [submodules](submodules\Readme.md)).
+	- TNT is included as a git submodule of this repository (see [submodules](submodules/Readme.md)).
 	- TNT is only required if you are compiling the code.
 	- TNT is not required if you are just going to use the precompiled executables.
 
 3. The Fastest Fourier Transform in the West (FFTW)
 	- FFTW is an optimised Fast Fourier Transform package developed at MIT by Matteo Frigo and Steven Johnson.
 	- See http://www.fftw.org
-	- For Windows users the header files and libraries (dlls) are included as a git submodule of this repository (see [submodules](submodules\Readme.md)).  
+	- For Windows users the header files and libraries (dlls) are included as a git submodule of this repository (see [submodules](submodules/Readme.md)).  
 	- FFTW is required if you are compiling the code on Windows.
 	- FFTW is also required if you are just going to use the precompiled executables on Windows.  The 64 bit dlls need to be in your Windows search path.
 	- Linux users will need to install a suitable FFTW for your system.
