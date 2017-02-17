@@ -1,9 +1,6 @@
 [submodule "submodules/tnt"]
 	path = submodules/tnt
 	url = git@github.com:rcb547/tnt.git
-[submodule "submodules/fftw3.2.2.dlls"]
-	path = submodules/fftw3.2.2.dlls
-	url = git@github.com:rcb547/fftw3.2.2.dlls.git
 [submodule "submodules/cpp-utils"]
 	path = submodules/cpp-utils
 	url = git@github.com:rcb547/cpp-utils.git
