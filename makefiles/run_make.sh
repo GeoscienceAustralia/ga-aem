@@ -7,8 +7,8 @@ module load petsc/3.4.3   #required for galeiallatonce only
 module load gdal/1.11.1   #required for ctlinedata2slicegrids only
 
 #Set the directory path for dependencies
-export cpputilssrc='../../cpp-utils/src'
-export tntdir='../third_party/tnt'
+export cpputilssrc='../submodules/cpp-utils/src'
+export tntdir='../submodules/tnt'
 export srcdir='../src'
 
 #GNU compiler on raijin.nci.org.au
@@ -27,18 +27,17 @@ export mpicxx=mpiCC
 export cxxflags='-std=c++11 -O3 -Wall -diag-disable remark'
 export exedir='../bin/raijin/intel'
 
+make -f example_forward_model.make allclean
+make -f gaforwardmodeltdem.make allclean
+make -f gatdaem1d_python.make allclean
+make -f gatdaem1d_matlab.make allclean
 
-#make -f example_forward_model.make allclean
-#make -f gaforwardmodeltdem.make allclean
-#make -f gatdaem1d_python.make allclean
-#make -f gatdaem1d_matlab.make allclean
+make -f galeisbstdem.make allclean
+make -f garjmcmctdem.make allclean
+make -f galeiallatonce.make allclean
 
-#make -f galeisbstdem.make allclean
-#make -f garjmcmctdem.make allclean
-#make -f galeiallatonce.make allclean
-
-#make -f ctlinedata2sgrid.make allclean
-#make -f ctlinedata2slicegrids.make allclean
+make -f ctlinedata2sgrid.make allclean
+make -f ctlinedata2slicegrids.make allclean
 
 make -f galeisbsfdem.make allclean
 
