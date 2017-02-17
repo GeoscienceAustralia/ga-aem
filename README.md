@@ -59,15 +59,7 @@ The programs required additional code or libraries as described below.
 	- TNT is only required if you are compiling the code.
 	- TNT is not required if you are just going to use the precompiled executables.
 
-3. The Fastest Fourier Transform in the West (FFTW)
-	- FFTW is an optimised Fast Fourier Transform package developed at MIT by Matteo Frigo and Steven Johnson.
-	- See http://www.fftw.org
-	- For Windows users the header files and libraries (dlls) are included as a git submodule of this repository (see [submodules](submodules/README.md)).  
-	- FFTW is required if you are compiling the code on Windows.
-	- FFTW is also required if you are just going to use the precompiled executables on Windows.  The 64 bit dlls need to be in your Windows search path.
-	- Linux users will need to install a suitable FFTW for your system.
-
-4. Message Passing Interface (MPI)
+3. Message Passing Interface (MPI)
 	- MPI is a standard used for parallel computation.  The MPI standard has been implemented in several different flavours by different consortia.
 	- See https://www.mpi-forum.org
 	- Both Windows and Linux users will need to install a suitable MPI for your system.
@@ -80,6 +72,18 @@ The programs required additional code or libraries as described below.
 	- They can be recompiled using MPICH or other flavours of MPI if required.
 	- If you do not want to install MPI on your Windows system, you can use the galeisbstdem-nompi.exe, which has not been linked with MPI but uses OpenMP shared memory parallelism instead (see manual for details).
 
+4. The Fastest Fourier Transform in the West (FFTW)
+	- FFTW is an optimised Fast Fourier Transform package developed at MIT by Matteo Frigo and Steven Johnson.
+	- See http://www.fftw.org
+	- FFTW is required if you are compiling the time-domain forward modelling or inversion programs on Windows or Linux.
+	- Linux users will need to install a suitable FFTW for your system.
+	- Windows users can obtain the header files, precompiled libraries and the runtime dlls from GitHub here,
+		- https://github.com/rcb547/fftw3.2.2.dlls.git, or
+		- git clone git@github.com:rcb547/fftw3.2.2.dlls.git.
+	- FFTW is required if you want to execute the precompiled time-domain forward modelling or inversion programs on Windows.
+	- FFTW is also required if you are just going to use the precompiled executables on Windows.
+	- The directory containing the 64-bit FFTW dlls need to be in your Windows search path.
+
 5. Portable, Extensible Toolkit for Scientific Computation (PETSc)
 	- PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the scalable (parallel) solution of scientific applications modeled by partial differential equations.
 	- See https://www.mcs.anl.gov/petsc.
@@ -87,8 +91,7 @@ The programs required additional code or libraries as described below.
 	- PETSc is only required for compiling galeiallatonce.exe, not executing it.
 	- PETSc is not required for executing the precompiled Windows programs.
 	- Linux users will need to install PETSc on your system.
-	- Windows users can obtain the header files and precompiled libraries from the GitHub
+	- Windows users can obtain the header files and precompiled libraries from the GitHub, here
 		- https://github.com/rcb547/petsc-3.4.3-vs2013, or
 		- git clone git@github.com:rcb547/petsc-3.4.3-vs2013.git.
-
 
