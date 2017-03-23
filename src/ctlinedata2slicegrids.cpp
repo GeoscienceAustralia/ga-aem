@@ -682,9 +682,9 @@ int main(int argc, char** argv)
 		#if defined _OPENMP
 		message("Maximum number of OpenMP Threads is %d\n", omp_get_max_threads());
 		#endif
-		message("\nError: Not enough input arguments\n");
-		message("\nUsage: %s controlfilename\n", argv[0]);
-		prompttoexit();
+		message("Error: Not enough input arguments\n");
+		message("Usage: %s controlfilename\n", argv[0]);
+		return 0;;
 	}
 
 	GDALAllRegister();

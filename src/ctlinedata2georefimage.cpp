@@ -803,8 +803,9 @@ int main(int argc, char** argv)
 		message("Executing %s\n", argv[0]);
 		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
 		message("Working directory %s\n", getcurrentdirectory().c_str());
-		message("\nError: Not enough input arguments\n");
-		message("\nUsage: %s controlfilename\n",argv[0]);		
+		message("Error: Not enough input arguments\n");
+		message("Usage: %s controlfilename\n",argv[0]);		
+		return 0;
 	}
 
 	cBlock b(argv[1]);

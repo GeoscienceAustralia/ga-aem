@@ -359,11 +359,12 @@ int main(int argc, char** argv)
 		message("Working directory %s\n", getcurrentdirectory().c_str());
 	}
 	else{
-		message("Executing %s %s\n", argv[0], argv[1]);
+		message("Executing %s\n", argv[0]);
 		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
 		message("Working directory %s\n", getcurrentdirectory().c_str());
-		message("\nError: Not enough input arguments\n");
-		message("\nUsage: %s controlfilename\n",argv[0]);		
+		message("Error: Not enough input arguments\n");
+		message("Usage: %s controlfilename\n",argv[0]);
+		return 0;
 	}
 
 	cBlock control(argv[1]);	
