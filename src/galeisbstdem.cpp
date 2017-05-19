@@ -22,7 +22,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "matrix_ops.h"
 #include "vector_utils.h"
 #include "galeisbstdem.h"
+#include "stacktrace.h"
 
+cStackTrace globalstacktrace;
 
 #define VERSION "1.0"
 
@@ -79,11 +81,13 @@ cSBSInverter::~cSBSInverter()
 };
 void cSBSInverter::initialise(const std::string controlfile)
 {
+	_GSTPUSH_
 	loadcontrolfile(controlfile);
 	parsecolumns();
 	setup_data();
 	setup_parameters();
 	resize_matrices();
+	_GSTPOP_
 }
 void cSBSInverter::loadcontrolfile(const std::string filename)
 {
@@ -98,7 +102,8 @@ void cSBSInverter::loadcontrolfile(const std::string filename)
 
 	cBlock IB = Control.findblock("Input");	
 	DataFileName  = IB.getstringvalue("DataFile");
-	
+	fixseparator(DataFileName);
+
 	DataFileHeaderLines = IB.getsizetvalue("Headerlines");		
 	if (DataFileHeaderLines == cBlock::ud_size_t()){
 		DataFileHeaderLines = 0;
@@ -125,10 +130,13 @@ void cSBSInverter::parseoutputs()
 	OutputPositiveLayerBottomDepths = OB.getboolvalue("PositiveLayerBottomDepths");
 	OutputNegativeLayerBottomDepths = OB.getboolvalue("NegativeLayerBottomDepths");
 	OutputInterfaceElevations  = OB.getboolvalue("InterfaceElevations");	
-	OutputParameterSensitivity     = OB.getboolvalue("ParameterSensitivity");
+	OutputParameterSensitivity = OB.getboolvalue("ParameterSensitivity");
 	OutputParameterUncertainty = OB.getboolvalue("ParameterUncertainty");
 	OutputPredictedData        = OB.getboolvalue("PredictedData");
 		
+	fixseparator(OutputDataFile);
+	fixseparator(OutputLogfile);
+
 	std::string suffix = stringvalue(mRank, ".%04lu");
 	OutputLogfile = insert_after_filename(OutputLogfile, suffix);
 	OutputDataFile = insert_after_filename(OutputDataFile, suffix);
@@ -577,8 +585,7 @@ void cSBSInverter::initialise_data()
 				size_t di = wi + S.yIndex;
 				vErr[di] = S.oEY[wi];
 				vObs[di] = S.oSY[wi];
-				if (S.useTotal)vObs[di] += S.oPY;
-				di++;
+				if (S.useTotal)vObs[di] += S.oPY;				
 			}
 		}
 		if (S.useZ){
@@ -586,8 +593,7 @@ void cSBSInverter::initialise_data()
 				size_t di = wi + S.zIndex;
 				vErr[di] = S.oEZ[wi];
 				vObs[di] = S.oSZ[wi];
-				if (S.useTotal)vObs[di] += S.oPZ;
-				di++;
+				if (S.useTotal)vObs[di] += S.oPZ;				
 			}
 		}
 	}
@@ -997,7 +1003,7 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 		T.setsecondaryfields();
 
 		std::vector<double> x, y, z;
-		if (S.useTotal){
+		if (S.useTotal){			
 			x = T.X + T.PrimaryX;
 			y = T.Y + T.PrimaryY;
 			z = T.Z + T.PrimaryZ;
@@ -1267,8 +1273,10 @@ void cSBSInverter::iterate()
 
 	EM = get_earth(vParam);
 	GM = get_geometry(vParam);
-	forwardmodel(vParam, vPred, true);	
+	forwardmodel(vParam, vPred, false);	
 	set_predicted();
+	
+	forwardmodel(vParam, vPred, true);
 	ParameterSensitivity = compute_parameter_sensitivity();
 	ParameterUncertainty = compute_parameter_uncertainty();
 
@@ -2086,8 +2094,10 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 	return 0;
 };
 int main(int argc, char** argv)
-{
+{	
+	_GSTPUSH_
 	int exitstatus;
+	_GSTPOP_
 	int mpisize = 1;
 	int mpirank = 0;
 	std::string mpipname = "Standalone";

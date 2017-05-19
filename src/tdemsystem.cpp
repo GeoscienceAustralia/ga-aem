@@ -325,6 +325,12 @@ void cTDEmSystem::setprimaryfields()
 	PrimaryY = Earth.Fields.t.p.y;
 	PrimaryZ = Earth.Fields.t.p.z;
 
+	if (Normalisation == NT_PPM_PEAKTOPEAK){
+		PrimaryX *= 2.0;
+		PrimaryY *= 2.0;
+		PrimaryZ *= 2.0;	
+	}
+
 	if (OutputType == OT_DBDT){
 		//Must convert to dB/dt. This happens implicitly for the secondary via the waveform.
 		PrimaryX *= TX_PeakdIdT;
@@ -973,18 +979,22 @@ void cTDEmSystem::setup_scaling(){
 		setprimaryfields();
 
 		double s = 1.0;
-		if (Normalisation == NT_PPM)  s *= 1.0e6;
-		if (Normalisation == NT_PPM_PEAKTOPEAK){
-			PrimaryX *= 2.0;
-			PrimaryY *= 2.0;
-			PrimaryZ *= 2.0;
+		if (Normalisation == NT_PPM){
+			s *= 1.0e6;
+		}
+		else if (Normalisation == NT_PPM_PEAKTOPEAK){
+			//PrimaryX *= 2.0;
+			//PrimaryY *= 2.0;
+			//PrimaryZ *= 2.0;
 			s *= 1.0e6;
 		}
 
 		if (PrimaryX == 0.0) XScale = 0.0;
 		else XScale  *= (s/PrimaryX);
+
 		if (PrimaryY == 0.0) YScale = 0.0;
 		else YScale  *= (s/PrimaryY);
+
 		if (PrimaryZ == 0.0) ZScale = 0.0;					
 		else ZScale  *=  (s/PrimaryZ);		
 	}
