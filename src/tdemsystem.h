@@ -15,6 +15,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "general_utils.h"
 #include "geometry3d.h"
 #include "blocklanguage.h"
+#include "earth1d.h"
 #include "le.h"
 
 enum eWaveFormType { WT_TX, WT_RX };

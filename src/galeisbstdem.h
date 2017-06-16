@@ -16,6 +16,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "blocklanguage.h"
 #include "fielddefinition.h"
 #include "matrix_ops.h"
+#include "airborne_types.h"
 #include "tdemsystem.h"
 
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };

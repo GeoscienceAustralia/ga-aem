@@ -13,6 +13,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cstring>
 #include <vector>
 #include "blocklanguage.h"
+#include "earth1d.h"
 #include "layeredearthmodeller.h"
 
 struct sLoop{

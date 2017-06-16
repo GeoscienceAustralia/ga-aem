@@ -13,6 +13,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "matrix_ops.h"
 #include "asciicolumnfile.h"
 #include "fielddefinition.h"
+#include "airborne_types.h"
 #include "fdemsystem.h"
 
 using namespace TNT;

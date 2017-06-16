@@ -11,6 +11,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "general_utils.h"
 #include "file_utils.h"
 #include "blocklanguage.h"
+#include "earth1d.h"
 #include "le.h"
 #include "tdemsystem.h"
 
