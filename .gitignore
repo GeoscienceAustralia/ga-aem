@@ -59,6 +59,7 @@ TestResult.xml
 *.tmp_proj
 *.log
 *.tlog
+*.lastbuildstate
 *.vspscc
 *.vssscc
 .builds
@@ -100,6 +101,15 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
+# Renove all binaries
+*.exe
+*.dll
+*.mexw64
+
+# Renove all raijin.nci.org.au binaries
+# Compiled executables on linux
+/bin/raijin/*
+
 # Python
 *.pyc
 *.pyo
@@ -108,10 +118,4 @@ $RECYCLE.BIN/
 /python/gatdaem1d/*.so           #Ignore the Linux shared libraries
 !/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
 
-# Keep the Windows x64 Release and FFTW binaries
-!/third_party/*          #Make exception for these
-
-# Renove all raijin.nci.org.au binaries
-#Compiled executables on linux
-/bin/raijin/*
 
