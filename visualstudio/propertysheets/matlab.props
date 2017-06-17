@@ -1,8 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Label="UserMacros">
-    <MATLAB_ROOT>C:\Program Files\MATLAB\R2015a</MATLAB_ROOT>
-  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IncludePath>$(MATLAB_ROOT)\extern\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(MATLAB_ROOT)\extern\lib\win64\microsoft;$(LibraryPath)</LibraryPath>
@@ -10,12 +8,7 @@
     </OutDir>
     <TargetExt>.mexw64</TargetExt>
   </PropertyGroup>
-  <ItemGroup>
-    <BuildMacro Include="MATLAB_ROOT">
-      <Value>$(MATLAB_ROOT)</Value>
-      <EnvironmentVariable>true</EnvironmentVariable>
-    </BuildMacro>
-  </ItemGroup>
+  <ItemGroup />
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>MATLAB_MEX_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
