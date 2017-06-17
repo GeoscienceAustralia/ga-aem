@@ -24,7 +24,7 @@
 *.sln.docstates
 
 # Build results
-vs2013/*/x64
+visualstudio/*/x64
 [Dd]ebug/
 [Oo]bj/
 
