@@ -14,9 +14,6 @@
     <ClCompile Include="..\..\src\gaforwardmodeltdem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\le.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\tdemsystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -50,6 +47,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\submodules\cpp-utils\src\general_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\lem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

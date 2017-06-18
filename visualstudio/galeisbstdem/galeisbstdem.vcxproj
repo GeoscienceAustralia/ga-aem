@@ -128,7 +128,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />
-    <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\fielddefinition.cpp" />
@@ -138,6 +137,7 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />

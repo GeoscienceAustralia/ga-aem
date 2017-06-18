@@ -16,7 +16,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "geometry3d.h"
 #include "blocklanguage.h"
 #include "earth1d.h"
-#include "le.h"
+#include "lem.h"
 
 enum eWaveFormType { WT_TX, WT_RX };
 enum eOutputType { OT_BFIELD, OT_DBDT};
@@ -167,7 +167,7 @@ public:
 
   std::string SystemName;
   std::string SystemType;  
-  LE Earth;
+  cLEM LEM;
   cBlock STM;
   bool SaveDiagnosticFiles;
       
@@ -239,7 +239,10 @@ public:
       
   void readsystemdescriptorfile(std::string systemdescriptorfile);
   void systeminitialise();
+  
   void forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry);
+  
+  void setearthproperties(const cEarth1D& E);
   void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness);
 
   double compute_peak_didt();

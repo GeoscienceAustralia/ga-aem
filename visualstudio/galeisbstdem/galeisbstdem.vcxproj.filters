@@ -11,9 +11,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\le.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\galeisbstdem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -59,6 +56,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\lem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

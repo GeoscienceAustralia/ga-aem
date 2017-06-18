@@ -17,9 +17,6 @@
     <ClCompile Include="..\..\src\example_forward_model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\le.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -44,6 +41,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\earth1d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\lem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

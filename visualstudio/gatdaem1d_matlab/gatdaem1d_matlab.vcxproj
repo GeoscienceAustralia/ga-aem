@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\gatdaem1d.cpp" />
-    <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
@@ -20,8 +19,9 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\earth1d.h" />
     <ClInclude Include="..\..\src\gatdaem1d.h" />
-    <ClInclude Include="..\..\src\le.h" />
+    <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />

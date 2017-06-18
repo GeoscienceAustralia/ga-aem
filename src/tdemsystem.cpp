@@ -15,7 +15,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include "general_utils.h"
 #include "file_utils.h"
-#include "le.h"
+#include "lem.h"
 #include "tdemsystem.h"
 #include "vector_utils.h"
 
@@ -44,8 +44,8 @@ void cTDEmSystem::initialise()
 	xaxis = cVec(1.0, 0.0, 0.0);
 	yaxis = cVec(0.0, 1.0, 0.0);
 	zaxis = cVec(0.0, 0.0, 1.0);
-	Earth.calculation_type = CT_FORWARDMODEL;
-	Earth.rzerotype = RZM_PROPOGATIONMATRIX;
+	LEM.calculation_type = CT_FORWARDMODEL;
+	LEM.rzerotype = RZM_PROPOGATIONMATRIX;
 	fftwplan_backward = 0;
 }
 
@@ -172,7 +172,7 @@ void cTDEmSystem::setup_splines()
 
 	setup_splineinterp(DiscreteFrequenciesLog10, SplinedFrequencieslog10);
 
-	Earth.setfrequencies(DiscreteFrequencies);
+	LEM.setfrequencies(DiscreteFrequencies);
 }
 void cTDEmSystem::spline(const std::vector<double>& x, const std::vector<double>& y, double yp1, double ypn, std::vector<double>& y2)
 {
@@ -277,10 +277,16 @@ void cTDEmSystem::spline_interp()
 	}
 }
 
+void cTDEmSystem::setearthproperties(const cEarth1D& E)
+{
+	LEM.setproperties(E);
+}
+
 void cTDEmSystem::setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness)
 {
-	Earth.setconductivitythickness(conductivity, thickness);
+	LEM.setconductivitythickness(conductivity, thickness);
 }
+
 void cTDEmSystem::setgeometry(const cTDEmGeometry& g)
 {
 	//X = +ve in flight direction
@@ -301,7 +307,7 @@ void cTDEmSystem::setgeometry(const cTDEmGeometry& g)
 
 	TX_RX_separation = cVec(g.txrx_dx, g.txrx_dy, g.txrx_dz);
 
-	Earth.setgeometry(Earth.pitchrolldipole(TX_pitch, TX_roll), TX_height, TX_RX_separation.x, TX_RX_separation.y, TX_height + TX_RX_separation.z);
+	LEM.setgeometry(LEM.pitchrolldipole(TX_pitch, TX_roll), TX_height, TX_RX_separation.x, TX_RX_separation.y, TX_height + TX_RX_separation.z);
 
 	RX_height = TX_height + g.txrx_dz;
 	RX_pitch = g.rx_pitch;
@@ -315,15 +321,15 @@ void cTDEmSystem::setgeometry(const double tx_height, const double tx_roll, cons
 void cTDEmSystem::setupcomputations()
 {
 	for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++){
-		Earth.setfrequencyabscissalayers(fi);
+		LEM.setfrequencyabscissalayers(fi);
 	}
 }
 void cTDEmSystem::setprimaryfields()
 {
-	Earth.setprimaryfields();
-	PrimaryX = Earth.Fields.t.p.x;
-	PrimaryY = Earth.Fields.t.p.y;
-	PrimaryZ = Earth.Fields.t.p.z;
+	LEM.setprimaryfields();
+	PrimaryX = LEM.Fields.t.p.x;
+	PrimaryY = LEM.Fields.t.p.y;
+	PrimaryZ = LEM.Fields.t.p.z;
 
 	if (Normalisation == NT_PPM_PEAKTOPEAK){
 		PrimaryX *= 2.0;
@@ -362,11 +368,11 @@ void cTDEmSystem::setsecondaryfields()
 {
 	//Computation for discrete frequencies 	
 	for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++){
-		Earth.dointegrals(fi);
-		Earth.setsecondaryfields(fi);
-		const cdouble& x = Earth.Fields.t.s.x;
-		const cdouble& y = Earth.Fields.t.s.y;
-		const cdouble& z = Earth.Fields.t.s.z;
+		LEM.dointegrals(fi);
+		LEM.setsecondaryfields(fi);
+		const cdouble& x = LEM.Fields.t.s.x;
+		const cdouble& y = LEM.Fields.t.s.y;
+		const cdouble& z = LEM.Fields.t.s.z;
 		cVec vr = cVec(x.real(), y.real(), z.real());
 		cVec vi = cVec(x.imag(), y.imag(), z.imag());
 
@@ -729,8 +735,8 @@ void cTDEmSystem::forwardmodel(const std::vector<double>& conductivity, const st
 {
 	setconductivitythickness(conductivity, thickness);
 	setgeometry(geometry);
-	Earth.calculation_type = CT_FORWARDMODEL;
-	Earth.derivative_layer = INT_MAX;
+	LEM.calculation_type = CT_FORWARDMODEL;
+	LEM.derivative_layer = INT_MAX;
 
 	setupcomputations();
 	setprimaryfields();
@@ -884,9 +890,9 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 
 	initialise_windows();
 	
-	Earth.ModellingLoopRadius = STM.getdoublevalue("ForwardModelling.ModellingLoopRadius");
-	if (Earth.ModellingLoopRadius == cBlock::ud_double()){
-		Earth.ModellingLoopRadius = 0.0;
+	LEM.ModellingLoopRadius = STM.getdoublevalue("ForwardModelling.ModellingLoopRadius");
+	if (LEM.ModellingLoopRadius == cBlock::ud_double()){
+		LEM.ModellingLoopRadius = 0.0;
 	}
 
 	std::string ot = STM.getstringvalue("ForwardModelling.OutputType");
@@ -905,7 +911,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		warningmessage("cTDEmSystem::readsystemdescriptorfile: It is wise to use at least 5 frequencies per decade\n");
 	}
 
-	Earth.NumAbscissa = (size_t)STM.getintvalue("ForwardModelling.NumberOfAbsiccaInHankelTransformEvaluation");
+	LEM.NumAbscissa = (size_t)STM.getintvalue("ForwardModelling.NumberOfAbsiccaInHankelTransformEvaluation");
 
 	std::string n = STM.getstringvalue("ForwardModelling.SecondaryFieldNormalisation");
 	if (strcasecmp(n, "None")==0){
@@ -927,7 +933,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		errormessage("cTDEmSystem::readsystemdescriptorfile(): The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
 	}
 
-	if (Earth.NumAbscissa < 17){
+	if (LEM.NumAbscissa < 17){
 		warningmessage("cTDEmSystem::readsystemdescriptorfile(): It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
 	}
 
@@ -1111,8 +1117,8 @@ dmatrix cTDEmSystem::readwaveformfile(const std::string& filename)
 
 void cTDEmSystem::forwardmodel(const cTDEmGeometry& G, const cEarth1D& E, cTDEmResponse& R)
 {	
-	setconductivitythickness(E.conductivity, E.thickness);
 	setgeometry(G);
+	setearthproperties(E);	
 	setupcomputations();
 	setprimaryfields();
 	setsecondaryfields();

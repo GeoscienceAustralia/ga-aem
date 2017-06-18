@@ -90,7 +90,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\galeiallatonce.cpp" />
-    <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
@@ -98,6 +97,7 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\conductivity_logs.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
