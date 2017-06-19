@@ -54,7 +54,7 @@ set(gca,'xlim',[min(S.wt.centre)/1.1 1.1*max(S.wt.centre)]);
 xlabel('Time (s)');
 ylabel('Response (V/A.m^4)');
 box on;
-h1=plot(S.wt.centre,-R1.SZ,'-w.','linewidth',2);
+h1=plot(S.wt.centre,-R1.SZ,'-k.','linewidth',2);
 h2=plot(S.wt.centre,-R2.SZ,'-b.','linewidth',2);
 plot(S.wt.centre,R2.SZ,'-b+','linewidth',2);
 h3=plot(S.wt.centre,-R3.SZ,'-r.','linewidth',2);
