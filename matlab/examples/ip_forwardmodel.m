@@ -12,7 +12,7 @@ gatdaem1d_loadlibrary();
 %Create a system object, get its handle, and some basic info
 %S.stmfile = '..\..\examples\bhmar-skytem\stmfiles\Skytem-LM.stm';
 S.stmfile = '..\..\examples\bhmar-skytem\stmfiles\Skytem-HM.stm';
-%S.stmfile = '..\..\examples\thomson-vtem\stmfiles\VTEM-plus-7.3ms-pulse-southernthomson.stm';
+S.stmfile = '..\..\examples\thomson-vtem\stmfiles\VTEM-plus-7.3ms-pulse-southernthomson.stm';
 
 S.hS  = gatdaem1d_getsystemhandle(S.stmfile);
 S.nw  = gatdaem1d_nwindows(S.hS);
@@ -28,17 +28,15 @@ for k=1:1:1
     G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
     
     %Setup earth
-    E1.thickness           = [20     20];        
-    E1.conductivity        = [0.01   0.1    0.001];        
+    E.thickness           = [20     20];        
+    E.conductivity        = [0.01   0.1    0.001];                
+    E.chargeability       = [0.0    0.3   0.0]; 
+    E.timeconstant        = [0.0    0.001  0.0];  
+    E.frequencydependence = [0.0    1      0.0]; 
     
-    E2 = E1;
-    E2.chargeability       = [0.0    0.3   0.0]; 
-    E2.timeconstant        = [0.0    0.001  0.0];  
-    E2.frequencydependence = [0.0    1      0.0]; 
-    
-    R1 = gatdaem1d_forwardmodel(S.hS,G,E1);        
-    R2 = gatdaem1d_forwardmodel(S.hS,G,E2,'colecole');
-    R3 = gatdaem1d_forwardmodel(S.hS,G,E2,'pelton');
+    R1 = gatdaem1d_forwardmodel(S.hS,G,E);        
+    R2 = gatdaem1d_forwardmodel(S.hS,G,E,'colecole');
+    R3 = gatdaem1d_forwardmodel(S.hS,G,E,'pelton');
 end
 %Finished modelling so delete the system objects and unload the dll
 gatdaem1d_freesystemhandle(S.hS);
