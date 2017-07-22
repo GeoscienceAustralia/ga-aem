@@ -14,9 +14,6 @@
     <ClCompile Include="..\..\src\rjmcmc1d.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\le.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\rjmcmc1dtdeminverter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

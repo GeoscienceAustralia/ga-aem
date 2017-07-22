@@ -405,8 +405,8 @@ void rjmcmc1dTDEmInverter::set_data()
 
 		if (S.reconstructPrimary){
 			T.setgeometry(IG);
-			T.Earth.calculation_type = CT_FORWARDMODEL;
-			T.Earth.derivative_layer = INT_MAX;
+			T.LEM.calculation_type = CT_FORWARDMODEL;
+			T.LEM.derivative_layer = INT_MAX;
 			T.setprimaryfields();
 
 			S.oPX = T.PrimaryX;
@@ -856,8 +856,8 @@ std::vector<double> rjmcmc1dTDEmInverter::forwardmodel(const rjMcMC1DModel& m)
 		T.setconductivitythickness(c, t);
 		T.setgeometry(G);
 		T.setupcomputations();
-		T.Earth.calculation_type = CT_FORWARDMODEL;
-		T.Earth.derivative_layer = INT_MAX;
+		T.LEM.calculation_type = CT_FORWARDMODEL;
+		T.LEM.derivative_layer = INT_MAX;
 		T.setprimaryfields();
 		T.setsecondaryfields();
 		std::vector<double> v = collect(S, T);

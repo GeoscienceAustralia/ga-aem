@@ -85,7 +85,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\garjmcmctdem.cpp" />
-    <ClCompile Include="..\..\src\le.cpp" />
     <ClCompile Include="..\..\src\rjmcmc1d.cpp" />
     <ClCompile Include="..\..\src\rjmcmc1dtdeminverter.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />

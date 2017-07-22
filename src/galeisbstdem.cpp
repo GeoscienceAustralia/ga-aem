@@ -17,7 +17,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include "file_utils.h"
 #include "file_formats.h"
-#include "le.h"
+#include "lem.h"
 #include "tdemsystem.h"
 #include "matrix_ops.h"
 #include "vector_utils.h"
@@ -564,8 +564,8 @@ void cSBSInverter::initialise_data()
 		cTDEmSystem& T = S.T;
 		if (S.reconstructPrimary){
 			T.setgeometry(GTFR);
-			T.Earth.calculation_type = CT_FORWARDMODEL;
-			T.Earth.derivative_layer = INT_MAX;
+			T.LEM.calculation_type = CT_FORWARDMODEL;
+			T.LEM.derivative_layer = INT_MAX;
 			T.setprimaryfields();
 			S.oPX = T.PrimaryX;
 			S.oPY = T.PrimaryY;
@@ -996,8 +996,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 		T.setgeometry(g);
 
 		//Forwardmodel
-		T.Earth.calculation_type = CT_FORWARDMODEL;
-		T.Earth.derivative_layer = INT_MAX;
+		T.LEM.calculation_type = CT_FORWARDMODEL;
+		T.LEM.derivative_layer = INT_MAX;
 		T.setupcomputations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
@@ -1051,8 +1051,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 			if (solve_conductivity){
 				for (size_t li = 0; li < nlayers; li++){
 					size_t pindex = li + cIndex;
-					T.Earth.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
-					T.Earth.derivative_layer = li;
+					T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
+					T.LEM.derivative_layer = li;
 					T.setprimaryfields();
 					T.setsecondaryfields();
 					//multiply by natural log(10) as parameters are in logbase10 units
@@ -1075,8 +1075,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 			if (solve_thickness){
 				for (size_t li = 0; li < nlayers - 1; li++){
 					size_t pindex = li + tIndex;
-					T.Earth.calculation_type = CT_THICKNESSDERIVATIVE;
-					T.Earth.derivative_layer = li;
+					T.LEM.calculation_type = CT_THICKNESSDERIVATIVE;
+					T.LEM.derivative_layer = li;
 					T.setprimaryfields();
 					T.setsecondaryfields();
 					//multiply by natural log(10) as parameters are in logbase10 units
@@ -1097,8 +1097,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 
 			if (solve_tx_height){
 				size_t pindex = tx_heightIndex;
-				T.Earth.calculation_type = CT_HDERIVATIVE;
-				T.Earth.derivative_layer = INT_MAX;
+				T.LEM.calculation_type = CT_HDERIVATIVE;
+				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 				T.setsecondaryfields();
 				if (S.useTotal){
@@ -1116,8 +1116,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 
 			if (solve_txrx_dx){
 				size_t pindex = txrx_dxIndex;
-				T.Earth.calculation_type = CT_XDERIVATIVE;
-				T.Earth.derivative_layer = INT_MAX;
+				T.LEM.calculation_type = CT_XDERIVATIVE;
+				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 				T.setsecondaryfields();
 				if (S.useTotal){
@@ -1135,8 +1135,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 
 			if (solve_txrx_dy){
 				size_t pindex = txrx_dyIndex;
-				T.Earth.calculation_type = CT_YDERIVATIVE;
-				T.Earth.derivative_layer = INT_MAX;
+				T.LEM.calculation_type = CT_YDERIVATIVE;
+				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 				T.setsecondaryfields();
 				if (S.useTotal){
@@ -1154,8 +1154,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 
 			if (solve_txrx_dz){
 				size_t pindex = txrx_dzIndex;
-				T.Earth.calculation_type = CT_ZDERIVATIVE;
-				T.Earth.derivative_layer = INT_MAX;
+				T.LEM.calculation_type = CT_ZDERIVATIVE;
+				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 				T.setsecondaryfields();
 				if (S.useTotal){

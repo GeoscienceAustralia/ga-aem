@@ -20,7 +20,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include "file_utils.h"
 #include "file_formats.h"
-#include "le.h"
+#include "lem.h"
 #include "tdemsystem.h"
 #include "polygon.h"
 #include "mpi_wrapper.h"
@@ -347,8 +347,8 @@ public:
 		size_t nlayers = conductivity.size();
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.Earth.calculation_type = CT_FORWARDMODEL;
-		T.Earth.derivative_layer = INT_MAX;
+		T.LEM.calculation_type = CT_FORWARDMODEL;
+		T.LEM.derivative_layer = INT_MAX;
 		T.setupcomputations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
@@ -371,8 +371,8 @@ public:
 
 			for (size_t li = 0; li < nlayers; li++){
 
-				T.Earth.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
-				T.Earth.derivative_layer = li;
+				T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
+				T.LEM.derivative_layer = li;
 				T.setupcomputations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
