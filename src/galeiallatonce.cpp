@@ -36,6 +36,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 FILE* mylogfile = (FILE*)NULL;
 
+class cSystemInfo;
+class cComponentInfo;
+
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 
 class cField{
@@ -159,32 +162,33 @@ public:
 	};
 };
 
-class cComponentInfo{
+class cComponentInfo {
 
 public:
-	bool use;
+	
+	bool Use = false;
+	bool InvertTotalField = false;
+	bool EstimateNoiseFromModel = false;
 	size_t nw;
 	cField fdp;
 	cField fds;
 	cField fdn;
 	cField fdmn;
-	cField fdan;
-	bool EstimateNoiseFromModel;
+	cField fdan;	
 
-	cComponentInfo(){
-		use = false;
-	};
+	cComponentInfo() {};
 
-	cComponentInfo(const cBlock& b, size_t nwindows){
-
+	cComponentInfo(const cBlock& b, size_t nwindows, bool inverttotalfield)		
+	{
+		InvertTotalField = inverttotalfield;
 		nw = nwindows;
 		if (b.Entries.size() == 0){
-			use = false;
+			Use = false;
 			return;
 		}
 
-		use = b.getboolvalue("Use");
-		if (use == false)return;
+		Use = b.getboolvalue("Use");
+		if (Use == false)return;
 
 		fdp = cField(b, "Primary");
 		fds = cField(b, "Secondary", nwindows);
@@ -202,12 +206,12 @@ public:
 	}
 
 	size_t ndata(){
-		if (use)return nw;
+		if (Use)return nw;
 		else return 0;
 	};
 
 	bool allocate_data_arrays(const size_t nlocalsamples){
-		if (use == false)return true;
+		if (Use == false)return true;
 		fds.resize(nlocalsamples, nw);
 		fdp.resize(nlocalsamples, 1);
 		fdn.resize(nlocalsamples, nw);
@@ -217,7 +221,7 @@ public:
 	};
 
 	bool parse(const std::vector<std::string> tokens, const size_t localsampleindex){
-		if (use == false)return true;
+		if (Use == false)return true;
 		fds.parse(tokens, localsampleindex);
 		fdp.parse(tokens, localsampleindex);
 		fdn.parse(tokens, localsampleindex);
@@ -228,17 +232,20 @@ public:
 
 	std::vector<double> data(const size_t localsampleindex){
 		std::vector<double> v;
-		if (use == false)return v;
+		if (Use == false)return v;
 		v.resize(nw);
 		for (size_t k = 0; k < nw; k++){
 			v[k] = fds(localsampleindex, k);
+			if (InvertTotalField){
+				v[k] += fdp(localsampleindex);
+			}
 		}
 		return v;
 	};
 
 	std::vector<double> noise(const size_t localsampleindex){
 		std::vector<double> v;
-		if (use == false)return v;
+		if (Use == false)return v;
 
 		v.resize(nw);
 		if (EstimateNoiseFromModel){
@@ -267,13 +274,10 @@ private:
 	cTDEmSystem T;
 
 public:
-	bool InvertTotalField;
-	bool ReconstructPrimaryFieldFromInputGeometry;
+	bool InvertTotalField;	
 	cComponentInfo Comp[3];
 
-	cSystemInfo(){
-
-	};
+	cSystemInfo(){ 	};
 
 	bool initialise(const cBlock& b){
 		std::string stm = b.getstringvalue("SystemFile");
@@ -286,14 +290,9 @@ public:
 			InvertTotalField = false;
 		}
 
-		status = b.getvalue("ReconstructPrimaryFieldFromInputGeometry", ReconstructPrimaryFieldFromInputGeometry);
-		if (status == false){
-			ReconstructPrimaryFieldFromInputGeometry = false;
-		}
-
-		Comp[0] = cComponentInfo(b.findblock("XComponent"), nw);
-		Comp[1] = cComponentInfo(b.findblock("YComponent"), nw);
-		Comp[2] = cComponentInfo(b.findblock("ZComponent"), nw);
+		Comp[0] = cComponentInfo(b.findblock("XComponent"), nw, InvertTotalField);
+		Comp[1] = cComponentInfo(b.findblock("YComponent"), nw, InvertTotalField);
+		Comp[2] = cComponentInfo(b.findblock("ZComponent"), nw, InvertTotalField);
 		return true;
 	};
 
@@ -356,9 +355,12 @@ public:
 		size_t k = 0;
 		predicted.resize(ndata());
 		for (size_t ci = 0; ci < 3; ci++){
-			if (Comp[ci].use == false)continue;
+			if (Comp[ci].Use == false)continue;
 			for (size_t wi = 0; wi < T.NumberOfWindows; wi++){
 				predicted[k] = T.secondary(ci, wi);
+				if (Comp[ci].InvertTotalField){
+					predicted[k] += T.primary(ci);
+				}
 				k++;
 			}
 		}
@@ -379,9 +381,12 @@ public:
 
 				size_t k = 0;
 				for (size_t ci = 0; ci < 3; ci++){
-					if (Comp[ci].use == false)continue;
+					if (Comp[ci].Use == false)continue;
 					for (size_t wi = 0; wi < T.NumberOfWindows; wi++){
 						derivatives[k][li] = T.secondary(ci, wi);
+						if (Comp[ci].InvertTotalField){
+							derivatives[k][li] += T.primary(ci);
+						}
 						k++;
 					}
 				}
@@ -1509,7 +1514,9 @@ public:
 		clogstd.restorelocalarray(clogstd_loc);
 		B.assemble();
 		Wb.create_diagonal_to_power("Wb", clogstd, -2.0);
-		Wb *= (InversionOp.AlphaB / Wb.nglobalrows());
+		if (Wb.nglobalrows() > 0){
+			Wb *= (InversionOp.AlphaB / Wb.nglobalrows());
+		}
 		rootmessage(mylogfile, "Finished creating matrix B\n");
 	}
 
@@ -1649,10 +1656,10 @@ public:
 		//Wr.writetextfile("Wr.smat");
 
 		B_create_elevation();
-		B.writetextfile("B.smat");
-		Wb.writetextfile("Wb.smat");
-		clogref.writetextfile("clogref.vec");
-		clogstd.writetextfile("clogstd.vec");
+		//B.writetextfile("B.smat");
+		//Wb.writetextfile("Wb.smat");
+		//clogref.writetextfile("clogref.vec");
+		//clogstd.writetextfile("clogstd.vec");
 
 		if (InversionOp.VerticalSmoothnessMethod == SM_1ST_DERIVATIVE){
 			V_create_1st_derivative();
@@ -1951,7 +1958,7 @@ public:
 					for (size_t ci = 0; ci < 3; ci++){
 
 						cComponentInfo& C = S.Comp[ci];
-						if (C.use == false)continue;
+						if (C.Use == false)continue;
 
 						if (S.InvertTotalField){
 							OI.addfield(sys + cid[ci] + "P", 'E', 15, 6);
