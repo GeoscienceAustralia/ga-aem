@@ -37,6 +37,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 FILE* mylogfile = (FILE*)NULL;
 
 class cSystemInfo;
+
 class cComponentInfo;
 
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
@@ -403,36 +404,36 @@ private:
 	size_t nlayers;
 
 public:
-	cField fdcref;
-	cField fdtref;
-	cField fdcstd;
-	cField fdtstd;
+	cField cref;
+	cField tref;
+	cField cstd;
+	cField tstd;
 
 	cEarthInfo(){};
 	cEarthInfo(const cBlock& b){
 		nlayers = b.getsizetvalue("NumberOfLayers");
-		fdcref = cField(b, "ReferenceModel.Conductivity", nlayers);
-		fdtref = cField(b, "ReferenceModel.Thickness", nlayers - 1);
+		cref = cField(b, "ReferenceModel.Conductivity", nlayers);
+		tref = cField(b, "ReferenceModel.Thickness", nlayers - 1);
 
-		fdcstd = cField(b, "StdDevReferenceModel.Conductivity", nlayers);
-		fdtstd = cField(b, "StdDevReferenceModel.Thickness", nlayers - 1);
+		cstd = cField(b, "StdDevReferenceModel.Conductivity", nlayers);
+		tstd = cField(b, "StdDevReferenceModel.Thickness", nlayers - 1);
 	}
 
 	size_t numlayers(){ return nlayers; }
 
 	bool allocate_data_arrays(const size_t nlocalsamples){
-		fdcref.resize(nlocalsamples, nlayers);
-		fdtref.resize(nlocalsamples, nlayers - 1);
-		fdcstd.resize(nlocalsamples, nlayers);
-		fdtstd.resize(nlocalsamples, nlayers - 1);
+		cref.resize(nlocalsamples, nlayers);
+		tref.resize(nlocalsamples, nlayers - 1);
+		cstd.resize(nlocalsamples, nlayers);
+		tstd.resize(nlocalsamples, nlayers - 1);
 		return true;
 	}
 
 	bool parse(const std::vector<std::string> tokens, const size_t localsampleindex){
-		fdcref.parse(tokens, localsampleindex);
-		fdtref.parse(tokens, localsampleindex);
-		fdcstd.parse(tokens, localsampleindex);
-		fdtstd.parse(tokens, localsampleindex);
+		cref.parse(tokens, localsampleindex);
+		tref.parse(tokens, localsampleindex);
+		cstd.parse(tokens, localsampleindex);
+		tstd.parse(tokens, localsampleindex);
 		return true;
 	}
 };
@@ -629,6 +630,26 @@ public:
 
 };
 
+class cGeometryInfo {
+
+public:
+
+	bool   solve = false;
+	cField ref;
+	cField std;
+	
+	cGeometryInfo(){ };
+
+	cGeometryInfo(const cBlock& b){
+		ref  = cField(b, "Reference");
+		b.getvalue("Solve", solve);
+		if (solve){
+			std = cField(b, "Uncertainty");
+		}
+	}
+
+};
+
 class cAllAtOnceInverter{
 
 private:
@@ -646,8 +667,8 @@ private:
 	cField fdfiducial;
 	cField fdx;
 	cField fdy;
-	cField fdelevation;
-	cField fdgeometry[10];
+	cField fdelevation;	
+	std::vector<cGeometryInfo> G;
 
 	int mpisize;
 	int mpirank;
@@ -741,6 +762,7 @@ public:
 		E = cEarthInfo(Control.findblock("Earth"));
 		nlayers = E.numlayers();
 		get_columns();
+		get_geometry_columns();
 
 		std::vector<cBlock> bv = Control.findblocks("EMSystem");
 		T.resize(bv.size());
@@ -748,9 +770,7 @@ public:
 			T[i].initialise(bv[i]);
 		}
 		nchan = calculate_nchan();
-
 		setup();
-
 		rootmessage(mylogfile, "Finishing at at %s\n", timestamp().c_str());
 		rootmessage(mylogfile, "Elapsed time = %.2lf\n", stopwatch.etimenow());
 	};
@@ -769,20 +789,26 @@ public:
 		fdfiducial = cField(b, "FidNumber");
 		fdx = cField(b, "Easting");
 		fdy = cField(b, "Northing");
-		fdelevation = cField(b, "GroundElevation");
-
-		fdgeometry[0] = cField(b, "TX_Height");
-		fdgeometry[1] = cField(b, "TX_Roll");
-		fdgeometry[2] = cField(b, "TX_Pitch");
-		fdgeometry[3] = cField(b, "TX_Yaw");
-		fdgeometry[4] = cField(b, "TXRX_DX");
-		fdgeometry[5] = cField(b, "TXRX_DY");
-		fdgeometry[6] = cField(b, "TXRX_DZ");
-		fdgeometry[7] = cField(b, "RX_Roll");
-		fdgeometry[8] = cField(b, "RX_Pitch");
-		fdgeometry[9] = cField(b, "RX_Yaw");
+		fdelevation = cField(b, "GroundElevation");		
 		return true;
 
+	}
+
+	bool get_geometry_columns(){
+
+		G.resize(10);
+		cBlock g = Control.findblock("Input.Geometry");
+		for (size_t i = 0; i < G.size(); i++){
+			std::string fname = cTDEmGeometry::fname(i);
+			cBlock b = g.findblock(fname);	
+			if (b.Name.size() == 0){				
+				rootmessage(mylogfile,"Could not find block for geometry parameter %s\n", fname.c_str());
+				std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);				
+				throw(std::runtime_error(e));
+			}
+			G[i] = cGeometryInfo(b);
+		}		
+		return true;
 	}
 
 	size_t count_closer_than(const std::vector<double> distance, const double& value){
@@ -876,6 +902,7 @@ public:
 	}
 
 	bool allocate_data_arrays(){
+
 		size_t nl = sown.nlocal();
 		fdsurvey.resize(nl);
 		fddate.resize(nl);
@@ -885,8 +912,12 @@ public:
 		fdx.resize(nl);
 		fdy.resize(nl);
 		fdelevation.resize(nl);
-		for (size_t k = 0; k < 10; k++){
-			fdgeometry[k].resize(nl);
+
+		for (size_t k = 0; k < G.size(); k++){
+			G[k].ref.resize(nl);
+			if (G[k].solve){
+				G[k].std.resize(nl);
+			}
 		}
 		for (size_t k = 0; k < T.size(); k++){
 			T[k].allocate_data_arrays(nl);
@@ -904,8 +935,12 @@ public:
 		fdx.parse(tokens, localindex);
 		fdy.parse(tokens, localindex);
 		fdelevation.parse(tokens, localindex);
-		for (size_t k = 0; k < 10; k++){
-			fdgeometry[k].parse(tokens, localindex);
+
+		for (size_t k = 0; k < G.size(); k++){
+			G[k].ref.parse(tokens, localindex);
+			if (G[k].solve){
+				G[k].std.parse(tokens, localindex);
+			}
 		}
 		for (size_t ti = 0; ti < T.size(); ti++){
 			T[ti].parse(tokens, localindex);
@@ -994,7 +1029,11 @@ public:
 	}
 
 	size_t calculate_nparam(){
-		return nsamples*nlayers;
+		size_t n = nsamples*nlayers;
+		for (size_t i = 0; i < G.size(); i++){
+			if (G[i].solve) n += nsamples;
+		}		
+		return n;
 	}
 
 	size_t dindex(const size_t& iglobalsample, const size_t& ichan){
@@ -1048,8 +1087,14 @@ public:
 		size_t i = 0;
 		for (size_t si = 0; si < (size_t)sown.nlocal(); si++){
 			for (size_t li = 0; li < nlayers; li++){
-				v[i] = std::log10(E.fdcref(si, li));
+				v[i] = std::log10(E.cref(si, li));
 				i++;
+			}
+			for (size_t gi = 0; G.size(); gi++){
+				if (G[gi].solve){
+					v[i] = G[gi].ref(si);
+					i++;
+				}
 			}
 		}
 		return v;
@@ -1060,8 +1105,14 @@ public:
 		size_t i = 0;
 		for (size_t si = 0; si < (size_t)sown.nlocal(); si++){
 			for (size_t li = 0; li < nlayers; li++){
-				v[i] = E.fdcstd(si, li);
+				v[i] = E.cstd(si, li);
 				i++;
+			}
+			for (size_t gi = 0; G.size(); gi++){
+				if (G[gi].solve){
+					v[i] = G[gi].std(si);
+					i++;
+				}
 			}
 		}
 		return v;
@@ -1537,7 +1588,7 @@ public:
 	std::vector<double> get_thicknesses(const size_t localsampleindex){
 		std::vector<double> thickness(nlayers - 1);
 		for (size_t i = 0; i < nlayers - 1; i++){
-			thickness[i] = E.fdtref(localsampleindex, i);
+			thickness[i] = E.tref(localsampleindex, i);
 		}
 		return thickness;
 	}
@@ -1554,16 +1605,16 @@ public:
 	cTDEmGeometry get_geometry(const size_t localsampleindex){
 
 		cTDEmGeometry g;
-		g.tx_height = fdgeometry[0](localsampleindex);
-		g.tx_roll = fdgeometry[1](localsampleindex);
-		g.tx_pitch = fdgeometry[2](localsampleindex);
-		g.tx_yaw = fdgeometry[3](localsampleindex);
-		g.txrx_dx = fdgeometry[4](localsampleindex);
-		g.txrx_dy = fdgeometry[5](localsampleindex);
-		g.txrx_dz = fdgeometry[6](localsampleindex);
-		g.rx_roll = fdgeometry[7](localsampleindex);
-		g.rx_pitch = fdgeometry[8](localsampleindex);
-		g.rx_yaw = fdgeometry[9](localsampleindex);
+		g.tx_height = G[0].ref(localsampleindex);
+		g.tx_roll   = G[1].ref(localsampleindex);
+		g.tx_pitch  = G[2].ref(localsampleindex);
+		g.tx_yaw    = G[3].ref(localsampleindex);
+		g.txrx_dx   = G[4].ref(localsampleindex);
+		g.txrx_dy   = G[5].ref(localsampleindex);
+		g.txrx_dz   = G[6].ref(localsampleindex);
+		g.rx_roll   = G[7].ref(localsampleindex);
+		g.rx_pitch  = G[8].ref(localsampleindex);
+		g.rx_yaw    = G[9].ref(localsampleindex);
 		return g;
 	}
 
@@ -1586,7 +1637,7 @@ public:
 			size_t gpi = pindex(si, 0);
 
 			std::vector<double> thickness = get_thicknesses(lsi);
-			cTDEmGeometry geometry = get_geometry(lsi);
+			cTDEmGeometry geometry        = get_geometry(lsi);
 			for (size_t li = 0; li < nlayers; li++){
 				conductivity[li] = std::pow(10.0, mlocal[lpi + li]);
 			}
@@ -1898,10 +1949,14 @@ public:
 			OI.addfield("elevation", 'F', 10, 2);
 			OI.setunits("m"); OI.setcomment("Ground elevation relative to sea-level");
 			buf += strprint("%10.2lf", fdelevation(lsi));
-
-			OI.addfield("tx_height", 'F', 9, 2);
-			OI.setunits("m"); OI.setcomment("Tx height above ground-level");
-			buf += strprint("%9.2lf", fdgeometry[0](lsi));
+		
+			cTDEmGeometry g = get_geometry(lsi);
+			for (size_t gi = 0; gi < G.size(); gi++){
+				OI.addfield(g.fname(gi), 'F', 9, 2);
+				OI.setunits(g.units(gi));
+				OI.setcomment(g.description(gi));
+				buf += strprint("%9.2lf", g.value(gi));
+			}
 
 			OI.addfield("nlayers", 'I', 4, 0);
 			OI.setcomment("Number of layers");

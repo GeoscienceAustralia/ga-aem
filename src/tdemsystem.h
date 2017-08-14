@@ -112,6 +112,103 @@ public:
 		if (rx_pitch == cBlock::ud_double())rx_pitch = g.rx_pitch;
 		if (rx_yaw == cBlock::ud_double())rx_yaw = g.rx_yaw;
 	}	
+	
+	static size_t findex(const std::string& name){
+
+		for (size_t i = 0; i < 10; i++){
+			if (strcasecmp(name, fname(i)) == 0) return i;
+		}
+				
+		rootmessage("Geometry field name %s is bad\n", name);
+		std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+		throw(std::runtime_error(e));		
+
+		return 0;
+	};
+
+	static std::string fname(const size_t& index){
+
+		if (index < 0 || index > 9){
+			rootmessage("Geometry index %llu out of range\n", index);
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+		}
+
+		if (index == 0) return "tx_height";
+		else if (index == 1) return "tx_roll";
+		else if (index == 2) return "tx_pitch";
+		else if (index == 3) return "tx_yaw";
+
+		else if (index == 4) return "txrx_dx";
+		else if (index == 5) return "txrx_dy";
+		else if (index == 6) return "txrx_dz";
+
+		else if (index == 7) return "rx_roll";
+		else if (index == 8) return "rx_pitch";
+		else if (index == 9) return "rx_yaw";
+	};
+	
+	static std::string units(const size_t& index){
+
+		if (index < 0 || index > 9){
+			rootmessage("Geometry index %llu out of range\n", index);
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+		}
+
+		if (index == 0) return "m";
+		else if (index == 1) return "degrees";
+		else if (index == 2) return "degrees";
+		else if (index == 3) return "degrees";
+
+		else if (index == 4) return "m";
+		else if (index == 5) return "m";
+		else if (index == 6) return "m";
+
+		else if (index == 7) return "degrees";
+		else if (index == 8) return "degrees";
+		else if (index == 9) return "degrees";
+	};
+
+	static std::string description(const size_t& index){
+
+		if (index < 0 || index > 9){
+			rootmessage("Geometry index %llu out of range\n", index);
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+		}
+
+		if (index == 0) return "Tx height above ground - level";
+		else if (index == 1) return "Tx roll - left side up + ve";
+		else if (index == 2) return "Tx pitch - nose down + ve";
+		else if (index == 3) return "Tx yaw - turn left + ve";
+		else if (index == 4) return "Tx - Rx horizonatl inline separation";
+		else if (index == 5) return "Tx - Rx horizonatl transverse separation";
+		else if (index == 6) return "Tx - Rx vertical separation";
+		else if (index == 7) return "Rx roll - left side up + ve";
+		else if (index == 8) return "Rx pitch - nose down + ve";
+		else if (index == 9) return "Rx yaw - turn left + ve";
+	};
+
+	double value(const size_t& index){
+
+		if (index < 0 || index > 9){
+			rootmessage("Geometry index %llu out of range\n", index);
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+		}
+
+		if (index == 0) return tx_height;
+		else if (index == 1) return tx_roll;
+		else if (index == 2) return tx_pitch;
+		else if (index == 3) return tx_yaw;
+		else if (index == 4) return txrx_dx;
+		else if (index == 5) return txrx_dy;
+		else if (index == 6) return txrx_dz;
+		else if (index == 7) return rx_roll;
+		else if (index == 8) return rx_pitch;
+		else if (index == 9) return rx_yaw; 
+	};
 };
 
 struct WindowSpecification{
