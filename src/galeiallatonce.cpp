@@ -684,7 +684,10 @@ private:
 	size_t nchan;
 	size_t nsamples;
 	size_t ndata;
+
+	size_t nparampersample;
 	size_t nparam;
+		
 	size_t nlocaldata;
 	size_t nlocalparam;
 	cOwnership sown;
@@ -888,15 +891,16 @@ public:
 			throw(std::runtime_error(e));
 		}
 
-
 		ndata = calculate_ndata();
+		nparampersample = calculate_nparampersample();		
 		nparam = calculate_nparam();
+
 		sown.set_petsc_default(mpisize, mpirank, nsamples);
 
 		//Make sure the ownserships are intergral number of samples
 		cOwnership down(sown.start*nchan, sown.end*nchan);
-		cOwnership pown(sown.start*nlayers, sown.end*nlayers);
-		nlocaldata = down.nlocal();
+		cOwnership pown(sown.start*nparampersample, sown.end*nparampersample);
+		nlocaldata  = down.nlocal();
 		nlocalparam = pown.nlocal();
 		return true;
 	}
@@ -1028,12 +1032,16 @@ public:
 		return nsamples*nchan;
 	}
 
-	size_t calculate_nparam(){
-		size_t n = nsamples*nlayers;
+	size_t calculate_nparampersample(){
+		size_t n = nlayers;
 		for (size_t i = 0; i < G.size(); i++){
-			if (G[i].solve) n += nsamples;
+			if (G[i].solve) n++;
 		}		
 		return n;
+	}
+
+	size_t calculate_nparam(){
+		return nsamples*nparampersample;
 	}
 
 	size_t dindex(const size_t& iglobalsample, const size_t& ichan){
@@ -1090,7 +1098,7 @@ public:
 				v[i] = std::log10(E.cref(si, li));
 				i++;
 			}
-			for (size_t gi = 0; G.size(); gi++){
+			for (size_t gi = 0; gi < G.size(); gi++){
 				if (G[gi].solve){
 					v[i] = G[gi].ref(si);
 					i++;
@@ -1108,7 +1116,7 @@ public:
 				v[i] = E.cstd(si, li);
 				i++;
 			}
-			for (size_t gi = 0; G.size(); gi++){
+			for (size_t gi = 0; gi < G.size(); gi++){
 				if (G[gi].solve){
 					v[i] = G[gi].std(si);
 					i++;
@@ -1679,6 +1687,7 @@ public:
 		rootmessage(mylogfile, "nchannels=%lu\n", nchan);
 		rootmessage(mylogfile, "ndata=%lu\n", ndata);
 		rootmessage(mylogfile, "nlayers=%lu\n", nlayers);
+		rootmessage(mylogfile, "nparampersample=%lu\n", nparampersample);
 		rootmessage(mylogfile, "nparam=%lu\n", nparam);
 
 		read_data();

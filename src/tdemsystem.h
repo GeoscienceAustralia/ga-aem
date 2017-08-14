@@ -168,6 +168,7 @@ public:
 		else if (index == 7) return "degrees";
 		else if (index == 8) return "degrees";
 		else if (index == 9) return "degrees";
+		else return "";
 	};
 
 	static std::string description(const size_t& index){
@@ -188,6 +189,7 @@ public:
 		else if (index == 7) return "Rx roll - left side up + ve";
 		else if (index == 8) return "Rx pitch - nose down + ve";
 		else if (index == 9) return "Rx yaw - turn left + ve";
+		else return "";
 	};
 
 	double value(const size_t& index){
@@ -208,6 +210,7 @@ public:
 		else if (index == 7) return rx_roll;
 		else if (index == 8) return rx_pitch;
 		else if (index == 9) return rx_yaw; 
+		return DBL_MAX;
 	};
 };
 
