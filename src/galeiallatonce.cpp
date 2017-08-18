@@ -171,6 +171,7 @@ public:
 	bool InvertTotalField = false;
 	bool EstimateNoiseFromModel = false;
 	size_t nw;
+	size_t basedindex = 0;//sample data index for window 0
 	cField fdp;
 	cField fds;
 	cField fdn;
@@ -235,10 +236,10 @@ public:
 		std::vector<double> v;
 		if (Use == false)return v;
 		v.resize(nw);
-		for (size_t k = 0; k < nw; k++){
-			v[k] = fds(localsampleindex, k);
+		for (size_t wi = 0; wi < nw; wi++){
+			v[wi] = fds(localsampleindex, wi);
 			if (InvertTotalField){
-				v[k] += fdp(localsampleindex);
+				v[wi] += fdp(localsampleindex);
 			}
 		}
 		return v;
@@ -250,17 +251,17 @@ public:
 
 		v.resize(nw);
 		if (EstimateNoiseFromModel){
-			for (size_t k = 0; k < nw; k++){
-				double an = fdan(localsampleindex, k);
-				double pmn = fdmn(localsampleindex, k);
-				double s = fds(localsampleindex, k);
+			for (size_t wi = 0; wi < nw; wi++){
+				double an = fdan(localsampleindex, wi);
+				double pmn = fdmn(localsampleindex, wi);
+				double s = fds(localsampleindex, wi);
 				double mn = 0.01*pmn*s;
-				v[k] = sqrt(an*an + mn*mn);
+				v[wi] = sqrt(an*an + mn*mn);
 			}
 		}
 		else{
-			for (size_t k = 0; k < nw; k++){
-				v[k] = fdn(localsampleindex, k);
+			for (size_t wi = 0; wi < nw; wi++){
+				v[wi] = fdn(localsampleindex, wi);
 			}
 		}
 		return v;
@@ -272,14 +273,12 @@ class cSystemInfo{
 
 private:
 	size_t nw;
-	cTDEmSystem T;
-
+	
 public:
+	cTDEmSystem T;
 	bool InvertTotalField;	
-	cComponentInfo Comp[3];
-
+	std::vector<cComponentInfo> Comp;
 	cSystemInfo(){ 	};
-
 	bool initialise(const cBlock& b){
 		std::string stm = b.getstringvalue("SystemFile");
 		T.readsystemdescriptorfile(stm);
@@ -291,9 +290,17 @@ public:
 			InvertTotalField = false;
 		}
 
+		Comp.resize(3);
 		Comp[0] = cComponentInfo(b.findblock("XComponent"), nw, InvertTotalField);
 		Comp[1] = cComponentInfo(b.findblock("YComponent"), nw, InvertTotalField);
 		Comp[2] = cComponentInfo(b.findblock("ZComponent"), nw, InvertTotalField);
+		
+		Comp[0].basedindex = 0;
+		Comp[1].basedindex = 0;
+		Comp[2].basedindex = 0;
+		if (Comp[0].Use) Comp[1].basedindex += nw;		
+		if (Comp[0].Use) Comp[2].basedindex += nw;
+		if (Comp[1].Use) Comp[2].basedindex += nw;		
 		return true;
 	};
 
@@ -301,49 +308,56 @@ public:
 		return Comp[0].ndata() + Comp[1].ndata() + Comp[2].ndata();
 	}
 
+	inline size_t dindex(const size_t& component, const size_t& window){
+		return Comp[component].basedindex + window;
+	}
+
 	bool allocate_data_arrays(const size_t nlocalsamples){
-		for (size_t k = 0; k < 3; k++){
+		for (size_t k = 0; k < Comp.size(); k++){
 			Comp[k].allocate_data_arrays(nlocalsamples);
 		}
 		return true;
 	}
 
 	bool parse(const std::vector<std::string> tokens, const size_t localsampleindex){
-		for (size_t ci = 0; ci < 3; ci++){
+		for (size_t ci = 0; ci < Comp.size(); ci++){
 			Comp[ci].parse(tokens, localsampleindex);
 		}
 		return true;
 	}
 
 	std::vector<double> data(const size_t localsampleindex){
-		std::vector<double> v;
-		v.resize(ndata());
-		size_t i = 0;
-		for (size_t ci = 0; ci < 3; ci++){
-			std::vector<double> cn = Comp[ci].data(localsampleindex);
-			for (size_t k = 0; k < cn.size(); k++){
-				v[i] = cn[k];
-				i++;
+		std::vector<double> v;		
+		for (size_t ci = 0; ci < Comp.size(); ci++){
+			if (Comp[ci].Use){
+				append(v, Comp[ci].data(localsampleindex));
 			}
 		}
 		return v;
 	}
 
 	std::vector<double> noise(const size_t localsampleindex){
-		std::vector<double> v;
-		v.resize(ndata());
-		size_t i = 0;
-		for (size_t ci = 0; ci < 3; ci++){
-			std::vector<double> cn = Comp[ci].noise(localsampleindex);
-			for (size_t k = 0; k < cn.size(); k++){
-				v[i] = cn[k];
-				i++;
+		std::vector<double> v;		
+		for (size_t ci = 0; ci < Comp.size(); ci++){
+			if (Comp[ci].Use){
+				append(v, Comp[ci].noise(localsampleindex));
 			}
 		}
 		return v;
 	}
 
-	bool forward_model_and_derivatives(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry, std::vector<double>& predicted, std::vector<std::vector<double>>& derivatives, const bool computederivatives){
+	bool forward_model(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry){		
+		T.setconductivitythickness(conductivity, thickness);
+		T.setgeometry(geometry);
+		T.LEM.calculation_type = CT_FORWARDMODEL;
+		T.LEM.derivative_layer = INT_MAX;
+		T.setupcomputations();
+		T.setprimaryfields();
+		T.setsecondaryfields();
+		return true;
+	}
+
+	bool forward_model_and_derivatives(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry, std::vector<double>& predicted, std::vector<std::vector<double>>& derivatives, const bool computederivatives, const std::vector<size_t> UGI){
 		size_t nlayers = conductivity.size();
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
@@ -353,45 +367,83 @@ public:
 		T.setprimaryfields();
 		T.setsecondaryfields();
 
-		size_t k = 0;
+		
+		//Save for later derivative calculations
+		std::vector<double> X = T.X;
+		std::vector<double> Y = T.Y;
+		std::vector<double> Z = T.Z;
+		if (InvertTotalField){
+			X += T.PrimaryX;
+			Y += T.PrimaryY;
+			Z += T.PrimaryZ;
+		}
+		
 		predicted.resize(ndata());
-		for (size_t ci = 0; ci < 3; ci++){
+		for (size_t ci = 0; ci < Comp.size(); ci++){
 			if (Comp[ci].Use == false)continue;
 			for (size_t wi = 0; wi < T.NumberOfWindows; wi++){
-				predicted[k] = T.secondary(ci, wi);
+				predicted[dindex(ci,wi)] = T.secondary(ci, wi);
 				if (Comp[ci].InvertTotalField){
-					predicted[k] += T.primary(ci);
-				}
-				k++;
+					predicted[dindex(ci, wi)] += T.primary(ci);
+				}				
 			}
 		}
 
 		if (computederivatives == true){
+			
 			derivatives.resize(ndata());
 			for (size_t di = 0; di < ndata(); di++){
-				derivatives[di].resize(nlayers);
+				derivatives[di].resize(nlayers + UGI.size());
 			}
 
 			for (size_t li = 0; li < nlayers; li++){
-
 				T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
 				T.LEM.derivative_layer = li;
 				T.setupcomputations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
-
-				size_t k = 0;
-				for (size_t ci = 0; ci < 3; ci++){
+				
+				for (size_t ci = 0; ci < Comp.size(); ci++){
 					if (Comp[ci].Use == false)continue;
 					for (size_t wi = 0; wi < T.NumberOfWindows; wi++){
-						derivatives[k][li] = T.secondary(ci, wi);
+						derivatives[dindex(ci, wi)][li] = T.secondary(ci, wi);
 						if (Comp[ci].InvertTotalField){
-							derivatives[k][li] += T.primary(ci);
-						}
-						k++;
+							derivatives[dindex(ci, wi)][li] += T.primary(ci);
+						}						
 					}
 				}
+			}			
 
+			for (size_t gi = 0; gi < UGI.size(); gi++){								
+				if (cTDEmGeometry::elementtype(UGI[gi]) == GE_RX_PITCH){
+					std::vector<double> dxbdp;
+					std::vector<double> dzbdp;
+					T.drx_pitch(X, Z, geometry.rx_pitch, dxbdp, dzbdp);					
+					for (size_t ci = 0; ci < Comp.size(); ci++){
+						if (Comp[ci].Use == false)continue;
+						for (size_t wi = 0; wi < T.NumberOfWindows; wi++){
+							if (ci == 0)      derivatives[dindex(ci, wi)][gi + nlayers] = dxbdp[wi];
+							else if (ci == 1) derivatives[dindex(ci, wi)][gi + nlayers] = 0.0;
+							else              derivatives[dindex(ci, wi)][gi + nlayers] = dzbdp[wi];							
+						}
+					}
+				}
+				else{
+					T.LEM.calculation_type = cTDEmGeometry::derivativetype(UGI[gi]);
+					T.LEM.derivative_layer = INT_MAX;
+					T.setupcomputations();
+					T.setprimaryfields();
+					T.setsecondaryfields();						
+					for (size_t ci = 0; ci < Comp.size(); ci++){
+						if (Comp[ci].Use == false) continue;
+						for (size_t wi = 0; wi < T.NumberOfWindows; wi++){
+							derivatives[dindex(ci, wi)][gi + nlayers] = T.secondary(ci, wi);
+							if (Comp[ci].InvertTotalField){
+								derivatives[dindex(ci, wi)][gi + nlayers] += T.primary(ci);
+							}														
+						}
+					}
+				}				
 			}
 		}
 		return true;
@@ -567,6 +619,8 @@ public:
 
 	bool is_line_included(const int& line){
 
+		if (IncludeLineRanges.size() == 0) return true;
+
 		auto rit = std::find_if(
 			IncludeLineRanges.begin(),
 			IncludeLineRanges.end(),
@@ -576,8 +630,7 @@ public:
 		}
 		);
 		if (rit != IncludeLineRanges.end())return true;
-
-		//if (IncludeLines.size() == 0)return true;
+		
 		auto lit = std::find(IncludeLines.begin(), IncludeLines.end(), line);
 		if (lit != IncludeLines.end())return true;
 
@@ -669,6 +722,7 @@ private:
 	cField fdy;
 	cField fdelevation;	
 	std::vector<cGeometryInfo> G;
+	std::vector<size_t> UGI;
 
 	int mpisize;
 	int mpirank;
@@ -811,6 +865,7 @@ public:
 			}
 			G[i] = cGeometryInfo(b);
 		}		
+		UGI = unknown_geometry_indices();
 		return true;
 	}
 
@@ -917,10 +972,10 @@ public:
 		fdy.resize(nl);
 		fdelevation.resize(nl);
 
-		for (size_t k = 0; k < G.size(); k++){
-			G[k].ref.resize(nl);
-			if (G[k].solve){
-				G[k].std.resize(nl);
+		for (size_t gi = 0; gi < G.size(); gi++){
+			G[gi].ref.resize(nl);
+			if (G[gi].solve){
+				G[gi].std.resize(nl);
 			}
 		}
 		for (size_t k = 0; k < T.size(); k++){
@@ -940,15 +995,17 @@ public:
 		fdy.parse(tokens, localindex);
 		fdelevation.parse(tokens, localindex);
 
-		for (size_t k = 0; k < G.size(); k++){
-			G[k].ref.parse(tokens, localindex);
-			if (G[k].solve){
-				G[k].std.parse(tokens, localindex);
+		for (size_t gi = 0; gi < G.size(); gi++){
+			G[gi].ref.parse(tokens, localindex);
+			if (G[gi].solve){
+				G[gi].std.parse(tokens, localindex);
 			}
 		}
+
 		for (size_t ti = 0; ti < T.size(); ti++){
 			T[ti].parse(tokens, localindex);
 		}
+
 		E.parse(tokens, localindex);
 		return true;
 	}
@@ -1028,16 +1085,12 @@ public:
 		return n;
 	}
 
-	size_t calculate_ndata(){
+	inline size_t calculate_ndata(){
 		return nsamples*nchan;
 	}
 
-	size_t calculate_nparampersample(){
-		size_t n = nlayers;
-		for (size_t i = 0; i < G.size(); i++){
-			if (G[i].solve) n++;
-		}		
-		return n;
+	inline size_t calculate_nparampersample(){
+		return nlayers + UGI.size();				
 	}
 
 	size_t calculate_nparam(){
@@ -1048,8 +1101,12 @@ public:
 		return iglobalsample*nchan + ichan;
 	}
 
-	size_t pindex(const size_t& iglobalsample, const size_t& ilayer){
-		return iglobalsample*nlayers + ilayer;
+	size_t gpindex_c(const size_t& iglobalsample, const size_t& ilayer){
+		return iglobalsample * nparampersample + ilayer;
+	}
+
+	size_t gpindex_g(const size_t& iglobalsample, const size_t& igparam){
+		return iglobalsample*nparampersample + nlayers + igparam;
 	}
 
 	size_t localsampleindex(const size_t& _globalsampleindex){
@@ -1061,30 +1118,22 @@ public:
 	}
 
 	std::vector<double> local_data(){
-		std::vector<double> v(nlocaldata);
-		size_t i = 0;
+		std::vector<double> v;
+		v.reserve(nlocaldata);
 		for (size_t si = 0; si < (size_t)sown.nlocal(); si++){
 			for (size_t ti = 0; ti < T.size(); ti++){
-				std::vector<double> ld = T[ti].data(si);
-				for (size_t k = 0; k < ld.size(); k++){
-					v[i] = ld[k];
-					i++;
-				}
+				append(v,T[ti].data(si));				
 			}
 		}
 		return v;
 	}
 
 	std::vector<double> local_noise(){
-		std::vector<double> v(nlocaldata, 0.0);
-		size_t i = 0;
+		std::vector<double> v;
+		v.reserve(nlocaldata);		
 		for (size_t si = 0; si < (size_t)sown.nlocal(); si++){
 			for (size_t ti = 0; ti < T.size(); ti++){
-				std::vector<double> n = T[ti].noise(si);
-				for (size_t k = 0; k < n.size(); k++){
-					v[i] = n[k];
-					i++;
-				}
+				append(v,T[ti].noise(si));				
 			}
 		}
 		return v;
@@ -1098,11 +1147,9 @@ public:
 				v[i] = std::log10(E.cref(si, li));
 				i++;
 			}
-			for (size_t gi = 0; gi < G.size(); gi++){
-				if (G[gi].solve){
-					v[i] = G[gi].ref(si);
-					i++;
-				}
+			for (size_t gi = 0; gi < UGI.size(); gi++){				
+				v[i] = G[UGI[gi]].ref(si);
+				i++;
 			}
 		}
 		return v;
@@ -1116,11 +1163,9 @@ public:
 				v[i] = E.cstd(si, li);
 				i++;
 			}
-			for (size_t gi = 0; gi < G.size(); gi++){
-				if (G[gi].solve){
-					v[i] = G[gi].std(si);
-					i++;
-				}
+			for (size_t gi = 0; gi < UGI.size(); gi++){				
+				v[i] = G[UGI[gi]].std(si);
+				i++;			
 			}
 		}
 		return v;
@@ -1137,12 +1182,20 @@ public:
 				PetscInt di = dindex(si, ci);
 				PetscInt lri = J.lri(di);
 				for (size_t li = 0; li < nlayers; li++){
-					PetscInt pi = pindex(si, li);
+					PetscInt pi = gpindex_c(si, li);
 					if (J.inownerdiagonalblock(di, pi)){
 						d_nnz[lri]++;
 					}
 					else o_nnz[lri]++;;
 				}
+				for (size_t gi = 0; gi < UGI.size(); gi++){					
+					PetscInt pi = gpindex_g(si, gi);
+					if (J.inownerdiagonalblock(di, pi)){
+						d_nnz[lri]++;
+					}
+					else o_nnz[lri]++;				
+				}
+
 			}
 		}
 		J.preallocate(d_nnz, o_nnz);
@@ -1155,7 +1208,11 @@ public:
 			for (size_t ci = 0; ci < nchan; ci++){
 				PetscInt di = dindex(si, ci);
 				for (size_t li = 0; li < nlayers; li++){
-					PetscInt pi = pindex(si, li);
+					PetscInt pi = gpindex_c(si, li);
+					ierr = MatSetValue(J.mat(), di, pi, 0.0, INSERT_VALUES); CHKERR(ierr);
+				}
+				for (size_t gi = 0; gi < UGI.size(); gi++){
+					PetscInt pi = gpindex_g(si, gi);
 					ierr = MatSetValue(J.mat(), di, pi, 0.0, INSERT_VALUES); CHKERR(ierr);
 				}
 			}
@@ -1193,8 +1250,8 @@ public:
 		PetscInt gri = V.gri(0);
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			for (size_t li = 0; li < nlayers - 1; li++){
-				PetscInt pa = pindex(si, li);
-				PetscInt pb = pindex(si, li + 1);
+				PetscInt pa = gpindex_c(si, li);
+				PetscInt pb = gpindex_c(si, li + 1);
 				V.set(gri, pa, 1.0);
 				V.set(gri, pb, -1.0);
 				gri++;
@@ -1216,9 +1273,9 @@ public:
 		PetscInt gri = V.gri(0);
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			for (size_t li = 1; li < nlayers - 1; li++){
-				PetscInt pa = pindex(si, li - 1);
-				PetscInt pb = pindex(si, li);
-				PetscInt pc = pindex(si, li + 1);
+				PetscInt pa = gpindex_c(si, li - 1);
+				PetscInt pb = gpindex_c(si, li);
+				PetscInt pc = gpindex_c(si, li + 1);
 				V.set(gri, pa, 1.0);
 				V.set(gri, pb, -2.0);
 				V.set(gri, pc, 1.0);
@@ -1233,7 +1290,7 @@ public:
 	void H_create_elevation(){
 
 		rootmessage(mylogfile, "Creating matrix H\n");
-		std::vector<double> t = get_thicknesses(0);
+		std::vector<double> t = get_thicknesses_ref(0);
 		std::vector<double> d = get_interface_depths(t);
 		d.push_back(d.back() + t.back());
 
@@ -1247,7 +1304,7 @@ public:
 			std::vector<size_t> neighbours = RS.findneighbours(gsi, ndistance);
 			nsum += neighbours.size();
 			for (size_t li = 0; li < nlayers; li++){
-				PetscInt gri = pindex(gsi, li);
+				PetscInt gri = gpindex_c(gsi, li);
 				PetscInt lri = H.lri(gri);
 				d_nnz[lri]++;//non-zero for this samples layer
 				for (size_t ni = 0; ni < neighbours.size(); ni++){
@@ -1258,7 +1315,7 @@ public:
 					std::vector<double> fo = fractionaloverlaps(d[li], d[li + 1], nd);
 					for (size_t nli = 0; nli < nlayers; nli++){
 						if (fo[nli]>0){
-							PetscInt gci = pindex(ngsi, nli);
+							PetscInt gci = gpindex_c(ngsi, nli);
 							if (H.inownerdiagonalblock(gri, gci)) d_nnz[lri]++;
 							else o_nnz[lri]++;
 						}
@@ -1292,7 +1349,7 @@ public:
 			//loop over this sample's layers
 			for (size_t li = 0; li < nlayers; li++){
 
-				PetscInt gri = pindex(gsi, li);
+				PetscInt gri = gpindex_c(gsi, li);
 
 				//Loop over each neighbour/layer
 				double wsum = 0.0;
@@ -1309,14 +1366,14 @@ public:
 				}
 
 				//Set values for current sample/layer
-				PetscInt gci = pindex(gsi, li);
+				PetscInt gci = gpindex_c(gsi, li);
 				PetscErrorCode ierr = MatSetValue(H.mat(), gri, gci, -wsum, INSERT_VALUES); CHKERR(ierr);
 				//Set values for neighbours
 				for (size_t ni = 0; ni < neighbours.size(); ni++){
 					size_t ngsi = neighbours[ni];
 					for (size_t nli = 0; nli < nlayers; nli++){
 						if (values[ni][nli] == 0.0) continue;
-						gci = pindex(ngsi, nli);
+						gci = gpindex_c(ngsi, nli);
 						PetscErrorCode ierr = MatSetValue(H.mat(), gri, gci, values[ni][nli], INSERT_VALUES); CHKERR(ierr);
 					}
 				}
@@ -1333,7 +1390,7 @@ public:
 
 		double clogerr = 0.5*(std::log10(100.0 + ConductivityLogPercentError) - std::log10(100.0 - ConductivityLogPercentError));
 		rootmessage(mylogfile, "Creating matrix B\n");
-		std::vector<double> lthick = get_thicknesses(0);
+		std::vector<double> lthick = get_thicknesses_ref(0);
 		std::vector<double> ldepth = get_interface_depths(lthick);
 		ldepth.push_back(ldepth.back() + lthick.back());
 		PetscInt nconstraints = 0;
@@ -1380,7 +1437,7 @@ public:
 					if (clog.interval_has_overlap(nd[li], nd[li + 1])){
 						if (B.ownsrow(gri)){
 							PetscInt lri = B.lri(gri);
-							PetscInt gci = pindex(ngsi, li);
+							PetscInt gci = gpindex_c(ngsi, li);
 							if (B.inownerdiagonalblock(gri, gci)) d_nnz[lri]++;
 							else o_nnz[lri]++;
 						}
@@ -1412,7 +1469,7 @@ public:
 				nweights[ni] = std::pow(ndistances[ni], -1.0*InversionOp.InverseDistancePower);
 
 				for (size_t li = 0; li < nlayers; li++){
-					PetscInt gci = pindex(ngsi, li);					
+					PetscInt gci = gpindex_c(ngsi, li);					
 					if (clog.interval_has_overlap(nd[li], nd[li + 1])){
 						if (B.ownsrow(gri)){
 							PetscInt lri = B.lri(gri);														
@@ -1444,7 +1501,7 @@ public:
 
 		double clogerr = 0.5*(std::log10(100.0 + ConductivityLogPercentError) - std::log10(100.0 - ConductivityLogPercentError));
 		rootmessage(mylogfile, "Creating matrix B\n");
-		std::vector<double> t = get_thicknesses(0);
+		std::vector<double> t = get_thicknesses_ref(0);
 		std::vector<double> d = get_interface_depths(t);
 		d.push_back(d.back() + t.back());
 		PetscInt nconstraints = 0;
@@ -1488,7 +1545,7 @@ public:
 							std::vector<double> fo = fractionaloverlaps(d[li], d[li + 1], nd);
 							for (size_t nli = 0; nli < fo.size(); nli++){
 								if (fo[nli]>0){
-									PetscInt gci = pindex(ngsi, nli);
+									PetscInt gci = gpindex_c(ngsi, nli);
 									if (B.inownerdiagonalblock(gri, gci)) d_nnz[lri]++;
 									else o_nnz[lri]++;
 								}
@@ -1563,7 +1620,7 @@ public:
 					for (size_t nli = 0; nli < nlayers; nli++){
 						if (values[ni][nli] == 0.0) continue;
 						values[ni][nli] /= wsum;
-						PetscInt gci = pindex(ngsi, nli);
+						PetscInt gci = gpindex_c(ngsi, nli);
 						B.set(gri, gci, values[ni][nli]);
 					}
 				}
@@ -1593,7 +1650,16 @@ public:
 		rootmessage(mylogfile, "Total matrix global memory %.3lf MiB\n", total / 1e6);
 	}
 
-	std::vector<double> get_thicknesses(const size_t localsampleindex){
+	std::vector<double> get_conductivity_model(const size_t& localsampleindex, const double* mlocal){
+		std::vector<double> c(nlayers);
+		size_t pi = nparampersample * localsampleindex;
+		for (size_t li = 0; li < nlayers; li++){
+			c[li] = std::pow(10.0, mlocal[pi+li]);
+		}
+		return c;
+	}
+
+	std::vector<double> get_thicknesses_ref(const size_t localsampleindex){
 		std::vector<double> thickness(nlayers - 1);
 		for (size_t i = 0; i < nlayers - 1; i++){
 			thickness[i] = E.tref(localsampleindex, i);
@@ -1610,26 +1676,35 @@ public:
 		return d;
 	}
 
-	cTDEmGeometry get_geometry(const size_t localsampleindex){
+	cTDEmGeometry get_geometry_ref(const size_t localsampleindex){
+		cTDEmGeometry geom;
+		for (size_t gi = 0; gi < G.size(); gi++){
+			geom[gi] = G[gi].ref(localsampleindex);
+		}
+		return geom;
+	}
 
-		cTDEmGeometry g;
-		g.tx_height = G[0].ref(localsampleindex);
-		g.tx_roll   = G[1].ref(localsampleindex);
-		g.tx_pitch  = G[2].ref(localsampleindex);
-		g.tx_yaw    = G[3].ref(localsampleindex);
-		g.txrx_dx   = G[4].ref(localsampleindex);
-		g.txrx_dy   = G[5].ref(localsampleindex);
-		g.txrx_dz   = G[6].ref(localsampleindex);
-		g.rx_roll   = G[7].ref(localsampleindex);
-		g.rx_pitch  = G[8].ref(localsampleindex);
-		g.rx_yaw    = G[9].ref(localsampleindex);
-		return g;
+	cTDEmGeometry get_geometry_model(const size_t& localsampleindex, const double* mlocal)
+	{
+		cTDEmGeometry geom = get_geometry_ref(localsampleindex);						
+		size_t pi = nparampersample * localsampleindex;
+		for (size_t gi = 0; gi < UGI.size(); gi++){			
+			geom[UGI[gi]] = mlocal[pi + nlayers + gi];			
+		}
+		return geom;	
+	}
+
+	std::vector<size_t> unknown_geometry_indices(){
+		std::vector<size_t> indices;
+		for (size_t gi = 0; gi < G.size(); gi++){
+			if (G[gi].solve) indices.push_back(gi);
+		}
+		return indices;
 	}
 
 	bool forwardmodel_and_jacobian(const cPetscDistVector& m, cPetscDistVector& g, const bool computejacobian){
-
-		static double natlog10 = std::log(10.0);
-		std::vector<double> conductivity(nlayers);
+		
+		static double natlog10 = std::log(10.0);		
 		std::vector<double> predicted;
 		std::vector<std::vector<double>> derivatives;
 
@@ -1641,20 +1716,18 @@ public:
 		//rootmessage(mylogfile, "Starting forward modelling\n");
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			size_t lsi = sown.localind(si);
-			size_t lpi = mdist.localind(pindex(si, 0));
-			size_t gpi = pindex(si, 0);
-
-			std::vector<double> thickness = get_thicknesses(lsi);
-			cTDEmGeometry geometry        = get_geometry(lsi);
-			for (size_t li = 0; li < nlayers; li++){
-				conductivity[li] = std::pow(10.0, mlocal[lpi + li]);
-			}
-
+			size_t gpi = gpindex_c(si, 0);
+			size_t lpi = mdist.localind(gpi);
+			
+			std::vector<double> conductivity = get_conductivity_model(lsi,mlocal);
+			std::vector<double> thickness    = get_thicknesses_ref(lsi);
+			cTDEmGeometry       geometry     = get_geometry_model(lsi,mlocal);
+			
 			size_t gdi = dindex(si, 0);
 			size_t ldi = gdist.localind(gdi);
 			for (size_t ti = 0; ti < T.size(); ti++){
 
-				T[ti].forward_model_and_derivatives(conductivity, thickness, geometry, predicted, derivatives, computejacobian);
+				T[ti].forward_model_and_derivatives(conductivity, thickness, geometry, predicted, derivatives, computejacobian, UGI);
 
 				for (size_t k = 0; k < predicted.size(); k++){
 					glocal[ldi + k] = predicted[k];
@@ -1665,7 +1738,11 @@ public:
 						for (size_t li = 0; li < nlayers; li++){
 							//multiply by natural log(10) as parameters are in log base 10 units
 							const double val = natlog10 * conductivity[li] * derivatives[k][li];
-							J.set(gdi + k, gpi + li, val);
+							J.set(gdi + k, gpindex_c(si,li), val);
+						}
+						for (size_t gi = 0; gi < UGI.size(); gi++){
+							const double val = derivatives[k][nlayers+gi];
+							J.set(gdi + k, gpindex_g(si,gi), val);
 						}
 					}
 				}
@@ -1675,7 +1752,8 @@ public:
 		}
 		m.restorelocalreadonlyarray(mlocal);
 		g.restorelocalarray(glocal);
-		J.assemble();
+		if (computejacobian) J.assemble();
+		
 		//rootmessage(mylogfile, "Finished forward modelling\n");
 		return true;
 	}
@@ -1765,7 +1843,8 @@ public:
 		}
 
 		LS.nearestindex(bestsf, bestphid);
-		//if(mpirank==0)LS.writetextfile("steps.txt");		
+		//std::string stepsfile = strprint("steps_%02llu.txt", mLastIteration);
+		//if(mpirank==0)LS.writetextfile(stepsfile);
 		return;
 	}
 
@@ -1875,7 +1954,7 @@ public:
 			rootmessage(mylogfile, "Improvement = %.5lf%%\n", pi);
 
 			iteration++;
-			if (pi > 0){
+			if (pi > 0.0){
 				m += bestsf*dm;
 				forwardmodel_and_jacobian(m, g, false);
 
@@ -1884,9 +1963,16 @@ public:
 				mLastIteration = iteration;
 				write_results(OutputOp.DataFile, m, g);
 			}
-			if (iteration > InversionOp.MaximumIterations) keepgoing = false;
-			if (bestphid < InversionOp.MinimumPhiD) keepgoing = false;
-			if (pi < InversionOp.MinimumPercentageImprovement) keepgoing = false;
+
+			if (pi < InversionOp.MinimumPercentageImprovement){				
+				keepgoing = false;
+			}
+			if (iteration > InversionOp.MaximumIterations){
+				keepgoing = false;
+			}
+			if (bestphid < InversionOp.MinimumPhiD){
+				keepgoing = false;
+			}
 		}
 	};
 
@@ -1906,8 +1992,7 @@ public:
 	}
 
 	void append_my_results(const std::string& filename, const cPetscDistVector& m, const cPetscDistVector& g){
-
-		std::vector<double> conductivity(nlayers);
+		
 		const double* mlocal = m.getlocalreadonlyarray();
 		const double* glocal = g.getlocalreadonlyarray();
 		cOwnership mdist = m.ownership();
@@ -1919,12 +2004,13 @@ public:
 		FILE* fp = fileopen(filename, "a");
 		for (size_t lsi = 0; lsi < (size_t)sown.nlocal(); lsi++){
 			size_t gsi = sown.globalind(lsi);
-			size_t lpi = mdist.localind(pindex(gsi, 0));
-			for (size_t li = 0; li < nlayers; li++){
-				conductivity[li] = std::pow(10.0, mlocal[lpi + li]);
-			}
-			std::vector<double> thickness = get_thicknesses(lsi);
+			size_t lpi = mdist.localind(gpindex_c(gsi, 0));
+			std::vector<double> conductivity = get_conductivity_model(lsi, mlocal);
+			std::vector<double> thickness    = get_thicknesses_ref(lsi);
 			thickness.push_back(thickness.back());
+			cTDEmGeometry gref = get_geometry_ref(lsi);
+			cTDEmGeometry ginv = get_geometry_model(lsi, mlocal);
+
 
 			OI.addfield("survey", 'I', 12, 0);
 			OI.setcomment("Survey number");
@@ -1958,13 +2044,19 @@ public:
 			OI.addfield("elevation", 'F', 10, 2);
 			OI.setunits("m"); OI.setcomment("Ground elevation relative to sea-level");
 			buf += strprint("%10.2lf", fdelevation(lsi));
-		
-			cTDEmGeometry g = get_geometry(lsi);
+					
 			for (size_t gi = 0; gi < G.size(); gi++){
-				OI.addfield(g.fname(gi), 'F', 9, 2);
-				OI.setunits(g.units(gi));
-				OI.setcomment(g.description(gi));
-				buf += strprint("%9.2lf", g.value(gi));
+				OI.addfield(gref.fname(gi), 'F', 9, 2);
+				OI.setunits(gref.units(gi));
+				OI.setcomment(gref.description(gi));
+				buf += strprint("%9.2lf", gref[gi]);
+			}
+			
+			for (size_t gi = 0; gi < UGI.size(); gi++){
+				OI.addfield(ginv.fname(UGI[gi]) + "_inv", 'F', 9, 2);
+				OI.setunits(ginv.units(UGI[gi]));
+				OI.setcomment("Inverted " + ginv.description(UGI[gi]));
+				buf += strprint("%9.2lf", ginv[UGI[gi]]);
 			}
 
 			OI.addfield("nlayers", 'I', 4, 0);
@@ -1973,14 +2065,14 @@ public:
 
 			OI.addfield("conductivity", 'E', 15, 6, nlayers);
 			OI.setunits("S/m"); OI.setcomment("Layer conductivity");
-			for (size_t i = 0; i < nlayers; i++){
-				buf += strprint("%15.6le", conductivity[i]);
+			for (size_t li = 0; li < nlayers; li++){
+				buf += strprint("%15.6le", conductivity[li]);
 			}
 
 			OI.addfield("thickness", 'F', 9, 2, nlayers);
 			OI.setunits("m"); OI.setcomment("Layer thickness");
-			for (size_t i = 0; i < nlayers; i++){
-				buf += strprint("%9.2lf", thickness[i]);
+			for (size_t li = 0; li < nlayers; li++){
+				buf += strprint("%9.2lf", thickness[li]);
 			}
 
 			if (OutputOp.PositiveLayerBottomDepths){
@@ -2013,28 +2105,42 @@ public:
 				}
 			}
 
+									
 			if (OutputOp.PredictedData){
 				char cid[3] = { 'X', 'Y', 'Z' };
 				size_t ldi = gdist.localind(dindex(gsi, 0));
 				for (size_t si = 0; si < T.size(); si++){
 					cSystemInfo& S = T[si];
+					S.forward_model(conductivity, thickness, ginv);
+
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
-					for (size_t ci = 0; ci < 3; ci++){
+					for (size_t ci = 0; ci < S.Comp.size(); ci++){
 
 						cComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;
 
 						if (S.InvertTotalField){
 							OI.addfield(sys + cid[ci] + "P", 'E', 15, 6);
-							OI.setcomment(sys + cid[ci] + "-component primary field");
-							buf += strprint("%15.6le", glocal[ldi]);
-							ldi++;
+							OI.setcomment(sys + cid[ci] + "-component primary field");							
+							if (ci == 0) buf += strprint("%15.6le", S.T.PrimaryX);
+							else if (ci == 1) buf += strprint("%15.6le", S.T.PrimaryY);
+							else              buf += strprint("%15.6le", S.T.PrimaryZ);
+
+							OI.addfield(sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+							OI.setcomment(sys + cid[ci] + "-component secondary field windows");
+							for (size_t w = 0; w < C.nw; w++){
+								if      (ci == 0) buf += strprint("%15.6le", S.T.X[w]);
+								else if (ci == 1) buf += strprint("%15.6le", S.T.Y[w]);
+								else              buf += strprint("%15.6le", S.T.Z[w]);
+							}
 						}
-						OI.addfield(sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-						OI.setcomment(sys + cid[ci] + "-component secondary field windows");
-						for (size_t w = 0; w < C.nw; w++){
-							buf += strprint("%15.6le", glocal[ldi]);
-							ldi++;
+						else{
+							OI.addfield(sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+							OI.setcomment(sys + cid[ci] + "-component secondary field windows");
+							for (size_t w = 0; w < C.nw; w++){
+								buf += strprint("%15.6le", glocal[ldi]);
+								ldi++;
+							}
 						}
 					}
 				}

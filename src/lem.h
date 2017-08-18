@@ -139,9 +139,27 @@ struct LayerNode{
 	double TimeConstant;
 };
 
-enum eRZeroMethod     { RZM_PROPOGATIONMATRIX, RZM_RECURSIVE };
-enum eCalculationType { CT_FORWARDMODEL, CT_CONDUCTIVITYDERIVATIVE, CT_THICKNESSDERIVATIVE, CT_HDERIVATIVE, CT_RDERIVATIVE, CT_XDERIVATIVE, CT_YDERIVATIVE, CT_ZDERIVATIVE };
-enum eIPType { IP_COLECOLE, IP_PELTON };
+enum eRZeroMethod     {
+	RZM_PROPOGATIONMATRIX,
+	RZM_RECURSIVE
+};
+
+enum eCalculationType { 
+	CT_FORWARDMODEL,
+	CT_CONDUCTIVITYDERIVATIVE,
+	CT_THICKNESSDERIVATIVE,
+	CT_HDERIVATIVE,
+	CT_RDERIVATIVE,
+	CT_XDERIVATIVE,
+	CT_YDERIVATIVE,
+	CT_ZDERIVATIVE,	
+	CT_NONE
+};
+
+enum eIPType {
+	IP_COLECOLE,
+	IP_PELTON
+};
 
 class cLEM {
 	
@@ -357,42 +375,41 @@ public:
 		cosxyrotation = cos(xyrotation*D2R);
 		sinxyrotation = sin(xyrotation*D2R);
 	}
-	void xyrotate(double xin, double yin, double* xout, double* yout)
+	void xyrotate(const double& xin, const double& yin, double* xout, double* yout)
 	{
-		*xout = xin*cosxyrotation + yin*sinxyrotation;
+		*xout =  xin*cosxyrotation + yin*sinxyrotation;
 		*yout = -xin*sinxyrotation + yin*cosxyrotation;
 	}
-	void unxyrotate(double xin, double yin, double* xout, double* yout)
+	void unxyrotate(const double& xin, const double& yin, double* xout, double* yout)
 	{
 		*xout = xin*cosxyrotation - yin*sinxyrotation;
 		*yout = xin*sinxyrotation + yin*cosxyrotation;
 	}
-	void unxyrotateandscale(RealField* f, double scalefactor)
+	void unxyrotateandscale(RealField& f, double scalefactor)
 	{
 		double x, y;
-		unxyrotate((*f).x, (*f).y, &x, &y);
-		(*f).x = x*scalefactor;
-		(*f).y = y*scalefactor;
-		(*f).z = (*f).z*scalefactor;
+		unxyrotate(f.x, f.y, &x, &y);
+		f.x = x*scalefactor;
+		f.y = y*scalefactor;
+		f.z = f.z*scalefactor;
 	}
-	void unxyrotateandscale(ComplexField* f, double scalefactor)
+	void unxyrotateandscale(ComplexField& f, double scalefactor)
 	{
-
 		RealField r;
-		r.x = (*f).x.real();
-		r.y = (*f).y.real();
-		r.z = (*f).z.real();
-		unxyrotateandscale(&r, scalefactor);
+		r.x = f.x.real();
+		r.y = f.y.real();
+		r.z = f.z.real();
+		unxyrotateandscale(r, scalefactor);
 
 		RealField i;
-		i.x = (*f).x.imag();
-		i.y = (*f).y.imag();
-		i.z = (*f).z.imag();
-		unxyrotateandscale(&i, scalefactor);
+		i.x = f.x.imag();
+		i.y = f.y.imag();
+		i.z = f.z.imag();
+		unxyrotateandscale(i, scalefactor);
 
-		(*f).x = cdouble(r.x, i.x);
-		(*f).y = cdouble(r.y, i.y);
-		(*f).z = cdouble(r.z, i.z);
+		f.x = cdouble(r.x, i.x);
+		f.y = cdouble(r.y, i.y);
+		f.z = cdouble(r.z, i.z);
 
 	}
 	void setR(double r)
@@ -646,14 +663,7 @@ public:
 					A.Layer[li].LayerPostMatrix = A.Layer[li + 1].LayerMatrix * A.Layer[li + 1].LayerPostMatrix;
 				}
 			}
-		}
-
-		/*
-		for (int li = NumLayers - 3; li >= 0; li--){
-		multiplymatrices(A.Layer[li + 1].LayerMatrix, A.Layer[li + 1].LayerPostMatrix, A.Layer[li].LayerPostMatrix);
-		if (li == 0)break;//size_t variable cannot decrement below zero because it is unsigned
-		}
-		*/
+		}		
 	};
 	inline void setpmatrix(const size_t& fi, const size_t& ai)
 	{
@@ -1003,8 +1013,7 @@ public:
 			Fields.v.p.y = 0.0;
 			Fields.v.p.z = 0.0;
 		}
-		else if (calculation_type == CT_HDERIVATIVE){
-			//these are negative of d/dz derivatives	  
+		else if (calculation_type == CT_HDERIVATIVE){			
 			Fields.v.p.x = 0.0;
 			Fields.v.p.y = 0.0;
 			Fields.v.p.z = 0.0;
@@ -1046,7 +1055,7 @@ public:
 		else {
 			errormessage("LE::setverticaldipoleprimaryfields Calculation type %lu not yet implemented", calculation_type);
 		}
-		unxyrotateandscale(&Fields.v.p, Source_Orientation.z);
+		unxyrotateandscale(Fields.v.p, Source_Orientation.z);
 	}
 	void setverticaldipolesecondaryfields(const size_t& fi)
 	{
@@ -1114,7 +1123,7 @@ public:
 			errormessage("LE::setverticaldipolesecondaryfields Calculation type %lu not yet implemented", calculation_type);
 		}
 
-		unxyrotateandscale(&Fields.v.s, Source_Orientation.z);
+		unxyrotateandscale(Fields.v.s, Source_Orientation.z);
 
 	}
 	void sethorizontaldipolefields(const size_t& fi){
@@ -1138,11 +1147,7 @@ public:
 			Fields.h.p.y = 0.0;
 			Fields.h.p.z = 0.0;
 		}
-		else if (calculation_type == CT_HDERIVATIVE){
-			//these are negative of d/dz derivatives
-			//Fields.h.p.x = -(THREEONFOURPI*X*Y*(-5.0*(Z-H)/BigR7));
-			//Fields.h.p.y = -(THREEONFOURPI*Y*Y*(-5.0*(Z-H)/BigR7) - ONEONFOURPI*(-3.0*(Z-H)/BigR5));
-			//Fields.h.p.z = -(THREEONFOURPI*Y*(1.0/BigR5 - 5.0*(Z-H)*(Z-H)/BigR7));
+		else if (calculation_type == CT_HDERIVATIVE){			
 			Fields.h.p.x = 0.0;
 			Fields.h.p.y = 0.0;
 			Fields.h.p.z = 0.0;
@@ -1179,14 +1184,14 @@ public:
 				Fields.h.p.x = dxdX*XonR + dxdY*YonR;
 				Fields.h.p.y = dydX*XonR + dydY*YonR;
 				Fields.h.p.z = dzdX*XonR + dzdY*YonR;
-			}
+			}			
 		}
 		else {
 			errormessage("LE::sethorizontaldipoleprimaryfields Calculation type %lu not yet implemented", calculation_type);
 		}
 
 		double scalefactor = sqrt(Source_Orientation.x*Source_Orientation.x + Source_Orientation.y*Source_Orientation.y);
-		unxyrotateandscale(&Fields.h.p, scalefactor);
+		unxyrotateandscale(Fields.h.p, scalefactor);
 
 	}
 	void sethorizontaldipolesecondaryfields(const size_t& fi){
@@ -1211,8 +1216,7 @@ public:
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dT / R3 - Y*Y*Hankel[fi].I0.dT / R2);
 			Fields.h.s.z = ONEONFOURPI*Y / R*Hankel[fi].I1.dT;
 		}
-		else if (calculation_type == CT_HDERIVATIVE){
-			//these are negative of d/dz derivatives
+		else if (calculation_type == CT_HDERIVATIVE){			
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dH / R - Hankel[fi].I0.dH);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dH / R3 - Y*Y*Hankel[fi].I0.dH / R2);
 			Fields.h.s.z = ONEONFOURPI*Y / R*Hankel[fi].I1.dH;
@@ -1299,7 +1303,7 @@ public:
 		}
 
 		double scalefactor = sqrt(Source_Orientation.x*Source_Orientation.x + Source_Orientation.y*Source_Orientation.y);
-		unxyrotateandscale(&Fields.h.s, scalefactor);
+		unxyrotateandscale(Fields.h.s, scalefactor);
 	}
 	void setprimaryfields()
 	{

@@ -331,6 +331,15 @@ void cTDEmSystem::setprimaryfields()
 	PrimaryY = LEM.Fields.t.p.y;
 	PrimaryZ = LEM.Fields.t.p.z;
 
+	if (LEM.calculation_type == CT_HDERIVATIVE){
+		//This is because when H changes Z also changes
+		//and DZ = DH
+		//but they should be all zero anyway
+		PrimaryX *= 2.0;
+		PrimaryY *= 2.0;
+		PrimaryZ *= 2.0;
+	}
+
 	if (Normalisation == NT_PPM_PEAKTOPEAK){
 		PrimaryX *= 2.0;
 		PrimaryY *= 2.0;
@@ -378,6 +387,14 @@ void cTDEmSystem::setsecondaryfields()
 
 		vr = rotatetoreceiverorientation(vr);
 		vi = rotatetoreceiverorientation(vi);
+
+
+		if (LEM.calculation_type == CT_HDERIVATIVE){
+			//This is because when H changes Z also changes
+			//and DZ = DH
+			vr *= 2.0;
+			vi *= 2.0;
+		}
 
 		HxR[fi] = vr.x;
 		HxI[fi] = vi.x;

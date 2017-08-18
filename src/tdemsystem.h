@@ -55,6 +55,20 @@ public:
 	std::vector<double> SZ;
 };
 
+enum eGeometryElementType { 
+	GE_TX_HEIGHT,
+	GE_TX_ROLL,
+	GE_TX_PITCH,
+	GE_TX_YAW,
+	GE_TXRX_DX,
+	GE_TXRX_DY,
+	GE_TXRX_DZ,
+	GE_RX_ROLL,
+	GE_RX_PITCH,
+	GE_RX_YAW
+};
+
+
 class cTDEmGeometry{
 
 public:
@@ -146,6 +160,7 @@ public:
 		else if (index == 7) return "rx_roll";
 		else if (index == 8) return "rx_pitch";
 		else if (index == 9) return "rx_yaw";
+		else return "";
 	};
 	
 	static std::string units(const size_t& index){
@@ -192,26 +207,67 @@ public:
 		else return "";
 	};
 
-	double value(const size_t& index){
+	double& operator[](const size_t& i){
+		
+		switch (i) {
+			case 0: return tx_height; break;
+			case 1: return tx_roll; break;
+			case 2: return tx_pitch; break;
+			case 3: return tx_yaw; break;
+			case 4: return txrx_dx; break;
+			case 5: return txrx_dy; break;
+			case 6: return txrx_dz; break;
+			case 7: return rx_roll; break;
+			case 8: return rx_pitch; break;
+			case 9: return rx_yaw; break;
+			default:				
+				rootmessage("Geometry index %llu out of range\n", i);
+				std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+				throw(std::runtime_error(e));
+				break;
+		}	
+	}
 
-		if (index < 0 || index > 9){
-			rootmessage("Geometry index %llu out of range\n", index);
+	static eGeometryElementType elementtype(const size_t& i){		
+		switch (i) {
+		case 0: return GE_TX_HEIGHT; break;
+		case 1: return GE_TX_ROLL;   break;
+		case 2: return GE_TX_PITCH;  break;
+		case 3: return GE_TX_YAW;    break;		
+		case 4: return GE_TXRX_DX;   break;
+		case 5: return GE_TXRX_DY;  break;
+		case 6: return GE_TXRX_DZ;    break;
+		case 7: return GE_RX_ROLL;   break;
+		case 8: return GE_RX_PITCH;  break;
+		case 9: return GE_RX_YAW;    break;
+		default:
+			rootmessage("Geometry index %llu out of range\n", i);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
+			break;
 		}
+	}
 
-		if (index == 0) return tx_height;
-		else if (index == 1) return tx_roll;
-		else if (index == 2) return tx_pitch;
-		else if (index == 3) return tx_yaw;
-		else if (index == 4) return txrx_dx;
-		else if (index == 5) return txrx_dy;
-		else if (index == 6) return txrx_dz;
-		else if (index == 7) return rx_roll;
-		else if (index == 8) return rx_pitch;
-		else if (index == 9) return rx_yaw; 
-		return DBL_MAX;
-	};
+	static eCalculationType derivativetype(const size_t& i){		
+		switch (i) {
+		case 0: return CT_HDERIVATIVE; break;
+		case 1: return CT_NONE; break;
+		case 2: return CT_NONE; break;
+		case 3: return CT_NONE; break;
+		case 4: return CT_XDERIVATIVE; break;
+		case 5: return CT_YDERIVATIVE; break;
+		case 6: return CT_ZDERIVATIVE; break;
+		case 7: return CT_NONE; break;		
+		case 8: return CT_NONE; break;
+		case 9: return CT_NONE; break;
+		default:
+			rootmessage("Geometry index %llu out of range\n", i);
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+			break;
+		}
+	}
+
 };
 
 struct WindowSpecification{
@@ -386,6 +442,13 @@ public:
 	  else if (component == 1) return Y[window];
 	  else if (component == 2) return Z[window];
 	  else return 0;
+  }
+
+  std::vector<double> secondary(const size_t component){
+	  if (component == 0) return X;
+	  else if (component == 1) return Y;
+	  else if (component == 2) return Z;
+	  else return std::vector<double>(0);
   }
      
   void setup_splines();
