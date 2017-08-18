@@ -619,7 +619,7 @@ public:
 
 	bool is_line_included(const int& line){
 
-		if (IncludeLineRanges.size() == 0) return true;
+		if (IncludeLines.size() == 0  && IncludeLineRanges.size() == 0) return true;
 
 		auto rit = std::find_if(
 			IncludeLineRanges.begin(),
