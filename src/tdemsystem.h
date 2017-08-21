@@ -92,6 +92,12 @@ public:
 		rx_roll   = _rx_roll; rx_pitch = _rx_pitch; rx_yaw = _rx_yaw;
 	}
 
+	cTDEmGeometry(const std::vector<double> gvector){
+		for (size_t i = 0; i < size(); i++){
+			(*this)[i] = gvector[i];
+		}		
+	}
+
 	cTDEmGeometry(const cBlock& b){
 		set_zero();
 		b.getvalue("tx_height", tx_height);
@@ -106,30 +112,74 @@ public:
 		b.getvalue("rx_yaw", rx_yaw);
 	}
 
+	inline static size_t size(){
+		return 10;
+	}
+
+	double& operator[](const size_t& index){
+
+		switch (index) {
+		case 0: return tx_height; break;
+		case 1: return tx_roll; break;
+		case 2: return tx_pitch; break;
+		case 3: return tx_yaw; break;
+		case 4: return txrx_dx; break;
+		case 5: return txrx_dy; break;
+		case 6: return txrx_dz; break;
+		case 7: return rx_roll; break;
+		case 8: return rx_pitch; break;
+		case 9: return rx_yaw; break;
+		default:
+			rootmessage("Geometry index %llu out of range\n", index);
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+			break;
+		}
+	}
+
+	double operator[](const size_t& index) const {
+		return (*this)[index];
+	};
+
 	void set_zero(){
-		tx_height = 0.0;
-		tx_roll = 0.0; tx_pitch = 0.0; tx_yaw = 0.0;
-		txrx_dx = 0.0; txrx_dy = 0.0;  txrx_dz = 0.0;
-		rx_roll = 0.0; rx_pitch = 0.0; rx_yaw = 0.0;
+		for (size_t i = 0; i < size(); i++){
+			(*this)[i] = 0.0;
+		}		
 	}
 
 	void fillundefined(const cTDEmGeometry& g)
-	{
-		if (tx_height == cBlock::ud_double())tx_height = g.tx_height;
-		if (tx_roll == cBlock::ud_double())tx_roll = g.tx_roll;
-		if (tx_pitch == cBlock::ud_double())tx_pitch = g.tx_pitch;
-		if (tx_yaw == cBlock::ud_double())tx_yaw = g.tx_yaw;
-		if (txrx_dx == cBlock::ud_double())txrx_dx = g.txrx_dx;
-		if (txrx_dy == cBlock::ud_double())txrx_dy = g.txrx_dy;
-		if (txrx_dz == cBlock::ud_double())txrx_dz = g.txrx_dz;
-		if (rx_roll == cBlock::ud_double())rx_roll = g.rx_roll;		
-		if (rx_pitch == cBlock::ud_double())rx_pitch = g.rx_pitch;
-		if (rx_yaw == cBlock::ud_double())rx_yaw = g.rx_yaw;
+	{				
+		for (size_t i = 0; i < size(); i++){			
+			if ((*this)[i] == cBlock::ud_double()){
+				(*this)[i] = g[i];				 
+			}
+		}		
 	}	
 	
+	static std::string fname(const size_t& index){
+
+		switch (index) {
+		case 0: return "tx_height"; break;
+		case 1: return "tx_roll"; break;
+		case 2: return "tx_pitch"; break;
+		case 3: return "tx_yaw"; break;
+		case 4: return "txrx_dx"; break;
+		case 5: return "txrx_dy"; break;
+		case 6: return "txrx_dz"; break;
+		case 7: return "rx_roll"; break;
+		case 8: return "rx_pitch"; break;
+		case 9: return "rx_yaw"; break;
+		default:
+			rootmessage("Geometry index %llu out of range\n", index);
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+			break;
+		}
+	};
+
 	static size_t findex(const std::string& name){
 
-		for (size_t i = 0; i < 10; i++){
+		for (size_t i = 0; i < size(); i++){
 			if (strcasecmp(name, fname(i)) == 0) return i;
 		}
 				
@@ -140,116 +190,70 @@ public:
 		return 0;
 	};
 
-	static std::string fname(const size_t& index){
-
-		if (index < 0 || index > 9){
-			rootmessage("Geometry index %llu out of range\n", index);
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
-		}
-
-		if (index == 0) return "tx_height";
-		else if (index == 1) return "tx_roll";
-		else if (index == 2) return "tx_pitch";
-		else if (index == 3) return "tx_yaw";
-
-		else if (index == 4) return "txrx_dx";
-		else if (index == 5) return "txrx_dy";
-		else if (index == 6) return "txrx_dz";
-
-		else if (index == 7) return "rx_roll";
-		else if (index == 8) return "rx_pitch";
-		else if (index == 9) return "rx_yaw";
-		else return "";
-	};
-	
 	static std::string units(const size_t& index){
 
-		if (index < 0 || index > 9){
+		switch (index) {
+		case 0: return "m"; break;
+		case 1: return "degrees"; break;
+		case 2: return "degrees"; break;
+		case 3: return "degrees"; break;
+		case 4: return "m"; break;
+		case 5: return "m"; break;
+		case 6: return "m"; break;
+		case 7: return "degrees"; break;
+		case 8: return "degrees"; break;
+		case 9: return "degrees"; break;
+		default:
 			rootmessage("Geometry index %llu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
+			break;
 		}
-
-		if (index == 0) return "m";
-		else if (index == 1) return "degrees";
-		else if (index == 2) return "degrees";
-		else if (index == 3) return "degrees";
-
-		else if (index == 4) return "m";
-		else if (index == 5) return "m";
-		else if (index == 6) return "m";
-
-		else if (index == 7) return "degrees";
-		else if (index == 8) return "degrees";
-		else if (index == 9) return "degrees";
-		else return "";
 	};
 
 	static std::string description(const size_t& index){
 
-		if (index < 0 || index > 9){
+		switch (index) {
+		case 0: return "Tx height above ground level"; break;
+		case 1: return "Tx roll - left side up + ve";   break;
+		case 2: return "Tx pitch - nose down + ve";  break;
+		case 3: return "Tx yaw - turn left + ve";    break;
+		case 4: return "Tx - Rx horizonatl inline separation";   break;
+		case 5: return "Tx - Rx horizonatl transverse separation";   break;
+		case 6: return "Tx - Rx vertical separation";   break;
+		case 7: return "Rx roll - left side up + ve";   break;
+		case 8: return "Rx pitch - nose down + ve";  break;
+		case 9: return "Rx yaw - turn left + ve";    break;
+		default:
 			rootmessage("Geometry index %llu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
+			break;
 		}
-
-		if (index == 0) return "Tx height above ground - level";
-		else if (index == 1) return "Tx roll - left side up + ve";
-		else if (index == 2) return "Tx pitch - nose down + ve";
-		else if (index == 3) return "Tx yaw - turn left + ve";
-		else if (index == 4) return "Tx - Rx horizonatl inline separation";
-		else if (index == 5) return "Tx - Rx horizonatl transverse separation";
-		else if (index == 6) return "Tx - Rx vertical separation";
-		else if (index == 7) return "Rx roll - left side up + ve";
-		else if (index == 8) return "Rx pitch - nose down + ve";
-		else if (index == 9) return "Rx yaw - turn left + ve";
-		else return "";
 	};
 
-	double& operator[](const size_t& i){
-		
-		switch (i) {
-			case 0: return tx_height; break;
-			case 1: return tx_roll; break;
-			case 2: return tx_pitch; break;
-			case 3: return tx_yaw; break;
-			case 4: return txrx_dx; break;
-			case 5: return txrx_dy; break;
-			case 6: return txrx_dz; break;
-			case 7: return rx_roll; break;
-			case 8: return rx_pitch; break;
-			case 9: return rx_yaw; break;
-			default:				
-				rootmessage("Geometry index %llu out of range\n", i);
-				std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-				throw(std::runtime_error(e));
-				break;
-		}	
-	}
-
-	static eGeometryElementType elementtype(const size_t& i){		
-		switch (i) {
+	static eGeometryElementType elementtype(const size_t& index){		
+		switch (index) {
 		case 0: return GE_TX_HEIGHT; break;
 		case 1: return GE_TX_ROLL;   break;
 		case 2: return GE_TX_PITCH;  break;
 		case 3: return GE_TX_YAW;    break;		
 		case 4: return GE_TXRX_DX;   break;
-		case 5: return GE_TXRX_DY;  break;
-		case 6: return GE_TXRX_DZ;    break;
+		case 5: return GE_TXRX_DY;   break;
+		case 6: return GE_TXRX_DZ;   break;
 		case 7: return GE_RX_ROLL;   break;
 		case 8: return GE_RX_PITCH;  break;
 		case 9: return GE_RX_YAW;    break;
 		default:
-			rootmessage("Geometry index %llu out of range\n", i);
+			rootmessage("Geometry index %llu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
 			break;
 		}
 	}
 
-	static eCalculationType derivativetype(const size_t& i){		
-		switch (i) {
+	static eCalculationType derivativetype(const size_t& index){		
+		switch (index) {
 		case 0: return CT_HDERIVATIVE; break;
 		case 1: return CT_NONE; break;
 		case 2: return CT_NONE; break;
@@ -261,7 +265,7 @@ public:
 		case 8: return CT_NONE; break;
 		case 9: return CT_NONE; break;
 		default:
-			rootmessage("Geometry index %llu out of range\n", i);
+			rootmessage("Geometry index %llu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
 			break;
