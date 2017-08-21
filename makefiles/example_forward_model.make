@@ -15,7 +15,6 @@ objects += $(cpputilssrc)/blocklanguage.o
 objects += $(cpputilssrc)/geometry3d.o
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(srcdir)/le.o
 objects += $(srcdir)/tdemsystem.o
 objects += $(srcdir)/example_forward_model.o
 

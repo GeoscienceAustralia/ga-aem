@@ -18,7 +18,6 @@ objects += $(cpputilssrc)/blocklanguage.o
 objects += $(cpputilssrc)/geometry3d.o
 objects += $(cpputilssrc)/fielddefinition.o
 objects += $(cpputilssrc)/matrix_ops.o
-objects += $(srcdir)/le.o
 objects += $(srcdir)/tdemsystem.o
 objects += $(srcdir)/galeisbstdem.o
 

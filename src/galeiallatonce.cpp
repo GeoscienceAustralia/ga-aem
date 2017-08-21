@@ -536,8 +536,8 @@ public:
 		}
 		else{
 			rootmessage(mylogfile, "Unknown SmoothnessMethod %s\n", sm.c_str());
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
+			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw e;
 		}
 	}
 };
@@ -571,13 +571,13 @@ public:
 
 		if (b.getvalue("DataFile", DataFile) == false){
 			rootmessage(mylogfile, "Input DataFile was not specified\n");
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
+			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw e;
 		}
 		else if (exists(DataFile) == false){
 			rootmessage(mylogfile, "Input DataFile %s not found\n", DataFile.c_str());
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
+			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw e;
 		}
 
 		std::string pfile;
@@ -599,8 +599,8 @@ public:
 
 			if (t[i][0] == ':' || t[i][t[i].size() - 1] == ':'){
 				rootmessage(mylogfile, "Error bad token (%s) when parsing Input.IncludeLines\n", t[i].c_str());
-				std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-				throw(std::runtime_error(e));
+				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+				throw e;
 			}
 			else if (std::sscanf(t[i].c_str(), "%d:%d", &r.first, &r.second) == 2){
 				IncludeLineRanges.push_back(r);
@@ -610,8 +610,8 @@ public:
 			}
 			else{
 				rootmessage(mylogfile, "Error bad token (%s) when parsing Input.IncludeLines\n", t[i].c_str());
-				std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-				throw(std::runtime_error(e));
+				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+				throw e;
 			}
 		}
 
@@ -665,14 +665,14 @@ public:
 
 		if (b.getvalue("LogFile", LogFile) == false){
 			rootmessage(mylogfile, "Output LogFile was not specified\n");
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
+			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw e;
 		}
 
 		if (b.getvalue("DataFile", DataFile) == false){
 			rootmessage(mylogfile, "Output DataFile was not specified\n");
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
+			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw e;
 		}
 
 		b.getvalue("PredictedData", PredictedData);
@@ -776,11 +776,15 @@ public:
 	cAllAtOnceInverter(int argc, char** argv)
 	{
 		if(argc < 2){
+			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
+			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
 			rootmessage("Usage: %s control_file_name\n", argv[0]);
 			rootmessage("Too few command line arguments\n");
 			exit(1);
 		}
 		else if(argc > 2){
+			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
+			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
 			rootmessage("Usage: %s control_file_name\n", argv[0]);
 			rootmessage("Too many command line arguments\n");
 			exit(1);
@@ -794,17 +798,19 @@ public:
 
 		ControlFile = std::string(argv[1]);
 		if(exists(ControlFile) == false){
+			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
+			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
 			rootmessage("Controlfile %s was not found\n", ControlFile.c_str());
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
+			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(e);
 		}
-		Control = cBlock(ControlFile);
 
+		Control = cBlock(ControlFile);
 		OutputOp = cOutputOptions(Control.findblock("Output"));
 		std::string s = strprint(".%04d", mpirank);
 		OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
 		mylogfile = fileopen(OutputOp.LogFile, "w");
-		
+
 		rootmessage("Opening log file %s\n", OutputOp.LogFile.c_str());
 		rootmessage(mylogfile, "Logfile opened on %s\n", timestamp().c_str());
 		rootmessage(mylogfile, "Control file %s\n", Control.Filename.c_str());
@@ -860,8 +866,8 @@ public:
 			cBlock b = g.findblock(fname);	
 			if (b.Name.size() == 0){				
 				rootmessage(mylogfile,"Could not find block for geometry parameter %s\n", fname.c_str());
-				std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);				
-				throw(std::runtime_error(e));
+				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);				
+				throw(e);
 			}
 			G[i] = cGeometryInfo(b);
 		}		
@@ -912,8 +918,8 @@ public:
 			FILE* fp = fileopen(InputOp.DataFile, "r");
 			if (fp == NULL){
 				rootmessage(mylogfile, "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
-				std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-				throw(std::runtime_error(e));
+				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+				throw(e);
 			}
 
 			std::string s;
@@ -942,8 +948,8 @@ public:
 
 		if (nsamples == 0){
 			rootmessage(mylogfile, "There were no samples in the included lines and/or line ranges and/or polygon\n");
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
+			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw e;
 		}
 
 		ndata = calculate_ndata();
@@ -1020,8 +1026,8 @@ public:
 		FILE* fp = fileopen(InputOp.DataFile, "r");
 		if (fp == NULL){
 			rootmessage(mylogfile, "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
+			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw e;
 		}
 
 		std::string s;
@@ -2211,14 +2217,20 @@ public:
 
 int main(int argc, char** argv)
 {
+	mylogfile = (FILE*) NULL;
 	PetscErrorCode ierr;
 	try{
 		ierr = PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
+
 		if(argc < 2){
+			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
+			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
 			rootmessage("Usage: %s control_file_name\n", argv[0]);
 			rootmessage("Too few command line arguments\n");
 		}
 		else if(argc > 2){
+			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
+			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
 			rootmessage("Usage: %s control_file_name\n", argv[0]);
 			rootmessage("Too many command line arguments\n");
 		}
@@ -2229,6 +2241,10 @@ int main(int argc, char** argv)
 	}
 	catch (const std::string msg){
 		rootmessage(mylogfile, "%s", msg.c_str());
+		ierr = PetscFinalize(); CHKERRQ(ierr);
+	}
+	catch (const std::runtime_error e){
+		rootmessage(mylogfile, "%s", e.what());
 		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
 	catch (const std::exception e){

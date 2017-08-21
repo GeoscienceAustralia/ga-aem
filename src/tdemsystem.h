@@ -10,6 +10,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #ifndef _tdemsystem_H
 #define _tdemsystem_H
 
+#include <stdexcept>
 #include <complex>
 #include "fftw3.h"
 #include "general_utils.h"
@@ -183,7 +184,7 @@ public:
 			if (strcasecmp(name, fname(i)) == 0) return i;
 		}
 				
-		rootmessage("Geometry field name %s is bad\n", name);
+		rootmessage("Geometry field name %s is bad\n", name.c_str());
 		std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 		throw(std::runtime_error(e));		
 
