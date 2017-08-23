@@ -818,7 +818,8 @@ public:
 		rootmessage(mylogfile, "Working directory %s\n", getcurrentdirectory().c_str());
 		rootmessage(mylogfile, "Processes=%lu\tRank=%lu\n", mpisize, mpirank);
 		rootmessage(mylogfile, "Processor name = %s\n", mpipname.c_str());
-		Control.write(mylogfile);
+		if (mpirank == 0) Control.print();
+		Control.write(mylogfile);		
 
 		InputOp = cInputOptions(Control.findblock("Input"));
 		InversionOp = cInversionOptions(Control.findblock("Options"));
@@ -830,13 +831,22 @@ public:
 		std::vector<cBlock> bv = Control.findblocks("EMSystem");
 		T.resize(bv.size());
 		for (size_t i = 0; i < bv.size(); i++){
-			T[i].initialise(bv[i]);
+			T[i].initialise(bv[i]);						
+			std::string stmfile = bv[i].getstringvalue("SystemFile");
+			std::string str = T[i].T.STM.get_as_string();
+			rootmessage(mylogfile, "==============System file %s\n", stmfile.c_str());
+			rootmessage(mylogfile, str.c_str());
 		}
+		rootmessage(mylogfile, "==========================================================================\n");
 		nchan = calculate_nchan();
+		rootmessage(mylogfile, "\nStarting setup\n");
 		setup();
-		rootmessage(mylogfile, "Finishing at at %s\n", timestamp().c_str());
+		rootmessage(mylogfile, "\nStarting iterations\n");
+		iterate();
+		rootmessage(mylogfile, "\nFinishing at at %s\n", timestamp().c_str());
 		rootmessage(mylogfile, "Elapsed time = %.2lf\n", stopwatch.etimenow());
 	};
+
 
 	~cAllAtOnceInverter(){
 		fclose(mylogfile);
@@ -1829,8 +1839,7 @@ public:
 		rootmessage(mylogfile, "Finished creating preconditioner\n");
 
 		report_matrix_memory_usage();
-
-		iterate();
+		
 		return true;
 	};
 
@@ -1903,7 +1912,6 @@ public:
 		cPetscDistVector m = mref;
 		m.setname("m");
 
-		rootmessage(mylogfile, "Creating g\n");
 		cPetscDistVector g("g", mpicomm, nlocaldata, ndata);
 
 		cPetscDistShellMatrix A("A", mpicomm, nlocalparam, nlocalparam, nparam, nparam, (void*)this);
