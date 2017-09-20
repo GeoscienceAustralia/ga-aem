@@ -27,17 +27,17 @@ export mpicxx=mpiCC
 export cxxflags='-std=c++11 -O3 -Wall -diag-disable remark'
 export exedir='../bin/raijin/intel'
 
-#make -f example_forward_model.make allclean
-#make -f gaforwardmodeltdem.make allclean
-#make -f gatdaem1d_python.make allclean
-#make -f gatdaem1d_matlab.make allclean
+make -f example_forward_model.make $1
+make -f gaforwardmodeltdem.make $1
+make -f gatdaem1d_python.make $1
+make -f gatdaem1d_matlab.make $1
 
-#make -f galeisbstdem.make allclean
-#make -f garjmcmctdem.make allclean
-make -f galeiallatonce.make all
+make -f galeisbstdem.make $1
+make -f garjmcmctdem.make $1
+make -f galeiallatonce.make $1
 
-#make -f ctlinedata2sgrid.make allclean
-#make -f ctlinedata2slicegrids.make allclean
+make -f ctlinedata2sgrid.make $1
+make -f ctlinedata2slicegrids.make $1
 
-#make -f galeisbsfdem.make allclean
+make -f galeisbsfdem.make $1
 
