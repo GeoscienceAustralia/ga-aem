@@ -117,8 +117,8 @@ public:
 		return 10;
 	}
 
-	double& operator[](const size_t& index){
-
+	double& operator[](const size_t& index)
+	{
 		switch (index) {
 		case 0: return tx_height; break;
 		case 1: return tx_roll; break;
@@ -138,8 +138,25 @@ public:
 		}
 	}
 
-	double operator[](const size_t& index) const {
-		return (*this)[index];
+	double operator[](const size_t& index) const 
+	{				
+		switch (index) {
+		case 0: return tx_height; break;
+		case 1: return tx_roll; break;
+		case 2: return tx_pitch; break;
+		case 3: return tx_yaw; break;
+		case 4: return txrx_dx; break;
+		case 5: return txrx_dy; break;
+		case 6: return txrx_dz; break;
+		case 7: return rx_roll; break;
+		case 8: return rx_pitch; break;
+		case 9: return rx_yaw; break;
+		default:
+			rootmessage("Geometry index %llu out of range\n", index);
+			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+			break;
+		}
 	};
 
 	void set_zero(){
@@ -152,8 +169,8 @@ public:
 	{				
 		for (size_t i = 0; i < size(); i++){			
 			if ((*this)[i] == cBlock::ud_double()){
-				(*this)[i] = g[i];				 
-			}
+				(*this)[i] = g[i];				
+			}			
 		}		
 	}	
 	
