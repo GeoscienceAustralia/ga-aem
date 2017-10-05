@@ -88,7 +88,6 @@
     <ClCompile Include="..\..\src\rjmcmc1d.cpp" />
     <ClCompile Include="..\..\src\rjmcmc1dtdeminverter.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\fielddefinition.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />

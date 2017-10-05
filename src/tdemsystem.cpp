@@ -853,7 +853,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 
 	if (wavformdefined == false){
 		std::string path = STM.getstringvalue("Transmitter.WaveformReceived.File");
-		if (path != STM.ud_string()){
+		if (isundefined(path) == false){
 			sFilePathParts fpp = getfilepathparts(systemdescriptorfile);
 			dmatrix wp = readwaveformfile(fpp.directory + path);
 			if (wp.size() > 0){
@@ -867,7 +867,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 
 	if (wavformdefined == false){
 		std::string path = STM.getstringvalue("Transmitter.WaveformCurrent.File");
-		if (path != STM.ud_string()){
+		if (isundefined(path) == false){
 			sFilePathParts fpp = getfilepathparts(systemdescriptorfile);
 			dmatrix wp = readwaveformfile(fpp.directory + path);
 			if (wp.size() > 0){
@@ -908,7 +908,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 	initialise_windows();
 	
 	LEM.ModellingLoopRadius = STM.getdoublevalue("ForwardModelling.ModellingLoopRadius");
-	if (LEM.ModellingLoopRadius == cBlock::ud_double()){
+	if (isundefined(LEM.ModellingLoopRadius)){
 		LEM.ModellingLoopRadius = 0.0;
 	}
 

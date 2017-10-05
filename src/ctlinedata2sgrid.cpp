@@ -72,17 +72,17 @@ public:
 		sgridsuffix = b.getstringvalue("Suffix");
 				
 		NullBelowElevation = b.getdoublevalue("NullBelowElevation");
-		if(NullBelowElevation == b.ud_double()){
+		if (isundefined(NullBelowElevation)){
 			NullBelowElevation = -DBL_MAX;
 		}
 
 		NullBelowDepth = b.getdoublevalue("NullBelowDepth");
-		if(NullBelowDepth == b.ud_double()){
+		if (isundefined(NullBelowDepth)){
 			NullBelowDepth = DBL_MAX;
 		}
 		
 		NullOutputProperty = b.getdoublevalue("NullOutputProperty");		
-		if(NullOutputProperty == b.ud_double()){
+		if (isundefined(NullOutputProperty)){
 			NullOutputProperty = -999;
 		}
 	}
@@ -91,7 +91,7 @@ public:
 
 		cBlock b = mControl.findblock("Input");
 		subsample = b.getintvalue("Subsample");
-		if(subsample==b.ud_int())subsample=1;
+		if (isundefined(subsample))subsample = 1;
 
 		std::string lstr = b.getstringvalue("Line");
 		std::string xstr = b.getstringvalue("Easting");
@@ -100,7 +100,7 @@ public:
 		
 		haveresistivity = false;
 		std::string crstr = b.getstringvalue("Conductivity");
-		if (strcasecmp(crstr, b.ud_string()) == 0){
+		if (isundefined(crstr)){
 			crstr = b.getstringvalue("Resistivity");
 			haveresistivity = true;
 		}
@@ -108,7 +108,7 @@ public:
 
 		InputConductivityScaling=1.0;
 		std::string cunits = b.getstringvalue("InputConductivityUnits");
-		if(strcasecmp(cunits,b.ud_string()) == 0){
+		if (isundefined(cunits)){
 			InputConductivityScaling = 1.0;
 		}
 		else if(strcasecmp(cunits,"S/m") == 0){
@@ -122,7 +122,7 @@ public:
 		}
 		
 		NullInputConductivity = b.getdoublevalue("NullInputConductivity");
-		if(NullInputConductivity == b.ud_double()){		
+		if (isundefined(NullInputConductivity)){
 			NullInputConductivity = -9999;
 		}
 		

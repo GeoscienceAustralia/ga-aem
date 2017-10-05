@@ -114,12 +114,12 @@ void FDEmSampleInverter::getinputs()
 	DataFileName = b.getstringvalue("DataFile");
 	
 	DataFileHeaderLines = b.getsizetvalue("Headerlines");
-	if (DataFileHeaderLines == cBlock::ud_size_t()){
+	if (isundefined(DataFileHeaderLines)){
 		DataFileHeaderLines = 0;
 	}
 
 	DataFileSubsample = b.getsizetvalue("Subsample");
-	if (DataFileSubsample == cBlock::ud_size_t()){
+	if (isundefined(DataFileSubsample)){
 		DataFileSubsample = 1;
 	}
 

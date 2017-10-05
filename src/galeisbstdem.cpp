@@ -105,12 +105,12 @@ void cSBSInverter::loadcontrolfile(const std::string filename)
 	fixseparator(DataFileName);
 
 	DataFileHeaderLines = IB.getsizetvalue("Headerlines");		
-	if (DataFileHeaderLines == cBlock::ud_size_t()){
+	if (isundefined(DataFileHeaderLines)){
 		DataFileHeaderLines = 0;
 	}
 	
 	DataFileSubsample   = IB.getsizetvalue("Subsample");
-	if (DataFileSubsample == cBlock::ud_size_t()){
+	if (isundefined(DataFileSubsample)){
 		DataFileSubsample = 1;
 	}	
 	
@@ -184,7 +184,7 @@ void cSBSInverter::parseoptions()
 	
 	SmoothnessMethod = SM_2ND_DERIVATIVE;//default
 	std::string sm = b.getstringvalue("SmoothnessMethod");
-	if (strcasecmp(sm,cBlock::ud_string())==0){
+	if (isundefined(sm)){
 		SmoothnessMethod = SM_2ND_DERIVATIVE;
 	}
 	else if (strcasecmp(sm,"Minimise1stDerivatives")==0){

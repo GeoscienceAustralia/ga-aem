@@ -7,9 +7,6 @@
     <ClCompile Include="..\..\src\tdemsystem.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
       <Filter>Source</Filter>
     </ClCompile>

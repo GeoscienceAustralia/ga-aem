@@ -20,9 +20,6 @@
     <ClCompile Include="..\..\src\layeredearthmodeller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\blocklanguage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\submodules\cpp-utils\src\fielddefinition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

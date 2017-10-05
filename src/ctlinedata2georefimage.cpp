@@ -216,7 +216,7 @@ public:
 
 
 		double v = b.getdoublevalue("ElevationTop");
-		if(v==b.ud_double()){
+		if(isundefined(v)){
 			autozsectiontop = true;
 			zsectiontop = v;
 		}
@@ -226,7 +226,7 @@ public:
 		}
 
 		v = b.getdoublevalue("ElevationBottom");
-		if(v==b.ud_double()){
+		if (isundefined(v)){
 			autozsectionbot = true;
 			zsectionbot = v;
 		}
@@ -265,7 +265,7 @@ public:
 	void readdatafile(const cBlock& input, const std::string filename)
 	{
 		int subsample = input.getintvalue("Subsample");
-		if (subsample == input.ud_int())subsample = 1;
+		if (isundefined(subsample))subsample = 1;
 
 		std::string lstr = input.getstringvalue("Line");
 		std::string xstr = input.getstringvalue("Easting");
@@ -274,7 +274,7 @@ public:
 		
 		bool isresistivity = false;
 		std::string crstr = input.getstringvalue("Conductivity");		
-		if (crstr == cBlock::ud_string()){
+		if (isundefined(crstr)){
 			crstr = input.getstringvalue("Resistivity");
 			isresistivity = true;
 		}
@@ -284,7 +284,7 @@ public:
 
 		double cscale=1.0;
 		std::string cunits = input.getstringvalue("InputConductivityUnits");
-		if(strcasecmp(cunits,cBlock::ud_string()) == 0){
+		if(isundefined(cunits)){
 			cscale = 1.0;
 		}
 		else if(strcasecmp(cunits,"S/m") == 0){

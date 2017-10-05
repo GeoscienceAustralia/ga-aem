@@ -138,26 +138,13 @@ public:
 		}
 	}
 
+	
 	double operator[](const size_t& index) const 
 	{				
-		switch (index) {
-		case 0: return tx_height; break;
-		case 1: return tx_roll; break;
-		case 2: return tx_pitch; break;
-		case 3: return tx_yaw; break;
-		case 4: return txrx_dx; break;
-		case 5: return txrx_dy; break;
-		case 6: return txrx_dz; break;
-		case 7: return rx_roll; break;
-		case 8: return rx_pitch; break;
-		case 9: return rx_yaw; break;
-		default:
-			rootmessage("Geometry index %llu out of range\n", index);
-			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw(std::runtime_error(e));
-			break;
-		}
+		//Remove implied constness using const_cast
+		return (*(const_cast<cTDEmGeometry*>(this)))[index]; // Correctly calls the function above.		
 	};
+	
 
 	void set_zero(){
 		for (size_t i = 0; i < size(); i++){
@@ -168,7 +155,7 @@ public:
 	void fillundefined(const cTDEmGeometry& g)
 	{				
 		for (size_t i = 0; i < size(); i++){			
-			if ((*this)[i] == cBlock::ud_double()){
+			if ((*this)[i] == ud_double()){
 				(*this)[i] = g[i];				
 			}			
 		}		

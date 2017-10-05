@@ -210,7 +210,7 @@ public:
 	std::vector<std::vector<double>> getslices(const cBlock& b){
 		std::vector<std::vector<double>> slices;
 		std::string ss = b.getstringvalue("Slices");
-		if (ss != b.ud_string()){
+		if (isundefined(ss)==false){
 			slices = interpretstrides(ss);
 		}
 		else{
@@ -226,8 +226,8 @@ public:
 		SubSample = b.getsizetvalue("Subsample");
 		HeaderLines = b.getsizetvalue("HeaderLines");
 		
-		if (SubSample == b.ud_size_t())SubSample = 1;
-		if (HeaderLines == b.ud_size_t())HeaderLines = 0;
+		if (isundefined(SubSample))SubSample = 1;
+		if (isundefined(HeaderLines))HeaderLines = 0;
 
 		double t1 = gettime();
 		printf("Reading input data file %s\n",DataFile.c_str());
@@ -269,7 +269,7 @@ public:
 		std::string cfield = b.getstringvalue("Conductivity");		
 		std::string rfield = b.getstringvalue("Resistivity");
 		size_t findex_c;
-		if (cfield != b.ud_string()){
+		if (isundefined(cfield)==false){
 			haveconductivity = true;
 			findex_c = A.fieldindexbyname(cfield);
 			if (findex_c == A.nullfieldindex()){
@@ -277,7 +277,7 @@ public:
 				exit(1);
 			}
 		}
-		else if (rfield != b.ud_string()){
+		else if (isundefined(rfield)==false){
 			findex_c = A.fieldindexbyname(rfield);
 			if (findex_c == A.nullfieldindex()){
 				printf("Error could not find Resistivity field: %s\n", rfield.c_str());
@@ -297,7 +297,7 @@ public:
 		std::string tfield = b.getstringvalue("Thickness");
 		std::string etopfield = b.getstringvalue("ElevationTop");
 		size_t findex_d;		
-		if (dfield != b.ud_string()){
+		if (isundefined(dfield)==false){
 			havedepth = true;
 			findex_d = A.fieldindexbyname(dfield);
 			if (findex_d == A.nullfieldindex()){
@@ -305,7 +305,7 @@ public:
 				exit(1);
 			}
 		}
-		else if (tfield != b.ud_string()){
+		else if (isundefined(tfield)==false){
 			havethickness = true;
 			findex_d = A.fieldindexbyname(tfield);
 			if (findex_d == A.nullfieldindex()){
@@ -313,7 +313,7 @@ public:
 				exit(1);
 			}
 		}
-		else if (etopfield != b.ud_string()){
+		else if (isundefined(etopfield)==false){
 			haveelevationtop = true;
 			findex_d = A.fieldindexbyname(etopfield);
 			if (findex_d == A.nullfieldindex()){
@@ -330,13 +330,13 @@ public:
 		double rscale = 1.0;
 		if (haveconductivity){
 			cscale = b.getdoublevalue("ConductivityScaling");
-			if (cscale == b.ud_double()){
+			if (isundefined(cscale)){
 				cscale = 1.0;
 			}
 		}
 		else{
 			rscale = b.getdoublevalue("ResistivityScaling");
-			if (rscale == b.ud_double()){
+			if (isundefined(rscale)){
 				rscale = 1.0;
 			}
 		}		
