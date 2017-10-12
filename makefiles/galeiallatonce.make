@@ -5,7 +5,7 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 
 cxxflags   += -D_MPI_ENABLED
-includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
+includes   = -I/usr/include/petsc -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
 libs       = -L$(FFTW_DIR) -lfftw3 -lpetsc
 executable = $(exedir)/galeiallatonce.exe
 
@@ -14,7 +14,6 @@ allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/blocklanguage.o
 objects += $(cpputilssrc)/geometry3d.o
 objects += $(srcdir)/tdemsystem.o
 objects += $(srcdir)/galeiallatonce.o

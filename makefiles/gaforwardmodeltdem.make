@@ -11,7 +11,6 @@ executable = $(exedir)/gaforwardmodeltdem.exe
 all: compile link
 allclean: clean compile link
 
-objects += $(cpputilssrc)/blocklanguage.o
 objects += $(cpputilssrc)/geometry3d.o
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o

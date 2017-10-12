@@ -14,7 +14,6 @@ allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/blocklanguage.o
 objects += $(cpputilssrc)/geometry3d.o
 objects += $(cpputilssrc)/fielddefinition.o
 objects += $(cpputilssrc)/matrix_ops.o
