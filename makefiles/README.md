@@ -2,7 +2,8 @@ ga-aem/makefiles
 ================
 
 ##Directory for makefiles
-	*To compile on linux: Read, modify and run "run_make.sh"
+	*To compile on linux: Read, modify and run version of "my_run_make.sh"
+	*See for example raijin_run_make.sh
 
 ##You will need to set the
 	* cxx (C++ compiler)

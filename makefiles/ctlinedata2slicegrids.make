@@ -13,7 +13,6 @@ allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/blocklanguage.o
 objects += $(srcdir)/ctlinedata2slicegrids.o
 
 %.o : %.cpp
