@@ -132,11 +132,11 @@ struct FrequencyNode{
 };
 
 struct LayerNode{
-	double Thickness;
-	double Conductivity;
-	double Chargeability;
-	double FrequencyDependence;
-	double TimeConstant;
+	double Thickness;  // m
+	double Conductivity; // S/m
+	double Chargeability; // 
+	double TimeConstant; // s
+	double FrequencyDependence;	//unit less
 };
 
 enum eRZeroMethod     {
@@ -157,6 +157,7 @@ enum eCalculationType {
 };
 
 enum eIPType {
+	IP_NONE,
 	IP_COLECOLE,
 	IP_PELTON
 };
