@@ -22,7 +22,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 enum eBracketResult { BR_BRACKETED, BR_MINBRACKETED, BR_ALLABOVE, BR_ALLBELOW };
 
-struct sTrial{
+class sTrial{
+
+public:
 	size_t order;
 	double lambda;
 	double phid;
@@ -89,7 +91,7 @@ class cTrialCache{
 
 };
 
-struct cTDEmSystemInfo{
+class cTDEmSystemInfo{
 	
 	public:
 
@@ -119,6 +121,52 @@ struct cTDEmSystemInfo{
 	sTDEmData predicted;
 };
 
+class cOutputOptions {
+
+public:
+	std::string DataFile;
+	std::string Logfile;
+	bool PositiveLayerBottomDepths = false;
+	bool NegativeLayerBottomDepths = false;
+	bool InterfaceElevations = false;
+	bool ParameterSensitivity = false;
+	bool ParameterUncertainty = false;
+	bool ObservedData = false;
+	bool NoiseEstimates = false;
+	bool PredictedData = false;
+	bool Dump = false;
+	std::string DumpPath;
+
+	cOutputOptions(){};
+
+	cOutputOptions(const cBlock& b) {
+		DataFile = b.getstringvalue("DataFile");
+		fixseparator(DataFile);
+
+		Logfile = b.getstringvalue("LogFile");				
+		fixseparator(Logfile);
+
+		PositiveLayerBottomDepths = b.getboolvalue("PositiveLayerBottomDepths");
+		NegativeLayerBottomDepths = b.getboolvalue("NegativeLayerBottomDepths");
+		InterfaceElevations = b.getboolvalue("InterfaceElevations");
+		ParameterSensitivity = b.getboolvalue("ParameterSensitivity");
+		ParameterUncertainty = b.getboolvalue("ParameterUncertainty");
+		ObservedData = b.getboolvalue("ObservedData");
+		NoiseEstimates = b.getboolvalue("NoiseEstimates");
+		PredictedData = b.getboolvalue("PredictedData");				
+
+		Dump = b.getboolvalue("Dump");
+		if (Dump) {
+			DumpPath = b.getstringvalue("DumpPath");
+			fixseparator(DumpPath);
+			if (DumpPath[DumpPath.length() - 1] != pathseparator()) {
+				DumpPath.append(pathseparatorstring());
+			}
+			makedirectory(DumpPath.c_str());
+		}
+	}
+	
+};
 
 class cSBSInverter{
 
@@ -131,7 +179,7 @@ public:
 	void initialise(const std::string controlfile);
 	void loadcontrolfile(const std::string controlfile);	
 	void initialisesystems();
-	void parseoutputs();
+	void openlogfile();
 	void parseoptions();
 	void parsecolumns();
 
@@ -162,8 +210,11 @@ public:
 	std::vector<int> intvector(const FieldDefinition& coldef, const size_t& n);	
 	cTDEmGeometry readgeometry(const std::vector<FieldDefinition>& gfd);	
 	void readsystemdata(size_t sysindex);
-			
+	bool solvegeometryindex(const size_t index);
+
 	void writeresult();	
+	void writeresult_geometry(std::string& buf, cOutputFileInfo& OI, const cTDEmGeometry& g, const std::string& fieldnameprefix, const std::string& commentprefix, const bool invertedfieldsonly);	
+	void writeresult_component(std::string& buf, cOutputFileInfo& OI, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& commprefix, const char& form, const size_t& width, const size_t& decimals, const double& p, std::vector<double>& s, const bool& includeprimary);
 		
 	//Members
 	size_t mRank;
@@ -184,24 +235,13 @@ public:
 	size_t nsystems;	
 	std::string InputFile;
 	
-	std::string OutputDataFile;	
-	std::string OutputLogfile;	
-	bool OutputPositiveLayerBottomDepths;
-	bool OutputNegativeLayerBottomDepths;
-	bool OutputInterfaceElevations;
-	bool OutputParameterSensitivity;
-	bool OutputParameterUncertainty;	
-	bool OutputPredictedData;
-	bool Dump;
-	std::string DumpPath;
-	
-
+	cOutputOptions OO;	
 	FILE* ofp;	
 	size_t Outputrecord; //output record number
 	
 	//column definitions
 	FieldDefinition sn, dn, fn, ln, fidn;
-	FieldDefinition xord, yord, elevation, altimeter;	
+	FieldDefinition xord, yord, elevation;	
 	std::vector<FieldDefinition> fd_GI;
 	std::vector<FieldDefinition> fd_GR;
 	std::vector<FieldDefinition> fd_GS;	

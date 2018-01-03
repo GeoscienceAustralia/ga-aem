@@ -232,9 +232,9 @@ public:
 	{
 		size_t i;
 		for (i = 0; i < NumLayers - 1; i++){
-			printf("Layer %02lu:\t%10lf mS/m\t%10lf m\n", i, 1000.0*Layer[i].Conductivity, Layer[i].Thickness);
+			printf("Layer %02zu:\t%10lf mS/m\t%10lf m\n", i, 1000.0*Layer[i].Conductivity, Layer[i].Thickness);
 		}
-		printf("Layer %02lu:\t%10lf mS/m\n", i, 1000.0*Layer[i].Conductivity);
+		printf("Layer %02zu:\t%10lf mS/m\n", i, 1000.0*Layer[i].Conductivity);
 	}
 
 	std::vector<double> getconductivity()
@@ -442,12 +442,14 @@ public:
 		BigR3 = BigR*BigR2;
 		BigR5 = BigR3*BigR2;
 		BigR7 = BigR5*BigR2;
-
-		XonR = X / R;
-		YonR = Y / R;
+		
 		if (R == 0.0){
 			XonR = 0.0;
 			YonR = 0.0;
+		}
+		else {
+			XonR = X / R;
+			YonR = Y / R;
 		}
 	}
 
@@ -982,9 +984,16 @@ public:
 		case CT_XDERIVATIVE:
 		case CT_YDERIVATIVE:
 			k = loopfactor * A.P21onP11;
-			integrand_result[0] = k * (-l4e*j1);
-			integrand_result[1] = k * (l4e*(j0 - j1 / lambdar));
-			integrand_result[2] = k * (l3e*(j0 - j1 / lambdar));
+			if (R != 0.0) {
+				integrand_result[0] = k * (-l4e*j1);			
+				integrand_result[1] = k * (l4e*(j0 - j1 / lambdar));
+				integrand_result[2] = k * (l3e*(j0 - j1 / lambdar));
+			}
+			else {
+				integrand_result[0] = 0.0;
+				integrand_result[1] = 0.0;
+				integrand_result[2] = 0.0;
+			}
 			break;
 		default:
 			errormessage("LE::integrands Calculation type %lu not yet implemented", calculation_type);
@@ -1090,15 +1099,20 @@ public:
 			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dZ;
 			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dZ;
 		}
-		else if (calculation_type == CT_XDERIVATIVE || calculation_type == CT_YDERIVATIVE || calculation_type == CT_RDERIVATIVE){
+		else if (calculation_type == CT_XDERIVATIVE || calculation_type == CT_YDERIVATIVE || calculation_type == CT_RDERIVATIVE) {
 
-			cdouble dxdX = -ONEONFOURPI * (Hankel[fi].I1.FM*(1.0 / R - X*X / R3) + (X / R) * Hankel[fi].I1.dR * XonR);
-			cdouble dydX = -ONEONFOURPI * Y * (Hankel[fi].I1.FM*(-X / R3) + (1.0 / R) * Hankel[fi].I1.dR * XonR);
-			cdouble dzdX = -ONEONFOURPI * Hankel[fi].I0.dR * XonR;
+			cdouble dxdX = 0.0; cdouble dydX = 0.0; cdouble dzdX = 0.0;
+			cdouble dxdY = 0.0; cdouble dydY = 0.0; cdouble dzdY = 0.0;
 
-			cdouble dxdY = -ONEONFOURPI * X * (Hankel[fi].I1.FM*(-Y / R3) + (1.0 / R) * Hankel[fi].I1.dR * YonR);
-			cdouble dydY = -ONEONFOURPI * (Hankel[fi].I1.FM*(1.0 / R - Y*Y / R3) + (Y / R) * Hankel[fi].I1.dR * YonR);
-			cdouble dzdY = -ONEONFOURPI * Hankel[fi].I0.dR * YonR;
+			if(R != 0.0){
+				dxdX = -ONEONFOURPI * (Hankel[fi].I1.FM*(1.0 / R - X * X / R3) + XonR * Hankel[fi].I1.dR * XonR);
+				dydX = -ONEONFOURPI * Y * (Hankel[fi].I1.FM*(-X / R3) + (1.0 / R) * Hankel[fi].I1.dR * XonR);
+				dzdX = -ONEONFOURPI * Hankel[fi].I0.dR * XonR;
+
+				dxdY = -ONEONFOURPI * X * (Hankel[fi].I1.FM*(-Y / R3) + (1.0 / R) * Hankel[fi].I1.dR * YonR);
+				dydY = -ONEONFOURPI * (Hankel[fi].I1.FM*(1.0 / R - Y * Y / R3) + YonR * Hankel[fi].I1.dR * YonR);
+				dzdY = -ONEONFOURPI * Hankel[fi].I0.dR * YonR;
+			}
 
 			if (calculation_type == CT_XDERIVATIVE){
 				double dXdXo = cosxyrotation;
@@ -1205,27 +1219,27 @@ public:
 		if (calculation_type == CT_FORWARDMODEL){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.FM / R - Hankel[fi].I0.FM);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.FM / R3 - Y*Y*Hankel[fi].I0.FM / R2);
-			Fields.h.s.z = ONEONFOURPI*Y / R*Hankel[fi].I1.FM;
+			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.FM;
 		}
 		else if (calculation_type == CT_CONDUCTIVITYDERIVATIVE){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dC / R - Hankel[fi].I0.dC);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dC / R3 - Y*Y*Hankel[fi].I0.dC / R2);
-			Fields.h.s.z = ONEONFOURPI*Y / R*Hankel[fi].I1.dC;
+			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dC;
 		}
 		else if (calculation_type == CT_THICKNESSDERIVATIVE){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dT / R - Hankel[fi].I0.dT);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dT / R3 - Y*Y*Hankel[fi].I0.dT / R2);
-			Fields.h.s.z = ONEONFOURPI*Y / R*Hankel[fi].I1.dT;
+			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dT;
 		}
 		else if (calculation_type == CT_HDERIVATIVE){			
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dH / R - Hankel[fi].I0.dH);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dH / R3 - Y*Y*Hankel[fi].I0.dH / R2);
-			Fields.h.s.z = ONEONFOURPI*Y / R*Hankel[fi].I1.dH;
+			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dH;
 		}
 		else if (calculation_type == CT_ZDERIVATIVE){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dZ / R - Hankel[fi].I0.dZ);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dZ / R3 - Y*Y*Hankel[fi].I0.dZ / R2);
-			Fields.h.s.z = ONEONFOURPI*Y / R*Hankel[fi].I1.dZ;
+			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dZ;
 		}
 		else if (calculation_type == CT_XDERIVATIVE || calculation_type == CT_YDERIVATIVE || calculation_type == CT_RDERIVATIVE){
 			cdouble a, c, d, e, f, h;

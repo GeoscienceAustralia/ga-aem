@@ -101,7 +101,7 @@ int process(std::string controlfilename)
 	size_t recnum = 1;
 	char* CurrentRecordStr = new char[5001];
 	while (fgets(CurrentRecordStr, 5000, fin) != NULL){
-		printf("Processing record %lu\n", recnum);
+		printf("Processing record %zu\n", recnum);
 		cTDEmGeometry G;
 		cEarth1D E;
 		parseinputrecord(CurrentRecordStr, G, E);
@@ -190,10 +190,10 @@ int writehdr(FILE* fhdr, const size_t& nw)
 int writehdrentry(FILE* fhdr, const char* s, size_t& colnum, size_t nbands)
 {
 	if (nbands == 1){
-		fprintf(fhdr, "%lu\t%s\n", colnum, s);
+		fprintf(fhdr, "%zu\t%s\n", colnum, s);
 	}
 	else{
-		fprintf(fhdr, "%lu-%lu\t%s\n", colnum, colnum + nbands - 1, s);
+		fprintf(fhdr, "%zu-%zu\t%s\n", colnum, colnum + nbands - 1, s);
 	}
 	colnum = colnum + nbands;
 	return 0;
@@ -205,9 +205,9 @@ int writecsvheader(FILE* fout, const size_t& nw)
 	fprintf(fout, "XP%c",delim);
 	fprintf(fout, "YP%c",delim);
 	fprintf(fout, "ZP%c",delim);	
-	for (size_t i = 0; i < nw; i++)fprintf(fout, "XS[%02d]%c", i+1, delim);
-	for (size_t i = 0; i < nw; i++)fprintf(fout, "YS[%02d]%c", i+1, delim);
-	for (size_t i = 0; i < nw; i++)fprintf(fout, "ZS[%02d]%c", i+1, delim);
+	for (size_t i = 0; i < nw; i++)fprintf(fout, "XS[%02zu]%c", i+1, delim);
+	for (size_t i = 0; i < nw; i++)fprintf(fout, "YS[%02zu]%c", i+1, delim);
+	for (size_t i = 0; i < nw; i++)fprintf(fout, "ZS[%02zu]%c", i+1, delim);
 	fprintf(fout, "\n");
 	return 0;
 }

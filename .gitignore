@@ -1,5 +1,8 @@
 #File patterns that are ignored
 
+
+output/
+
 # Compiled Object files
 *.slo
 *.lo
@@ -27,6 +30,9 @@
 visualstudio/*/x64
 [Dd]ebug/
 [Oo]bj/
+.vs/
+*.iobj
+*.ipdb
 
 
 # Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
@@ -46,8 +52,10 @@ TestResult.xml
 *.ilk
 *.meta
 *.obj
+*.iobj
 *.pch
 *.pdb
+*.ipdb
 *.pgc
 *.pgd
 *.rsp

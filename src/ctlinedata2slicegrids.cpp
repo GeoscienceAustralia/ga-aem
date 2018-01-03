@@ -345,7 +345,7 @@ public:
 		ta = gettime();
 		size_t nrecords = countlines(DataFile);		
 		tb = gettime();
-		printf("Record count time %lf records=%lu\n", tb - ta, nrecords);
+		printf("Record count time %lf records=%zu\n", tb - ta, nrecords);
 		
 		size_t nreserve = nrecords / SubSample;
 		A.openfile(DataFile);	

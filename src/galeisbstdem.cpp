@@ -69,8 +69,7 @@ void sorttrial_phid(cTrialCache& x)
 }
 
 cSBSInverter::cSBSInverter(size_t size, size_t rank)
-{
-	Dump = false;
+{	
 	mSize = size;
 	mRank = rank;
 }
@@ -94,7 +93,12 @@ void cSBSInverter::loadcontrolfile(const std::string filename)
 	rootmessage("Loading control file %s\n", filename.c_str());
 	Control = cBlock(filename);
 
-	parseoutputs(); //load this first to get outputlogfile opened
+	cBlock OB = Control.findblock("Output");
+	OO = cOutputOptions(OB);	
+	std::string suffix = stringvalue(mRank, ".%04lu");
+	OO.Logfile  = insert_after_filename(OO.Logfile, suffix);
+	OO.DataFile = insert_after_filename(OO.DataFile, suffix);
+	openlogfile(); //load this first to get outputlogfile opened	
 	
 	//Load control file				
 	parseoptions();
@@ -118,47 +122,20 @@ void cSBSInverter::loadcontrolfile(const std::string filename)
 	DataFilePointer = fileopen(DataFileName, "r");
 	DataFileRecord  = 0;
 	
-	rootmessage(fp_log,"Opening Output DataFile %s\n", OutputDataFile.c_str());
-	ofp = fileopen(OutputDataFile, "w");	
+	rootmessage(fp_log,"Opening Output DataFile %s\n", OO.DataFile.c_str());
+	ofp = fileopen(OO.DataFile, "w");	
 	Outputrecord = 1;
 }
-void cSBSInverter::parseoutputs()
-{
-	cBlock OB = Control.findblock("Output");
-	OutputDataFile = OB.getstringvalue("DataFile");
-	OutputLogfile = OB.getstringvalue("LogFile");
-	OutputPositiveLayerBottomDepths = OB.getboolvalue("PositiveLayerBottomDepths");
-	OutputNegativeLayerBottomDepths = OB.getboolvalue("NegativeLayerBottomDepths");
-	OutputInterfaceElevations  = OB.getboolvalue("InterfaceElevations");	
-	OutputParameterSensitivity = OB.getboolvalue("ParameterSensitivity");
-	OutputParameterUncertainty = OB.getboolvalue("ParameterUncertainty");
-	OutputPredictedData        = OB.getboolvalue("PredictedData");
-		
-	fixseparator(OutputDataFile);
-	fixseparator(OutputLogfile);
-
-	std::string suffix = stringvalue(mRank, ".%04lu");
-	OutputLogfile = insert_after_filename(OutputLogfile, suffix);
-	OutputDataFile = insert_after_filename(OutputDataFile, suffix);
-	
-	rootmessage("Opening log file %s\n", OutputLogfile.c_str());
-	fp_log = fileopen(OutputLogfile, "w");
+void cSBSInverter::openlogfile()
+{		
+	rootmessage("Opening log file %s\n", OO.Logfile.c_str());
+	fp_log = fileopen(OO.Logfile, "w");
 	rootmessage(fp_log, "Logfile opened on %s\n", timestamp().c_str());
 	rootmessage(fp_log, "Control file %s\n", Control.Filename.c_str());
 	rootmessage(fp_log, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
 	rootmessage(fp_log, "Working directory %s\n", getcurrentdirectory().c_str());
-	rootmessage(fp_log, "Processes=%lu\tRank=%lu\n", mSize, mRank);
-	Control.write(fp_log);
-
-	Dump = OB.getboolvalue("Dump");
-	if (Dump){
-		DumpPath = OB.getstringvalue("DumpPath");
-		fixseparator(DumpPath);
-		if (DumpPath[DumpPath.length() - 1] != pathseparator()){
-			DumpPath.append(pathseparatorstring());
-		}
-		makedirectory(DumpPath.c_str());
-	}
+	rootmessage(fp_log, "Processes=%zu\tRank=%zu\n", mSize, mRank);
+	Control.write(fp_log);	
 }
 void cSBSInverter::parseoptions()
 {
@@ -210,44 +187,37 @@ void cSBSInverter::parseoptions()
 }
 void cSBSInverter::parsecolumns()
 {	
-	cBlock ioc = Control.findblock("Input.Columns");
-	sn.set(ioc, "SurveyNumber");
-	dn.set(ioc, "DateNumber");
-	fn.set(ioc, "FlightNumber");
-	ln.set(ioc, "LineNumber");
-	fidn.set(ioc, "FidNumber");
-	xord.set(ioc, "Easting");
-	yord.set(ioc, "Northing");
-	elevation.set(ioc, "GroundElevation");
-	altimeter.set(ioc, "Altimeter");
+	cBlock b = Control.findblock("Input.Columns");
+	sn.set(b, "SurveyNumber");
+	dn.set(b, "DateNumber");
+	fn.set(b, "FlightNumber");
+	ln.set(b, "LineNumber");
+	fidn.set(b, "FidNumber");
+	xord.set(b, "Easting");
+	yord.set(b, "Northing");
+	elevation.set(b, "GroundElevation");	
 
-	fd_GI = parsegeometry(ioc);
-	cBlock rm = ioc.findblock("ReferenceModel");
+	fd_GI = parsegeometry(b);
+
+	cBlock rm = b.findblock("ReferenceModel");
 	fd_GR = parsegeometry(rm);
 	fd_ERc.set(rm, "Conductivity");
 	fd_ERt.set(rm, "Thickness");
 
-	cBlock sd = ioc.findblock("StdDevReferenceModel");
+	cBlock sd = b.findblock("StdDevReferenceModel");
 	fd_GS = parsegeometry(sd);
 	fd_ESc.set(sd, "Conductivity");
 	fd_ESt.set(sd, "Thickness");
 
-	cBlock tfr = ioc.findblock("TotalFieldReconstruction");
+	cBlock tfr = b.findblock("TotalFieldReconstruction");
 	fd_GTFR = parsegeometry(tfr);
 }
 std::vector<FieldDefinition> cSBSInverter::parsegeometry(const cBlock& b)
 {
 	std::vector<FieldDefinition> g(10);
-	g[0].set(b, "TX_Height");
-	g[1].set(b, "TX_Roll");
-	g[2].set(b, "TX_Pitch");
-	g[3].set(b, "TX_Yaw");
-	g[4].set(b, "TXRX_DX");
-	g[5].set(b, "TXRX_DY");
-	g[6].set(b, "TXRX_DZ");
-	g[7].set(b, "RX_Roll");
-	g[8].set(b, "RX_Pitch");
-	g[9].set(b, "RX_Yaw");
+	for (size_t i = 0; i < g.size(); i++) {
+		g[i].set(b, cTDEmGeometry::fname(i));
+	}	
 	return g;
 }
 void cSBSInverter::initialisesystems()
@@ -255,8 +225,8 @@ void cSBSInverter::initialisesystems()
 	nsystems = Control.getsizetvalue("NumberOfSystems");
 	SV.resize(nsystems);
 	for (size_t si = 0; si < nsystems; si++){
-		cTDEmSystemInfo& S = SV[si];
-		std::string str = strprint("EMSystem%lu", si + 1);
+		cTDEmSystemInfo& S = SV[si];		
+		std::string str = strprint("EMSystem%zu", si + 1);
 		cBlock  b = Control.findblock(str);
 
 		cTDEmSystem& T = S.T;
@@ -445,7 +415,7 @@ bool cSBSInverter::parserecord()
 	Location.x      = doublevalue(xord);
 	Location.y      = doublevalue(yord);
 	Location.groundelevation = doublevalue(elevation);
-	Location.z      = doublevalue(altimeter);
+	Location.z      = ud_double();
 
 	GI = readgeometry(fd_GI);	
 	GR = readgeometry(fd_GR);
@@ -543,7 +513,7 @@ void cSBSInverter::initialise_sample()
 
 	initialise_Wr_Wm();
 
-	if (Dump){
+	if (OO.Dump){
 		dumptofile(GR, "geometry_start.dat");
 		dumptofile(ER, "earth_start.dat");
 
@@ -552,8 +522,8 @@ void cSBSInverter::initialise_sample()
 
 		dumptofile(ES, "earth_std.dat");
 
-		FILE* fp = fileopen(DumpPath + "Id.dat", "w");
-		fprintf(fp, "%lu\t%lu\t%lu\t%lu\t%lu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
+		FILE* fp = fileopen(OO.DumpPath + "Id.dat", "w");
+		fprintf(fp, "%zu\t%zu\t%zu\t%zu\t%zu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
 		fclose(fp);
 	}
 }
@@ -598,7 +568,7 @@ void cSBSInverter::initialise_data()
 		}
 	}
 
-	if (Dump){
+	if (OO.Dump){
 		dumptofile(vObs, "observed.dat");
 		dumptofile(vErr, "observed_std.dat");
 	}
@@ -618,8 +588,7 @@ void cSBSInverter::initialise_parameters()
 			vRefParamStd[i + tIndex] = ES.thickness[i];
 		}
 	}
-
-	//GR = GI;
+	
 	if (solve_tx_height){
 		vRefParam[tx_heightIndex] = GR.tx_height;
 		vRefParamStd[tx_heightIndex] = GS.tx_height;
@@ -656,7 +625,7 @@ void cSBSInverter::initialise_Wd()
 	for (size_t i = 0; i < ndata; i++){
 		Wd[i][i] = s / (vErr[i]*vErr[i]);
 	}
-	if(Dump) writetofile(Wd,DumpPath+"Wd.dat");
+	if(OO.Dump) writetofile(Wd,OO.DumpPath+"Wd.dat");
 }
 void cSBSInverter::initialise_Wc()
 {	
@@ -792,13 +761,13 @@ void cSBSInverter::initialise_Wr_Wm()
 	
 	Wm = Wr + Ws;
 
-	if (Dump){
-		writetofile(Wc, DumpPath + "Wc.dat");
-		writetofile(Wt, DumpPath + "Wt.dat");
-		writetofile(Wg, DumpPath + "Wg.dat");
-		writetofile(Wr, DumpPath + "Wr.dat");
-		writetofile(Ws, DumpPath + "Ws.dat");
-		writetofile(Wm, DumpPath + "Wm.dat");
+	if (OO.Dump){
+		writetofile(Wc, OO.DumpPath + "Wc.dat");
+		writetofile(Wt, OO.DumpPath + "Wt.dat");
+		writetofile(Wg, OO.DumpPath + "Wg.dat");
+		writetofile(Wr, OO.DumpPath + "Wr.dat");
+		writetofile(Ws, OO.DumpPath + "Ws.dat");
+		writetofile(Wm, OO.DumpPath + "Wm.dat");
 	}
 	
 }
@@ -813,11 +782,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 			const double maxcond = 50;
 			const double mincond = 1e-6;
 			if (vParam[pindex] + dm[pindex] > log10(maxcond)){
-				//printf("upper limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("upper limit li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = log10(maxcond) - vParam[pindex];
 			}
 			else if (vParam[pindex] + dm[pindex] < log10(mincond)){
-				//printf("lower limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("lower limit li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = log10(mincond) - vParam[pindex];
 			}
 		}
@@ -827,11 +796,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 		for (size_t li = 0; li<nlayers - 1; li++){
 			size_t pindex = li + tIndex;
 			if (dm[pindex] > 0.5){
-				//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = 0.5;
 			}
 			else if (dm[pindex] < -0.5){
-				//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = -0.5;
 			}
 		}
@@ -840,11 +809,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 	if (solve_tx_height){
 		size_t pindex = tx_heightIndex;
 		if (dm[pindex] > 0.5){
-			//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+			//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 			dm[pindex] = 0.5;
 		}
 		else if (dm[pindex] < -0.5){
-			//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+			//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 			dm[pindex] = -0.5;
 		}
 
@@ -876,15 +845,15 @@ std::vector<double> cSBSInverter::solve(const double lambda)
 
 	std::vector<double> x = pseudoinverse_od(A)*b;
 
-	if (Dump){
-		writetofile(d, DumpPath + "d.dat");
-		writetofile(g, DumpPath + "g.dat");
-		writetofile(m, DumpPath + "m.dat");
-		writetofile(m0, DumpPath + "m0.dat");
-		writetofile(J, DumpPath + "J.dat");
-		writetofile(JtWdJ, DumpPath + "JtWdJ.dat");
-		writetofile(b, DumpPath + "b.dat");
-		writetofile(A, DumpPath + "A.dat");
+	if (OO.Dump){
+		writetofile(d, OO.DumpPath + "d.dat");
+		writetofile(g, OO.DumpPath + "g.dat");
+		writetofile(m, OO.DumpPath + "m.dat");
+		writetofile(m0, OO.DumpPath + "m0.dat");
+		writetofile(J, OO.DumpPath + "J.dat");
+		writetofile(JtWdJ, OO.DumpPath + "JtWdJ.dat");
+		writetofile(b, OO.DumpPath + "b.dat");
+		writetofile(A, OO.DumpPath + "A.dat");
 	}
 
 	return x;
@@ -961,7 +930,7 @@ cEarth1D cSBSInverter::get_earth(const std::vector<double>& parameters)
 }
 cTDEmGeometry cSBSInverter::get_geometry(const std::vector<double>& parameters)
 {
-	cTDEmGeometry& g = GI;
+	cTDEmGeometry g = GI;
 	if (solve_tx_height)g.tx_height = parameters[tx_heightIndex];
 	if (solve_txrx_dx)g.txrx_dx = parameters[txrx_dxIndex];
 	if (solve_txrx_dy)g.txrx_dy = parameters[txrx_dyIndex];
@@ -1191,9 +1160,9 @@ std::vector<double> cSBSInverter::compute_parameter_sensitivity()
 		}
 	}	
 
-	if (Dump){
+	if (OO.Dump){
 		dumptofile(s, "layer_sensitivity.dat");
-		writetofile(JtWdJ, DumpPath + "JtWdJ.dat");
+		writetofile(JtWdJ, OO.DumpPath + "JtWdJ.dat");
 	}
 	return s;
 }
@@ -1280,12 +1249,12 @@ void cSBSInverter::iterate()
 	ParameterSensitivity = compute_parameter_sensitivity();
 	ParameterUncertainty = compute_parameter_uncertainty();
 
-	if (Dump){		
+	if (OO.Dump){
 		dumptofile(EM, "earth_inv.dat");
 		dumptofile(GM, "geometry_inv.dat");
 		dumptofile(vPred, "predicted.dat");
-		FILE* fp = fileopen(DumpPath + "iteration.dat", "w");
-		fprintf(fp, "Iteration\t%lu\n", LastIteration);
+		FILE* fp = fileopen(OO.DumpPath + "iteration.dat", "w");
+		fprintf(fp, "Iteration\t%zu\n", LastIteration);
 		fprintf(fp, "TargetPhiD\t%lf\n", TargetPhiD);
 		fprintf(fp, "PhiD\t%lf\n", LastPhiD);
 		fprintf(fp, "Lambda\t%lf\n", LastLambda);
@@ -1524,7 +1493,7 @@ void cSBSInverter::printtrials(cTrialCache T)
 	printf("CurrentLambda = %lf CurrentPhid = %lf    Target = %lf\n", LastLambda, LastPhiD, T.target);
 	printf("N    Stepfactor       Lambda          Phid\n");
 	for (size_t i = 0; i<T.trial.size(); i++){
-		printf("%2lu %12g %12g %12g\n", T.trial[i].order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
+		printf("%2zu %12g %12g %12g\n", T.trial[i].order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
 	}
 	printf("\n");
 }
@@ -1690,51 +1659,10 @@ void cSBSInverter::writeresult()
 	OI.setunits("m"); OI.setcomment("Ground elevation relative to sea-level");
 	buf += strprint("%10.2lf", Location.groundelevation);
 
-	OI.addfield("altimeter", 'F', 8, 2);
-	OI.setunits("m"); OI.setcomment("Height of altimeter above ground-level");
-	buf += strprint("%8.2lf", Location.z);
-
 	//Geometry	
-	OI.addfield("tx_height", 'F', 9, 2);
-	OI.setunits("m"); OI.setcomment("Tx height above ground-level");
-	buf += strprint("%9.2lf", GM.tx_height);
-	
-	OI.addfield("tx_roll", 'F', 9, 2);
-	OI.setunits("degrees"); OI.setcomment("Tx roll - left side up +ve");
-	buf += strprint("%9.2lf", GM.tx_roll);
-
-	OI.addfield("tx_pitch", 'F', 9, 2);
-	OI.setunits("degrees"); OI.setcomment("Tx pitch - nose down +ve");
-	buf += strprint("%9.2lf", GM.tx_pitch);
-
-	OI.addfield("tx_yaw", 'F', 9, 2);
-	OI.setunits("degrees"); OI.setcomment("Tx yaw - turn left +ve");
-	buf += strprint("%9.2lf", GM.tx_yaw);
-
-	OI.addfield("txrx_dx", 'F', 9, 2);
-	OI.setunits("m"); OI.setcomment("Tx-Rx horizonatl inline separation");
-	buf += strprint("%9.2lf", GM.txrx_dx);
-
-	OI.addfield("txrx_dy", 'F', 9, 2);
-	OI.setunits("m"); OI.setcomment("Tx-Rx horizonatl transverse separation");
-	buf += strprint("%9.2lf", GM.txrx_dy);
-
-	OI.addfield("txrx_dz", 'F', 9, 2);
-	OI.setunits("m"); OI.setcomment("Tx-Rx vertical separation");
-	buf += strprint("%9.2lf", GM.txrx_dz);
-
-	OI.addfield("rx_roll", 'F', 9, 2);
-	OI.setunits("degrees"); OI.setcomment("Rx roll - left side up +ve");
-	buf += strprint("%9.2lf", GM.rx_roll);
-
-	OI.addfield("rx_pitch", 'F', 9, 2);
-	OI.setunits("degrees"); OI.setcomment("Rx pitch - nose down +ve");
-	buf += strprint("%9.2lf", GM.rx_pitch);
-
-	OI.addfield("rx_yaw", 'F', 9, 2);
-	OI.setunits("degrees"); OI.setcomment("Rx yaw - turn left +ve");
-	buf += strprint("%9.2lf", GM.rx_yaw);
-
+	writeresult_geometry(buf, OI, GI, "","Input ", false);
+	writeresult_geometry(buf, OI, GM, "inverted_", "Inverted ", true);
+			
 	//Earth	
 	OI.addfield("nlayers", 'I', 4, 0);
 	OI.setcomment("Number of layers");
@@ -1759,7 +1687,7 @@ void cSBSInverter::writeresult()
 		buf += strprint("%9.2lf", thickness[i]);
 	}
 	
-	if (OutputPositiveLayerBottomDepths){
+	if (OO.PositiveLayerBottomDepths){
 		OI.addfield("depth_bottom", 'F', 9, 2, nlayers);
 		OI.setunits("m"); OI.setcomment("Depth to bottom of layer");
 		double tsum = 0.0;
@@ -1769,7 +1697,7 @@ void cSBSInverter::writeresult()
 		}
 	}
 
-	if (OutputNegativeLayerBottomDepths){		
+	if (OO.NegativeLayerBottomDepths){
 		OI.addfield("depth_bottom_negative", 'F', 9, 2, nlayers);
 		OI.setunits("m"); OI.setcomment("Negative of depth to bottom of layer");
 		double tsum = 0.0;
@@ -1779,7 +1707,7 @@ void cSBSInverter::writeresult()
 		}
 	}
 
-	if (OutputInterfaceElevations){
+	if (OO.InterfaceElevations){
 		OI.addfield("elevation_interfaces", 'F', 9, 2, nlayers+1);
 		OI.setunits("m"); OI.setcomment("Elevation of interfaces");
 		double etop = Location.groundelevation;
@@ -1790,7 +1718,7 @@ void cSBSInverter::writeresult()
 		buf += strprint("%9.2lf", etop);
 	}
 
-	if (OutputParameterSensitivity){		
+	if (OO.ParameterSensitivity){
 		if (solve_conductivity){
 			OI.addfield("conductivity_sensitivity", 'E', 15, 6, nlayers);			
 			for (size_t i = 0; i < nlayers; i++){
@@ -1821,7 +1749,7 @@ void cSBSInverter::writeresult()
 		}
 	}
 
-	if (OutputParameterUncertainty){		
+	if (OO.ParameterUncertainty){
 		if (solve_conductivity){
 			OI.addfield("conductivity_uncertainty", 'E', 15, 6, nlayers);			
 			OI.setunits("log10(S/m)");
@@ -1858,53 +1786,36 @@ void cSBSInverter::writeresult()
 		}
 	}
 
-	//Data
-	if (OutputPredictedData){		
-		for (size_t si = 0; si < nsystems; si++){
-			cTDEmSystemInfo& S = SV[si];
-			std::string sys = strprint("EMSystem_%lu_", si+1);
-
-			if (S.useX){
-				if (S.useTotal){
-					OI.addfield(sys+"XP", 'E', 15, 6);
-					OI.setcomment(sys+"X component primary field");
-					buf += strprint("%15.6le", S.predicted.xcomponent.Primary);
-				}
-				OI.addfield(sys+"XS", 'E', 15, 6, S.nwindows);
-				OI.setcomment(sys+"X component secondary field windows");
-				for (size_t w = 0; w < S.nwindows; w++){
-					buf += strprint("%15.6le", S.predicted.xcomponent.Secondary[w]);
-				}
-			}
-
-			if (S.useY){
-				if (S.useTotal){
-					OI.addfield(sys+"YP", 'E', 15, 6);
-					OI.setcomment(sys+"Y component primary field");
-					buf += strprint("%15.6le", S.predicted.ycomponent.Primary);
-				}
-				OI.addfield(sys+"YS", 'E', 15, 6, S.nwindows);
-				OI.setcomment(sys+"Y component secondary field windows");
-				for (size_t w = 0; w < S.nwindows; w++){
-					buf += strprint("%15.6le", S.predicted.ycomponent.Secondary[w]);
-				}
-			}
-
-			if (S.useZ){
-				if (S.useTotal){
-					OI.addfield(sys+"ZP", 'E', 15, 6);
-					OI.setcomment(sys+"Z component primary field");
-					buf += strprint("%15.6le", S.predicted.zcomponent.Primary);
-				}
-				OI.addfield(sys+"ZS", 'E', 15, 6, S.nwindows);
-				OI.setcomment(sys+"Z component secondary field windows");
-				for (size_t w = 0; w < S.nwindows; w++){
-					buf += strprint("%15.6le", S.predicted.zcomponent.Secondary[w]);
-				}
-			}
+	//ObservedData
+	if (OO.ObservedData) {
+		for (size_t si = 0; si < nsystems; si++) {
+			cTDEmSystemInfo& S = SV[si];							
+			if (S.useX) writeresult_component(buf, OI, si, "X", "observed", "Observed", 'E', 15, 6, S.oPX, S.oSX, S.useTotal);
+			if (S.useY) writeresult_component(buf, OI, si, "Y", "observed", "Observed", 'E', 15, 6, S.oPY, S.oSY, S.useTotal);
+			if (S.useZ) writeresult_component(buf, OI, si, "Z", "observed", "Observed", 'E', 15, 6, S.oPZ, S.oSZ, S.useTotal);			
 		}
 	}
-	
+
+	//Noise Estimates
+	if (OO.NoiseEstimates) {
+		for (size_t si = 0; si < nsystems; si++) {
+			cTDEmSystemInfo& S = SV[si];
+			if (S.useX) writeresult_component(buf, OI, si, "X", "noise", "Estimated noise", 'E', 15, 6, 0.0, S.oEX, false);
+			if (S.useY) writeresult_component(buf, OI, si, "Y", "noise", "Estimated noise", 'E', 15, 6, 0.0, S.oEY, false);
+			if (S.useZ) writeresult_component(buf, OI, si, "Z", "noise", "Estimated noise", 'E', 15, 6, 0.0, S.oEZ, false);
+		}
+	}
+
+	//PredictedData
+	if (OO.PredictedData){
+		for (size_t si = 0; si < nsystems; si++){
+			cTDEmSystemInfo& S = SV[si];
+			if (S.useX) writeresult_component(buf, OI, si, "X", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.xcomponent.Secondary, S.useTotal);
+			if (S.useY) writeresult_component(buf, OI, si, "Y", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.ycomponent.Secondary, S.useTotal);
+			if (S.useZ) writeresult_component(buf, OI, si, "Z", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.zcomponent.Secondary, S.useTotal);			
+		}
+	}
+		
 	OI.addfield("AlphaC", 'E', 15, 6);
 	OI.setcomment("AlphaC inversion parameter");
 	buf += strprint("%15.6le", AlphaC);
@@ -1960,7 +1871,7 @@ void cSBSInverter::writeresult()
 
 	OI.lockfields();
 	if (Outputrecord == 1){		
-		sFilePathParts fpp = getfilepathparts(OutputDataFile);
+		sFilePathParts fpp = getfilepathparts(OO.DataFile);
 		
 		std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
 		OI.write_simple_header(hdrfile);
@@ -1969,6 +1880,66 @@ void cSBSInverter::writeresult()
 		OI.write_aseggdf_header(aseggdffile);		
 	}
 	Outputrecord++;
+};
+
+void cSBSInverter::writeresult_geometry(std::string& buf, cOutputFileInfo& OI, const cTDEmGeometry& g, const std::string& fieldnameprefix, const std::string& commentprefix, const bool invertedfieldsonly)
+{
+	for (size_t i = 0; i < g.size(); i++){
+		if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
+		OI.addfield(fieldnameprefix + g.fname(i), 'F', 9, 2);
+		OI.setunits(g.units(i));
+		OI.setcomment(commentprefix + g.description(i));
+		buf += strprint("%9.2lf", g[i]);		
+	}
+}
+
+void cSBSInverter::writeresult_component(std::string& buf, cOutputFileInfo& OI, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& commprefix, const char& form, const size_t& width, const size_t& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
+{	
+	std::string sysfield = nameprefix + strprint("_EMSystem_%d_", (int)sysnum+1);
+	std::string syscomm  = commprefix + strprint(" EMSystem %d ", (int)sysnum+1);
+
+	std::string fmt;
+	if (form == 'F') fmt = strprint("%%%d.%dlf", width, decimals);
+	else if (form == 'E') fmt = strprint("%%%d.%dle", width, decimals);
+	else {
+		rootmessage("Invalid output format %c\n", form);
+		std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+		throw(std::runtime_error(e));		
+	}
+	
+	if (includeprimary){
+		OI.addfield(sysfield + comp + "P", form, width, decimals);
+		OI.setcomment(syscomm + comp + "-component primary field");
+		buf += strprint(fmt.c_str(), p);
+	}
+	OI.addfield(sysfield + comp + "S", form, width, decimals, s.size());
+	OI.setcomment(syscomm + comp + "-component secondary field windows");
+	for (size_t w = 0; w < s.size(); w++) {
+		buf += strprint(fmt.c_str(), s[w]);
+	}
+}
+
+bool cSBSInverter::solvegeometryindex(const size_t index)
+{
+	eGeometryElementType getype = cTDEmGeometry::elementtype(index);
+
+	switch (getype) {
+	case GE_TX_HEIGHT: return solve_tx_height; break;
+	case GE_TX_ROLL:   return solve_tx_roll; break;
+	case GE_TX_PITCH:  return solve_tx_pitch; break;
+	case GE_TX_YAW:    return solve_tx_yaw; break;
+	case GE_TXRX_DX:   return solve_txrx_dx; break;
+	case GE_TXRX_DY:   return solve_txrx_dy; break;
+	case GE_TXRX_DZ:   return solve_txrx_dz; break;
+	case GE_RX_ROLL:   return solve_rx_roll; break;
+	case GE_RX_PITCH:  return solve_rx_pitch; break;
+	case GE_RX_YAW:    return solve_rx_yaw; break;
+	default:
+		rootmessage("Geometry index %llu out of range\n", index);
+		std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+		throw(std::runtime_error(e));
+		break;
+	}
 }
 int cSBSInverter::intvalue(const FieldDefinition& cd)
 {
@@ -2003,7 +1974,7 @@ cTDEmGeometry cSBSInverter::readgeometry(const std::vector<FieldDefinition>& gfd
 }
 void cSBSInverter::dumptofile(const std::vector<double>& v, std::string path)
 {
-	FILE* fp = fileopen(DumpPath + path, "w");
+	FILE* fp = fileopen(OO.DumpPath + path, "w");
 	for (size_t i = 0; i < v.size(); i++){
 		fprintf(fp, "%le\n", v[i]);
 	}
@@ -2011,7 +1982,7 @@ void cSBSInverter::dumptofile(const std::vector<double>& v, std::string path)
 }
 void cSBSInverter::dumptofile(const cEarth1D& e, std::string path)
 {
-	FILE* fp = fileopen(DumpPath + path, "w");
+	FILE* fp = fileopen(OO.DumpPath + path, "w");
 	size_t nl = e.conductivity.size();
 	for (size_t i = 0; i < nl; i++){
 		if (i < e.thickness.size()){
@@ -2025,7 +1996,7 @@ void cSBSInverter::dumptofile(const cEarth1D& e, std::string path)
 }
 void cSBSInverter::dumptofile(const cTDEmGeometry& g, std::string path)
 {
-	FILE* fp = fileopen(DumpPath + path, "w");
+	FILE* fp = fileopen(OO.DumpPath + path, "w");
 	fprintf(fp, "tx_height\t%lf\n", g.tx_height);
 	fprintf(fp, "tx_roll\t%lf\n", g.tx_roll);
 	fprintf(fp, "tx_pitch\t%lf\n", g.tx_pitch);
@@ -2058,9 +2029,7 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 			omp_unset_lock(&fftw_thread_lock);
 		#endif	
 	}
-		
-	//my_barrier();
-	
+				
 	size_t record = 0;
 	while (I.readnextrecord()){
 		record++;
@@ -2068,14 +2037,14 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 		
 		bool nonnumeric = I.contains_non_numeric_characters(I.DataFileRecordString);
 		if (nonnumeric){
-			rootmessage(I.fp_log, "Skipping non-numeric record at line %lu of Input DataFile %s\n", I.DataFileRecord,I.DataFileName.c_str());
+			rootmessage(I.fp_log, "Skipping non-numeric record at line %zu of Input DataFile %s\n", I.DataFileRecord,I.DataFileName.c_str());
 			rootmessage(I.fp_log, "\n%s\n\n", I.DataFileRecordString.c_str());
 			continue;
 		}
 
-		if (I.Dump){
-			FILE* fp = fileopen(I.DumpPath + "record.dat", "w");
-			fprintf(fp, "Record\t%lu", I.DataFileRecord);
+		if (I.OO.Dump){
+			FILE* fp = fileopen(I.OO.DumpPath + "record.dat", "w");
+			fprintf(fp, "Record\t%zu", I.DataFileRecord);
 			fclose(fp);
 		}
 

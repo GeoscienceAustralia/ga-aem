@@ -95,8 +95,8 @@ Control Begin
 	Input End
 
 	Output Begin
-		DataFile = inversion.output.asc
-		LogFile  = inversion.output.log
+		DataFile = output/inversion.output.asc
+		LogFile  = output/inversion.output.log
 
 		PositiveLayerBottomDepths = no
 		NegativeLayerBottomDepths = yes

@@ -24,26 +24,26 @@ Control Begin
 		SolveConductivity = yes
 		SolveThickness    = no
 
-		SolveTX_Height = no
+		SolveTX_Height = yes
 		SolveTX_Roll   = no
 		SolveTX_Pitch  = no
 		SolveTX_Yaw    = no
-		SolveTXRX_DX   = no
+		SolveTXRX_DX   = yes
 		SolveTXRX_DY   = no
 		SolveTXRX_DZ   = no
 		SolveRX_Roll   = no
-		SolveRX_Pitch  = no
+		SolveRX_Pitch  = yes
 		SolveRX_Yaw    = no
 
 		AlphaConductivity = 1.0
-		AlphaThickness    = 0.0
-		AlphaGeometry     = 0.0
+		AlphaThickness    = 1.0
+		AlphaGeometry     = 1.0
 		AlphaSmoothness   = 3333 //Set to 0 for no vertical conductivity smoothing
 		SmoothnessMethod  = Minimise2ndDerivatives
 
 		MinimumPhiD = 1.0
 		MinimumPercentageImprovement = 1.0
-		MaximumIterations = 100
+		MaximumIterations = 1
 	Options End
 
 	Input Begin
@@ -76,24 +76,33 @@ Control Begin
 			ReferenceModel Begin
 				Conductivity   = 0.001
 				Thickness      = 3.00  3.30  3.62  4.00  4.40  4.84  5.32  5.84  6.42  7.08  7.78  8.56  9.42 10.36 11.40 12.54 13.78 15.16 16.68 18.34 20.18 22.20 24.42 26.86 29.54 32.50 35.76 39.32 43.26 
+				TX_Height      = Column 30
+				TXRX_DX        = 0
+				RX_Pitch       = Column 24
 			ReferenceModel End
 
 			StdDevReferenceModel Begin
 				Conductivity   = 3.0
+				TX_Height      = 1
+				TXRX_DX        = 0.1
+				RX_Pitch       = 1
 			StdDevReferenceModel End
 		Columns End
 	Input End
 
 	Output Begin
-		DataFile = inversion.output.asc
-		LogFile  = inversion.output.log
+		DataFile = output\inversion.output.asc
+		LogFile  = output\inversion.output.log
 
 		PositiveLayerBottomDepths = no
-		NegativeLayerBottomDepths = yes
+		NegativeLayerBottomDepths = no
 		InterfaceElevations       = no
 		ParameterSensitivity      = no
 		ParameterUncertainty      = no
-		PredictedData             = no
+
+		PredictedData             = yes
+		ObservedData              = yes
+		NoiseEstimates            = yes
 	Output End
 
 Control End
