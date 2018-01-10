@@ -4,6 +4,6 @@
 [submodule "submodules/cpp-utils"]
 	path = submodules/cpp-utils
 	url = git@github.com:rcb547/cpp-utils.git
-[submodule "submodules\\ticpp"]
-	path = submodules\\ticpp
+[submodule "submodules/ticpp"]
+	path = submodules/ticpp
 	url = git@github.com:wxFormBuilder/ticpp.git
