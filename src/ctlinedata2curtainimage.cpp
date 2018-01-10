@@ -23,14 +23,15 @@ using namespace Gdiplus;
 #include "blocklanguage.h"
 #include "geometry3d.h"
 #include "colormap.h"
-#include "RamerDouglasPeucker.h";
+#include "RamerDouglasPeucker.h"
 #include "gdal_utils.h"
 
 
-//#include "ticpprc.h"
 #include "ticpp.h"
+using namespace ticpp;
 
 using namespace RDP;
+
 
 #define VERSION "1.0"
 
@@ -345,30 +346,66 @@ public:
 		}		
 	}
 
-	void testxml(){
+	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
+	{
 		try
 		{			
-			ticpp::Document doc("test.xml");						
+			Document doc("test.xml");												
 			std::string ver = "1.0";
 			std::string enc = "UTF-8";
 			std::string std = "yes";
-			ticpp::Declaration dec(ver,enc,std);
-			doc.InsertEndChild(dec);
+			Declaration dec(ver,enc,std);
+			doc.InsertEndChild(dec);					
+			doc.InsertEndChild(Element("CreatedBy", "ctlinedata2curtainimage"));
 
-			//<Layer version = "1" layerType = "CurtainImageLayer">
-			ticpp::Element e("Layer");
-			e.SetAttribute("Hello", "World");
-			doc.InsertEndChild(e);
+			Element layer("Layer");
+			layer.SetAttribute("version", "1");
+			layer.SetAttribute("layerType", "CurtainImageLayer");						
+			layer.InsertEndChild(Element("DisplayName", "30030"));
+
+			Element a;
+			a = Element("Service");
+			a.SetAttribute("serviceName", "DelegatorTileService");			
+			a.InsertEndChild(Element("URL", "http://www.ga.gov.au/apps/world-wind/tiles.jsp"));
+			layer.InsertEndChild(a);
+
+			a = Element("Delegates");						
+			a.InsertEndChild(Element("Delegate", "TransparentColorTransformer(255, 255, 255, 0.2)"));
+			a.InsertEndChild(Element("Delegate", "ResizeTransformer(512, 512)"));
+			layer.InsertEndChild(a);			
+
+			layer.InsertEndChild(Element("LastUpdate", timestamp()));						
+			layer.InsertEndChild(getxmlpathelement(longitude, latitude));
+			
+			doc.InsertEndChild(layer);
 			doc.SaveFile();			
 		}
 		catch (ticpp::Exception& ex)
 		{					
 			std::cout << ex.what();
 		}
-
 	}
-	void process(){
-		testxml();
+
+	Element getxmlpathelement(const std::vector<double>& longitude, const std::vector<double>& latitude)	
+	{
+		//<Path>
+		//	<LatLon units = "degrees" latitude = "-20.151066" longitude = "120.723962" / >
+		//	<LatLon units = "degrees" latitude = "-20.151138" longitude = "120.731907" / >
+		//	...
+		//<Path>
+		Element p("Path");
+		for (size_t i = 0; i < longitude.size();  i++){
+			Element a("LatLon");
+			a.SetAttribute("units", "degrees");
+			a.SetAttribute("latitude", strprint("%10.6lf",longitude[i]));
+			a.SetAttribute("longitude", strprint("%10.6lf", latitude[i]));
+			p.InsertEndChild(a);
+		}
+		return p;
+	}
+
+	void process(){		
+		savegeometry();
 		return;
 		calculateextents();				
 		createbitmap();
@@ -377,7 +414,7 @@ public:
 		//drawcolorbar();		
 		//fixtransparenttext();
 		saveimage();
-		savegeometry();
+		//savegeometry();
 		deletebitmap();
 	}
 
@@ -765,22 +802,22 @@ public:
 		savepoints(pl, ppath);
 		savepoints(plout, pfpath);
 		
-		std::vector<double> xin(plout.size());
-		std::vector<double> yin(plout.size());
-		std::vector<double> xout(plout.size());
-		std::vector<double> yout(plout.size());
+		std::vector<double> x(plout.size());
+		std::vector<double> y(plout.size());
+		std::vector<double> longitude(plout.size());
+		std::vector<double> latitude(plout.size());
 		for (size_t i = 0; i < plout.size(); i++){
-			xin[i] = plout[i].first;
-			yin[i] = plout[i].second;
+			x[i] = plout[i].first;
+			y[i] = plout[i].second;
 		}
 
 		int inepsgcode = 28353;//GDA94,MGA53		
 		int outepsgcode = 4283;//GDA94,Geodetic
 		
-		transform(inepsgcode, xin, yin, outepsgcode, xout, yout);
-
+		transform(inepsgcode, x, y, outepsgcode, longitude, latitude);
 		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";
-		savepoints(xout, yout, pfpathll);
+		savepoints(longitude, latitude, pfpathll);
+		savexml(longitude, latitude);
 	}
 
 	void savepoints(const std::vector<RDP::Point>& p, const std::string& filename){
@@ -803,7 +840,6 @@ public:
 		fclose(fp);
 	};
 		
-
 };
 
 
