@@ -26,7 +26,6 @@ using namespace Gdiplus;
 #include "RamerDouglasPeucker.h"
 #include "gdal_utils.h"
 
-
 #include "ticpp.h"
 using namespace ticpp;
 
@@ -76,12 +75,13 @@ private:
 	std::vector<double> cbarticks;
 	int nhpixels;
 	int nvpixels;
+	std::vector<double> linedistance;
 	double hlength;
 	double vlength;
-	double h0,h1,h2,dh;
-	double v0,v1,v2,dv;
-	double x0,x1,x2,dx;
-	double y0,y1,y2,dy;
+	double h0,h1,dh;
+	double v0,v1,dv;
+	//double x0,x1,x2,dx;
+	//double y0,y1,y2,dy;
 	double gratdiv;
 	double geometrytolerance;
 
@@ -157,7 +157,7 @@ public:
 		prefix = b.getstringvalue("Prefix");
 		suffix = b.getstringvalue("Suffix");
 
-		dh    = b.getdoublevalue("HorizontalResolution");
+		dh = b.getdoublevalue("HorizontalResolution");
 		double vxg   = b.getdoublevalue("VerticalExaggeration");
 		dv = dh/vxg;
 
@@ -346,67 +346,10 @@ public:
 		}		
 	}
 
-	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
-	{
-		try
-		{			
-			Document doc("test.xml");												
-			std::string ver = "1.0";
-			std::string enc = "UTF-8";
-			std::string std = "yes";
-			Declaration dec(ver,enc,std);
-			doc.InsertEndChild(dec);					
-			doc.InsertEndChild(Element("CreatedBy", "ctlinedata2curtainimage"));
-
-			Element layer("Layer");
-			layer.SetAttribute("version", "1");
-			layer.SetAttribute("layerType", "CurtainImageLayer");						
-			layer.InsertEndChild(Element("DisplayName", "30030"));
-
-			Element a;
-			a = Element("Service");
-			a.SetAttribute("serviceName", "DelegatorTileService");			
-			a.InsertEndChild(Element("URL", "http://www.ga.gov.au/apps/world-wind/tiles.jsp"));
-			layer.InsertEndChild(a);
-
-			a = Element("Delegates");						
-			a.InsertEndChild(Element("Delegate", "TransparentColorTransformer(255, 255, 255, 0.2)"));
-			a.InsertEndChild(Element("Delegate", "ResizeTransformer(512, 512)"));
-			layer.InsertEndChild(a);			
-
-			layer.InsertEndChild(Element("LastUpdate", timestamp()));						
-			layer.InsertEndChild(getxmlpathelement(longitude, latitude));
-			
-			doc.InsertEndChild(layer);
-			doc.SaveFile();			
-		}
-		catch (ticpp::Exception& ex)
-		{					
-			std::cout << ex.what();
-		}
-	}
-
-	Element getxmlpathelement(const std::vector<double>& longitude, const std::vector<double>& latitude)	
-	{
-		//<Path>
-		//	<LatLon units = "degrees" latitude = "-20.151066" longitude = "120.723962" / >
-		//	<LatLon units = "degrees" latitude = "-20.151138" longitude = "120.731907" / >
-		//	...
-		//<Path>
-		Element p("Path");
-		for (size_t i = 0; i < longitude.size();  i++){
-			Element a("LatLon");
-			a.SetAttribute("units", "degrees");
-			a.SetAttribute("latitude", strprint("%10.6lf",longitude[i]));
-			a.SetAttribute("longitude", strprint("%10.6lf", latitude[i]));
-			p.InsertEndChild(a);
-		}
-		return p;
-	}
-
 	void process(){		
-		savegeometry();
-		return;
+		//savegeometry();
+		//return;
+
 		calculateextents();				
 		createbitmap();
 		generatesectiondata();
@@ -414,35 +357,40 @@ public:
 		//drawcolorbar();		
 		//fixtransparenttext();
 		saveimage();
-		//savegeometry();
+		savegeometry();
 		deletebitmap();
 	}
 
 	void calculateextents()
-	{		
-		bestfitlineendpoints(x,y,x1,y1,x2,y2);
-		double angle = atan2(y2-y1,x2-x1);
-		if(angle > PIONTWO || angle <= -PIONTWO){
-			std::swap(x1,x2);
-			std::swap(y1,y2);			
+	{				
+		//bestfitlineendpoints(x,y,x1,y1,x2,y2);
+		//double angle = atan2(y2-y1,x2-x1);
+		//if(angle > PIONTWO || angle <= -PIONTWO){
+		//	std::swap(x1,x2);
+		//	std::swap(y1,y2);			
+		//}
+
+		
+		linedistance.resize(x.size());
+		linedistance[0] = 0.0;
+		for (size_t i = 1; i < x.size(); i++){
+			linedistance[i] = linedistance[i - 1] + distance(x[i - 1], y[i - 1], x[i], y[i]);
 		}
+		double rawlength = linedistance.back();
+		hlength = roundupnearest(rawlength,dh);
 
-		double rawlength = distance(x1,y1,x2,y2);
-		double hlength = roundupnearest(rawlength,dh);
-
-		x2 = x1 + (x2-x1)*hlength/rawlength;
-		y2 = y1 + (y2-y1)*hlength/rawlength;
+		//x2 = x1 + (x2-x1)*hlength/rawlength;
+		//y2 = y1 + (y2-y1)*hlength/rawlength;
 
 		int hmarginpixels = getmarginpixels();
-		h0 = 0.0;
-		h1 = hmarginpixels * dh;
-		h2 = h1+hlength;
+		h0 = 0.0;		
+		h1 = hlength;
 
-		nhpixels  = 1 + (int)((h2-h0)/dh);
-		dx = dh*(x2-x1)/(h2-h1);
-		dy = dh*(y2-y1)/(h2-h1);		
-		x0 = x1 - (x2-x1)*h1/hlength;
-		y0 = y1 - (y2-y1)*h1/hlength;
+		nhpixels  = 1 + (int)((h1-h0)/dh);
+		//dx = dh*(x2-x1)/(h2-h1);
+		//dy = dh*(y2-y1)/(h2-h1);		
+		//x0 = x1 - (x2-x1)*h1/hlength;
+		//y0 = y1 - (y2-y1)*h1/hlength;
 
 		double zmin =  DBL_MAX;
 		double zmax = -DBL_MAX;
@@ -454,18 +402,23 @@ public:
 		if(autozsectionbot==false){
 			zmin = zsectionbot;
 		}
+		else{
+			zsectionbot = zmin;;
+		}
 
 		if(autozsectiontop==false){
 			zmax = zsectiontop;
+		}
+		else{
+			zsectiontop = zmax;
 		}
 
 		elevation_median = median(&e[0],e.size());
 
 		double rawheight = zmax-zmin;
 		vlength = roundupnearest(rawheight,dv);		
-		v0 = zmin;
-		v1 = zmin;
-		v2 = v1 + vlength;
+		v0 = zmin;		
+		v1 = vlength;
 		nvpixels = 1 + (int)(vlength/dv);		
 	}
 
@@ -475,7 +428,7 @@ public:
 	}
 
 	int wv2ly(double wv){		
-		int ly = (int)roundnearest((v2-wv)/dv,1.0);
+		int ly = (int)roundnearest((v1-wv)/dv,1.0);
 		return ly;
 	}
 
@@ -526,14 +479,21 @@ public:
 		Color AirColor(0,255,255,255);
 		Color NullsColor(255,128,128,128);
 
-		int hp1 = wh2lx(h1);
-		int hp2 = wh2lx(h2);
-		int vp1 = wv2ly(v1);
-		int vp2 = wv2ly(v2);
-		for(int i=hp1; i<=hp2; i++){
-			double xp = x0 + (double)i*dx;
-			double yp = y0 + (double)i*dy;
+		//int hp1 = wh2lx(h1);
+		//int hp2 = wh2lx(h2);
+		int vp1 = wv2ly(v0);
+		int vp2 = wv2ly(v1);
 
+		int mini = 0;
+		for (int i = 0; i <= nhpixels; i++){
+			double hp = h0 + (double)i*dh;
+
+			while(mini < linedistance.size()-1 && std::abs(linedistance[mini] - hp) > std::abs(linedistance[mini + 1] - hp)){
+				mini++;
+			}
+			
+			
+			/*
 			double mind=DBL_MAX;
 			int mini;
 			for(int si=0; si<nsamples; si++){
@@ -543,12 +503,13 @@ public:
 					mind = d;
 				}
 			}
+			*/
 
 
 			for(int j=vp2; j<=vp1; j++){				
 				pBitmap->SetPixel(i,j,BkgColor);
 
-				double zp = v2 - (double)j*dv;
+				double zp = v1 - (double)j*dv;
 				if(zp>e[mini]){
 					pBitmap->SetPixel(i,j,AirColor);					
 				}
@@ -598,8 +559,8 @@ public:
 		gr.SetCompositingMode(CompositingModeSourceOver);						
 		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);		
 
-		int zg1=(int)roundnearest(v1,(int)gratdiv);
-		int zg2=(int)roundnearest(v2,(int)gratdiv);
+		int zg1=(int)roundnearest(v0,(int)gratdiv);
+		int zg2=(int)roundnearest(v1,(int)gratdiv);
 
 		Pen blackpen(Color::Black,0);		
 		SolidBrush blackbrush(Color::Black);
@@ -613,7 +574,7 @@ public:
 		gr.MeasureString(L"-0000 m",-1,&font,layoutsize,&textformat,&textsize);
 
 		for(int zg=zg1; zg<=zg2; zg+=(int)gratdiv){
-			gr.DrawLine(&blackpen,wh2lx(h1),wv2ly(zg),wh2lx(h2),wv2ly(zg));
+			gr.DrawLine(&blackpen,wh2lx(h0),wv2ly(zg),wh2lx(h1),wv2ly(zg));
 
 			wchar_t s[20];				
 			swprintf(s,20,L"%5d m",zg);						
@@ -640,12 +601,12 @@ public:
 		TextRenderingHint hint = gr.GetTextRenderingHint();		
 		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);
 
-		int ph1 = wv2ly(v1);
-		int ph2 = wv2ly(v2);
+		int ph1 = wv2ly(v0);
+		int ph2 = wv2ly(v1);
 		ph1 = 25; ph2 = 40;
 
-		int pvtop = wv2ly(v1+(v2-v1)*0.95);
-		int pvbot = wv2ly(v1+(v2-v1)*0.05);
+		int pvtop = wv2ly(v0+(v1-v0)*0.95);
+		int pvbot = wv2ly(v0+(v1-v0)*0.05);
 		for (int j = pvtop; j <= pvbot; j++){			
 			int ind = 255*(j - pvbot) / (pvtop - pvbot);
 			for (int i = ph1; i <= ph2; i++){
@@ -702,8 +663,8 @@ public:
 	void fixtransparenttext(){	
 		int hp0 = wh2lx(h0);
 		int hp1 = wh2lx(h1);
-		int vp1 = wv2ly(v1);
-		int vp2 = wv2ly(v2);
+		int vp1 = wv2ly(v0);
+		int vp2 = wv2ly(v1);
 		for(int i=hp0; i<=hp1; i++){		
 			for(int j=vp2; j<=vp1; j++){
 				Color c;
@@ -730,10 +691,7 @@ public:
 
 			CLSID pngClsid;
 			int ret = GetEncoderClsid(L"image/png", &pngClsid);			
-			Status result = pBitmap->Save(wcimagepath, &pngClsid, NULL);
-
-			std::string worldfilepath = outdir + bname + ".pngw";
-			saveworldfile(worldfilepath);
+			Status result = pBitmap->Save(wcimagepath, &pngClsid, NULL);			
 		}
 
 		if(SaveJPG){			
@@ -744,36 +702,9 @@ public:
 
 			CLSID jpgClsid;
 			GetEncoderClsid(L"image/jpeg", &jpgClsid);
-			Status result = pBitmap->Save(wcimagepath, &jpgClsid, NULL);
-
-			std::string worldfilepath = outdir + bname + ".jgw";
-			saveworldfile(worldfilepath);
+			Status result = pBitmap->Save(wcimagepath, &jpgClsid, NULL);			
 		}
 
-	}
-
-	void saveworldfile(std::string& worldfilepath){
-
-		//Line 1: A: x component of the pixel width (x-scale)
-		//Line 2: D: y component of the pixel width (y-skew)
-		//Line 3: B: x component of the pixel height (x-skew)
-		//Line 4: E: y component of the pixel height (y-scale), almost always negative
-		//Line 5: C: x-coordinate of the center of the upper left pixel
-		//Line 6: F: y-coordinate of the center of the upper left pixel
-
-		double angle  = atan2(y2-y1,x2-x1);
-		double vshift = (v2 - elevation_median);
-		double ix0    = x0 - (dh/dv)*vshift*sin(angle);
-		double iy0    = y0 + (dh/dv)*vshift*cos(angle);
-
-		FILE* fp=fileopen(worldfilepath,"w");
-		fprintf(fp,"%lf\n",dh*cos(angle));
-		fprintf(fp,"%lf\n",dh*sin(angle));
-		fprintf(fp,"%lf\n",dh*sin(angle));
-		fprintf(fp,"%lf\n",-dh*cos(angle));
-		fprintf(fp,"%lf\n",ix0);
-		fprintf(fp,"%lf\n",iy0);	
-		fclose(fp);
 	}
 
 	void savegeometry(){
@@ -799,8 +730,8 @@ public:
 		
 		std::string ppath = outdir + basename() + ".points.dat";
 		std::string pfpath = outdir + basename() + ".points_filtered.dat";
-		savepoints(pl, ppath);
-		savepoints(plout, pfpath);
+		//savepoints(pl, ppath);
+		//savepoints(plout, pfpath);
 		
 		std::vector<double> x(plout.size());
 		std::vector<double> y(plout.size());
@@ -816,7 +747,7 @@ public:
 		
 		transform(inepsgcode, x, y, outepsgcode, longitude, latitude);
 		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";
-		savepoints(longitude, latitude, pfpathll);
+		//savepoints(longitude, latitude, pfpathll);
 		savexml(longitude, latitude);
 	}
 
@@ -839,9 +770,108 @@ public:
 		}
 		fclose(fp);
 	};
-		
-};
+	
+	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
+	{
+		std::string xmlpath = outdir + basename() + ".xml";
+		try
+		{
+			Element a, b;
+			Document doc(xmlpath);
+			std::string ver = "1.0";
+			std::string enc = "UTF-8";
+			std::string std = "yes";
+			Declaration dec(ver, enc, std);
+			doc.InsertEndChild(dec);
+			doc.InsertEndChild(Element("CreatedBy", "ctlinedata2curtainimage"));
 
+			Element l("Layer");
+			l.SetAttribute("version", "1");
+			l.SetAttribute("layerType", "CurtainImageLayer");
+			l.InsertEndChild(Element("DisplayName", basename()));
+			
+			bool local = true;
+			std::string url = "http://www.ga.gov.au/apps/world-wind/tiles.jsp";
+			if (local)  url   = ".\\";
+
+			a = Element("Service");
+			a.SetAttribute("serviceName", "DelegatorTileService");
+			a.InsertEndChild(Element("URL", url));
+			l.InsertEndChild(a);
+
+			a = Element("Delegates");
+			if(local) a.InsertEndChild(Element("Delegate", "LocalRequester"));
+			a.InsertEndChild(Element("Delegate", "TransparentColorTransformer(255, 255, 255, 0.2)"));
+			a.InsertEndChild(Element("Delegate", "ResizeTransformer(512, 512)"));
+			l.InsertEndChild(a);
+			l.InsertEndChild(Element("LastUpdate", timestamp()));
+			
+			std::string datasetname  = "TestAEM/AEM_Lines/"+basename();
+			std::string datasetcache = "cache/TestAEM/AEM_Lines/"+basename();
+			l.InsertEndChild(Element("DatasetName", datasetname));
+			l.InsertEndChild(Element("DataCacheName", datasetcache));
+			
+			a = Element("AvailableImageFormats");
+			a.InsertEndChild(Element("ImageFormat", "image/jpg"));
+			l.InsertEndChild(a);
+			l.InsertEndChild(Element("FormatSuffix", ".jpg"));
+
+			a = Element("NumLevels");
+			a.SetAttribute("count", "5");
+			a.SetAttribute("numEmpty", "0");
+			l.InsertEndChild(a);
+			
+			//Tilesize
+			a = Element("TileSize");
+			b = Element("Dimension");
+			b.SetAttribute("width", "512");
+			b.SetAttribute("height", "512");
+			a.InsertEndChild(b);
+			l.InsertEndChild(a);
+
+			//Fullsize
+			a = Element("FullSize");
+			b = Element("Dimension");
+			b.SetAttribute("width", nhpixels);
+			b.SetAttribute("height", nvpixels);
+			a.InsertEndChild(b);
+			l.InsertEndChild(a);
+
+			l.InsertEndChild(getxmlpathelement(longitude, latitude));
+
+			l.InsertEndChild(Element("CurtainTop", zsectiontop));
+			l.InsertEndChild(Element("CurtainBottom", zsectionbot));
+			l.InsertEndChild(Element("FollowTerrain", "false"));
+
+			l.InsertEndChild(Element("Subsegments",2));
+			l.InsertEndChild(Element("UseTransparentTextures",true));
+			l.InsertEndChild(Element("ForceLevelZeroLoads",true));
+			l.InsertEndChild(Element("RetainLevelZeroTiles","image/dds"));
+			l.InsertEndChild(Element("UseMipMaps",true));
+			l.InsertEndChild(Element("DetailHint",0.5));
+			
+			doc.InsertEndChild(l);
+			doc.SaveFile();
+		}
+		catch (ticpp::Exception& ex)
+		{
+			std::cout << ex.what();
+		}
+	}
+
+	Element getxmlpathelement(const std::vector<double>& longitude, const std::vector<double>& latitude)
+	{
+		Element p("Path");
+		for (size_t i = 0; i < longitude.size(); i++){
+			Element a("LatLon");
+			a.SetAttribute("units", "degrees");
+			a.SetAttribute("latitude", strprint("%10.6lf", longitude[i]));
+			a.SetAttribute("longitude", strprint("%10.6lf", latitude[i]));
+			p.InsertEndChild(a);
+		}
+		return p;
+	}
+};
 
 int main(int argc, char** argv)
 {	
