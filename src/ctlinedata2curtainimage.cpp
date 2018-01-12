@@ -69,19 +69,14 @@ class cCurtainImageSection{
 
 private:
 
-	Bitmap* pBitmap;
-	cColorMap cmap;
-	bool drawcbar;
-	std::vector<double> cbarticks;
+	Bitmap* pBitmap;		
 	int nhpixels;
 	int nvpixels;
-	std::vector<double> linedistance;
 	double hlength;
 	double vlength;
 	double h0,h1,dh;
 	double v0,v1,dv;
-	//double x0,x1,x2,dx;
-	//double y0,y1,y2,dy;
+	
 	double gratdiv;
 	double geometrytolerance;
 
@@ -89,18 +84,20 @@ private:
 	std::string prefix;
 	std::string suffix;
 
+	int linenumber;
 	int nlayers;
 	int nsamples;
-	int linenumber;
-
-
+	
 	double LowClip;
 	double HighClip;
 	bool   Log10Stretch;
+	cColorMap cmap;
+	bool drawcbar;
+	std::vector<double> cbarticks;
 
-	bool SaveJPG;
-	bool SavePNG;
-	bool SaveEMF;
+	//bool SaveJPG;
+	//bool SavePNG;
+	//bool SaveEMF;
 
 	double elevation_median;
 	bool autozsectiontop;
@@ -108,19 +105,23 @@ private:
 	double zsectiontop;
 	double zsectionbot;
 
-public:
 	std::vector<double> x;
 	std::vector<double> y;
 	std::vector<double> e;
+	std::vector<double> linedistance;
 	std::vector<std::vector<double>> c;
 	std::vector<std::vector<double>> z;
+
 	std::vector<std::vector<double>> cp10;
 	std::vector<std::vector<double>> cp90;
-	bool spreadfade;	
+	bool   spreadfade;
 	double spreadfadelowclip;
 	double spreadfadehighclip;
 	double lowspreadfade;
 	double highspreadfade;
+
+public:
+	
 	
 	void getoptions(cBlock b){
 		
@@ -177,9 +178,9 @@ public:
 
 		geometrytolerance = b.getdoublevalue("GeometryTolerance");
 
-		SaveJPG = b.getboolvalue("SaveJPG");
-		SavePNG = b.getboolvalue("SavePNG");
-		SaveEMF = b.getboolvalue("SaveEMF");
+		//SaveJPG = b.getboolvalue("SaveJPG");
+		//SavePNG = b.getboolvalue("SavePNG");
+		//SaveEMF = b.getboolvalue("SaveEMF");
 	}
 
 	void readdatafile(const cBlock& input, const std::string filename)
@@ -346,10 +347,7 @@ public:
 		}		
 	}
 
-	void process(){		
-		//savegeometry();
-		//return;
-
+	void process(){						
 		calculateextents();				
 		createbitmap();
 		generatesectiondata();
@@ -362,36 +360,19 @@ public:
 	}
 
 	void calculateextents()
-	{				
-		//bestfitlineendpoints(x,y,x1,y1,x2,y2);
-		//double angle = atan2(y2-y1,x2-x1);
-		//if(angle > PIONTWO || angle <= -PIONTWO){
-		//	std::swap(x1,x2);
-		//	std::swap(y1,y2);			
-		//}
-
-		
+	{								
 		linedistance.resize(x.size());
 		linedistance[0] = 0.0;
 		for (size_t i = 1; i < x.size(); i++){
 			linedistance[i] = linedistance[i - 1] + distance(x[i - 1], y[i - 1], x[i], y[i]);
 		}
+		
 		double rawlength = linedistance.back();
-		hlength = roundupnearest(rawlength,dh);
-
-		//x2 = x1 + (x2-x1)*hlength/rawlength;
-		//y2 = y1 + (y2-y1)*hlength/rawlength;
-
-		int hmarginpixels = getmarginpixels();
+		hlength = roundupnearest(rawlength,dh);	
 		h0 = 0.0;		
 		h1 = hlength;
-
 		nhpixels  = 1 + (int)((h1-h0)/dh);
-		//dx = dh*(x2-x1)/(h2-h1);
-		//dy = dh*(y2-y1)/(h2-h1);		
-		//x0 = x1 - (x2-x1)*h1/hlength;
-		//y0 = y1 - (y2-y1)*h1/hlength;
-
+		
 		double zmin =  DBL_MAX;
 		double zmax = -DBL_MAX;
 		for(int si=0; si<nsamples; si++){
@@ -422,27 +403,16 @@ public:
 		nvpixels = 1 + (int)(vlength/dv);		
 	}
 
-	int wh2lx(double wh){
-		int lx = (int)roundnearest((wh-h0)/dh,1.0);
-		return lx;
+	int wh2ix(double wh){
+		int ix = (int)roundnearest((wh-h0)/dh,1.0);
+		return ix;
 	}
 
-	int wv2ly(double wv){		
-		int ly = (int)roundnearest((v1-wv)/dv,1.0);
-		return ly;
+	int wv2iy(double wv){		
+		int iy = (int)roundnearest((v1-wv)/dv,1.0);
+		return iy;
 	}
-
-	int getmarginpixels(){
-		return 0;
-
-		//int graticulemargin = 65;
-		//int colourbarmargin = 95;
-
-		//int margin = graticulemargin;
-		//if(drawcbar) margin += colourbarmargin;
-		//return margin;
-	}
-
+	
 	void createbitmap(){
 		pBitmap = new Bitmap(nhpixels, nvpixels, PixelFormat32bppARGB);		
 		for(int i=0; i<nhpixels; i++){
@@ -478,11 +448,9 @@ public:
 		Color BkgColor(255,128,128,128);
 		Color AirColor(0,255,255,255);
 		Color NullsColor(255,128,128,128);
-
-		//int hp1 = wh2lx(h1);
-		//int hp2 = wh2lx(h2);
-		int vp1 = wv2ly(v0);
-		int vp2 = wv2ly(v1);
+		
+		int vp1 = wv2iy(v0);
+		int vp2 = wv2iy(v1);
 
 		int mini = 0;
 		for (int i = 0; i <= nhpixels; i++){
@@ -574,14 +542,14 @@ public:
 		gr.MeasureString(L"-0000 m",-1,&font,layoutsize,&textformat,&textsize);
 
 		for(int zg=zg1; zg<=zg2; zg+=(int)gratdiv){
-			gr.DrawLine(&blackpen,wh2lx(h0),wv2ly(zg),wh2lx(h1),wv2ly(zg));
+			gr.DrawLine(&blackpen,wh2ix(h0),wv2iy(zg),wh2ix(h1),wv2iy(zg));
 
 			wchar_t s[20];				
 			swprintf(s,20,L"%5d m",zg);						
 			gr.MeasureString(s,-1,&font,layoutsize,&textformat,&textsize);
 
-			int tx = wh2lx(h1);
-			int ty = wv2ly(zg);
+			int tx = wh2ix(h1);
+			int ty = wv2iy(zg);
 			if(ty > nvpixels)continue;
 			if(ty-textsize.Height < 0)continue;	
 			PointF txpos((REAL)tx,(REAL)ty);
@@ -601,12 +569,12 @@ public:
 		TextRenderingHint hint = gr.GetTextRenderingHint();		
 		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);
 
-		int ph1 = wv2ly(v0);
-		int ph2 = wv2ly(v1);
+		int ph1 = wv2iy(v0);
+		int ph2 = wv2iy(v1);
 		ph1 = 25; ph2 = 40;
 
-		int pvtop = wv2ly(v0+(v1-v0)*0.95);
-		int pvbot = wv2ly(v0+(v1-v0)*0.05);
+		int pvtop = wv2iy(v0+(v1-v0)*0.95);
+		int pvbot = wv2iy(v0+(v1-v0)*0.05);
 		for (int j = pvtop; j <= pvbot; j++){			
 			int ind = 255*(j - pvbot) / (pvtop - pvbot);
 			for (int i = ph1; i <= ph2; i++){
@@ -657,14 +625,13 @@ public:
 		gr.TranslateTransform(p.X,p.Y);
 		gr.RotateTransform(-90);		
 		gr.DrawString(L"Conductivity (S/m)", -1, &font, PointF(0,0), &textformat, &blackbrush);
-
 	}
 
 	void fixtransparenttext(){	
-		int hp0 = wh2lx(h0);
-		int hp1 = wh2lx(h1);
-		int vp1 = wv2ly(v0);
-		int vp2 = wv2ly(v1);
+		int hp0 = wh2ix(h0);
+		int hp1 = wh2ix(h1);
+		int vp1 = wv2iy(v0);
+		int vp2 = wv2iy(v1);
 		for(int i=hp0; i<=hp1; i++){		
 			for(int j=vp2; j<=vp1; j++){
 				Color c;
@@ -679,46 +646,59 @@ public:
 		return bn;
 	}
 
+	std::string tilesetpath(){
+		std::string s = outdir + "tiles\\" + basename();
+		return s;
+	}
+
+	std::string imagedir(){
+		std::string s = outdir + basename() + "\\";
+		return s;
+	}
+
+	std::string imagepath(){
+		std::string s = imagedir() + basename() + ".jpg";		
+		return s;
+	}
+
+	std::string xmldir(){
+		std::string s = outdir + "\\";
+		return s;
+	}
+
+	std::string xmlpath(){
+		std::string s = xmldir() + basename() + ".xml";
+		return s;
+	}
+
 	void saveimage(){
-		std::string bname = basename();
-		makedirectorydeep(outdir);
+		//std::string bname = basename();		
+		makedirectorydeep(imagedir());
+				
+		wchar_t wcimagepath[500];
+		size_t len;
+		mbstowcs_s(&len, wcimagepath, 500, imagepath().c_str(), _TRUNCATE);
 
-		if(SavePNG){		
-			std::string imagepath = outdir + bname + ".png";						
-			wchar_t wcimagepath[200];
-			size_t len;			
-			mbstowcs_s(&len, wcimagepath, 200, imagepath.c_str(), _TRUNCATE);
+		CLSID jpgClsid;
+		GetEncoderClsid(L"image/jpeg", &jpgClsid);
+		Status result = pBitmap->Save(wcimagepath, &jpgClsid, NULL);			
 
-			CLSID pngClsid;
-			int ret = GetEncoderClsid(L"image/png", &pngClsid);			
-			Status result = pBitmap->Save(wcimagepath, &pngClsid, NULL);			
-		}
-
-		if(SaveJPG){			
-			std::string imagepath = outdir + bname + ".jpg";
-			wchar_t wcimagepath[500];
-			size_t len;
-			mbstowcs_s(&len, wcimagepath, 500, imagepath.c_str(), _TRUNCATE);
-
-			CLSID jpgClsid;
-			GetEncoderClsid(L"image/jpeg", &jpgClsid);
-			Status result = pBitmap->Save(wcimagepath, &jpgClsid, NULL);			
-		}
+		//ribbon.bat -output "out" -source "1010001.jpg" -tileset section-1010001
+		//std::string cmdstr = strprint("ribbon.bat -output \"%s\" -source \"%s\" -tileset section-1010001", xmldir, jpgpath, tilsetdir);
 
 	}
 
 	void savegeometry(){
 		
-		std::string txtpath = outdir + basename() + ".txt";
-		FILE* fp = fileopen(txtpath, "w");
-		fprintf(fp, "top %lf\n", zsectiontop);
-		fprintf(fp, "bottom %lf\n", zsectionbot);
-		fprintf(fp, "hlength %lf\n", hlength);
-		fprintf(fp, "vlength %lf\n", vlength);
-		fprintf(fp, "nhpixels %d\n", nhpixels);
-		fprintf(fp, "nvpixels %d\n", nvpixels);				
-		fclose(fp);
-
+		//std::string txtpath = outdir + basename() + ".txt";
+		//FILE* fp = fileopen(txtpath, "w");
+		//fprintf(fp, "top %lf\n", zsectiontop);
+		//fprintf(fp, "bottom %lf\n", zsectionbot);
+		//fprintf(fp, "hlength %lf\n", hlength);
+		//fprintf(fp, "vlength %lf\n", vlength);
+		//fprintf(fp, "nhpixels %d\n", nhpixels);
+		//fprintf(fp, "nvpixels %d\n", nvpixels);				
+		//fclose(fp);
 
 		std::vector<RDP::Point> pl(x.size());
 		std::vector<RDP::Point> plout;
@@ -742,9 +722,10 @@ public:
 			y[i] = plout[i].second;
 		}
 
-		int inepsgcode = 28353;//GDA94,MGA53		
-		int outepsgcode = 4283;//GDA94,Geodetic
-		
+		int inepsgcode  = 28353;//GDA94,MGA53		
+		//int outepsgcode = 4283;//GDA94,Geodetic
+		int outepsgcode = 4326;//WGS84,Geodetic
+
 		transform(inepsgcode, x, y, outepsgcode, longitude, latitude);
 		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";
 		//savepoints(longitude, latitude, pfpathll);
@@ -772,18 +753,17 @@ public:
 	};
 	
 	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
-	{
-		std::string xmlpath = outdir + basename() + ".xml";
+	{		
+		makedirectorydeep(xmldir());
 		try
 		{
 			Element a, b;
-			Document doc(xmlpath);
+			Document doc(xmlpath());
 			std::string ver = "1.0";
 			std::string enc = "UTF-8";
 			std::string std = "yes";
 			Declaration dec(ver, enc, std);
-			doc.InsertEndChild(dec);
-			doc.InsertEndChild(Element("CreatedBy", "ctlinedata2curtainimage"));
+			doc.InsertEndChild(dec);			
 
 			Element l("Layer");
 			l.SetAttribute("version", "1");
@@ -801,23 +781,32 @@ public:
 
 			a = Element("Delegates");
 			if(local) a.InsertEndChild(Element("Delegate", "LocalRequester"));
-			a.InsertEndChild(Element("Delegate", "TransparentColorTransformer(255, 255, 255, 0.2)"));
-			a.InsertEndChild(Element("Delegate", "ResizeTransformer(512, 512)"));
+			a.InsertEndChild(Element("Delegate", "TransparentColorTransformer(255,255,255,0.2)"));
+			a.InsertEndChild(Element("Delegate", "ResizeTransformer(512,512)"));
 			l.InsertEndChild(a);
-			l.InsertEndChild(Element("LastUpdate", timestamp()));
+						
+			//Expects timestamps in the format “dd MM yyyy HH:mm:ss Z”			
+			std::string tf = "%d %m %Y %H:%M:%S +11:00";
+			std::string timestampstr = timestring(tf);
+			l.InsertEndChild(Element("LastUpdate", timestampstr));
 			
 			std::string datasetname  = "TestAEM/AEM_Lines/"+basename();
 			std::string datasetcache = "cache/TestAEM/AEM_Lines/"+basename();
 			l.InsertEndChild(Element("DatasetName", datasetname));
 			l.InsertEndChild(Element("DataCacheName", datasetcache));
 			
-			a = Element("AvailableImageFormats");
-			a.InsertEndChild(Element("ImageFormat", "image/jpg"));
-			l.InsertEndChild(a);
+			//Image formats
+			l.InsertEndChild(Element("ImageFormat", "image/jpg"));			
 			l.InsertEndChild(Element("FormatSuffix", ".jpg"));
+			
+			a = Element("AvailableImageFormats");
+			a.InsertEndChild(Element("ImageFormat", "image/jpg"));			
+			l.InsertEndChild(a);
 
+			//Levels	
+			int nlevels = ntilinglevels(512, 512);
 			a = Element("NumLevels");
-			a.SetAttribute("count", "5");
+			a.SetAttribute("count", nlevels);
 			a.SetAttribute("numEmpty", "0");
 			l.InsertEndChild(a);
 			
@@ -844,10 +833,10 @@ public:
 			l.InsertEndChild(Element("FollowTerrain", "false"));
 
 			l.InsertEndChild(Element("Subsegments",2));
-			l.InsertEndChild(Element("UseTransparentTextures",true));
-			l.InsertEndChild(Element("ForceLevelZeroLoads",true));
+			l.InsertEndChild(Element("UseTransparentTextures","true"));
+			l.InsertEndChild(Element("ForceLevelZeroLoads","true"));
 			l.InsertEndChild(Element("RetainLevelZeroTiles","image/dds"));
-			l.InsertEndChild(Element("UseMipMaps",true));
+			l.InsertEndChild(Element("UseMipMaps","true"));
 			l.InsertEndChild(Element("DetailHint",0.5));
 			
 			doc.InsertEndChild(l);
@@ -859,14 +848,22 @@ public:
 		}
 	}
 
+	int ntilinglevels(const int& tilewidth, const int& tileheight)
+	{
+		int nx = std::ceil(std::log2((double) nhpixels / (double)tilewidth));
+		int ny = std::ceil(std::log2((double) nvpixels / (double)tileheight));		
+		int n = MAX(nx, ny);
+		return MAX(0, n);
+	}
+
 	Element getxmlpathelement(const std::vector<double>& longitude, const std::vector<double>& latitude)
 	{
 		Element p("Path");
 		for (size_t i = 0; i < longitude.size(); i++){
 			Element a("LatLon");
 			a.SetAttribute("units", "degrees");
-			a.SetAttribute("latitude", strprint("%10.6lf", longitude[i]));
-			a.SetAttribute("longitude", strprint("%10.6lf", latitude[i]));
+			a.SetAttribute("latitude", strprint("%10.6lf", latitude[i]));
+			a.SetAttribute("longitude", strprint("%10.6lf", longitude[i]));
 			p.InsertEndChild(a);
 		}
 		return p;
@@ -901,7 +898,7 @@ int main(int argc, char** argv)
 	std::vector<std::string> filelist =  cDirectoryAccess::getfilelist(infiles);
 	double t1 = gettime();	
 	for (size_t i = 0; i < filelist.size(); i++){	
-		std::printf("Processing file %s %3zu of %3zu\n", filelist[i].c_str(),i+1,filelist.size());
+		std::printf("Processing file %s %3lu of %3lu\n", filelist[i].c_str(),i+1,filelist.size());
 		cCurtainImageSection S;
 		S.getoptions(sectionblock);		
 		S.readdatafile(inputblock,filelist[i].c_str());		
