@@ -68,8 +68,11 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 class cCurtainImageSection{
 
 private:
+	size_t seq_n;
+	size_t seq_total;
 
-	Bitmap* pBitmap;		
+	static bool first;
+	Bitmap* pBitmap;
 	int nhpixels;
 	int nvpixels;
 	double hlength;
@@ -78,8 +81,7 @@ private:
 	double v0,v1,dv;
 	
 	double gratdiv;
-	double geometrytolerance;
-
+	
 	std::string outdir;
 	std::string prefix;
 	std::string suffix;
@@ -94,16 +96,9 @@ private:
 	cColorMap cmap;
 	bool drawcbar;
 	std::vector<double> cbarticks;
-
-	//bool SaveJPG;
-	//bool SavePNG;
-	//bool SaveEMF;
-
-	double elevation_median;
+	
 	bool autozsectiontop;
-	bool autozsectionbot;
-	double zsectiontop;
-	double zsectionbot;
+	bool autozsectionbot;	
 
 	std::vector<double> x;
 	std::vector<double> y;
@@ -120,9 +115,19 @@ private:
 	double lowspreadfade;
 	double highspreadfade;
 
+	double geometrytolerance;
+	int tilesize;
+	std::string datasetname;
+	std::string datacachename;
+
 public:
 	
-	
+	cCurtainImageSection(const size_t _seq_n, const size_t _seq_total)
+	{
+		seq_n = _seq_n;
+		seq_total = _seq_total;
+	}
+
 	void getoptions(cBlock b){
 		
 		spreadfade = b.getboolvalue("SpreadFade");
@@ -133,38 +138,27 @@ public:
 			highspreadfade      = b.getdoublevalue("HighSpreadFade");	
 		}
 
-
-		double v = b.getdoublevalue("ElevationTop");
-		if(isundefined(v)){
-			autozsectiontop = true;
-			zsectiontop = v;
-		}
-		else{
-			autozsectiontop = false;
-			zsectiontop = v;
-		}
-
-		v = b.getdoublevalue("ElevationBottom");
-		if (isundefined(v)){
-			autozsectionbot = true;
-			zsectionbot = v;
-		}
-		else{
-			autozsectionbot = false;
-			zsectionbot = v;
-		}
+		v1 = b.getdoublevalue("ElevationTop");
+		if(isundefined(v1)) autozsectiontop = true;					
+		else autozsectiontop = false;
+		
+		v0 = b.getdoublevalue("ElevationBottom");
+		if (isundefined(v0)) autozsectionbot = true;			
+		else autozsectionbot = false;				
 
 		outdir = b.getstringvalue("OutDir");
+		addtrailingseparator(outdir);
+
 		prefix = b.getstringvalue("Prefix");
 		suffix = b.getstringvalue("Suffix");
 
-		dh = b.getdoublevalue("HorizontalResolution");
-		double vxg   = b.getdoublevalue("VerticalExaggeration");
-		dv = dh/vxg;
+		dh = b.getdoublevalue("HorizontalResolution");		
+		dv = b.getdoublevalue("VerticalResolution");				
 
 		std::string cmapname = b.getstringvalue("ColourMap");
-		cmap.set(cmapname);
-
+		if (exists(cmapname)) cmap = cColorMap(cmapname, COLORMAPTYPE_ERMLUT);
+		else cmap = cColorMap(cmapname, COLORMAPTYPE_BUILTIN);
+		
 		drawcbar  = b.getboolvalue("ColourBar");
 		if(drawcbar){
 			cbarticks = b.getdoublevector("ColourBarTicks");
@@ -177,10 +171,9 @@ public:
 		gratdiv = b.getdoublevalue("ElevationGridDivision");
 
 		geometrytolerance = b.getdoublevalue("GeometryTolerance");
-
-		//SaveJPG = b.getboolvalue("SaveJPG");
-		//SavePNG = b.getboolvalue("SavePNG");
-		//SaveEMF = b.getboolvalue("SaveEMF");
+		tilesize = b.getintvalue("TileSize");		
+		datasetname   = b.getstringvalue("DatasetName");
+		datacachename = b.getstringvalue("DataCacheName");
 	}
 
 	void readdatafile(const cBlock& input, const std::string filename)
@@ -347,16 +340,20 @@ public:
 		}		
 	}
 
-	void process(){						
-		calculateextents();				
+	void process(){			
+		createcolorbar();
+		return;
+		calculateextents();
 		createbitmap();
 		generatesectiondata();
-		//drawgraticule();
-		//drawcolorbar();		
+		//drawgraticule();		
 		//fixtransparenttext();
 		saveimage();
-		savegeometry();
+		savegeometry();		
+		saveribbontilerbatchcommand();
 		deletebitmap();
+
+		
 	}
 
 	void calculateextents()
@@ -367,11 +364,11 @@ public:
 			linedistance[i] = linedistance[i - 1] + distance(x[i - 1], y[i - 1], x[i], y[i]);
 		}
 		
-		double rawlength = linedistance.back();
-		hlength = roundupnearest(rawlength,dh);	
-		h0 = 0.0;		
+		hlength = linedistance.back();
+		hlength = roundupnearest(hlength,dh);	
+		h0 = 0.0;
 		h1 = hlength;
-		nhpixels  = 1 + (int)((h1-h0)/dh);
+		nhpixels  = 1 + (int)(hlength/dh);
 		
 		double zmin =  DBL_MAX;
 		double zmax = -DBL_MAX;
@@ -380,27 +377,13 @@ public:
 			if(z[si][0]       > zmax)zmax = z[si][0];
 		}
 
-		if(autozsectionbot==false){
-			zmin = zsectionbot;
-		}
-		else{
-			zsectionbot = zmin;;
-		}
-
-		if(autozsectiontop==false){
-			zmax = zsectiontop;
-		}
-		else{
-			zsectiontop = zmax;
-		}
-
-		elevation_median = median(&e[0],e.size());
-
-		double rawheight = zmax-zmin;
-		vlength = roundupnearest(rawheight,dv);		
-		v0 = zmin;		
-		v1 = vlength;
-		nvpixels = 1 + (int)(vlength/dv);		
+		if(autozsectionbot==true) v0 = zmin;
+		if(autozsectiontop==true) v1 = zmax;		
+		vlength = v1-v0;
+		//Adjust extents to nearest pixel
+		vlength = roundupnearest(vlength,dv);		
+		v0 = v1-vlength;
+		nvpixels = 1 + (int)(vlength/dv);
 	}
 
 	int wh2ix(double wh){
@@ -449,8 +432,8 @@ public:
 		Color AirColor(0,255,255,255);
 		Color NullsColor(255,128,128,128);
 		
-		int vp1 = wv2iy(v0);
-		int vp2 = wv2iy(v1);
+		int vp0 = wv2iy(v0);
+		int vp1 = wv2iy(v1);
 
 		int mini = 0;
 		for (int i = 0; i <= nhpixels; i++){
@@ -460,21 +443,7 @@ public:
 				mini++;
 			}
 			
-			
-			/*
-			double mind=DBL_MAX;
-			int mini;
-			for(int si=0; si<nsamples; si++){
-				double d = distance(0.0,0.0,xp-x[si],yp-y[si]);
-				if(d<mind){
-					mini = si;
-					mind = d;
-				}
-			}
-			*/
-
-
-			for(int j=vp2; j<=vp1; j++){				
+			for(int j=vp1; j<=vp0; j++){				
 				pBitmap->SetPixel(i,j,BkgColor);
 
 				double zp = v1 - (double)j*dv;
@@ -557,24 +526,33 @@ public:
 		}		    				
 	}
 
-	void drawcolorbar(){
+	void createcolorbar(){
 
-		if(drawcbar==false)return;
+		makedirectorydeep(extractfiledirectory(colorbarfile()));
+
+		Bitmap* bm = new Bitmap(256, 1000, PixelFormat32bppARGB);
+		int width  = 256;
+		int height = 1000;
+		for (int i = 0; i<width; i++){
+			for (int j = 0; j<height; j++){
+				bm->SetPixel(i, j, Color(255, 255, 255, 255));
+			}
+		}
 
 		Pen blackpen(Color::Black, 0);
 		SolidBrush blackbrush(Color::Black);
 
-		Graphics gr(pBitmap);
+		Graphics gr(bm);
 
 		TextRenderingHint hint = gr.GetTextRenderingHint();		
 		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);
 
-		int ph1 = wv2iy(v0);
-		int ph2 = wv2iy(v1);
-		ph1 = 25; ph2 = 40;
+		int ph1 = width*0.1;
+		int ph2 = width*0.9;
+		//ph1 = 25; ph2 = 40;
 
-		int pvtop = wv2iy(v0+(v1-v0)*0.95);
-		int pvbot = wv2iy(v0+(v1-v0)*0.05);
+		int pvtop = height*0.95);
+		int pvbot = height*0.05);
 		for (int j = pvtop; j <= pvbot; j++){			
 			int ind = 255*(j - pvbot) / (pvtop - pvbot);
 			for (int i = ph1; i <= ph2; i++){
@@ -625,6 +603,15 @@ public:
 		gr.TranslateTransform(p.X,p.Y);
 		gr.RotateTransform(-90);		
 		gr.DrawString(L"Conductivity (S/m)", -1, &font, PointF(0,0), &textformat, &blackbrush);
+		
+		wchar_t wcimagepath[500];
+		size_t len;
+		mbstowcs_s(&len, wcimagepath, 500, colorbarfile().c_str(), _TRUNCATE);
+		CLSID jpgClsid;
+		GetEncoderClsid(L"image/jpeg", &jpgClsid);
+		Status result = bm->Save(wcimagepath, &jpgClsid, NULL);
+
+		delete bm;
 	}
 
 	void fixtransparenttext(){	
@@ -646,46 +633,45 @@ public:
 		return bn;
 	}
 
-	std::string tilesetpath(){
-		std::string s = outdir + "tiles\\" + basename();
+	std::string tilesetdir_nod(){
+		std::string s = datasetname + "\\";;
 		return s;
 	}
 
-	std::string imagedir(){
-		std::string s = outdir + basename() + "\\";
+	std::string tilesetdir(){
+		std::string s = outdir + tilesetdir_nod();
 		return s;
 	}
 
-	std::string imagepath(){
-		std::string s = imagedir() + basename() + ".jpg";		
+	std::string jpegfile_nod(){
+		std::string s = "jpeg\\" + basename() + ".jpg";
 		return s;
 	}
 
-	std::string xmldir(){
-		std::string s = outdir + "\\";
+	std::string jpegfile(){
+		std::string s = outdir + jpegfile_nod();
 		return s;
 	}
 
-	std::string xmlpath(){
-		std::string s = xmldir() + basename() + ".xml";
+	std::string xmlfile(){
+		std::string s = tilesetdir() + basename() + ".xml";
 		return s;
 	}
 
-	void saveimage(){
-		//std::string bname = basename();		
-		makedirectorydeep(imagedir());
-				
+	std::string ribbontilerbatchfilepath(){
+		std::string s = outdir + "\\run_ribbon_tiler.bat";
+		return s;
+	}
+	
+	void saveimage(){		
+		makedirectorydeep(extractfiledirectory(jpegfile()));
 		wchar_t wcimagepath[500];
 		size_t len;
-		mbstowcs_s(&len, wcimagepath, 500, imagepath().c_str(), _TRUNCATE);
+		mbstowcs_s(&len, wcimagepath, 500, jpegfile().c_str(), _TRUNCATE);
 
 		CLSID jpgClsid;
 		GetEncoderClsid(L"image/jpeg", &jpgClsid);
-		Status result = pBitmap->Save(wcimagepath, &jpgClsid, NULL);			
-
-		//ribbon.bat -output "out" -source "1010001.jpg" -tileset section-1010001
-		//std::string cmdstr = strprint("ribbon.bat -output \"%s\" -source \"%s\" -tileset section-1010001", xmldir, jpgpath, tilsetdir);
-
+		Status result = pBitmap->Save(wcimagepath, &jpgClsid, NULL);					
 	}
 
 	void savegeometry(){
@@ -740,10 +726,7 @@ public:
 		fclose(fp);
 	};
 
-	void savepoints(
-		const std::vector<double>& x,
-		const std::vector<double>& y,
-		const std::string& filename)
+	void savepoints(const std::vector<double>& x, const std::vector<double>& y, const std::string& filename)
 	{
 		FILE* fp = fileopen(filename, "w");
 		for (size_t i = 0; i < x.size(); i++){
@@ -753,12 +736,12 @@ public:
 	};
 	
 	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
-	{		
-		makedirectorydeep(xmldir());
+	{				
+		makedirectorydeep(extractfiledirectory(xmlfile()));
 		try
 		{
 			Element a, b;
-			Document doc(xmlpath());
+			Document doc(xmlfile());
 			std::string ver = "1.0";
 			std::string enc = "UTF-8";
 			std::string std = "yes";
@@ -782,7 +765,7 @@ public:
 			a = Element("Delegates");
 			if(local) a.InsertEndChild(Element("Delegate", "LocalRequester"));
 			a.InsertEndChild(Element("Delegate", "TransparentColorTransformer(255,255,255,0.2)"));
-			a.InsertEndChild(Element("Delegate", "ResizeTransformer(512,512)"));
+			a.InsertEndChild(Element("Delegate", strprint("ResizeTransformer(%d,%d)",tilesize,tilesize)));
 			l.InsertEndChild(a);
 						
 			//Expects timestamps in the format “dd MM yyyy HH:mm:ss Z”			
@@ -790,10 +773,10 @@ public:
 			std::string timestampstr = timestring(tf);
 			l.InsertEndChild(Element("LastUpdate", timestampstr));
 			
-			std::string datasetname  = "TestAEM/AEM_Lines/"+basename();
-			std::string datasetcache = "cache/TestAEM/AEM_Lines/"+basename();
-			l.InsertEndChild(Element("DatasetName", datasetname));
-			l.InsertEndChild(Element("DataCacheName", datasetcache));
+			std::string dn = basename();
+			std::string dc = datacachename + "/" + basename();
+			l.InsertEndChild(Element("DatasetName", dn));
+			l.InsertEndChild(Element("DataCacheName", dc));
 			
 			//Image formats
 			l.InsertEndChild(Element("ImageFormat", "image/jpg"));			
@@ -803,18 +786,18 @@ public:
 			a.InsertEndChild(Element("ImageFormat", "image/jpg"));			
 			l.InsertEndChild(a);
 
-			//Levels	
-			int nlevels = ntilinglevels(512, 512);
+			//Levels				
+			int nlevels  = levelCount(nhpixels, nvpixels, tilesize);			
 			a = Element("NumLevels");
 			a.SetAttribute("count", nlevels);
 			a.SetAttribute("numEmpty", "0");
 			l.InsertEndChild(a);
 			
-			//Tilesize
+			//Tilesize			
 			a = Element("TileSize");
 			b = Element("Dimension");
-			b.SetAttribute("width", "512");
-			b.SetAttribute("height", "512");
+			b.SetAttribute("width", strprint("%d",tilesize));
+			b.SetAttribute("height", strprint("%d", tilesize));
 			a.InsertEndChild(b);
 			l.InsertEndChild(a);
 
@@ -828,8 +811,8 @@ public:
 
 			l.InsertEndChild(getxmlpathelement(longitude, latitude));
 
-			l.InsertEndChild(Element("CurtainTop", zsectiontop));
-			l.InsertEndChild(Element("CurtainBottom", zsectionbot));
+			l.InsertEndChild(Element("CurtainTop", v1));
+			l.InsertEndChild(Element("CurtainBottom", v0));
 			l.InsertEndChild(Element("FollowTerrain", "false"));
 
 			l.InsertEndChild(Element("Subsegments",2));
@@ -846,15 +829,26 @@ public:
 		{
 			std::cout << ex.what();
 		}
-	}
+	}		
 
-	int ntilinglevels(const int& tilewidth, const int& tileheight)
+	int levelCount(const int& width, const int& height, const int& tilesize)
 	{
-		int nx = std::ceil(std::log2((double) nhpixels / (double)tilewidth));
-		int ny = std::ceil(std::log2((double) nvpixels / (double)tileheight));		
-		int n = MAX(nx, ny);
-		return MAX(0, n);
+		//This is lifted direct from 
+		//https://github.com/GeoscienceAustralia/ga-worldwind-suite/blob/master/Tiler/src/main/java/au/gov/ga/worldwind/tiler/ribbon/RibbonTiler.java
+		double xCount = width / (double)tilesize;
+		double yCount = height / (double)tilesize;
+		int levels = 0;	
+		while (4 * xCount * yCount >= 1)
+		{
+			levels++;
+			xCount /= 2.0;
+			yCount /= 2.0;
+		}
+		return levels;
 	}
+	
+
+
 
 	Element getxmlpathelement(const std::vector<double>& longitude, const std::vector<double>& latitude)
 	{
@@ -868,46 +862,71 @@ public:
 		}
 		return p;
 	}
+
+	void saveribbontilerbatchcommand()
+	{				
+		std::string mode = "a";
+		if (seq_n == 0) mode = "w";
+		FILE* fp = fileopen(ribbontilerbatchfilepath(), mode);
+		std::string s;
+		if (seq_n == 0) s += strprint("@echo off\n\n");		
+		s += strprint("call ribbon.bat");
+		s += strprint(" -tilesize %d",tilesize);
+		//s += strprint(" -copySource");
+		s += strprint(" -noLayerDef");
+		s += strprint(" -source %s", jpegfile_nod().c_str());
+		s += strprint(" -output %s", tilesetdir_nod().c_str());
+		s += strprint("\n");		
+		if (seq_n == seq_total-1) s += strprint("\npause\n");
+		fprintf(fp, s.c_str());		
+	}
 };
 
 int main(int argc, char** argv)
 {	
-	GdiplusStartupInput gdiplusStartupInput;
-	ULONG_PTR gdiplusToken;
-	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+	try{				
+		GdiplusStartupInput gdiplusStartupInput;
+		ULONG_PTR gdiplusToken;
+		GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-	if (argc >= 2){
-		message("Executing %s %s\n", argv[0], argv[1]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
-	}
-	else{
-		message("Executing %s\n", argv[0]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
-		message("Error: Not enough input arguments\n");
-		message("Usage: %s controlfilename\n",argv[0]);		
-		return 0;
-	}
+		if (argc >= 2){
+			message("Executing %s %s\n", argv[0], argv[1]);
+			message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+			message("Working directory %s\n", getcurrentdirectory().c_str());
+		}
+		else{
+			message("Executing %s\n", argv[0]);
+			message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+			message("Working directory %s\n", getcurrentdirectory().c_str());
+			message("Error: Not enough input arguments\n");
+			message("Usage: %s controlfilename\n", argv[0]);
+			return 0;
+		}
 
-	cBlock b(argv[1]);
-	cBlock inputblock   = b.findblock("Input");	
-	cBlock sectionblock = b.findblock("Section");	
-	std::string infiles = inputblock.getstringvalue("DataFiles");
+		cBlock b(argv[1]);
+		cBlock inputblock = b.findblock("Input");
+		cBlock sectionblock = b.findblock("Section");
+		std::string infiles = inputblock.getstringvalue("DataFiles");
 
-	std::vector<std::string> filelist =  cDirectoryAccess::getfilelist(infiles);
-	double t1 = gettime();	
-	for (size_t i = 0; i < filelist.size(); i++){	
-		std::printf("Processing file %s %3lu of %3lu\n", filelist[i].c_str(),i+1,filelist.size());
-		cCurtainImageSection S;
-		S.getoptions(sectionblock);		
-		S.readdatafile(inputblock,filelist[i].c_str());		
-		S.process();		
+		std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
+		double t1 = gettime();
+		for (size_t i = 0; i < filelist.size(); i++){
+			std::printf("Processing file %s %3lu of %3lu\n", filelist[i].c_str(), i + 1, filelist.size());
+			cCurtainImageSection S(i, filelist.size());
+			S.getoptions(sectionblock);
+			S.readdatafile(inputblock, filelist[i].c_str());
+			S.process();
+		}
+		double t2 = gettime();
+		printf("Done ... Elapsed time = %.2lf seconds\n", t2 - t1);
+		GdiplusShutdown(gdiplusToken);
 	}
-	double t2 = gettime();
-	printf("Done ... Elapsed time = %.2lf seconds\n", t2 - t1);
-	
-	GdiplusShutdown(gdiplusToken);
+	catch (ticpp::Exception& e){
+		std::cout << e.what();
+	}
+	catch (std::runtime_error& e){
+		std::cout << e.what();
+	}	
 	return 0;
 }
 
