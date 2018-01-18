@@ -24,7 +24,9 @@ using namespace Gdiplus;
 #include "geometry3d.h"
 #include "colormap.h"
 #include "RamerDouglasPeucker.h"
+#include "crs.h"
 #include "gdal_utils.h"
+#include "asciicolumnfile.h"
 
 #include "ticpp.h"
 using namespace ticpp;
@@ -68,9 +70,12 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 class cCurtainImageSection{
 
 private:
+
+	cAsciiColumnFile A;
 	size_t seq_n;
 	size_t seq_total;
 
+	std::string inputdatumprojection;
 	static bool first;
 	Bitmap* pBitmap;
 	int nhpixels;
@@ -176,22 +181,45 @@ public:
 		datacachename = b.getstringvalue("DataCacheName");
 	}
 
+	int getcolumn(const cBlock& b, const std::string &token){
+		std::string s = b.getstringvalue(token);
+		int col;
+		int status = sscanf(s.c_str(), "Column %d", &col);		
+		if (status = 1)return col-1;
+		else{
+			size_t findex = A.fieldindexbyname(s);
+			return A.fields[findex].startcolumn;
+		}
+	}
+
 	void readdatafile(const cBlock& input, const std::string filename)
 	{
+		A = cAsciiColumnFile(filename);
+		std::string dfnfile = extractfiledirectory(filename);
+		dfnfile += "inversion.output.dfn";
+		A.parse_aseggdf2_header(dfnfile);
+		
+		inputdatumprojection = input.getstringvalue("DatumProjection");
+
 		int subsample = input.getintvalue("Subsample");
 		if (isundefined(subsample))subsample = 1;
+				
+		int lcol = getcolumn(input, "Line");
+		int xcol = getcolumn(input, "Easting");
+		int ycol = getcolumn(input, "Northing");
+		int ecol = getcolumn(input, "Elevation");
 
-		std::string lstr = input.getstringvalue("Line");
-		std::string xstr = input.getstringvalue("Easting");
-		std::string ystr = input.getstringvalue("Northing");
-		std::string estr = input.getstringvalue("Elevation");
-		
 		bool isresistivity = false;
-		std::string crstr = input.getstringvalue("Conductivity");		
-		if (isundefined(crstr)){
-			crstr = input.getstringvalue("Resistivity");
+		int crccol1;
+		crccol1 = getcolumn(input, "Conductivity");
+		if (crccol1 >= 0){
+			crccol1 = getcolumn(input, "Resistivity");			
 			isresistivity = true;
 		}
+		else{
+			int crccol1 = getcolumn(input, "Conductivity");
+		}
+		
 
 		std::string cp10str = input.getstringvalue("Conductivity_p10");
 		std::string cp90str = input.getstringvalue("Conductivity_p90");								
@@ -211,15 +239,12 @@ public:
 			message("Unknown InputConductivityUnits %s\n",cunits.c_str());			
 		}
 
-		int lcol, xcol, ycol, ecol;
-		int crcol1, crcol2, tcol1, tcol2;
-		int cp10col1, cp10col2;
-		int cp90col1, cp90col2;
-		sscanf(lstr.c_str(), "Column %d", &lcol); lcol--;
-		sscanf(xstr.c_str(), "Column %d", &xcol); xcol--;
-		sscanf(ystr.c_str(), "Column %d", &ycol); ycol--;
-		sscanf(estr.c_str(), "Column %d", &ecol); ecol--;
-
+		
+					
+		//int crcol1, crcol2, tcol1, tcol2;
+		//int cp10col1, cp10col2;
+		//int cp90col1, cp90col2;
+		
 		sscanf(crstr.c_str(), "Column %d-%d", &crcol1, &crcol2); crcol1--; crcol2--;
 		nlayers = crcol2 - crcol1 + 1;
 
@@ -340,9 +365,7 @@ public:
 		}		
 	}
 
-	void process(){			
-		createcolorbar();
-		return;
+	void process(){					
 		calculateextents();
 		createbitmap();
 		generatesectiondata();
@@ -481,12 +504,6 @@ public:
 		}//h pixel loop		
 	}
 
-	REAL getfontsize(){
-		//REAL fontsize = (REAL)abs((wv2ly(0.33*gratdiv) - wv2ly(0)));
-		REAL fontsize = 8.5;
-		return fontsize;
-	}
-
 	void drawgraticule(){
 
 		if (gratdiv == ud_double()) return;
@@ -501,7 +518,9 @@ public:
 
 		Pen blackpen(Color::Black,0);		
 		SolidBrush blackbrush(Color::Black);
-		Font font(L"Arial", getfontsize(), FontStyleRegular, UnitPoint);				
+		
+		//Font font(L"Arial", getfontsize(), FontStyleRegular, UnitPoint);				
+		Font font(L"Arial", 12, FontStyleBold, UnitPoint);
 
 		StringFormat textformat;
 		textformat.SetAlignment(StringAlignmentFar);
@@ -529,46 +548,49 @@ public:
 	void createcolorbar(){
 
 		makedirectorydeep(extractfiledirectory(colorbarfile()));
+		
+		REAL fontsize = 12;
+		FontStyle fontstyle = FontStyleBold;
+		Font font(L"Arial", fontsize, fontstyle, UnitPoint);
+		StringFormat textformat;
+		textformat.SetAlignment(StringAlignmentNear);
+		textformat.SetLineAlignment(StringAlignmentCenter);
 
-		Bitmap* bm = new Bitmap(256, 1000, PixelFormat32bppARGB);
-		int width  = 256;
-		int height = 1000;
+		REAL dpi    = 300;
+		int width  = 400;
+		int height = 700;
+		int margin = 40;
+		int ph1    = 64+margin;
+		int ph2    = ph1+128;
+		int pvtop  = margin;
+		int pvbot  = height - margin;
+		int ticklength = 10;
+
+		Bitmap* bm = new Bitmap(width, height, PixelFormat32bppARGB);		
+		bm->SetResolution(dpi, dpi);
 		for (int i = 0; i<width; i++){
 			for (int j = 0; j<height; j++){
 				bm->SetPixel(i, j, Color(255, 255, 255, 255));
 			}
 		}
 
-		Pen blackpen(Color::Black, 0);
+		Pen blackpen(Color::Black, 3);
 		SolidBrush blackbrush(Color::Black);
 
-		Graphics gr(bm);
-
-		TextRenderingHint hint = gr.GetTextRenderingHint();		
-		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);
-
-		int ph1 = width*0.1;
-		int ph2 = width*0.9;
-		//ph1 = 25; ph2 = 40;
-
-		int pvtop = height*0.95);
-		int pvbot = height*0.05);
+		Graphics gr(bm);		
+		gr.SetPageUnit(UnitPixel);		
+		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);		
+		//SizeF layoutsize(32767, 32767);
+		//SizeF textsize;
+		//gr.MeasureString(L"0.0001", -1, &font, layoutsize, &textformat, &textsize);
+		
 		for (int j = pvtop; j <= pvbot; j++){			
 			int ind = 255*(j - pvbot) / (pvtop - pvbot);
 			for (int i = ph1; i <= ph2; i++){
-				pBitmap->SetPixel(i, j, Color(255, cmap.r[ind], cmap.g[ind], cmap.b[ind]));
+				bm->SetPixel(i, j, Color(255, cmap.r[ind], cmap.g[ind], cmap.b[ind]));
 			}
 		}
 		gr.DrawRectangle(&blackpen, ph1, pvtop, ph2-ph1, pvbot-pvtop);
-
-		Font font(L"Arial", getfontsize(), FontStyleRegular, UnitPoint);
-		StringFormat textformat;		
-		textformat.SetAlignment(StringAlignmentNear);
-		textformat.SetLineAlignment(StringAlignmentCenter);
-		SizeF layoutsize(32767, 32767);
-		SizeF textsize;
-		gr.MeasureString(L"0.0001 m", -1, &font, layoutsize, &textformat, &textsize);
-
 
 		for (int i = 0; i<cbarticks.size(); i++){			
 			if(cbarticks[i] < LowClip)continue;
@@ -591,11 +613,11 @@ public:
 			p.X = (REAL)ph2+3;
 			p.Y = (REAL)tickv;
 			gr.DrawString(s, -1, &font, p, &textformat, &blackbrush);
-			gr.DrawLine(&blackpen,ph2-2,tickv,ph2+2,tickv);
+			gr.DrawLine(&blackpen,ph2-ticklength,tickv,ph2+ticklength,tickv);
 		}		
 
 		PointF p;
-		p.X = (REAL)ph1-2;
+		p.X = (REAL)ph1-4;
 		p.Y = (REAL)(pvtop + pvbot) / 2;
 
 		textformat.SetAlignment(StringAlignmentCenter);
@@ -662,6 +684,16 @@ public:
 		std::string s = outdir + "\\run_ribbon_tiler.bat";
 		return s;
 	}
+
+	std::string colorbarfile(){
+		std::string s = tilesetdir() + "colourbar.jpg";
+		return s;
+	}
+
+	std::string colorbarfile_nod(){
+		std::string s = "colourbar.jpg";
+		return s;
+	}
 	
 	void saveimage(){		
 		makedirectorydeep(extractfiledirectory(jpegfile()));
@@ -708,10 +740,14 @@ public:
 			y[i] = plout[i].second;
 		}
 
-		int inepsgcode  = 28353;//GDA94,MGA53		
-		//int outepsgcode = 4283;//GDA94,Geodetic
-		int outepsgcode = 4326;//WGS84,Geodetic
+		
+		int inepsgcode = cCRS::epsgcode(inputdatumprojection);
+		if (inepsgcode < 0){
+			std::string msg = strprint("Invalid DatumProjection %s was specified\n", inputdatumprojection.c_str()) + _SRC_;
+			throw(std::runtime_error(msg));
+		}
 
+		int outepsgcode = cCRS::epsgcode("WGS84|GEODETIC");
 		transform(inepsgcode, x, y, outepsgcode, longitude, latitude);
 		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";
 		//savepoints(longitude, latitude, pfpathll);
@@ -752,6 +788,7 @@ public:
 			l.SetAttribute("version", "1");
 			l.SetAttribute("layerType", "CurtainImageLayer");
 			l.InsertEndChild(Element("DisplayName", basename()));
+			l.InsertEndChild(Element("Legend", colorbarfile_nod()));
 			
 			bool local = true;
 			std::string url = "http://www.ga.gov.au/apps/world-wind/tiles.jsp";
@@ -847,9 +884,6 @@ public:
 		return levels;
 	}
 	
-
-
-
 	Element getxmlpathelement(const std::vector<double>& longitude, const std::vector<double>& latitude)
 	{
 		Element p("Path");
@@ -913,9 +947,10 @@ int main(int argc, char** argv)
 		for (size_t i = 0; i < filelist.size(); i++){
 			std::printf("Processing file %s %3lu of %3lu\n", filelist[i].c_str(), i + 1, filelist.size());
 			cCurtainImageSection S(i, filelist.size());
-			S.getoptions(sectionblock);
+			S.getoptions(sectionblock);			
 			S.readdatafile(inputblock, filelist[i].c_str());
 			S.process();
+			if(i==0)S.createcolorbar();
 		}
 		double t2 = gettime();
 		printf("Done ... Elapsed time = %.2lf seconds\n", t2 - t1);

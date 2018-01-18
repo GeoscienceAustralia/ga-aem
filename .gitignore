@@ -2,11 +2,10 @@
 
 
 output/
-
-/bin/x64/Release/*.exp
-/bin/x64/Release/*.lib
-/bin/x64/Debug/*.exp
-/bin/x64/Debug/*.lib
+bin/x64/Release/*.exp 
+bin/x64/Release/*.lib 
+bin/x64/Debug/*.exp 
+bin/x64/Debug/*.lib 
 
 
 # Compiled Object files
