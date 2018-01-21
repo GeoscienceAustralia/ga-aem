@@ -13,6 +13,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <complex>
 
+#include "undefinedvalues.h"
 #include "general_utils.h"
 #include "file_utils.h"
 #include "lem.h"
@@ -852,8 +853,8 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 	bool wavformdefined = false;
 
 	if (wavformdefined == false){
-		std::string path = STM.getstringvalue("Transmitter.WaveformReceived.File");
-		if (isundefined(path) == false){
+		std::string path = STM.getstringvalue("Transmitter.WaveformReceived.File");		
+		if (isdefined(path)){
 			sFilePathParts fpp = getfilepathparts(systemdescriptorfile);
 			dmatrix wp = readwaveformfile(fpp.directory + path);
 			if (wp.size() > 0){
@@ -867,7 +868,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 
 	if (wavformdefined == false){
 		std::string path = STM.getstringvalue("Transmitter.WaveformCurrent.File");
-		if (isundefined(path) == false){
+		if (isdefined(path)){
 			sFilePathParts fpp = getfilepathparts(systemdescriptorfile);
 			dmatrix wp = readwaveformfile(fpp.directory + path);
 			if (wp.size() > 0){
@@ -908,7 +909,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 	initialise_windows();
 	
 	LEM.ModellingLoopRadius = STM.getdoublevalue("ForwardModelling.ModellingLoopRadius");
-	if (isundefined(LEM.ModellingLoopRadius)){
+	if (!isdefined(LEM.ModellingLoopRadius)){
 		LEM.ModellingLoopRadius = 0.0;
 	}
 

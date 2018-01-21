@@ -25,6 +25,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example_forward_model", "..
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbsfdem", "..\galeisbsfdem\galeisbsfdem.vcxproj", "{D255C3C7-D023-48E9-BEFB-89BD0E34E631}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2curtainimage", "..\ctlinedata2curtainimage\ctlinedata2curtainimage.vcxproj.vcxproj", "{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -83,6 +85,12 @@ Global
 		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Release|x64.ActiveCfg = Release|x64
 		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Release|x64.Build.0 = Release|x64
 		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Release-nompi|x64.ActiveCfg = Release|x64
+		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x64.ActiveCfg = Debug|x64
+		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x64.Build.0 = Debug|x64
+		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|x64.ActiveCfg = Release|x64
+		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|x64.Build.0 = Release|x64
+		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release-nompi|x64.ActiveCfg = Release|x64
+		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release-nompi|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

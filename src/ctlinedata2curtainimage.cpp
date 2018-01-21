@@ -6,114 +6,66 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include <windows.h>
-#include <gdiplus.h>
-#include <GdiPlusImageCodec.h>
-using namespace Gdiplus;
-#pragma comment (lib,"Gdiplus.lib")
-
 #include <math.h>
 #include <algorithm>
 #include <numeric>
 #include <vector>
 #include <cstring>
+
+
+
 #include "general_types.h"
 #include "general_utils.h"
+#include "general_types.h"
 #include "file_utils.h"
 #include "blocklanguage.h"
 #include "geometry3d.h"
-#include "colormap.h"
-#include "RamerDouglasPeucker.h"
 #include "crs.h"
 #include "gdal_utils.h"
+#include "stretch.h"
+#include "colormap.h"
+#include "gdiplus_utils.h"
+#include "stopwatch.h"
+#include "filesplitter.h"
 #include "asciicolumnfile.h"
+#include "ctlinedata.h"
 
 #include "ticpp.h"
 using namespace ticpp;
 
+#include "RamerDouglasPeucker.h"
 using namespace RDP;
 
-
 #define VERSION "1.0"
-
-int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
-{
-	UINT  num = 0;          // number of image encoders
-	UINT  size = 0;         // size of the image encoder array in bytes
-
-	ImageCodecInfo* pImageCodecInfo = NULL;
-
-	GetImageEncodersSize(&num, &size);
-	if (size == 0)
-		return -1;  // Failure
-
-	pImageCodecInfo = (ImageCodecInfo*)(malloc(size));
-	if (pImageCodecInfo == NULL)
-		return -1;  // Failure
-
-	GetImageEncoders(num, size, pImageCodecInfo);
-
-	for (UINT j = 0; j < num; ++j)
-	{
-		if (wcscmp(pImageCodecInfo[j].MimeType, format) == 0)
-		{
-			*pClsid = pImageCodecInfo[j].Clsid;
-			free(pImageCodecInfo);
-			return j;  // Success
-		}
-	}
-
-	free(pImageCodecInfo);
-	return -1;  // Failure
-}
 
 class cCurtainImageSection{
 
 private:
 
-	cAsciiColumnFile A;
-	size_t seq_n;
-	size_t seq_total;
+	const cCTLineData& D;
+	size_t sequence_number = 0;
 
-	std::string inputdatumprojection;
-	static bool first;
 	Bitmap* pBitmap;
 	int nhpixels;
 	int nvpixels;
 	double hlength;
 	double vlength;
-	double h0,h1,dh;
-	double v0,v1,dv;
-	
+	double h0, h1, dh;
+	double v0, v1, dv;
+
 	double gratdiv;
-	
+
 	std::string outdir;
 	std::string prefix;
 	std::string suffix;
 
-	int linenumber;
-	int nlayers;
-	int nsamples;
-	
-	double LowClip;
-	double HighClip;
-	bool   Log10Stretch;
 	cColorMap cmap;
-	bool drawcbar;
+	cStretch stretch;
 	std::vector<double> cbarticks;
-	
+
 	bool autozsectiontop;
-	bool autozsectionbot;	
+	bool autozsectionbot;
 
-	std::vector<double> x;
-	std::vector<double> y;
-	std::vector<double> e;
-	std::vector<double> linedistance;
-	std::vector<std::vector<double>> c;
-	std::vector<std::vector<double>> z;
-
-	std::vector<std::vector<double>> cp10;
-	std::vector<std::vector<double>> cp90;
 	bool   spreadfade;
 	double spreadfadelowclip;
 	double spreadfadehighclip;
@@ -121,19 +73,22 @@ private:
 	double highspreadfade;
 
 	double geometrytolerance;
-	int tilesize;
+	int    tilesize;
 	std::string datasetname;
 	std::string datacachename;
 
 public:
-	
-	cCurtainImageSection(const size_t _seq_n, const size_t _seq_total)
+
+	cCurtainImageSection(const cCTLineData& _D) : D(_D)
 	{
-		seq_n = _seq_n;
-		seq_total = _seq_total;
+
 	}
 
-	void getoptions(cBlock b){
+	void set_sequence_number(const size_t& seqn){
+		sequence_number = seqn;
+	}
+
+	void getoptions(const cBlock& b){
 		
 		spreadfade = b.getboolvalue("SpreadFade");
 		if(spreadfade){
@@ -144,12 +99,12 @@ public:
 		}
 
 		v1 = b.getdoublevalue("ElevationTop");
-		if(isundefined(v1)) autozsectiontop = true;					
-		else autozsectiontop = false;
+		if(isdefined(v1)) autozsectiontop = false;					
+		else autozsectiontop = true;
 		
 		v0 = b.getdoublevalue("ElevationBottom");
-		if (isundefined(v0)) autozsectionbot = true;			
-		else autozsectionbot = false;				
+		if (isdefined(v0)) autozsectionbot = false;			
+		else autozsectionbot = true;
 
 		outdir = b.getstringvalue("OutDir");
 		addtrailingseparator(outdir);
@@ -157,22 +112,21 @@ public:
 		prefix = b.getstringvalue("Prefix");
 		suffix = b.getstringvalue("Suffix");
 
-		dh = b.getdoublevalue("HorizontalResolution");		
-		dv = b.getdoublevalue("VerticalResolution");				
-
-		std::string cmapname = b.getstringvalue("ColourMap");
-		if (exists(cmapname)) cmap = cColorMap(cmapname, COLORMAPTYPE_ERMLUT);
-		else cmap = cColorMap(cmapname, COLORMAPTYPE_BUILTIN);
-		
-		drawcbar  = b.getboolvalue("ColourBar");
-		if(drawcbar){
-			cbarticks = b.getdoublevector("ColourBarTicks");
+		if (!b.getvalue("HorizontalResolution", dh)){
+			std::string msg("HorizontalResolution must be defined\n");
+			throw(std::runtime_error(msg));
 		}
 
-		LowClip  = b.getdoublevalue("LowClip");
-		HighClip = b.getdoublevalue("HighClip");
-		Log10Stretch  = b.getboolvalue("Log10Stretch");
+		if (!b.getvalue("VerticalResolution", dv)){		
+			std::string msg("VerticalResolution must be defined\n");
+			throw(std::runtime_error(msg));
+		}
 
+		cBlock cs = b.findblock("ColourStretch");
+		cmap = cColorMap(cs);
+		stretch = cStretch(cs);
+		cbarticks = cs.getdoublevector("ColourBarTicks");
+		
 		gratdiv = b.getdoublevalue("ElevationGridDivision");
 
 		geometrytolerance = b.getdoublevalue("GeometryTolerance");
@@ -180,191 +134,7 @@ public:
 		datasetname   = b.getstringvalue("DatasetName");
 		datacachename = b.getstringvalue("DataCacheName");
 	}
-
-	int getcolumn(const cBlock& b, const std::string &token){
-		std::string s = b.getstringvalue(token);
-		int col;
-		int status = sscanf(s.c_str(), "Column %d", &col);		
-		if (status = 1)return col-1;
-		else{
-			size_t findex = A.fieldindexbyname(s);
-			return A.fields[findex].startcolumn;
-		}
-	}
-
-	void readdatafile(const cBlock& input, const std::string filename)
-	{
-		A = cAsciiColumnFile(filename);
-		std::string dfnfile = extractfiledirectory(filename);
-		dfnfile += "inversion.output.dfn";
-		A.parse_aseggdf2_header(dfnfile);
-		
-		inputdatumprojection = input.getstringvalue("DatumProjection");
-
-		int subsample = input.getintvalue("Subsample");
-		if (isundefined(subsample))subsample = 1;
-				
-		int lcol = getcolumn(input, "Line");
-		int xcol = getcolumn(input, "Easting");
-		int ycol = getcolumn(input, "Northing");
-		int ecol = getcolumn(input, "Elevation");
-
-		bool isresistivity = false;
-		int crccol1;
-		crccol1 = getcolumn(input, "Conductivity");
-		if (crccol1 >= 0){
-			crccol1 = getcolumn(input, "Resistivity");			
-			isresistivity = true;
-		}
-		else{
-			int crccol1 = getcolumn(input, "Conductivity");
-		}
-		
-
-		std::string cp10str = input.getstringvalue("Conductivity_p10");
-		std::string cp90str = input.getstringvalue("Conductivity_p90");								
-
-		double cscale=1.0;
-		std::string cunits = input.getstringvalue("InputConductivityUnits");
-		if(isundefined(cunits)){
-			cscale = 1.0;
-		}
-		else if(strcasecmp(cunits,"S/m") == 0){
-			cscale = 1.0;
-		}
-		else if(strcasecmp(cunits,"mS/m") == 0){
-			cscale = 0.001;
-		}		
-		else{
-			message("Unknown InputConductivityUnits %s\n",cunits.c_str());			
-		}
-
-		
-					
-		//int crcol1, crcol2, tcol1, tcol2;
-		//int cp10col1, cp10col2;
-		//int cp90col1, cp90col2;
-		
-		sscanf(crstr.c_str(), "Column %d-%d", &crcol1, &crcol2); crcol1--; crcol2--;
-		nlayers = crcol2 - crcol1 + 1;
-
-		if(spreadfade){
-			sscanf(cp10str.c_str(), "Column %d-%d", &cp10col1, &cp10col2); cp10col1--; cp10col2--;
-			sscanf(cp90str.c_str(), "Column %d-%d", &cp90col1, &cp90col2); cp90col1--; cp90col2--;
-		}
-
-		bool isconstantthickness = false;
-		std::vector<double> constantthickness;
-		std::string tstr = input.getstringvalue("Thickness");
-		if(sscanf(tstr.c_str(), "Column %d-%d", &tcol1, &tcol2) == 2){
-			tcol1--; tcol2--;	
-			isconstantthickness = false;
-		}
-		else{			
-			constantthickness = input.getdoublevector("Thickness");
-			tcol1 = 0; tcol2 = 0;
-			isconstantthickness = true;
-			if(constantthickness.size() == 0){
-				errormessage("Thickness not set\n");
-			}
-			else if(constantthickness.size() > 1 && constantthickness.size() < nlayers - 1){
-				errormessage("Thickness not set correctly\n");
-			}
-			else if(constantthickness.size() == 1){
-				constantthickness = std::vector<double>(nlayers-1, constantthickness[0]);
-			}
-			else{
-				//all good
-			}
-
-		}
-
-		FILE* fp = fileopen(filename,"r");
-		std::string str;
-		std::vector<std::vector<double>> M;
-
-		int k=0;
-		while (filegetline(fp, str)){			
-			if(k%subsample == 0){
-				M.push_back(getdoublevector(str.c_str(), " "));
-			}	
-			k++;
-		}
-		fclose(fp);
-
-
-		nsamples   = (int)M.size();
-		linenumber = (int)M[0][lcol];		
-
-		x.resize(nsamples);
-		y.resize(nsamples);
-		e.resize(nsamples);
-		z.resize(nsamples);
-		c.resize(nsamples);
-		if(spreadfade){
-			cp10.resize(nsamples);
-			cp90.resize(nsamples);		
-		}
-		for (int si = 0; si < nsamples; si++){
-			x[si] = M[si][xcol];
-			y[si] = M[si][ycol];
-			e[si] = M[si][ecol];
-
-			c[si].resize(nlayers);
-			for (int li = 0; li < nlayers; li++){
-				c[si][li] = M[si][crcol1 + li];				
-				if(c[si][li] > 0.0){
-					if(isresistivity)c[si][li] = 1.0 / c[si][li];
-					c[si][li] *= cscale;
-				}
-			}
-
-			if(spreadfade){
-				cp10[si].resize(nlayers);
-				for (int li = 0; li < nlayers; li++){
-					cp10[si][li] = M[si][cp10col1 + li];
-					if(cp10[si][li] > 0.0){
-						cp10[si][li] *= cscale;
-					}
-				}
-
-				cp90[si].resize(nlayers);
-				for (int li = 0; li < nlayers; li++){
-					cp90[si][li] = M[si][cp90col1 + li];
-					if(cp90[si][li] > 0.0){
-						cp90[si][li] *= cscale;
-					}
-				}
-			}
-
-			z[si].resize(nlayers+1);			
-			z[si][0] = e[si];
-			for (int li = 0; li < nlayers; li++){				
-
-				double t;
-				if (li < nlayers - 1){
-					if (isconstantthickness == true){
-						t = constantthickness[li];
-					}
-					else{
-						t = M[si][tcol1 + li];
-					}
-				}		
-				else{
-					if (isconstantthickness == true){
-						t = constantthickness[li-1];
-					}
-					else{
-						t = M[si][tcol1 + li - 1];
-					}					
-				}	
-
-				z[si][li + 1] = z[si][li] - t;
-
-			}
-		}		
-	}
-
+	
 	void process(){					
 		calculateextents();
 		createbitmap();
@@ -373,21 +143,15 @@ public:
 		//fixtransparenttext();
 		saveimage();
 		savegeometry();		
-		saveribbontilerbatchcommand();
+		//saveribbontilerbatchcommand();
 		deletebitmap();
 
 		
 	}
 
 	void calculateextents()
-	{								
-		linedistance.resize(x.size());
-		linedistance[0] = 0.0;
-		for (size_t i = 1; i < x.size(); i++){
-			linedistance[i] = linedistance[i - 1] + distance(x[i - 1], y[i - 1], x[i], y[i]);
-		}
-		
-		hlength = linedistance.back();
+	{												
+		hlength = D.linedistance.back();
 		hlength = roundupnearest(hlength,dh);	
 		h0 = 0.0;
 		h1 = hlength;
@@ -395,9 +159,9 @@ public:
 		
 		double zmin =  DBL_MAX;
 		double zmax = -DBL_MAX;
-		for(int si=0; si<nsamples; si++){
-			if(z[si][nlayers] < zmin)zmin = z[si][nlayers];
-			if(z[si][0]       > zmax)zmax = z[si][0];
+		for(int si=0; si<D.nsamples; si++){
+			if(D.z[si][D.nlayers] < zmin)zmin = D.z[si][D.nlayers];
+			if (D.z[si][0]       > zmax)zmax = D.z[si][0];
 		}
 
 		if(autozsectionbot==true) v0 = zmin;
@@ -462,7 +226,7 @@ public:
 		for (int i = 0; i <= nhpixels; i++){
 			double hp = h0 + (double)i*dh;
 
-			while(mini < linedistance.size()-1 && std::abs(linedistance[mini] - hp) > std::abs(linedistance[mini + 1] - hp)){
+			while (mini < D.linedistance.size() - 1 && std::abs(D.linedistance[mini] - hp) > std::abs(D.linedistance[mini + 1] - hp)){
 				mini++;
 			}
 			
@@ -470,26 +234,23 @@ public:
 				pBitmap->SetPixel(i,j,BkgColor);
 
 				double zp = v1 - (double)j*dv;
-				if(zp>e[mini]){
+				if(zp>D.e[mini]){
 					pBitmap->SetPixel(i,j,AirColor);					
 				}
 				else{					
-					for(int li=0; li<nlayers; li++){
-						if(zp < z[mini][li] && zp >= z[mini][li+1]){
-							double conductivity = c[mini][li];							
+					for (int li = 0; li<D.nlayers; li++){
+						if (zp < D.z[mini][li] && zp >= D.z[mini][li + 1]){
+							double conductivity = D.c[mini][li];
 							if(conductivity < 0.0){
 								pBitmap->SetPixel(i,j,NullsColor);
 							}
 							else{							
-								int ind;
-								if(Log10Stretch) ind = log10stretch(conductivity,LowClip,HighClip);							
-								else ind = linearstretch(conductivity,LowClip,HighClip);
-
+								int ind = stretch.index(conductivity);
 								Color clr(255,cmap.r[ind],cmap.g[ind],cmap.b[ind]);
 
 								if(spreadfade){
-									double conductivity_p10 = cp10[mini][li];
-									double conductivity_p90 = cp90[mini][li];
+									double conductivity_p10 = D.cp10[mini][li];
+									double conductivity_p90 = D.cp90[mini][li];
 									double spread = log10(conductivity_p90) - log10(conductivity_p10);
 									double fade   = fadevalue(spread);
 									fadecolor(clr,fade);
@@ -546,93 +307,10 @@ public:
 	}
 
 	void createcolorbar(){
-
 		makedirectorydeep(extractfiledirectory(colorbarfile()));
-		
-		REAL fontsize = 12;
-		FontStyle fontstyle = FontStyleBold;
-		Font font(L"Arial", fontsize, fontstyle, UnitPoint);
-		StringFormat textformat;
-		textformat.SetAlignment(StringAlignmentNear);
-		textformat.SetLineAlignment(StringAlignmentCenter);
-
-		REAL dpi    = 300;
-		int width  = 400;
-		int height = 700;
-		int margin = 40;
-		int ph1    = 64+margin;
-		int ph2    = ph1+128;
-		int pvtop  = margin;
-		int pvbot  = height - margin;
-		int ticklength = 10;
-
-		Bitmap* bm = new Bitmap(width, height, PixelFormat32bppARGB);		
-		bm->SetResolution(dpi, dpi);
-		for (int i = 0; i<width; i++){
-			for (int j = 0; j<height; j++){
-				bm->SetPixel(i, j, Color(255, 255, 255, 255));
-			}
-		}
-
-		Pen blackpen(Color::Black, 3);
-		SolidBrush blackbrush(Color::Black);
-
-		Graphics gr(bm);		
-		gr.SetPageUnit(UnitPixel);		
-		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);		
-		//SizeF layoutsize(32767, 32767);
-		//SizeF textsize;
-		//gr.MeasureString(L"0.0001", -1, &font, layoutsize, &textformat, &textsize);
-		
-		for (int j = pvtop; j <= pvbot; j++){			
-			int ind = 255*(j - pvbot) / (pvtop - pvbot);
-			for (int i = ph1; i <= ph2; i++){
-				bm->SetPixel(i, j, Color(255, cmap.r[ind], cmap.g[ind], cmap.b[ind]));
-			}
-		}
-		gr.DrawRectangle(&blackpen, ph1, pvtop, ph2-ph1, pvbot-pvtop);
-
-		for (int i = 0; i<cbarticks.size(); i++){			
-			if(cbarticks[i] < LowClip)continue;
-			if(cbarticks[i] > HighClip)continue;
-
-			int tickv;
-			if (Log10Stretch){
-				int ind = log10stretch(cbarticks[i], LowClip, HighClip);
-				tickv = pvbot + ind*(pvtop - pvbot) / 255;
-			}
-			else{
-				int ind = linearstretch(cbarticks[i], LowClip, HighClip);
-				tickv = pvbot + ind*(pvtop - pvbot) / 255;
-			}
-
-			wchar_t s[20];
-			swprintf(s, 20,L"%5.3lf", cbarticks[i]);
-
-			PointF p;
-			p.X = (REAL)ph2+3;
-			p.Y = (REAL)tickv;
-			gr.DrawString(s, -1, &font, p, &textformat, &blackbrush);
-			gr.DrawLine(&blackpen,ph2-ticklength,tickv,ph2+ticklength,tickv);
-		}		
-
-		PointF p;
-		p.X = (REAL)ph1-4;
-		p.Y = (REAL)(pvtop + pvbot) / 2;
-
-		textformat.SetAlignment(StringAlignmentCenter);
-		textformat.SetLineAlignment(StringAlignmentFar);
-		gr.TranslateTransform(p.X,p.Y);
-		gr.RotateTransform(-90);		
-		gr.DrawString(L"Conductivity (S/m)", -1, &font, PointF(0,0), &textformat, &blackbrush);
-		
-		wchar_t wcimagepath[500];
-		size_t len;
-		mbstowcs_s(&len, wcimagepath, 500, colorbarfile().c_str(), _TRUNCATE);
-		CLSID jpgClsid;
-		GetEncoderClsid(L"image/jpeg", &jpgClsid);
-		Status result = bm->Save(wcimagepath, &jpgClsid, NULL);
-
+		std::string title = "Conductivity (S/m)";
+		Bitmap* bm = cGDIplusHelper::colorbar(cmap, stretch, title, cbarticks);
+		cGDIplusHelper::saveimage(bm, colorbarfile());
 		delete bm;
 	}
 
@@ -651,7 +329,7 @@ public:
 	}
 
 	std::string basename(){
-		std::string bn = prefix + strprint("%d", linenumber) + suffix;
+		std::string bn = prefix + strprint("%d", D.linenumber) + suffix;
 		return bn;
 	}
 
@@ -695,17 +373,10 @@ public:
 		return s;
 	}
 	
-	void saveimage(){		
-		makedirectorydeep(extractfiledirectory(jpegfile()));
-		wchar_t wcimagepath[500];
-		size_t len;
-		mbstowcs_s(&len, wcimagepath, 500, jpegfile().c_str(), _TRUNCATE);
-
-		CLSID jpgClsid;
-		GetEncoderClsid(L"image/jpeg", &jpgClsid);
-		Status result = pBitmap->Save(wcimagepath, &jpgClsid, NULL);					
+	void saveimage(){
+		cGDIplusHelper::saveimage(pBitmap, jpegfile());
 	}
-
+	
 	void savegeometry(){
 		
 		//std::string txtpath = outdir + basename() + ".txt";
@@ -718,10 +389,10 @@ public:
 		//fprintf(fp, "nvpixels %d\n", nvpixels);				
 		//fclose(fp);
 
-		std::vector<RDP::Point> pl(x.size());
+		std::vector<RDP::Point> pl(D.x.size());
 		std::vector<RDP::Point> plout;
-		for (size_t i = 0; i < x.size(); i++){
-			pl[i]=RDP::Point(x[i],y[i]);
+		for (size_t i = 0; i < D.x.size(); i++){
+			pl[i] = RDP::Point(D.x[i], D.y[i]);
 		}
 		
 		RDP::RamerDouglasPeucker(pl, geometrytolerance, plout);
@@ -739,11 +410,10 @@ public:
 			x[i] = plout[i].first;
 			y[i] = plout[i].second;
 		}
-
 		
-		int inepsgcode = cCRS::epsgcode(inputdatumprojection);
+		int inepsgcode = cCRS::epsgcode(D.inputdatumprojection);
 		if (inepsgcode < 0){
-			std::string msg = strprint("Invalid DatumProjection %s was specified\n", inputdatumprojection.c_str()) + _SRC_;
+			std::string msg = strprint("Invalid DatumProjection %s was specified\n", D.inputdatumprojection.c_str()) + _SRC_;
 			throw(std::runtime_error(msg));
 		}
 
@@ -896,14 +566,15 @@ public:
 		}
 		return p;
 	}
-
+	
 	void saveribbontilerbatchcommand()
 	{				
 		std::string mode = "a";
-		if (seq_n == 0) mode = "w";
+		if (sequence_number == 0) mode = "w";
 		FILE* fp = fileopen(ribbontilerbatchfilepath(), mode);
 		std::string s;
-		if (seq_n == 0) s += strprint("@echo off\n\n");		
+		if (sequence_number == 0) s += strprint("@echo off\n\n");
+
 		s += strprint("call ribbon.bat");
 		s += strprint(" -tilesize %d",tilesize);
 		//s += strprint(" -copySource");
@@ -911,17 +582,16 @@ public:
 		s += strprint(" -source %s", jpegfile_nod().c_str());
 		s += strprint(" -output %s", tilesetdir_nod().c_str());
 		s += strprint("\n");		
-		if (seq_n == seq_total-1) s += strprint("\npause\n");
+		//if (seq_n == seq_total-1) s += strprint("\npause\n");
 		fprintf(fp, s.c_str());		
-	}
+	}	
 };
 
 int main(int argc, char** argv)
-{	
-	try{				
-		GdiplusStartupInput gdiplusStartupInput;
-		ULONG_PTR gdiplusToken;
-		GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+{		
+	ULONG_PTR token;
+	try{	
+		token = cGDIplusHelper::start();
 
 		if (argc >= 2){
 			message("Executing %s %s\n", argv[0], argv[1]);
@@ -938,29 +608,48 @@ int main(int argc, char** argv)
 		}
 
 		cBlock b(argv[1]);
-		cBlock inputblock = b.findblock("Input");
-		cBlock sectionblock = b.findblock("Section");
-		std::string infiles = inputblock.getstringvalue("DataFiles");
-
+		cBlock ib = b.findblock("Input");
+		cBlock sb = b.findblock("Section");
+		std::string infiles = ib.getstringvalue("DataFiles");
 		std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
-		double t1 = gettime();
+		cStopWatch stopwatch;
+		size_t sequence_number = 0;
 		for (size_t i = 0; i < filelist.size(); i++){
 			std::printf("Processing file %s %3lu of %3lu\n", filelist[i].c_str(), i + 1, filelist.size());
-			cCurtainImageSection S(i, filelist.size());
-			S.getoptions(sectionblock);			
-			S.readdatafile(inputblock, filelist[i].c_str());
-			S.process();
-			if(i==0)S.createcolorbar();
-		}
-		double t2 = gettime();
-		printf("Done ... Elapsed time = %.2lf seconds\n", t2 - t1);
-		GdiplusShutdown(gdiplusToken);
+
+			std::string datafile = filelist[i];
+			std::string dfnfile = extractfiledirectory(datafile);
+			dfnfile += "inversion.output.dfn";
+
+			cCTLineData dummy(ib, dfnfile);
+			cRange<int> lcol = dummy.getcolumns("line");
+
+			cFileSplitter FS(datafile, 0, lcol.from);
+			std::vector<std::string> L;
+			while (FS.getnextgroup(L) > 0){				
+				cCTLineData D(ib, dfnfile);
+				D.load(L);
+				std::printf("Line %d\n", D.linenumber);
+				cCurtainImageSection C(D);
+				C.set_sequence_number(sequence_number);
+				C.getoptions(sb);
+				C.process();
+				if (sequence_number == 0) C.createcolorbar();
+			}
+		}		
+		printf("Done ... Elapsed time = %.3lf seconds\n", stopwatch.etimenow());
+#ifndef _DEBUG
+		prompttocontinue();
+#endif
+		cGDIplusHelper::stop(token);		
 	}
 	catch (ticpp::Exception& e){
 		std::cout << e.what();
+		cGDIplusHelper::stop(token);
 	}
 	catch (std::runtime_error& e){
 		std::cout << e.what();
+		cGDIplusHelper::stop(token);
 	}	
 	return 0;
 }

@@ -22,6 +22,7 @@ using namespace Gdiplus;
 #include "file_utils.h"
 #include "blocklanguage.h"
 #include "geometry3d.h"
+#include "stretch.h"
 
 #define VERSION "1.0"
 
@@ -216,7 +217,7 @@ public:
 
 
 		double v = b.getdoublevalue("ElevationTop");
-		if(isundefined(v)){
+		if(!isdefined(v)){
 			autozsectiontop = true;
 			zsectiontop = v;
 		}
@@ -226,7 +227,7 @@ public:
 		}
 
 		v = b.getdoublevalue("ElevationBottom");
-		if (isundefined(v)){
+		if (!isdefined(v)){
 			autozsectionbot = true;
 			zsectionbot = v;
 		}
@@ -265,7 +266,7 @@ public:
 	void readdatafile(const cBlock& input, const std::string filename)
 	{
 		int subsample = input.getintvalue("Subsample");
-		if (isundefined(subsample))subsample = 1;
+		if (!isdefined(subsample))subsample = 1;
 
 		std::string lstr = input.getstringvalue("Line");
 		std::string xstr = input.getstringvalue("Easting");
@@ -274,7 +275,7 @@ public:
 		
 		bool isresistivity = false;
 		std::string crstr = input.getstringvalue("Conductivity");		
-		if (isundefined(crstr)){
+		if (!isdefined(crstr)){
 			crstr = input.getstringvalue("Resistivity");
 			isresistivity = true;
 		}
@@ -284,7 +285,7 @@ public:
 
 		double cscale=1.0;
 		std::string cunits = input.getstringvalue("InputConductivityUnits");
-		if(isundefined(cunits)){
+		if(!isdefined(cunits)){
 			cscale = 1.0;
 		}
 		else if(strcasecmp(cunits,"S/m") == 0){
@@ -578,8 +579,8 @@ public:
 							}
 							else{							
 								int ind;
-								if(Log10Stretch) ind = log10stretch(conductivity,LowClip,HighClip);							
-								else ind = linearstretch(conductivity,LowClip,HighClip);
+								if(Log10Stretch) ind = cStretch::log10stretch(conductivity,LowClip,HighClip);
+								else ind = cStretch::linearstretch(conductivity, LowClip, HighClip);
 
 								Color clr(255,m_cmap.r[ind],m_cmap.g[ind],m_cmap.b[ind]);
 
@@ -683,11 +684,11 @@ public:
 
 			int tickv;
 			if (Log10Stretch){
-				int ind = log10stretch(m_cbarticks[i], LowClip, HighClip);
+				int ind = cStretch::log10stretch(m_cbarticks[i], LowClip, HighClip);
 				tickv = pvbot + ind*(pvtop - pvbot) / 255;
 			}
 			else{
-				int ind = linearstretch(m_cbarticks[i], LowClip, HighClip);
+				int ind = cStretch::linearstretch(m_cbarticks[i], LowClip, HighClip);
 				tickv = pvbot + ind*(pvtop - pvbot) / 255;
 			}
 

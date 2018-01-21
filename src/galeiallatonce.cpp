@@ -79,7 +79,7 @@ public:
 
 		id = _id;
 		def = b.getstringvalue(_id);
-		if (isundefined(def)){
+		if (!isdefined(def)){
 			nvals = 0;
 			defined = false;
 			return;
@@ -519,7 +519,7 @@ public:
 		AlphaR = b.getdoublevalue("AlphaReferenceModel");
 
 		std::string sm = b.getstringvalue("VerticalSmoothnessMethod");
-		if (isundefined(sm)){
+		if (!isdefined(sm)){
 			VerticalSmoothnessMethod = SM_2ND_DERIVATIVE;
 		}
 		else if (strcasecmp(sm, "Minimise1stDerivatives") == 0){
