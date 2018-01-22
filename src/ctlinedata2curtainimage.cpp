@@ -42,9 +42,8 @@ class cCurtainImageSection{
 
 private:
 
-	const cCTLineData& D;
+	const cCTLineData& D;	
 	size_t sequence_number = 0;
-
 	Bitmap* pBitmap;
 	int nhpixels;
 	int nvpixels;
@@ -78,6 +77,8 @@ private:
 	std::string datacachename;
 
 public:
+	
+	
 
 	cCurtainImageSection(const cCTLineData& _D) : D(_D)
 	{
@@ -123,8 +124,8 @@ public:
 		}
 
 		cBlock cs = b.findblock("ColourStretch");
-		cmap = cColorMap(cs);
-		stretch = cStretch(cs);
+		cmap      = cColorMap(cs);
+		stretch   = cStretch(cs);
 		cbarticks = cs.getdoublevector("ColourBarTicks");
 		
 		gratdiv = b.getdoublevalue("ElevationGridDivision");
@@ -143,10 +144,8 @@ public:
 		//fixtransparenttext();
 		saveimage();
 		savegeometry();		
-		//saveribbontilerbatchcommand();
+		saveribbontilerbatchcommand();
 		deletebitmap();
-
-		
 	}
 
 	void calculateextents()
@@ -446,6 +445,14 @@ public:
 		makedirectorydeep(extractfiledirectory(xmlfile()));
 		try
 		{
+			//Levels
+			int nlevels = nlevels = levelCount(nhpixels, nvpixels, tilesize);
+			while(nlevels == 0){
+				//only to get around bug in the ribbon tiler java code
+				tilesize /= 2;
+				nlevels = levelCount(nhpixels, nvpixels, tilesize);				
+			} 
+
 			Element a, b;
 			Document doc(xmlfile());
 			std::string ver = "1.0";
@@ -493,8 +500,6 @@ public:
 			a.InsertEndChild(Element("ImageFormat", "image/jpg"));			
 			l.InsertEndChild(a);
 
-			//Levels				
-			int nlevels  = levelCount(nhpixels, nvpixels, tilesize);			
 			a = Element("NumLevels");
 			a.SetAttribute("count", nlevels);
 			a.SetAttribute("numEmpty", "0");
@@ -545,7 +550,7 @@ public:
 		double xCount = width / (double)tilesize;
 		double yCount = height / (double)tilesize;
 		int levels = 0;	
-		while (4 * xCount * yCount >= 1)
+		while (4.0 * xCount * yCount >= 1)
 		{
 			levels++;
 			xCount /= 2.0;
@@ -568,23 +573,30 @@ public:
 	}
 	
 	void saveribbontilerbatchcommand()
-	{				
-		std::string mode = "a";
-		if (sequence_number == 0) mode = "w";
-		FILE* fp = fileopen(ribbontilerbatchfilepath(), mode);
+	{						
+		std::ios_base::openmode mode = std::ios::app;
+		if (sequence_number == 0) mode = std::ios::trunc;
+		std::ofstream file(ribbontilerbatchfilepath().c_str(), mode);
+		
 		std::string s;
 		if (sequence_number == 0) s += strprint("@echo off\n\n");
-
+		
 		s += strprint("call ribbon.bat");
 		s += strprint(" -tilesize %d",tilesize);
 		//s += strprint(" -copySource");
 		s += strprint(" -noLayerDef");
 		s += strprint(" -source %s", jpegfile_nod().c_str());
 		s += strprint(" -output %s", tilesetdir_nod().c_str());
-		s += strprint("\n");		
-		//if (seq_n == seq_total-1) s += strprint("\npause\n");
-		fprintf(fp, s.c_str());		
-	}	
+		s += strprint("\n");				
+		file << s.c_str();		
+	}		
+
+	static void appendpause(const std::string filename)
+	{
+		std::ios_base::openmode mode = std::ios::app;		
+		std::ofstream file(filename, mode);		
+		file << "\npause\n";
+	}
 };
 
 int main(int argc, char** argv)
@@ -614,6 +626,7 @@ int main(int argc, char** argv)
 		std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
 		cStopWatch stopwatch;
 		size_t sequence_number = 0;
+		std::string tilerbatchfile;
 		for (size_t i = 0; i < filelist.size(); i++){
 			std::printf("Processing file %s %3lu of %3lu\n", filelist[i].c_str(), i + 1, filelist.size());
 
@@ -630,17 +643,18 @@ int main(int argc, char** argv)
 				cCTLineData D(ib, dfnfile);
 				D.load(L);
 				std::printf("Line %d\n", D.linenumber);
+
 				cCurtainImageSection C(D);
-				C.set_sequence_number(sequence_number);
+				C.set_sequence_number(sequence_number);				
 				C.getoptions(sb);
-				C.process();
+				C.process();				
 				if (sequence_number == 0) C.createcolorbar();
+				sequence_number++;
+				tilerbatchfile = C.ribbontilerbatchfilepath();
 			}
-		}		
-		printf("Done ... Elapsed time = %.3lf seconds\n", stopwatch.etimenow());
-#ifndef _DEBUG
-		prompttocontinue();
-#endif
+		}
+		cCurtainImageSection::appendpause(tilerbatchfile);		
+		printf("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
 		cGDIplusHelper::stop(token);		
 	}
 	catch (ticpp::Exception& e){
