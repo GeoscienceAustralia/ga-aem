@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{BC29E294-2FFF-45E2-BDF1-6D98691142D6}</ProjectGuid>
+    <ProjectGuid>{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ctlinedata2georefimage</RootNamespace>
     <ProjectName>ctlinedata2curtainimage</ProjectName>
