@@ -43,7 +43,7 @@ bool rjMcMC1DSampler::isreportable(size_t si)
 }
 void rjMcMC1DSampler::printstats(size_t ci, size_t si, size_t np, double nmf)
 {
-	printf("ci=%4zu si=%7zu np=%2zu nmf=%10g vc=%5.2lf m=%5.2lf b=%5.2lf d=%5.2lf n=%5.2lf\n", ci, si, np, nmf, ar_valuechange(), ar_move(), ar_birth(), ar_death(), ar_nuisancechange());
+	printf("ci=%4lu si=%7lu np=%2lu nmf=%10g vc=%5.2lf m=%5.2lf b=%5.2lf d=%5.2lf n=%5.2lf\n", ci, si, np, nmf, ar_valuechange(), ar_move(), ar_birth(), ar_death(), ar_nuisancechange());
 }
 size_t rjMcMC1DSampler::nnuisances()
 {
@@ -110,23 +110,23 @@ void rjMcMC1DSampler::writeheader(FILE* fp)
 	fprintf(fp, "End time %s\n", endtime.c_str());
 	fprintf(fp, "%lf sec sampling time \n", samplingtime);
 
-	fprintf(fp, "%zu nchains\n", nchains);
-	fprintf(fp, "%zu nsamples\n", nsamples);
-	fprintf(fp, "%zu nburnin\n", nburnin);
-	fprintf(fp, "%zu nnuisance\n", nnuisances());
+	fprintf(fp, "%lu nchains\n", nchains);
+	fprintf(fp, "%lu nsamples\n", nsamples);
+	fprintf(fp, "%lu nburnin\n", nburnin);
+	fprintf(fp, "%lu nnuisance\n", nnuisances());
 
-	fprintf(fp, "%zu nl_min\n", nl_min);
-	fprintf(fp, "%zu nl_max\n", nl_max);
+	fprintf(fp, "%lu nl_min\n", nl_min);
+	fprintf(fp, "%lu nl_max\n", nl_max);
 
 	fprintf(fp, "%s position parameterization\n", pparm.c_str());
 	fprintf(fp, "%lf pmin\n", 0.0);
 	fprintf(fp, "%lf pmax\n", pmax);
-	fprintf(fp, "%zu npcells\n", pmap.npbins());
+	fprintf(fp, "%lu npcells\n", pmap.npbins());
 
 	fprintf(fp, "%s value parameterization\n", vparm.c_str());
 	fprintf(fp, "%lf vmin\n", vmin);
 	fprintf(fp, "%lf vmax\n", vmax);
-	fprintf(fp, "%zu nvcells\n", pmap.nvbins());
+	fprintf(fp, "%lu nvcells\n", pmap.nvbins());
 
 	fprintf(fp, "%lf sd_value\n", sd_valuechange);
 	fprintf(fp, "%lf sd_move\n", sd_move);
@@ -141,7 +141,7 @@ void rjMcMC1DSampler::writeheader(FILE* fp)
 }
 void rjMcMC1DSampler::writemodel(FILE* fp, const rjMcMC1DModel& m)
 {
-	fprintf(fp, "%.6e %.6e %zu", m.misfit(), m.logppd(), m.nlayers());
+	fprintf(fp, "%.6e %.6e %lu", m.misfit(), m.logppd(), m.nlayers());
 	for (size_t li = 0; li < m.nlayers(); li++){
 		fprintf(fp, " %.6e", m.layers[li].ptop);
 	}

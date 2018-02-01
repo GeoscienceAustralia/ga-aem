@@ -134,7 +134,7 @@ void cSBSInverter::openlogfile()
 	rootmessage(fp_log, "Control file %s\n", Control.Filename.c_str());
 	rootmessage(fp_log, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
 	rootmessage(fp_log, "Working directory %s\n", getcurrentdirectory().c_str());
-	rootmessage(fp_log, "Processes=%zu\tRank=%zu\n", mSize, mRank);
+	rootmessage(fp_log, "Processes=%lu\tRank=%lu\n", mSize, mRank);
 	Control.write(fp_log);	
 }
 void cSBSInverter::parseoptions()
@@ -226,7 +226,7 @@ void cSBSInverter::initialisesystems()
 	SV.resize(nsystems);
 	for (size_t si = 0; si < nsystems; si++){
 		cTDEmSystemInfo& S = SV[si];		
-		std::string str = strprint("EMSystem%zu", si + 1);
+		std::string str = strprint("EMSystem%lu", si + 1);
 		cBlock  b = Control.findblock(str);
 
 		cTDEmSystem& T = S.T;
@@ -523,7 +523,7 @@ void cSBSInverter::initialise_sample()
 		dumptofile(ES, "earth_std.dat");
 
 		FILE* fp = fileopen(OO.DumpPath + "Id.dat", "w");
-		fprintf(fp, "%zu\t%zu\t%zu\t%zu\t%zu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
+		fprintf(fp, "%lu\t%lu\t%lu\t%lu\t%lu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
 		fclose(fp);
 	}
 }
@@ -782,11 +782,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 			const double maxcond = 50;
 			const double mincond = 1e-6;
 			if (vParam[pindex] + dm[pindex] > log10(maxcond)){
-				//printf("upper limit li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("upper limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = log10(maxcond) - vParam[pindex];
 			}
 			else if (vParam[pindex] + dm[pindex] < log10(mincond)){
-				//printf("lower limit li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("lower limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = log10(mincond) - vParam[pindex];
 			}
 		}
@@ -796,11 +796,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 		for (size_t li = 0; li<nlayers - 1; li++){
 			size_t pindex = li + tIndex;
 			if (dm[pindex] > 0.5){
-				//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = 0.5;
 			}
 			else if (dm[pindex] < -0.5){
-				//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = -0.5;
 			}
 		}
@@ -809,11 +809,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 	if (solve_tx_height){
 		size_t pindex = tx_heightIndex;
 		if (dm[pindex] > 0.5){
-			//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
+			//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
 			dm[pindex] = 0.5;
 		}
 		else if (dm[pindex] < -0.5){
-			//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
+			//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
 			dm[pindex] = -0.5;
 		}
 
@@ -1254,7 +1254,7 @@ void cSBSInverter::iterate()
 		dumptofile(GM, "geometry_inv.dat");
 		dumptofile(vPred, "predicted.dat");
 		FILE* fp = fileopen(OO.DumpPath + "iteration.dat", "w");
-		fprintf(fp, "Iteration\t%zu\n", LastIteration);
+		fprintf(fp, "Iteration\t%lu\n", LastIteration);
 		fprintf(fp, "TargetPhiD\t%lf\n", TargetPhiD);
 		fprintf(fp, "PhiD\t%lf\n", LastPhiD);
 		fprintf(fp, "Lambda\t%lf\n", LastLambda);
@@ -1493,7 +1493,7 @@ void cSBSInverter::printtrials(cTrialCache T)
 	printf("CurrentLambda = %lf CurrentPhid = %lf    Target = %lf\n", LastLambda, LastPhiD, T.target);
 	printf("N    Stepfactor       Lambda          Phid\n");
 	for (size_t i = 0; i<T.trial.size(); i++){
-		printf("%2zu %12g %12g %12g\n", T.trial[i].order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
+		printf("%2lu %12g %12g %12g\n", T.trial[i].order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
 	}
 	printf("\n");
 }
@@ -2037,14 +2037,14 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 		
 		bool nonnumeric = I.contains_non_numeric_characters(I.DataFileRecordString);
 		if (nonnumeric){
-			rootmessage(I.fp_log, "Skipping non-numeric record at line %zu of Input DataFile %s\n", I.DataFileRecord,I.DataFileName.c_str());
+			rootmessage(I.fp_log, "Skipping non-numeric record at line %lu of Input DataFile %s\n", I.DataFileRecord,I.DataFileName.c_str());
 			rootmessage(I.fp_log, "\n%s\n\n", I.DataFileRecordString.c_str());
 			continue;
 		}
 
 		if (I.OO.Dump){
 			FILE* fp = fileopen(I.OO.DumpPath + "record.dat", "w");
-			fprintf(fp, "Record\t%zu", I.DataFileRecord);
+			fprintf(fp, "Record\t%lu", I.DataFileRecord);
 			fclose(fp);
 		}
 

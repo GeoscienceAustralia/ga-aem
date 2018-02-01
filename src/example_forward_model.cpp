@@ -60,8 +60,8 @@ int skytem_example_ip()
 	FILE* fp = fopen(filename.c_str(), "w");
 	for (size_t i = 0; i < R.SZ.size(); i++){
 		double wct = 0.5*(S.WinSpec[i].TimeHigh + S.WinSpec[i].TimeLow);		
-		printf("%zu %10e %10e\n", i, wct, R.SZ[i]);
-		fprintf(fp, "%zu %10e %10e\n", i, wct, R.SZ[i]);
+		printf("%lu %10e %10e\n", i, wct, R.SZ[i]);
+		fprintf(fp, "%lu %10e %10e\n", i, wct, R.SZ[i]);
 	}
 	fclose(fp);
 	return 0;
@@ -108,11 +108,11 @@ int skytem_example()
 	std::vector<double> data = -1.0*HMR.SZ;
 
 	for (size_t i = 0; i < LMR.SZ.size(); i++){
-		printf("%zu %g\n", i, LMR.SZ[i]);
+		printf("%lu %g\n", i, LMR.SZ[i]);
 	}
 
 	for (size_t i = 0; i < HMR.SZ.size(); i++){
-		printf("%zu %g\n", i, HMR.SZ[i]);
+		printf("%lu %g\n", i, HMR.SZ[i]);
 	}
 	
 	return 0;

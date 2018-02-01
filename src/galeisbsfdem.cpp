@@ -962,7 +962,7 @@ void FDEmSampleInverter::invert()
 {
 	if (Dump){
 		FILE* fp = fileopen(DumpPath + "record.dat", "w");
-		fprintf(fp, "Record\t%zu", DataFileRecord);
+		fprintf(fp, "Record\t%lu", DataFileRecord);
 		fclose(fp);
 	}
 
@@ -973,8 +973,8 @@ void FDEmSampleInverter::invert()
 	double t2 = gettime();
 
 	double etime = t2 - t1;
-	message(fp_log,"Rec %6zu\t %3zu\t %5zu\t %10lf ...",DataFileRecord,Id.flightnumber,Id.linenumber,Id.fidnumber);
-	message(fp_log,"Its=%3zu\tPhiD=%6.2lf\t%s time=%.1lfs\n",LastIteration,LastPhiD,TerminationReason.c_str(),etime);
+	message(fp_log,"Rec %6lu\t %3lu\t %5lu\t %10lf ...",DataFileRecord,Id.flightnumber,Id.linenumber,Id.fidnumber);
+	message(fp_log,"Its=%3lu\tPhiD=%6.2lf\t%s time=%.1lfs\n",LastIteration,LastPhiD,TerminationReason.c_str(),etime);
 }
 void FDEmSampleInverter::iterate()
 {				

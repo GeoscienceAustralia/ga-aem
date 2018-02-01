@@ -300,7 +300,7 @@ public:
 			int ty = wv2iy(zg);
 			if(ty > nvpixels)continue;
 			if(ty-textsize.Height < 0)continue;	
-			PointF txpos((REAL)tx,(REAL)ty);
+			PointF txpos((Gdiplus::REAL)tx, (Gdiplus::REAL)ty);
 			gr.DrawString(s, -1, &font, txpos, &textformat, &blackbrush);
 		}		    				
 	}

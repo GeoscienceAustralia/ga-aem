@@ -456,7 +456,7 @@ void rjmcmc1dTDEmInverter::set_nuisance()
 
 		if (strncasecmp(s, "Column", 6) == 0){
 			size_t col;
-			sscanf(ninitial[i].c_str(), "Column %zu", &col);
+			sscanf(ninitial[i].c_str(), "Column %lu", &col);
 			col = col - 1;//referenced from 1 not 0
 			double v;
 			sscanf(CurrentRecordFields[col].c_str(), "%lf", &v);
@@ -464,7 +464,7 @@ void rjmcmc1dTDEmInverter::set_nuisance()
 		}
 		else if (strncasecmp(s, "-Column", 7) == 0){
 			size_t col;
-			sscanf(ninitial[i].c_str(), "-Column %zu", &col);
+			sscanf(ninitial[i].c_str(), "-Column %lu", &col);
 			col = col - 1;//referenced from 1 not 0
 			double v;
 			sscanf(CurrentRecordFields[col].c_str(), "%lf", &v);
