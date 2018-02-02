@@ -55,7 +55,7 @@ class cTrialCache{
 	}
 
 	size_t maxphidindex(){
-		size_t ind=0;		
+		size_t ind=0;
 		for(size_t k=1; k<trial.size(); ++k){			
 			if( trial[k].phid > trial[ind].phid){
 				ind=k;

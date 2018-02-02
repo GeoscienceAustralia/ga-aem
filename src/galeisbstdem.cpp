@@ -127,7 +127,7 @@ void cSBSInverter::loadcontrolfile(const std::string filename)
 	Outputrecord = 1;
 }
 void cSBSInverter::openlogfile()
-{		
+{			
 	rootmessage("Opening log file %s\n", OO.Logfile.c_str());
 	fp_log = fileopen(OO.Logfile, "w");
 	rootmessage(fp_log, "Logfile opened on %s\n", timestamp().c_str());
