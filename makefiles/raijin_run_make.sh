@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #Script to load compiler modules and dependent software 
 module load openmpi/1.6.3
@@ -12,20 +12,21 @@ export tntdir='../submodules/tnt'
 export srcdir='../src'
 
 #GNU compiler on raijin.nci.org.au
-#module load gcc/5.2.0
-#module load intel-mkl/14.1.106 #required for galeiallatonce only
-#export cxx=g++
-#export mpicxx=mpiCC
-#export cxxflags='-std=c++11 -O3 -Wall -fdiagnostics-color=always'
-#export exedir='../bin/raijin/gnu'
+module load gcc/5.2.0
+module load intel-mkl/2018.1.163 #required for galeiallatonce only
+export cxx=g++
+export mpicxx=mpiCC
+export cxxflags='-std=c++11 -O3 -Wall -fdiagnostics-color=always'
+export exedir='../bin/raijin/gnu'
 
 #Intel compiler on raijin.nci.org.au
-module load intel-cc/14.1.106
-module load intel-mkl/14.1.106 #required for galeiallatonce only
-export cxx=icpc
-export mpicxx=mpiCC
-export cxxflags='-std=c++11 -O3 -Wall -diag-disable remark'
-export exedir='../bin/raijin/intel'
+#module load gcc/5.2.0
+#module load intel-cc/2018.1.163
+#module load intel-mkl/2018.1.163 #required for galeiallatonce only
+#export cxx=icpc
+#export mpicxx=mpiCC
+#export cxxflags='-std=c++11 -O3 -Wall -diag-disable remark'
+#export exedir='../bin/raijin/intel'
 
 make -f example_forward_model.make $1
 make -f gaforwardmodeltdem.make $1
@@ -40,4 +41,5 @@ make -f ctlinedata2sgrid.make $1
 make -f ctlinedata2slicegrids.make $1
 
 make -f galeisbsfdem.make $1
+
 

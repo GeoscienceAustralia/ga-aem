@@ -1725,15 +1725,15 @@ public:
 		std::vector<std::vector<double>> derivatives;
 
 		const double* mlocal = m.getlocalreadonlyarray();
-		cOwnership  mdist = m.ownership();
+		//cOwnership  mdist = m.ownership();
 
 		double* glocal = g.getlocalarray();
 		cOwnership gdist = g.ownership();
 		//rootmessage(mylogfile, "Starting forward modelling\n");
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			size_t lsi = sown.localind(si);
-			size_t gpi = gpindex_c(si, 0);
-			size_t lpi = mdist.localind(gpi);
+			//size_t gpi = gpindex_c(si, 0);
+			//size_t lpi = mdist.localind(gpi);
 			
 			std::vector<double> conductivity = get_conductivity_model(lsi,mlocal);
 			std::vector<double> thickness    = get_thicknesses_ref(lsi);
@@ -2009,7 +2009,7 @@ public:
 		
 		const double* mlocal = m.getlocalreadonlyarray();
 		const double* glocal = g.getlocalreadonlyarray();
-		cOwnership mdist = m.ownership();
+		//cOwnership mdist = m.ownership();
 		cOwnership gdist = g.ownership();
 		std::vector<double> samplephid = get_sample_phid(g);
 
@@ -2018,7 +2018,7 @@ public:
 		FILE* fp = fileopen(filename, "a");
 		for (size_t lsi = 0; lsi < (size_t)sown.nlocal(); lsi++){
 			size_t gsi = sown.globalind(lsi);
-			size_t lpi = mdist.localind(gpindex_c(gsi, 0));
+			//size_t lpi = mdist.localind(gpindex_c(gsi, 0));
 			std::vector<double> conductivity = get_conductivity_model(lsi, mlocal);
 			std::vector<double> thickness    = get_thicknesses_ref(lsi);
 			thickness.push_back(thickness.back());
@@ -2119,7 +2119,6 @@ public:
 				}
 			}
 
-									
 			if (OutputOp.PredictedData){
 				char cid[3] = { 'X', 'Y', 'Z' };
 				size_t ldi = gdist.localind(dindex(gsi, 0));
