@@ -108,6 +108,7 @@
     <ClInclude Include="..\..\submodules\cpp-utils\src\petsc_wrapper.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\stacktrace.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\stopwatch.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\undefinedvalues.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
