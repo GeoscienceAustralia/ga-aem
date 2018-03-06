@@ -61,5 +61,8 @@
     <ClInclude Include="..\..\src\tdemsystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\undefinedvalues.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
