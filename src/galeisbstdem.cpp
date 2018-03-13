@@ -1811,8 +1811,8 @@ void cSBSInverter::writeresult()
 		for (size_t si = 0; si < nsystems; si++){
 			cTDEmSystemInfo& S = SV[si];
 			if (S.useX) writeresult_component(buf, OI, si, "X", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.xcomponent.Secondary, S.useTotal);
-			if (S.useY) writeresult_component(buf, OI, si, "Y", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.ycomponent.Secondary, S.useTotal);
-			if (S.useZ) writeresult_component(buf, OI, si, "Z", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.zcomponent.Secondary, S.useTotal);			
+			if (S.useY) writeresult_component(buf, OI, si, "Y", "predicted", "Predicted", 'E', 15, 6, S.predicted.ycomponent.Primary, S.predicted.ycomponent.Secondary, S.useTotal);
+			if (S.useZ) writeresult_component(buf, OI, si, "Z", "predicted", "Predicted", 'E', 15, 6, S.predicted.zcomponent.Primary, S.predicted.zcomponent.Secondary, S.useTotal);
 		}
 	}
 		
