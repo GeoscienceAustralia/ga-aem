@@ -21,7 +21,7 @@ using namespace std;
 #endif
 
 int main(int argc, char* argv[])
-{
+{	
 	int exitstatus;
 	int mpisize = 1;
 	int mpirank = 0;

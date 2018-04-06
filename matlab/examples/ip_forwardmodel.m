@@ -12,7 +12,8 @@ gatdaem1d_loadlibrary();
 %Create a system object, get its handle, and some basic info
 %S.stmfile = '..\..\examples\bhmar-skytem\stmfiles\Skytem-LM.stm';
 %S.stmfile = '..\..\examples\bhmar-skytem\stmfiles\Skytem-HM.stm';
-S.stmfile = '..\..\examples\thomson-vtem\stmfiles\VTEM-plus-7.3ms-pulse-southernthomson.stm';
+%S.stmfile = '..\..\examples\thomson-vtem\stmfiles\VTEM-plus-7.3ms-pulse-southernthomson.stm';
+S.stmfile = '..\..\examples\frome-tempest\stmfiles\Tempest-standard.stm';
 
 S.hS  = gatdaem1d_getsystemhandle(S.stmfile);
 S.nw  = gatdaem1d_nwindows(S.hS);
@@ -29,9 +30,9 @@ for k=1:1:1
     %G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
     
     %Eg. for VTEM
-    G.tx_height = 45;
+    G.tx_height = 120;
     G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
-    G.txrx_dx   = 0;       G.txrx_dy   = 0; G.txrx_dz   = 0;
+    G.txrx_dx   = -120;    G.txrx_dy   = 0; G.txrx_dz   = -40;
     G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
     
     %Setup earth
