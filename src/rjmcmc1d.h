@@ -232,10 +232,10 @@ public:
 		for (size_t li = 0; li<nlayers(); li++){
 			if (li<nlayers() - 1){
 				bot = top + t[li];
-				printf("%4z top=%7.2lfm bot=%7.2lfm thk=%7.2lfm conductivity=%6.4lf\n", li, top, bot, t[li], c[li]);
+				printf("%4lu top=%7.2lfm bot=%7.2lfm thk=%7.2lfm conductivity=%6.4lf\n", li, top, bot, t[li], c[li]);
 			}
 			else{
-				printf("%4z top=%7.2lfm bot= Inf thk= Inf conductivity=%6.4lf\n", li, top, c[li]);
+				printf("%4lu top=%7.2lfm bot= Inf thk= Inf conductivity=%6.4lf\n", li, top, c[li]);
 			}
 			top = bot;
 		}
