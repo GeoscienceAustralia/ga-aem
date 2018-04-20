@@ -136,6 +136,7 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\large_loop.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />

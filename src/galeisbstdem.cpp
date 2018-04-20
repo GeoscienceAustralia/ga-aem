@@ -23,6 +23,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "vector_utils.h"
 #include "galeisbstdem.h"
 #include "stacktrace.h"
+#include "large_loop.h"
 
 cStackTrace globalstacktrace;
 
@@ -2062,8 +2063,9 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 	rootmessage(I.fp_log, "Logfile closing at %s\n", timestamp().c_str());
 	return 0;
 };
+
 int main(int argc, char** argv)
-{	
+{		
 	_GSTPUSH_
 	int exitstatus;
 	_GSTPOP_
