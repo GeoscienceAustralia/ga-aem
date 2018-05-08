@@ -4,9 +4,11 @@
 output/
 bin/x64/Release/*.exp 
 bin/x64/Release/*.lib 
+bin/x64/Debug
 bin/x64/Debug/*.exp 
 bin/x64/Debug/*.lib 
-
+*_debug.dll 
+*_debug.mexw64 
 
 # Compiled Object files
 *.slo
@@ -115,9 +117,9 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Renove all binaries
-*.exe
-*.dll
-*.mexw64
+#*.exe
+#*.dll
+#*.mexw64
 
 # Renove all raijin.nci.org.au binaries
 # Compiled executables on linux
