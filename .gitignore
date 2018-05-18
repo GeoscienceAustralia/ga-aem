@@ -116,10 +116,10 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-# Renove all binaries
-#*.exe
-#*.dll
-#*.mexw64
+# Remove all binaries
+*.exe
+*.dll
+*.mexw64
 
 # Renove all raijin.nci.org.au binaries
 # Compiled executables on linux
