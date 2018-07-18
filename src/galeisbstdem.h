@@ -123,6 +123,9 @@ class cTDEmSystemInfo{
 
 class cOutputOptions {
 
+private:
+	std::string DumpBasePath;
+
 public:
 	std::string DataFile;
 	std::string Logfile;
@@ -135,7 +138,12 @@ public:
 	bool NoiseEstimates = false;
 	bool PredictedData = false;
 	bool Dump = false;
-	std::string DumpPath;
+
+	std::string DumpPath(const size_t datafilerecord, const size_t iteration){
+		return DumpBasePath + pathseparatorstring() + 
+			strprint("si%07d", (int)datafilerecord) + pathseparatorstring() +
+			strprint("it%03d", (int)iteration) + pathseparatorstring();
+	};
 
 	cOutputOptions(){};
 
@@ -157,12 +165,12 @@ public:
 
 		Dump = b.getboolvalue("Dump");
 		if (Dump) {
-			DumpPath = b.getstringvalue("DumpPath");
-			fixseparator(DumpPath);
-			if (DumpPath[DumpPath.length() - 1] != pathseparator()) {
-				DumpPath.append(pathseparatorstring());
+			DumpBasePath = b.getstringvalue("DumpPath");
+			fixseparator(DumpBasePath);
+			if (DumpBasePath[DumpBasePath.length() - 1] != pathseparator()) {
+				DumpBasePath.append(pathseparatorstring());
 			}
-			makedirectory(DumpPath.c_str());
+			makedirectory(DumpBasePath.c_str());
 		}
 	}
 	
@@ -290,13 +298,13 @@ public:
 	size_t nparam;
 	size_t ngeomparam;	
 
-	std::vector<double> vObs;
-	std::vector<double> vErr;	
-	std::vector<double> vPred;			
+	std::vector<double> Obs;
+	std::vector<double> Err;	
+	std::vector<double> Pred;			
 
-	std::vector<double> vParam;
-	std::vector<double> vRefParam;
-	std::vector<double> vRefParamStd;
+	std::vector<double> Param;
+	std::vector<double> RefParam;
+	std::vector<double> RefParamStd;
 
 	std::vector<double> ParameterSensitivity;
 	std::vector<double> ParameterUncertainty;
@@ -312,7 +320,6 @@ public:
 	MatrixDouble Ws;
 	MatrixDouble Wm;
 		
-
 	double MinimumPhiD;//overall	
 	double MinimumImprovement;//			
 	size_t MaxIterations;
@@ -358,6 +365,11 @@ public:
 	double phiG(const std::vector<double>& p);
 	double phiS(const std::vector<double>& p);
 
+	std::string dumppath(){
+		return OO.DumpPath(DataFileRecord,LastIteration);
+	};
+
+	void save_iteration_file();
 	void dumptofile(const std::vector<double>& v, std::string path);
 	void dumptofile(const cEarth1D& e, std::string path);
 	void dumptofile(const cTDEmGeometry& g, std::string path);
@@ -371,6 +383,7 @@ public:
 	std::vector<double> parameterchange(const double lambda);
 	void invert();	
 	void iterate();		
+	void iterate_old();
 	std::vector<double> compute_parameter_sensitivity();
 	std::vector<double> compute_parameter_uncertainty();	
 	
