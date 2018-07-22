@@ -787,7 +787,7 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 	if (solve_conductivity){
 		for (size_t li = 0; li < nlayers; li++){
 			size_t pindex = li + cIndex;
-			const double maxcond = 500.0;
+			const double maxcond = 10.0;
 			const double mincond = 1.0e-6;
 			if (Param[pindex] + dm[pindex] > log10(maxcond)){
 				//printf("upper limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
@@ -1169,10 +1169,10 @@ std::vector<double> cSBSInverter::compute_parameter_sensitivity()
 		}
 	}	
 
-	if (OO.Dump){
-		dumptofile(s, "layer_sensitivity.dat");
-		writetofile(JtWdJ, dumppath() + "JtWdJ.dat");
-	}
+	//if (OO.Dump){
+	//	dumptofile(s, "layer_sensitivity.dat");
+	//	writetofile(JtWdJ, dumppath() + "JtWdJ.dat");
+	//}
 	return s;
 }
 std::vector<double> cSBSInverter::compute_parameter_uncertainty()
