@@ -528,8 +528,9 @@ void cSBSInverter::initialise_sample()
 		dumptofile(GR, "geometry_ref.dat");
 		dumptofile(ER, "earth_ref.dat");
 
+		dumptofile(GS, "geometry_std.dat");
 		dumptofile(ES, "earth_std.dat");
-
+		
 		FILE* fp = fileopen(dumppath() + "Id.dat", "w");
 		fprintf(fp, "%lu\t%lu\t%lu\t%lu\t%lu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
 		fclose(fp);
@@ -787,7 +788,7 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 	if (solve_conductivity){
 		for (size_t li = 0; li < nlayers; li++){
 			size_t pindex = li + cIndex;
-			const double maxcond = 10.0;
+			const double maxcond = 100.0;
 			const double mincond = 1.0e-6;
 			if (Param[pindex] + dm[pindex] > log10(maxcond)){
 				//printf("upper limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
