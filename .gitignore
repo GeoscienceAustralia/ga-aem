@@ -1,10 +1,13 @@
 #File patterns that are ignored
 
+makefiles/raijin_run_make.sh
 
 output/
+bin/x64/Release/*.exe 
 bin/x64/Release/*.exp 
 bin/x64/Release/*.lib 
 bin/x64/Debug
+bin/x64/Debug/*.exe 
 bin/x64/Debug/*.exp 
 bin/x64/Debug/*.lib 
 *_debug.dll 
