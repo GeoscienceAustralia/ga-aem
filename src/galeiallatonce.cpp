@@ -57,6 +57,7 @@ class cField{
 	bool ncndef;
 	std::vector<double> defaultvec;
 
+
 	double& el(const size_t& i, const size_t& j){
 		return _data[i*_nb + j];
 	};
@@ -654,7 +655,9 @@ class cOutputOptions{
 public:
 	std::string LogFile;
 	std::string DataFile;
-	bool PredictedData = false;
+	bool PredictedData = true;
+	bool ObservedData  = true;
+	bool Noise         = true;
 	bool PositiveLayerBottomDepths = false;
 	bool NegativeLayerBottomDepths = false;
 	bool InterfaceElevations = false;
@@ -676,6 +679,8 @@ public:
 		}
 
 		b.getvalue("PredictedData", PredictedData);
+		b.getvalue("ObservedData", ObservedData);
+		b.getvalue("Noise", Noise);
 		b.getvalue("PositiveLayerBottomDepths", PositiveLayerBottomDepths);
 		b.getvalue("NegativeLayerBottomDepths", NegativeLayerBottomDepths);
 		b.getvalue("InterfaceElevations", InterfaceElevations);
@@ -2067,7 +2072,7 @@ public:
 			}
 			
 			for (size_t gi = 0; gi < UGI.size(); gi++){
-				OI.addfield(ginv.fname(UGI[gi]) + "_inv", 'F', 9, 2);
+				OI.addfield("inverted_"+ginv.fname(UGI[gi]), 'F', 9, 2);
 				OI.setunits(ginv.units(UGI[gi]));
 				OI.setcomment("Inverted " + ginv.description(UGI[gi]));
 				buf += strprint("%9.2lf", ginv[UGI[gi]]);
@@ -2119,28 +2124,62 @@ public:
 				}
 			}
 
-			if (OutputOp.PredictedData){
-				char cid[3] = { 'X', 'Y', 'Z' };
+			char cid[3] = { 'X', 'Y', 'Z' };
+			if (OutputOp.ObservedData){								
+				for (size_t si = 0; si < T.size(); si++){
+					cSystemInfo& S = T[si];					
+					std::string sys = strprint("EMSystem_%lu_", si + 1);
+					for (size_t ci = 0; ci < S.Comp.size(); ci++){
+						cComponentInfo& C = S.Comp[ci];
+						if (C.Use == false)continue;
+						if (S.InvertTotalField){
+							OI.addfield("observed_" + sys + cid[ci] + "P", 'E', 15, 6);
+							OI.setcomment("Observed " + sys + cid[ci] + "-component primary field");
+							buf += strprint("%15.6le", C.fdp(lsi, 0));
+						}							
+						OI.addfield("observed_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+						OI.setcomment("Observed " + sys + cid[ci] + "-component secondary field windows");
+						for (size_t w = 0; w < C.nw; w++){
+							buf += strprint("%15.6le", C.fds(lsi,w));
+						}						
+					}
+				}
+			}
+
+			if (OutputOp.Noise){				
+				for (size_t si = 0; si < T.size(); si++){
+					cSystemInfo& S = T[si];
+					std::string sys = strprint("EMSystem_%lu_", si + 1);
+					for (size_t ci = 0; ci < S.Comp.size(); ci++){
+						cComponentInfo& C = S.Comp[ci];
+						if (C.Use == false)continue;						
+						OI.addfield("noise_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+						OI.setcomment("Estimated noise " + sys + cid[ci] + "-component secondary field windows");
+						for (size_t w = 0; w < C.nw; w++){
+							buf += strprint("%15.6le", C.fdn(lsi, w));
+						}
+					}
+				}
+			}
+
+			if (OutputOp.PredictedData){				
 				size_t ldi = gdist.localind(dindex(gsi, 0));
 				for (size_t si = 0; si < T.size(); si++){
 					cSystemInfo& S = T[si];
 					S.forward_model(conductivity, thickness, ginv);
-
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++){
-
 						cComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;
-
 						if (S.InvertTotalField){
-							OI.addfield(sys + cid[ci] + "P", 'E', 15, 6);
-							OI.setcomment(sys + cid[ci] + "-component primary field");							
+							OI.addfield("predicted_" +  sys + cid[ci] + "P", 'E', 15, 6);
+							OI.setcomment("Predicted " + sys + cid[ci] + "-component primary field");
 							if (ci == 0) buf += strprint("%15.6le", S.T.PrimaryX);
 							else if (ci == 1) buf += strprint("%15.6le", S.T.PrimaryY);
 							else              buf += strprint("%15.6le", S.T.PrimaryZ);
 
-							OI.addfield(sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-							OI.setcomment(sys + cid[ci] + "-component secondary field windows");
+							OI.addfield("predicted_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+							OI.setcomment("Predicted " + sys + cid[ci] + "-component secondary field windows");
 							for (size_t w = 0; w < C.nw; w++){
 								if      (ci == 0) buf += strprint("%15.6le", S.T.X[w]);
 								else if (ci == 1) buf += strprint("%15.6le", S.T.Y[w]);
@@ -2148,8 +2187,8 @@ public:
 							}
 						}
 						else{
-							OI.addfield(sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-							OI.setcomment(sys + cid[ci] + "-component secondary field windows");
+							OI.addfield("predicted_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+							OI.setcomment("Predicted " + sys + cid[ci] + "-component secondary field windows");
 							for (size_t w = 0; w < C.nw; w++){
 								buf += strprint("%15.6le", glocal[ldi]);
 								ldi++;
@@ -2158,6 +2197,7 @@ public:
 					}
 				}
 			}
+			
 
 			//Inversion parameters
 			OI.addfield("SamplePhiD", 'E', 15, 6);
