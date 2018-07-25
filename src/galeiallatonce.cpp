@@ -1996,7 +1996,7 @@ public:
 		rootmessage(mylogfile, "Found PhiD  = %.5lf\n", bestphid);
 		rootmessage(mylogfile, "Improvement = %.5lf%%\n", improvement);
 
-		std::string stepsfile = strprint("steps_%02llu.txt", mLastIteration);
+		std::string stepsfile = strprint("steps//steps_%02llu.txt", mLastIteration);
 		if(mpirank==0)LS.writetextfile(stepsfile);
 		return;
 	}
@@ -2009,11 +2009,13 @@ public:
 		cPetscDistShellMatrix A("A", mpicomm, nlocalparam, nlocalparam, nparam, nparam, (void*)this);
 		A.set_multiply_function_vec((void*)shellmatrixmult);
 
-		lambda = 1;
+		lambda = 1.0;
 
 		bool keepgoing = true;
 		size_t iteration = 1;
 		while (keepgoing){
+			
+			
 			rootmessage(mylogfile, "\n\nItaration = %lu\n", iteration);
 
 			cStopWatch sw;
@@ -2045,7 +2047,9 @@ public:
 				mLastLambda = lambda;
 				mLastIteration = iteration;
 				write_results(OutputOp.DataFile, m, g);
+				//lambda = lambda * 0.7;
 			}
+			
 
 			if (improvement < InversionOp.MinimumPercentageImprovement){
 				keepgoing = false;
