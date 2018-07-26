@@ -1996,7 +1996,7 @@ public:
 		rootmessage(mylogfile, "Found PhiD  = %.5lf\n", bestphid);
 		rootmessage(mylogfile, "Improvement = %.5lf%%\n", improvement);
 
-		std::string stepsfile = strprint("steps//steps_%02llu.txt", mLastIteration);
+		std::string stepsfile = strprint("output//steps//steps_%02llu.txt", mLastIteration);
 		if(mpirank==0)LS.writetextfile(stepsfile);
 		return;
 	}
@@ -2013,11 +2013,8 @@ public:
 
 		bool keepgoing = true;
 		size_t iteration = 1;
-		while (keepgoing){
-			
-			
+		while (keepgoing){			
 			rootmessage(mylogfile, "\n\nItaration = %lu\n", iteration);
-
 			cStopWatch sw;
 			cPetscDistVector g("g", mpicomm, nlocaldata, ndata);
 			forwardmodel_and_jacobian(m, g, true);
@@ -2046,13 +2043,13 @@ public:
 				mLastPhiD = bestphid;
 				mLastLambda = lambda;
 				mLastIteration = iteration;
-				write_results(OutputOp.DataFile, m, g);
-				//lambda = lambda * 0.7;
+				write_results(OutputOp.DataFile, m, g);				
 			}
 			
 
 			if (improvement < InversionOp.MinimumPercentageImprovement){
 				keepgoing = false;
+				//lambda = lambda * 0.7;
 			}
 			if (iteration > InversionOp.MaximumIterations){
 				keepgoing = false;
@@ -2065,7 +2062,7 @@ public:
 
 	void log_iteration_msg(const double& lam, const double& phi, const double& phiv, const double& phih, const double& phib,	const double& phir, const double& phid, const double& targetphid){
 		rootmessage(mylogfile, "Current Lambda = %lf\n", lam);
-		rootmessage(mylogfile, "Current Phi = %lf\n", phi);
+		rootmessage(mylogfile, "Current Phi  = %lf\n", phi);
 		rootmessage(mylogfile, "Current PhiV = %lf\n", phiv);
 		rootmessage(mylogfile, "Current PhiH = %lf\n", phih);
 		rootmessage(mylogfile, "Current PhiB = %lf\n", phib);
