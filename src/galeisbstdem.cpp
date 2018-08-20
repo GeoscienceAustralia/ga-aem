@@ -317,6 +317,15 @@ void cSBSInverter::setup_data()
 }
 void cSBSInverter::setup_parameters()
 {
+	double v;
+	if (Control.getvalue("Earth.MinConductivity", v)){
+		min_conductivity = v;
+	}
+
+	if (Control.getvalue("Earth.MaxConductivity", v)){
+		max_conductivity = v;
+	}
+
 	nlayers = Control.getsizetvalue("Earth.NumberOfLayers");
 	nparam = 0;
 	ngeomparam = 0;
@@ -787,16 +796,14 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 
 	if (solve_conductivity){
 		for (size_t li = 0; li < nlayers; li++){
-			size_t pindex = li + cIndex;
-			const double maxcond = 100.0;
-			const double mincond = 1.0e-6;
-			if (Param[pindex] + dm[pindex] > log10(maxcond)){
+			size_t pindex = li + cIndex;			
+			if (Param[pindex] + dm[pindex] > log10(max_conductivity)){
 				//printf("upper limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
-				dm[pindex] = log10(maxcond) - Param[pindex];
+				dm[pindex] = log10(max_conductivity) - Param[pindex];
 			}
-			else if (Param[pindex] + dm[pindex] < log10(mincond)){
+			else if (Param[pindex] + dm[pindex] < log10(min_conductivity)){
 				//printf("lower limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
-				dm[pindex] = log10(mincond) - Param[pindex];
+				dm[pindex] = log10(min_conductivity) - Param[pindex];
 			}
 		}
 	}

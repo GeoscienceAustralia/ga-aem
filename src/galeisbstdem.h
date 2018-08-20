@@ -271,6 +271,9 @@ public:
 	cEarth1D ES;//Standard deviation earth
 	cEarth1D EM;//Final inversion earth
 
+	double min_conductivity = 1e-5;
+	double max_conductivity = 10.0;
+
 	bool solve_conductivity;
 	bool solve_thickness;	
 
