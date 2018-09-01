@@ -42,6 +42,60 @@ class cComponentInfo;
 
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 
+class cLineTiles{
+
+	std::vector<std::vector<double>> L;
+	
+public:
+
+	cLineTiles(const double linelen, const double seglen, const double overlap){
+		calculate_tiles(linelen, seglen, overlap);
+	};
+
+	void calculate_tiles(const double linelen, const double seglen, const double overlap){
+		int n = std::round((linelen - overlap) / (seglen - overlap));		
+		double newseglen = (linelen + 2.0*overlap*(n-1)) / (double)n;
+
+		L.resize(n);				
+		for (size_t i = 0; i < n; i++){
+			L[i].resize(4);
+			if (i == 0){		
+				L[i][0] = 0.0;				
+			}
+			else{
+				L[i][0] = L[i-1][0] + newseglen - 2*overlap;
+			}
+			
+			L[i][1] = L[i][0] + overlap;
+			L[i][2] = L[i][0] + newseglen - overlap;
+			L[i][3] = L[i][0] + newseglen;
+
+			if (i == 0){
+				L[i][1] = L[i][0];
+			}
+
+			if (i == n-1){				
+				L[i][2] = L[i][3];
+			}			
+		}
+		std::cout << *this;
+	};
+	
+	friend std::ostream& operator<<(std::ostream& os, const cLineTiles& t);
+
+
+};
+
+std::ostream& operator<<(std::ostream& os, const cLineTiles& t){
+	for (size_t i = 0; i < t.L.size(); i++){
+		os << t.L[i][0] << "\t";
+		os << t.L[i][1] << "\t";
+		os << t.L[i][2] << "\t";
+		os << t.L[i][3] << std::endl;
+	}
+	return os;
+};
+
 class cField{
 
 	std::vector<double> _data;
@@ -712,7 +766,7 @@ class cAllAtOnceInverter{
 
 private:
 	cBlock Control;
-	std::string ControlFile;
+	//std::string ControlFile;
 
 	cMpiEnv   mpienv;
 	cMpiComm  mpicomm;
@@ -801,7 +855,7 @@ public:
 		mpisize = mpicomm.size();
 		mpirank = mpicomm.rank();
 
-		ControlFile = std::string(argv[1]);
+		std::string ControlFile = std::string(argv[1]);
 		if(exists(ControlFile) == false){
 			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
 			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
@@ -814,7 +868,12 @@ public:
 		OutputOp = cOutputOptions(Control.findblock("Output"));
 		std::string s = strprint(".%04d", mpirank);
 		OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
-		mylogfile = fileopen(OutputOp.LogFile, "w");
+		if (mpirank == 0){
+			mylogfile = fileopen(OutputOp.LogFile, "w");
+		}
+		else{
+			mylogfile = (FILE*)NULL;
+		}
 
 		rootmessage("Opening log file %s\n", OutputOp.LogFile.c_str());
 		rootmessage(mylogfile, "Logfile opened on %s\n", timestamp().c_str());
@@ -926,7 +985,7 @@ public:
 			}
 		}
 	}
-
+	
 	bool count_samples(){
 
 		if (mpirank == 0){
@@ -1859,6 +1918,7 @@ public:
 
 	PetscErrorCode rawvecmult(Vec& xVec, Vec& bVec)
 	{
+		// Ax=b
 		cPetscDistVector x(xVec);
 		cPetscDistVector b(bVec);
 		b = (J ^ (Wd*(J*x)));
@@ -1868,6 +1928,54 @@ public:
 		if (InversionOp.AlphaR > 0.0)b += ((Wr*x) *= lambda);
 		return 0;
 	}
+
+	cPetscDistVector cg_solve(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
+
+		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
+		rootmessage(mylogfile, "Starting CG solve\n");
+		cStopWatch sw;
+
+		b = J ^ (Wd*(dobs - g + J*m));
+		if (InversionOp.AlphaB > 0) b += lambda*((B ^ (Wb^clogref)));
+		if (InversionOp.AlphaR > 0) b += lambda*((Wr^mref));
+
+		cPetscDistVector mtrial = A.solve_CG(P, b, m);
+		rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
+		rootmessage(mylogfile, A.convergence_summary().c_str());
+		return (mtrial - m);
+	};
+
+	PetscErrorCode rawvecmult_dm(Vec& xVec, Vec& bVec)
+	{
+		// Ax=b
+		cPetscDistVector x(xVec);
+		cPetscDistVector b(bVec);
+		b = (J ^ (Wd*(J*x)));
+		if (InversionOp.AlphaV > 0.0)b += ((V ^ (V*x)) *= lambda);
+		if (InversionOp.AlphaH > 0.0)b += ((H ^ (H*x)) *= lambda);
+		if (InversionOp.AlphaB > 0.0)b += ((B ^ (Wb*(B*x))) *= lambda);
+		if (InversionOp.AlphaR > 0.0)b += ((Wr*x) *= lambda);
+		return 0;
+	}
+	
+	cPetscDistVector cg_solve_dm(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
+
+		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
+		rootmessage(mylogfile, "Starting CG solve\n");
+		cStopWatch sw;
+
+		b = J ^ (Wd*(dobs - g));
+		if (InversionOp.AlphaV > 0) b -= lambda*((V ^ (V*m)));
+		if (InversionOp.AlphaH > 0) b -= lambda*((H ^ (H*m)));
+		if (InversionOp.AlphaB > 0) b -= lambda*((B ^ (B*m)));
+		if (InversionOp.AlphaB > 0) b += lambda*((B ^ (Wb^clogref)));
+		if (InversionOp.AlphaR > 0) b += lambda*((Wr^ (mref-m)));
+
+		cPetscDistVector mtrial = A.solve_CG(P, b, m);
+		rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
+		rootmessage(mylogfile, A.convergence_summary().c_str());
+		return (mtrial - m);
+	};
 
 	double PhiD(const cPetscDistVector& g){
 		return Wd.vtAv(dobs - g);
@@ -2069,23 +2177,7 @@ public:
 		rootmessage(mylogfile, "Current PhiD = %lf\n", phid);
 		rootmessage(mylogfile, "Target  PhiD = %lf\n", targetphid);
 	}
-
-	cPetscDistVector cg_solve(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
-
-		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
-		rootmessage(mylogfile, "Starting CG solve\n");
-		cStopWatch sw;
-
-		b = J ^ (Wd*(dobs - g + J*m));
-		if (InversionOp.AlphaB > 0) b += lambda*((B ^ (Wb^clogref)));
-		if (InversionOp.AlphaR > 0) b += lambda*((Wr^mref));
-
-		cPetscDistVector mtrial = A.solve_CG(P, b, m);
-		rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
-		rootmessage(mylogfile, A.convergence_summary().c_str());
-		return (mtrial - m);
-	};
-
+	
 	void write_results(const std::string& filename, const cPetscDistVector& m, const cPetscDistVector& g){
 
 		for (int p = 0; p < mpisize; p++){
