@@ -162,6 +162,23 @@ void cSBSInverter::parseoptions()
 	AlphaG = b.getdoublevalue("AlphaGeometry");
 	AlphaS = b.getdoublevalue("AlphaSmoothness");
 	
+
+	NormType = L2;//default
+	std::string nt = b.getstringvalue("NormType");
+	if(!isdefined(nt)){
+		NormType = L2;
+	}
+	else if (strcasecmp(nt, "L1") == 0){
+		NormType = L1;
+	}
+	else if (strcasecmp(nt, "L2") == 0){
+		NormType = L2;
+	}
+	else{
+		errormessage(fp_log, "Unknown NormType %s\n", nt.c_str());
+	}
+
+
 	SmoothnessMethod = SM_2ND_DERIVATIVE;//default
 	std::string sm = b.getstringvalue("SmoothnessMethod");
 	if (!isdefined(sm)){
@@ -385,9 +402,7 @@ void cSBSInverter::setup_parameters()
 }
 void cSBSInverter::resize_matrices()
 {	
-	J     = MatrixDouble(ndata, nparam);
-	JtWd  = MatrixDouble(nparam, ndata);
-	JtWdJ = MatrixDouble(nparam, nparam);	
+	J     = MatrixDouble(ndata, nparam);	
 }
 bool cSBSInverter::readnextrecord(){
 	if (DataFileRecord == 0){
@@ -843,7 +858,7 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 	return dm;
 }
 std::vector<double> cSBSInverter::solve(const double lambda)
-{	
+{
 	// Phi = (d-g(m)+Jm) Wd (d-g(m)+Jm) + lambda ( (m-m0)' Wr (m-m0) + m' Ws m) )
 	//Ax = b
 	//A = [J'WdJ + lambda (Wr + Ws)]
@@ -851,41 +866,64 @@ std::vector<double> cSBSInverter::solve(const double lambda)
 	//b = J'Wd(d - g(m) + Jm) + lambda*Wr*m0
 	//dm = m(n+1) - m = x - m
 
-	const std::vector<double>& m = Param;
-	const std::vector<double>& d = Obs;
-	const std::vector<double>& g = Pred;
+	const std::vector<double>& m  = Param;
+	const std::vector<double>& d  = Obs;
+	const std::vector<double>& g  = Pred;
+	const std::vector<double>& e  = Err;
 	const std::vector<double>& m0 = RefParam;
 
-	std::vector<double> b = JtWd*(d - g + J*m) + lambda*Wr*m0;
-	MatrixDouble   A = JtWdJ + lambda*Wm;
-
-	std::vector<double> x = pseudoinverse_od(A)*b;
-
-	if (OO.Dump){
-		//writetofile(d, dumppath() + "d.dat");
-		//writetofile(g, dumppath() + "g.dat");
-		//writetofile(Err, dumppath() + "e.dat");
-		//writetofile(m, dumppath() + "m.dat");
-		//writetofile(m0, dumppath() + "m0.dat");
-		//writetofile(J, dumppath() + "J.dat");
-		//writetofile(JtWdJ, dumppath() + "JtWdJ.dat");
-		//writetofile(b, dumppath() + "b.dat");
-		//writetofile(A, dumppath() + "A.dat");
+		
+	MatrixDouble V = Wd;
+	if (NormType == L2){
+		
 	}
+	else{		
+		for (size_t i = 0; i < ndata; i++){
+			const double r = (d[i] - g[i]) / e[i];
+			V[i][i] *= 1.0 / std::abs(r);
+		}
+	}
+
+	MatrixDouble JtV  = transpose_mult(J, V);
+	MatrixDouble JtVJ = JtV*J;
+
+	std::vector<double> b = JtV*(d - g + J*m) + lambda*Wr*m0;
+	MatrixDouble        A = JtVJ + lambda*Wm;
+	std::vector<double> x = pseudoinverse_od(A)*b;
 
 	return x;
 }
+
+double cSBSInverter::l1_norm(const std::vector<double>& g)
+{	
+	double l1 = 0.0;
+	for (size_t i = 0; i < ndata; i++){
+		l1 += std::abs(Obs[i] - g[i]) / Err[i];
+	}	
+	return l1/ndata;
+}
+
+double cSBSInverter::l2_norm(const std::vector<double>& g)
+{	
+	std::vector<double> v = Obs - g;
+	double l2 = mtDm(v, Wd);
+	return l2;
+}
+
 double cSBSInverter::phiData(const std::vector<double>& g)
 {
-	std::vector<double> v = Obs - g;
-	double phid = mtDm(v, Wd);
-
-	//this reports invalid models 
+	double phid;		
+	if (NormType == L1){
+		phid = l1_norm(g);
+	}
+	else{
+		phid = l2_norm(g);
+	}	
+	//This reports invalid models 
 	if (phid < 0.0){
 		phid = 1e9;
 		warningmessage("Caught invalid PhiD\n");
 	}
-
 	return phid;
 }
 double cSBSInverter::phiModel(const std::vector<double>& p)
@@ -1157,8 +1195,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 				}
 			}
 		}		
-		JtWd  = transpose_mult(J, Wd);
-		JtWdJ = JtWd*J;
+		//JtWd  = transpose_mult(J, Wd);
+		//JtWdJ = JtWd*J;
 
 
 		//if(Dump){		
@@ -1184,7 +1222,8 @@ std::vector<double> cSBSInverter::compute_parameter_sensitivity()
 	return s;
 }
 std::vector<double> cSBSInverter::compute_parameter_uncertainty()
-{			
+{					
+	MatrixDouble JtWdJ = transpose_mult(J, Wd)*J;
 	MatrixDouble iCm(nparam, nparam, 0.0);
 	for (size_t i = 0; i<nparam; i++) iCm[i][i] = 1.0/(RefParamStd[i]*RefParamStd[i]);
 	MatrixDouble X = (double)ndata*JtWdJ + iCm;
@@ -1260,13 +1299,16 @@ void cSBSInverter::iterate()
 	}
 	
 	EM = get_earth(Param);
-	GM = get_geometry(Param);
-	forwardmodel(Param, Pred, false);	
-	set_predicted();
-	
+	GM = get_geometry(Param);	
 	forwardmodel(Param, Pred, true);
+	set_predicted();
 	ParameterSensitivity = compute_parameter_sensitivity();
-	ParameterUncertainty = compute_parameter_uncertainty();	
+	ParameterUncertainty = compute_parameter_uncertainty();
+	
+		
+	//double l1 = l1_norm(Pred);
+	//double l2 = l2_norm(Pred);
+	//rootmessage(fp_log,"L1=%lf   L2=%lf\n", l1, l2);
 }
 
 void cSBSInverter::iterate_old()
@@ -2231,4 +2273,3 @@ int main(int argc, char** argv)
 
 	return exitstatus;
 }
-
