@@ -19,6 +19,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "airborne_types.h"
 #include "tdemsystem.h"
 
+enum eNormType { L1, L2 };
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 enum eBracketResult { BR_BRACKETED, BR_MINBRACKETED, BR_ALLABOVE, BR_ALLBELOW };
 
@@ -170,7 +171,7 @@ public:
 			if (DumpBasePath[DumpBasePath.length() - 1] != pathseparator()) {
 				DumpBasePath.append(pathseparatorstring());
 			}
-			makedirectory(DumpBasePath.c_str());
+			makedirectorydeep(DumpBasePath.c_str());
 		}
 	}
 	
@@ -293,9 +294,8 @@ public:
 	double AlphaG;
 	double AlphaS;
 	eSmoothnessMethod SmoothnessMethod;
+	eNormType  NormType;
 
-
-	
 	size_t nlayers;
 	size_t ndata;
 	size_t nparam;
@@ -312,9 +312,7 @@ public:
 	std::vector<double> ParameterSensitivity;
 	std::vector<double> ParameterUncertainty;
 	
-	MatrixDouble J;	
-	MatrixDouble JtWd;
-	MatrixDouble JtWdJ;	
+	MatrixDouble J;		
 	MatrixDouble Wd;
 	MatrixDouble Wc;
 	MatrixDouble Wt;
@@ -360,6 +358,8 @@ public:
 	void initialise_Wr_Wm();
 	std::vector<double> solve(const double lambda);
 			
+	double l1_norm(const std::vector<double>& g);
+	double l2_norm(const std::vector<double>& g);
 	double phiData(const std::vector<double>& g); 	
 	double phiModel(const std::vector<double>& p, double& phic, double& phit, double& phig, double& phis);
 	double phiModel(const std::vector<double>& p);
