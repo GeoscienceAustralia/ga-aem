@@ -23,7 +23,7 @@ export exedir='../bin/raijin/intel'
 #make -f gatdaem1d_matlab.make $1
 #make -f example_forward_model.make $1
 #make -f gaforwardmodeltdem.make $1
-make -f galeisbstdem.make $1
+#make -f galeisbstdem.make $1
 #make -f garjmcmctdem.make $1
 make -f galeiallatonce.make $1
 #make -f ctlinedata2sgrid.make $1

@@ -2045,7 +2045,6 @@ public:
 				mLastIteration = iteration;
 				write_results(OutputOp.DataFile, m, g);				
 			}
-			
 
 			if (improvement < InversionOp.MinimumPercentageImprovement){
 				keepgoing = false;
