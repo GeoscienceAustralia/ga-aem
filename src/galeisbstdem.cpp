@@ -1299,9 +1299,11 @@ void cSBSInverter::iterate()
 	}
 	
 	EM = get_earth(Param);
-	GM = get_geometry(Param);	
-	forwardmodel(Param, Pred, true);
+	GM = get_geometry(Param);
+	forwardmodel(Param, Pred, false);
 	set_predicted();
+
+	forwardmodel(Param, Pred, true);
 	ParameterSensitivity = compute_parameter_sensitivity();
 	ParameterUncertainty = compute_parameter_uncertainty();
 	
