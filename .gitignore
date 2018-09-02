@@ -1,6 +1,6 @@
 #File patterns that are ignored
 
-makefiles/raijin_run_make.sh
+/makefiles/raijin_run_make.sh
 
 output/
 bin/x64/Release/*.exe 
