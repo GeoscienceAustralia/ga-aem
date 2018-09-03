@@ -29,9 +29,6 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\fielddefinition.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
@@ -52,9 +49,6 @@
     <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\lem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -62,6 +56,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\large_loop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

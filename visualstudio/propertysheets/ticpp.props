@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>Z:\code\repos\ga-aem-dev\submodules\ticpp;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\submodules\ticpp;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

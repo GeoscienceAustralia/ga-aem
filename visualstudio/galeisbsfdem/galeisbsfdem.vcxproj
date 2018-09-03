@@ -84,7 +84,6 @@
     <ClCompile Include="..\..\src\fdemsystem.cpp" />
     <ClCompile Include="..\..\src\galeisbsfdem.cpp" />
     <ClCompile Include="..\..\src\layeredearthmodeller.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\fielddefinition.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />

@@ -469,7 +469,7 @@ public:
 			
 			bool local = true;
 			std::string url = "http://www.ga.gov.au/apps/world-wind/tiles.jsp";
-			if (local)  url   = ".\\";
+			if (local)  url   = "./";
 
 			a = Element("Service");
 			a.SetAttribute("serviceName", "DelegatorTileService");

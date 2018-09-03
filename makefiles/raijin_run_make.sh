@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #Set the directory path for dependencies
+export srcdir='../src'
 export cpputilssrc='../submodules/cpp-utils/src'
 export tntdir='../submodules/tnt'
-export srcdir='../src'
 
 #GNU compiler on raijin.nci.org.au
 #module load ga-aem/dev-gnu
