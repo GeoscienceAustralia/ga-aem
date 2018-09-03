@@ -118,9 +118,15 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Remove all binaries
+<<<<<<< HEAD
 *.exe
 *.dll
 *.mexw64
+=======
+#*.exe
+#*.dll
+#*.mexw64
+>>>>>>> ross
 
 # Python
 *.pyc

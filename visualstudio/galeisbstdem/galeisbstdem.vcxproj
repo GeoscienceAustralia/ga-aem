@@ -63,14 +63,17 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-nompi|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\..\bin\x64\Release\</OutDir>
     <TargetName>$(ProjectName)-nompi</TargetName>
+    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -129,7 +132,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\fielddefinition.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />

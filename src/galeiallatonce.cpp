@@ -57,6 +57,7 @@ class cField{
 	bool ncndef;
 	std::vector<double> defaultvec;
 
+
 	double& el(const size_t& i, const size_t& j){
 		return _data[i*_nb + j];
 	};
@@ -654,7 +655,9 @@ class cOutputOptions{
 public:
 	std::string LogFile;
 	std::string DataFile;
-	bool PredictedData = false;
+	bool PredictedData = true;
+	bool ObservedData  = true;
+	bool Noise         = true;
 	bool PositiveLayerBottomDepths = false;
 	bool NegativeLayerBottomDepths = false;
 	bool InterfaceElevations = false;
@@ -676,6 +679,8 @@ public:
 		}
 
 		b.getvalue("PredictedData", PredictedData);
+		b.getvalue("ObservedData", ObservedData);
+		b.getvalue("Noise", Noise);
 		b.getvalue("PositiveLayerBottomDepths", PositiveLayerBottomDepths);
 		b.getvalue("NegativeLayerBottomDepths", NegativeLayerBottomDepths);
 		b.getvalue("InterfaceElevations", InterfaceElevations);
@@ -707,7 +712,7 @@ class cAllAtOnceInverter{
 
 private:
 	cBlock Control;
-	std::string ControlFile;
+	//std::string ControlFile;
 
 	cMpiEnv   mpienv;
 	cMpiComm  mpicomm;
@@ -796,7 +801,7 @@ public:
 		mpisize = mpicomm.size();
 		mpirank = mpicomm.rank();
 
-		ControlFile = std::string(argv[1]);
+		std::string ControlFile = std::string(argv[1]);
 		if(exists(ControlFile) == false){
 			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
 			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
@@ -809,7 +814,12 @@ public:
 		OutputOp = cOutputOptions(Control.findblock("Output"));
 		std::string s = strprint(".%04d", mpirank);
 		OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
-		mylogfile = fileopen(OutputOp.LogFile, "w");
+		if (mpirank == 0){
+			mylogfile = fileopen(OutputOp.LogFile, "w");
+		}
+		else{
+			mylogfile = (FILE*)NULL;
+		}
 
 		rootmessage("Opening log file %s\n", OutputOp.LogFile.c_str());
 		rootmessage(mylogfile, "Logfile opened on %s\n", timestamp().c_str());
@@ -921,7 +931,7 @@ public:
 			}
 		}
 	}
-
+	
 	bool count_samples(){
 
 		if (mpirank == 0){
@@ -1843,26 +1853,6 @@ public:
 		return true;
 	};
 
-	void find_stepfactor(const cPetscDistVector& m, const cPetscDistVector& dm, const double& currentphid, const double& targetphid, double& bestsf, double& bestphid){
-
-		cPetscDistVector gtrial = dobs;
-		cPetscDistVector mtrial = m;
-		cInversionLineSearcher LS(currentphid, targetphid);
-
-		double sf;
-		while (LS.next(sf)){
-			mtrial = m + sf*dm;
-			forwardmodel_and_jacobian(mtrial, gtrial, false);
-			double phid = PhiD(gtrial);
-			LS.addtrial(sf, phid);
-		}
-
-		LS.nearestindex(bestsf, bestphid);
-		//std::string stepsfile = strprint("steps_%02llu.txt", mLastIteration);
-		//if(mpirank==0)LS.writetextfile(stepsfile);
-		return;
-	}
-
 	static void shellmatrixmult(Mat shellmat, Vec x, Vec b)
 	{
 		void* context;
@@ -1874,6 +1864,7 @@ public:
 
 	PetscErrorCode rawvecmult(Vec& xVec, Vec& bVec)
 	{
+		// Ax=b
 		cPetscDistVector x(xVec);
 		cPetscDistVector b(bVec);
 		b = (J ^ (Wd*(J*x)));
@@ -1883,6 +1874,54 @@ public:
 		if (InversionOp.AlphaR > 0.0)b += ((Wr*x) *= lambda);
 		return 0;
 	}
+
+	cPetscDistVector cg_solve(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
+
+		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
+		rootmessage(mylogfile, "Starting CG solve\n");
+		cStopWatch sw;
+
+		b = J ^ (Wd*(dobs - g + J*m));
+		if (InversionOp.AlphaB > 0) b += lambda*((B ^ (Wb^clogref)));
+		if (InversionOp.AlphaR > 0) b += lambda*((Wr^mref));
+
+		cPetscDistVector mtrial = A.solve_CG(P, b, m);
+		rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
+		rootmessage(mylogfile, A.convergence_summary().c_str());
+		return (mtrial - m);
+	};
+
+	PetscErrorCode rawvecmult_dm(Vec& xVec, Vec& bVec)
+	{
+		// Ax=b
+		cPetscDistVector x(xVec);
+		cPetscDistVector b(bVec);
+		b = (J ^ (Wd*(J*x)));
+		if (InversionOp.AlphaV > 0.0)b += ((V ^ (V*x)) *= lambda);
+		if (InversionOp.AlphaH > 0.0)b += ((H ^ (H*x)) *= lambda);
+		if (InversionOp.AlphaB > 0.0)b += ((B ^ (Wb*(B*x))) *= lambda);
+		if (InversionOp.AlphaR > 0.0)b += ((Wr*x) *= lambda);
+		return 0;
+	}
+	
+	cPetscDistVector cg_solve_dm(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
+
+		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
+		rootmessage(mylogfile, "Starting CG solve\n");
+		cStopWatch sw;
+
+		b = J ^ (Wd*(dobs - g));
+		if (InversionOp.AlphaV > 0) b -= lambda*((V ^ (V*m)));
+		if (InversionOp.AlphaH > 0) b -= lambda*((H ^ (H*m)));
+		if (InversionOp.AlphaB > 0) b -= lambda*((B ^ (B*m)));
+		if (InversionOp.AlphaB > 0) b += lambda*((B ^ (Wb^clogref)));
+		if (InversionOp.AlphaR > 0) b += lambda*((Wr^ (mref-m)));
+
+		cPetscDistVector mtrial = A.solve_CG(P, b, m);
+		rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
+		rootmessage(mylogfile, A.convergence_summary().c_str());
+		return (mtrial - m);
+	};
 
 	double PhiD(const cPetscDistVector& g){
 		return Wd.vtAv(dobs - g);
@@ -1904,82 +1943,81 @@ public:
 		return Wr.vtAv(m - mref);
 	}
 
-	void iterate(){
+	void find_stepfactor(const cPetscDistVector& m, const cPetscDistVector& dm, const double& currentphid, const double& targetphid, double& bestsf, double& bestphid, double& improvement){
 
+		rootmessage(mylogfile, "Finding step factor\n");
 		cStopWatch sw;
+		cPetscDistVector gtrial = dobs;
+		cPetscDistVector mtrial = m;
+		cInversionLineSearcher LS(currentphid, targetphid);
 
-		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
+		double sf;
+		while (LS.next(sf)){
+			mtrial = m + sf*dm;
+			forwardmodel_and_jacobian(mtrial, gtrial, false);
+			double phid = PhiD(gtrial);
+			LS.addtrial(sf, phid);
+		}
+		LS.nearestindex(bestsf, bestphid);
+		rootmessage(mylogfile, "Find stepfactor time=%lf\n", sw.etimenow());
+		improvement = 100.0*(currentphid - bestphid) / currentphid;
+		rootmessage(mylogfile, "Step factor = %.5lf\n", bestsf);
+		rootmessage(mylogfile, "Found PhiD  = %.5lf\n", bestphid);
+		rootmessage(mylogfile, "Improvement = %.5lf%%\n", improvement);
+
+		std::string stepsfile = strprint("output//steps//steps_%02llu.txt", mLastIteration);
+		if (mpirank == 0)LS.writetextfile(stepsfile);
+		return;
+	}
+	
+	void iterate(){
+		
 		cPetscDistVector m = mref;
 		m.setname("m");
-
-		cPetscDistVector g("g", mpicomm, nlocaldata, ndata);
 
 		cPetscDistShellMatrix A("A", mpicomm, nlocalparam, nlocalparam, nparam, nparam, (void*)this);
 		A.set_multiply_function_vec((void*)shellmatrixmult);
 
-		lambda = 1;
+		lambda = 1.0;
 
 		bool keepgoing = true;
 		size_t iteration = 1;
-		while (keepgoing){
+		while (keepgoing){			
 			rootmessage(mylogfile, "\n\nItaration = %lu\n", iteration);
-
-			sw.reset();
+			cStopWatch sw;
+			cPetscDistVector g("g", mpicomm, nlocaldata, ndata);
 			forwardmodel_and_jacobian(m, g, true);
 			rootmessage(mylogfile, "Forward modelling time=%lf\n", sw.etimenow());
 
-
-			double phid = PhiD(g);
-			double targetphid = phid * 0.7;
-			if (targetphid < InversionOp.MinimumPhiD) targetphid = InversionOp.MinimumPhiD;
 			double phiv = PhiV(m); double phih = PhiH(m);
 			double phib = PhiB(m); double phir = PhiR(m);
+			double phid = PhiD(g);
 			double phi = phid + phiv + phih + phib + phir;
-
-			rootmessage(mylogfile, "Current Lambda = %lf\n", lambda);
-			rootmessage(mylogfile, "Current Phi = %lf\n", phi);
-			rootmessage(mylogfile, "Current PhiV = %lf\n", phiv);
-			rootmessage(mylogfile, "Current PhiH = %lf\n", phih);
-			rootmessage(mylogfile, "Current PhiB = %lf\n", phib);
-			rootmessage(mylogfile, "Current PhiR = %lf\n", phir);
-			rootmessage(mylogfile, "Current PhiD = %lf\n", phid);
-			rootmessage(mylogfile, "Target  PhiD = %lf\n", targetphid);
-
-			rootmessage(mylogfile, "Starting CG solve\n");
-			sw.reset();
-
-			b = J ^ (Wd*(dobs - g + J*m));
-			if (InversionOp.AlphaB > 0) b += lambda*((B ^ (Wb^clogref)));
-			if (InversionOp.AlphaR > 0) b += lambda*((Wr^mref));
-
-			cPetscDistVector mtrial = A.solve_CG(P, b, m);
-			rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
-			rootmessage(mylogfile, A.convergence_summary().c_str());
-
-			cPetscDistVector dm = mtrial - m;
-			rootmessage(mylogfile, "Finding step factor\n");
-			double bestsf;
-			double bestphid;
-			find_stepfactor(m, dm, phid, targetphid, bestsf, bestphid);
-
-			double pi = 100.0*(phid - bestphid) / phid;
-			rootmessage(mylogfile, "Step factor = %.5lf\n", bestsf);
-			rootmessage(mylogfile, "Found PhiD = %.5lf\n", bestphid);
-			rootmessage(mylogfile, "Improvement = %.5lf%%\n", pi);
-
+			double targetphid = phid * 0.7;
+			if (targetphid < InversionOp.MinimumPhiD) targetphid = InversionOp.MinimumPhiD;
+			
+			log_iteration_msg(lambda, phi, phiv, phih, phib, phir, phid, targetphid);
+			
+			
+			cPetscDistVector dm = cg_solve(A, m, g);
+									
+			double bestsf, bestphid, improvement;
+			find_stepfactor(m, dm, phid, targetphid, bestsf, bestphid, improvement);
+			
 			iteration++;
-			if (pi > 0.0){
+			if (improvement > 0.0){
 				m += bestsf*dm;
 				forwardmodel_and_jacobian(m, g, false);
 
 				mLastPhiD = bestphid;
 				mLastLambda = lambda;
 				mLastIteration = iteration;
-				write_results(OutputOp.DataFile, m, g);
+				write_results(OutputOp.DataFile, m, g);				
 			}
 
-			if (pi < InversionOp.MinimumPercentageImprovement){				
+			if (improvement < InversionOp.MinimumPercentageImprovement){
 				keepgoing = false;
+				//lambda = lambda * 0.7;
 			}
 			if (iteration > InversionOp.MaximumIterations){
 				keepgoing = false;
@@ -1990,6 +2028,17 @@ public:
 		}
 	};
 
+	void log_iteration_msg(const double& lam, const double& phi, const double& phiv, const double& phih, const double& phib,	const double& phir, const double& phid, const double& targetphid){
+		rootmessage(mylogfile, "Current Lambda = %lf\n", lam);
+		rootmessage(mylogfile, "Current Phi  = %lf\n", phi);
+		rootmessage(mylogfile, "Current PhiV = %lf\n", phiv);
+		rootmessage(mylogfile, "Current PhiH = %lf\n", phih);
+		rootmessage(mylogfile, "Current PhiB = %lf\n", phib);
+		rootmessage(mylogfile, "Current PhiR = %lf\n", phir);
+		rootmessage(mylogfile, "Current PhiD = %lf\n", phid);
+		rootmessage(mylogfile, "Target  PhiD = %lf\n", targetphid);
+	}
+	
 	void write_results(const std::string& filename, const cPetscDistVector& m, const cPetscDistVector& g){
 
 		for (int p = 0; p < mpisize; p++){
@@ -2067,7 +2116,7 @@ public:
 			}
 			
 			for (size_t gi = 0; gi < UGI.size(); gi++){
-				OI.addfield(ginv.fname(UGI[gi]) + "_inv", 'F', 9, 2);
+				OI.addfield("inverted_"+ginv.fname(UGI[gi]), 'F', 9, 2);
 				OI.setunits(ginv.units(UGI[gi]));
 				OI.setcomment("Inverted " + ginv.description(UGI[gi]));
 				buf += strprint("%9.2lf", ginv[UGI[gi]]);
@@ -2119,28 +2168,62 @@ public:
 				}
 			}
 
-			if (OutputOp.PredictedData){
-				char cid[3] = { 'X', 'Y', 'Z' };
+			char cid[3] = { 'X', 'Y', 'Z' };
+			if (OutputOp.ObservedData){								
+				for (size_t si = 0; si < T.size(); si++){
+					cSystemInfo& S = T[si];					
+					std::string sys = strprint("EMSystem_%lu_", si + 1);
+					for (size_t ci = 0; ci < S.Comp.size(); ci++){
+						cComponentInfo& C = S.Comp[ci];
+						if (C.Use == false)continue;
+						if (S.InvertTotalField){
+							OI.addfield("observed_" + sys + cid[ci] + "P", 'E', 15, 6);
+							OI.setcomment("Observed " + sys + cid[ci] + "-component primary field");
+							buf += strprint("%15.6le", C.fdp(lsi, 0));
+						}							
+						OI.addfield("observed_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+						OI.setcomment("Observed " + sys + cid[ci] + "-component secondary field windows");
+						for (size_t w = 0; w < C.nw; w++){
+							buf += strprint("%15.6le", C.fds(lsi,w));
+						}						
+					}
+				}
+			}
+
+			if (OutputOp.Noise){				
+				for (size_t si = 0; si < T.size(); si++){
+					cSystemInfo& S = T[si];
+					std::string sys = strprint("EMSystem_%lu_", si + 1);
+					for (size_t ci = 0; ci < S.Comp.size(); ci++){
+						cComponentInfo& C = S.Comp[ci];
+						if (C.Use == false)continue;						
+						OI.addfield("noise_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+						OI.setcomment("Estimated noise " + sys + cid[ci] + "-component secondary field windows");
+						for (size_t w = 0; w < C.nw; w++){
+							buf += strprint("%15.6le", C.fdn(lsi, w));
+						}
+					}
+				}
+			}
+
+			if (OutputOp.PredictedData){				
 				size_t ldi = gdist.localind(dindex(gsi, 0));
 				for (size_t si = 0; si < T.size(); si++){
 					cSystemInfo& S = T[si];
 					S.forward_model(conductivity, thickness, ginv);
-
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++){
-
 						cComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;
-
 						if (S.InvertTotalField){
-							OI.addfield(sys + cid[ci] + "P", 'E', 15, 6);
-							OI.setcomment(sys + cid[ci] + "-component primary field");							
+							OI.addfield("predicted_" +  sys + cid[ci] + "P", 'E', 15, 6);
+							OI.setcomment("Predicted " + sys + cid[ci] + "-component primary field");
 							if (ci == 0) buf += strprint("%15.6le", S.T.PrimaryX);
 							else if (ci == 1) buf += strprint("%15.6le", S.T.PrimaryY);
 							else              buf += strprint("%15.6le", S.T.PrimaryZ);
 
-							OI.addfield(sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-							OI.setcomment(sys + cid[ci] + "-component secondary field windows");
+							OI.addfield("predicted_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+							OI.setcomment("Predicted " + sys + cid[ci] + "-component secondary field windows");
 							for (size_t w = 0; w < C.nw; w++){
 								if      (ci == 0) buf += strprint("%15.6le", S.T.X[w]);
 								else if (ci == 1) buf += strprint("%15.6le", S.T.Y[w]);
@@ -2148,8 +2231,8 @@ public:
 							}
 						}
 						else{
-							OI.addfield(sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-							OI.setcomment(sys + cid[ci] + "-component secondary field windows");
+							OI.addfield("predicted_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
+							OI.setcomment("Predicted " + sys + cid[ci] + "-component secondary field windows");
 							for (size_t w = 0; w < C.nw; w++){
 								buf += strprint("%15.6le", glocal[ldi]);
 								ldi++;
@@ -2158,6 +2241,7 @@ public:
 					}
 				}
 			}
+			
 
 			//Inversion parameters
 			OI.addfield("SamplePhiD", 'E', 15, 6);

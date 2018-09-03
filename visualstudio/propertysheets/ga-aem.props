@@ -17,12 +17,10 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>icacls $(OutDir)$(TargetName)$(TargetExt) /grant Everyone:RX</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>
-      </Message>
+      <Message>Grant Read and execute permissions</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
 </Project>
