@@ -63,14 +63,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
-    <OutDir>..\..\python\gatdaem1d</OutDir>
+    <OutDir>..\..\python\gatdaem1d\</OutDir>
     <TargetExt>.dll</TargetExt>
     <TargetName>gatdaem1d_debug</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
-    <OutDir>..\..\python\gatdaem1d</OutDir>
+    <OutDir>..\..\python\gatdaem1d\</OutDir>
     <TargetExt>.dll</TargetExt>
     <TargetName>gatdaem1d</TargetName>
   </PropertyGroup>

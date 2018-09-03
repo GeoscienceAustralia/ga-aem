@@ -1,13 +1,13 @@
 #File patterns that are ignored
 
 output/
-bin/x64/Release/*.exe 
-bin/x64/Release/*.exp 
-bin/x64/Release/*.lib 
-bin/x64/Debug
-bin/x64/Debug/*.exe 
-bin/x64/Debug/*.exp 
-bin/x64/Debug/*.lib 
+/bin/x64/Release/*.exe
+/bin/x64/Release/*.exp
+/bin/x64/Release/*.lib
+/bin/x64/Debug
+/bin/x64/Debug/*.exe
+/bin/x64/Debug/*.exp
+/bin/x64/Debug/*.lib
 *_debug.dll 
 *_debug.mexw64 
 
@@ -118,9 +118,9 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Remove all binaries
-*.exe
-*.dll
-*.mexw64
+#*.exe
+#*.dll
+#*.mexw64
 
 # Python
 *.pyc

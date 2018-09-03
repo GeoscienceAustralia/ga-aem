@@ -42,60 +42,6 @@ class cComponentInfo;
 
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 
-class cLineTiles{
-
-	std::vector<std::vector<double>> L;
-	
-public:
-
-	cLineTiles(const double linelen, const double seglen, const double overlap){
-		calculate_tiles(linelen, seglen, overlap);
-	};
-
-	void calculate_tiles(const double linelen, const double seglen, const double overlap){
-		int n = std::round((linelen - overlap) / (seglen - overlap));		
-		double newseglen = (linelen + 2.0*overlap*(n-1)) / (double)n;
-
-		L.resize(n);				
-		for (size_t i = 0; i < n; i++){
-			L[i].resize(4);
-			if (i == 0){		
-				L[i][0] = 0.0;				
-			}
-			else{
-				L[i][0] = L[i-1][0] + newseglen - 2*overlap;
-			}
-			
-			L[i][1] = L[i][0] + overlap;
-			L[i][2] = L[i][0] + newseglen - overlap;
-			L[i][3] = L[i][0] + newseglen;
-
-			if (i == 0){
-				L[i][1] = L[i][0];
-			}
-
-			if (i == n-1){				
-				L[i][2] = L[i][3];
-			}			
-		}
-		std::cout << *this;
-	};
-	
-	friend std::ostream& operator<<(std::ostream& os, const cLineTiles& t);
-
-
-};
-
-std::ostream& operator<<(std::ostream& os, const cLineTiles& t){
-	for (size_t i = 0; i < t.L.size(); i++){
-		os << t.L[i][0] << "\t";
-		os << t.L[i][1] << "\t";
-		os << t.L[i][2] << "\t";
-		os << t.L[i][3] << std::endl;
-	}
-	return os;
-};
-
 class cField{
 
 	std::vector<double> _data;
@@ -906,7 +852,7 @@ public:
 		rootmessage(mylogfile, "\nStarting setup\n");
 		setup();
 		rootmessage(mylogfile, "\nStarting iterations\n");
-		iterate_test();
+		iterate();
 		rootmessage(mylogfile, "\nFinishing at at %s\n", timestamp().c_str());
 		rootmessage(mylogfile, "Elapsed time = %.2lf\n", stopwatch.etimenow());
 	};
@@ -1997,95 +1943,10 @@ public:
 		return Wr.vtAv(m - mref);
 	}
 
-	void iterate(){
-
-		cStopWatch sw;
-
-		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
-		cPetscDistVector m = mref;
-		m.setname("m");
-
-		cPetscDistVector g("g", mpicomm, nlocaldata, ndata);
-
-		cPetscDistShellMatrix A("A", mpicomm, nlocalparam, nlocalparam, nparam, nparam, (void*)this);
-		A.set_multiply_function_vec((void*)shellmatrixmult);
-
-		lambda = 1;
-
-		bool keepgoing = true;
-		size_t iteration = 1;
-		while (keepgoing){
-			rootmessage(mylogfile, "\n\nItaration = %lu\n", iteration);
-
-			sw.reset();
-			forwardmodel_and_jacobian(m, g, true);
-			rootmessage(mylogfile, "Forward modelling time=%lf\n", sw.etimenow());
-
-
-			double phid = PhiD(g);
-			double targetphid = phid * 0.7;
-			if (targetphid < InversionOp.MinimumPhiD) targetphid = InversionOp.MinimumPhiD;
-			double phiv = PhiV(m); double phih = PhiH(m);
-			double phib = PhiB(m); double phir = PhiR(m);
-			double phi = phid + phiv + phih + phib + phir;
-
-			rootmessage(mylogfile, "Current Lambda = %lf\n", lambda);
-			rootmessage(mylogfile, "Current Phi = %lf\n", phi);
-			rootmessage(mylogfile, "Current PhiV = %lf\n", phiv);
-			rootmessage(mylogfile, "Current PhiH = %lf\n", phih);
-			rootmessage(mylogfile, "Current PhiB = %lf\n", phib);
-			rootmessage(mylogfile, "Current PhiR = %lf\n", phir);
-			rootmessage(mylogfile, "Current PhiD = %lf\n", phid);
-			rootmessage(mylogfile, "Target  PhiD = %lf\n", targetphid);
-
-			rootmessage(mylogfile, "Starting CG solve\n");
-			sw.reset();
-
-			b = J ^ (Wd*(dobs - g + J*m));
-			if (InversionOp.AlphaB > 0) b += lambda*((B ^ (Wb^clogref)));
-			if (InversionOp.AlphaR > 0) b += lambda*((Wr^mref));
-
-			cPetscDistVector mtrial = A.solve_CG(P, b, m);
-			rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
-			rootmessage(mylogfile, A.convergence_summary().c_str());
-
-			cPetscDistVector dm = mtrial - m;
-			rootmessage(mylogfile, "Finding step factor\n");
-			double bestsf, bestphid, improvement;
-			find_stepfactor(m, dm, phid, targetphid, bestsf, bestphid, improvement);
-
-			//double pi = 100.0*(phid - bestphid) / phid;
-			//rootmessage(mylogfile, "Step factor = %.5lf\n", bestsf);
-			//rootmessage(mylogfile, "Found PhiD = %.5lf\n", bestphid);
-			//rootmessage(mylogfile, "Improvement = %.5lf%%\n", pi);
-
-			iteration++;
-			if (improvement > 0.0){
-				m += bestsf*dm;
-				forwardmodel_and_jacobian(m, g, false);
-
-				mLastPhiD = bestphid;
-				mLastLambda = lambda;
-				mLastIteration = iteration;
-				write_results(OutputOp.DataFile, m, g);
-			}
-
-			if (improvement < InversionOp.MinimumPercentageImprovement){
-				keepgoing = false;
-			}
-			if (iteration > InversionOp.MaximumIterations){
-				keepgoing = false;
-			}
-			if (bestphid < InversionOp.MinimumPhiD){
-				keepgoing = false;
-			}
-		}
-	};
-
 	void find_stepfactor(const cPetscDistVector& m, const cPetscDistVector& dm, const double& currentphid, const double& targetphid, double& bestsf, double& bestphid, double& improvement){
 
 		rootmessage(mylogfile, "Finding step factor\n");
-		cStopWatch sw;		
+		cStopWatch sw;
 		cPetscDistVector gtrial = dobs;
 		cPetscDistVector mtrial = m;
 		cInversionLineSearcher LS(currentphid, targetphid);
@@ -2105,11 +1966,11 @@ public:
 		rootmessage(mylogfile, "Improvement = %.5lf%%\n", improvement);
 
 		std::string stepsfile = strprint("output//steps//steps_%02llu.txt", mLastIteration);
-		if(mpirank==0)LS.writetextfile(stepsfile);
+		if (mpirank == 0)LS.writetextfile(stepsfile);
 		return;
 	}
-
-	void iterate_test(){
+	
+	void iterate(){
 		
 		cPetscDistVector m = mref;
 		m.setname("m");
