@@ -1,12 +1,13 @@
 #File patterns that are ignored
 
-
 output/
-bin/x64/Release/*.exp 
-bin/x64/Release/*.lib 
-bin/x64/Debug
-bin/x64/Debug/*.exp 
-bin/x64/Debug/*.lib 
+/bin/x64/Release/*.exe
+/bin/x64/Release/*.exp
+/bin/x64/Release/*.lib
+/bin/x64/Debug
+/bin/x64/Debug/*.exe
+/bin/x64/Debug/*.exp
+/bin/x64/Debug/*.lib
 *_debug.dll 
 *_debug.mexw64 
 
@@ -116,14 +117,10 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-# Renove all binaries
-#*.exe
-#*.dll
-#*.mexw64
-
-# Renove all raijin.nci.org.au binaries
-# Compiled executables on linux
-/bin/raijin/*
+# Remove all binaries
+*.exe
+*.dll
+*.mexw64
 
 # Python
 *.pyc
@@ -133,4 +130,12 @@ $RECYCLE.BIN/
 /python/gatdaem1d/*.so           #Ignore the Linux shared libraries
 !/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
 
+
+# Renove all raijin.nci.org.au binaries
+# Compiled executables on linux
+/bin/raijin/*
+
+# Renove raijin.nci.org.au specific scripts
+/makefiles/raijin_run_make.sh
+/makefiles/raijin_install.sh
 
