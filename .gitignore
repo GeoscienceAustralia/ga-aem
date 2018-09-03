@@ -138,8 +138,8 @@ $RECYCLE.BIN/
 /bin/raijin/*
 
 # Renove raijin.nci.org.au specific scripts
-/makefiles/raijin_run_make.sh
-/makefiles/raijin_install.sh
+# /makefiles/raijin_run_make.sh
+# /makefiles/raijin_install.sh
 
 output/
 
