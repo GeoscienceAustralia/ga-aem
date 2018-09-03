@@ -1,13 +1,17 @@
 #File patterns that are ignored
 
-output/
-bin/x64/Release/*.exe 
-bin/x64/Release/*.exp 
-bin/x64/Release/*.lib 
-bin/x64/Debug
-bin/x64/Debug/*.exe 
-bin/x64/Debug/*.exp 
-bin/x64/Debug/*.lib 
+# Remove all binary executables
+*.exe
+*.dll
+*.mexw64
+
+/bin/x64/Release/*.exe
+/bin/x64/Release/*.exp
+/bin/x64/Release/*.lib
+/bin/x64/Debug
+/bin/x64/Debug/*.exe
+/bin/x64/Debug/*.exp
+/bin/x64/Debug/*.lib
 *_debug.dll 
 *_debug.mexw64 
 
@@ -117,10 +121,9 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-# Remove all binaries
-*.exe
-*.dll
-*.mexw64
+
+# Matlab
+#!/matlab/bin/x64/gatdaem1d.mexw64 #Keep the Windows mexw64 (dll)
 
 # Python
 *.pyc
@@ -128,8 +131,7 @@ $RECYCLE.BIN/
 /python/gatdaem1d/gatdaem1d.exp  #Ignore the export lib
 /python/gatdaem1d/gatdaem1d.lib  #Ignore the lib
 /python/gatdaem1d/*.so           #Ignore the Linux shared libraries
-!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
-
+#!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
 
 # Renove all raijin.nci.org.au binaries
 # Compiled executables on linux
@@ -138,4 +140,6 @@ $RECYCLE.BIN/
 # Renove raijin.nci.org.au specific scripts
 /makefiles/raijin_run_make.sh
 /makefiles/raijin_install.sh
+
+output/
 
