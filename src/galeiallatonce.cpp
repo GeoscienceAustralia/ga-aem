@@ -177,7 +177,7 @@ public:
 	cField fds;
 	cField fdn;
 	cField fdmn;
-	cField fdan;	
+	cField fdan;
 
 	cComponentInfo() {};
 
@@ -814,12 +814,7 @@ public:
 		OutputOp = cOutputOptions(Control.findblock("Output"));
 		std::string s = strprint(".%04d", mpirank);
 		OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
-		if (mpirank == 0){
-			mylogfile = fileopen(OutputOp.LogFile, "w");
-		}
-		else{
-			mylogfile = (FILE*)NULL;
-		}
+		mylogfile = fileopen(OutputOp.LogFile, "w");
 
 		rootmessage("Opening log file %s\n", OutputOp.LogFile.c_str());
 		rootmessage(mylogfile, "Logfile opened on %s\n", timestamp().c_str());
@@ -829,7 +824,7 @@ public:
 		rootmessage(mylogfile, "Processes=%lu\tRank=%lu\n", mpisize, mpirank);
 		rootmessage(mylogfile, "Processor name = %s\n", mpipname.c_str());
 		if (mpirank == 0) Control.print();
-		Control.write(mylogfile);		
+		Control.write(mylogfile);
 
 		InputOp = cInputOptions(Control.findblock("Input"));
 		InversionOp = cInversionOptions(Control.findblock("Options"));
