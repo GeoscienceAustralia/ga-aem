@@ -53,6 +53,30 @@ int nwindows(void* hS)
 	return (int)T.NumberOfWindows;	
 }
 
+int nturns(void* hS)
+{		
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
+	return (int)T.TX_NumberOfTurns;	
+}
+
+double peakcurrent(void* hS)
+{
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
+        return (double)T.TX_PeakCurrent;
+}
+
+double looparea(void* hS)
+{
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
+        return (double)T.TX_LoopArea;
+}
+
+double basefrequency(void* hS)
+{
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
+	return (double)T.BaseFrequency;
+}
+
 int nlayers(void* hS)
 {		
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
