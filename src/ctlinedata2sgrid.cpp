@@ -34,6 +34,8 @@ private:
 	int linenumber;
 	int nlayers;
 	int nsamples;
+	bool usecellalignment = false;
+	double cellwidth = 0;
 
 	bool isconstantthickness;
 	std::vector<double> constantthickness;
@@ -60,8 +62,13 @@ public:
 	}
 
 	void process(const std::string& filename){
-		readdatafile(filename);
-		createsgrid();
+		readdatafile(filename);		
+		if (usecellalignment){
+			create_sgrid_prop_alignment_cells();
+		}
+		else{
+			create_sgrid_prop_alignment_points();
+		}
 	}
 
 	void getsgridoptions(){
@@ -84,6 +91,11 @@ public:
 		NullOutputProperty = b.getdoublevalue("NullOutputProperty");		
 		if (!isdefined(NullOutputProperty)){
 			NullOutputProperty = -999;
+		}
+
+		usecellalignment = b.getboolvalue("UseCellAlignment");
+		if (usecellalignment){
+			cellwidth = b.getdoublevalue("CellWidth");
 		}
 	}
 
@@ -228,7 +240,7 @@ public:
 		}				
 	}
 	
-	void createsgrid(){	
+	void create_sgrid_prop_alignment_cells(){	
 
 		std::string sgridname = sgridprefix + strprint("%d", linenumber) + sgridsuffix;
 		std::string sgriddatafile = sgridname + ".sg.data";
@@ -249,21 +261,21 @@ public:
 						xc = (x[si - 1] + x[si]) / 2.0;
 						yc = (y[si - 1] + y[si]) / 2.0;
 						zc = (z[si - 1][li] + z[si][li]) / 2.0;							
-						v = cVec(x[si]-x[si-1],y[si]-y[si-1],zc);
+						v = cVec(x[si]-x[si-1],y[si]-y[si-1],0.0);
 					}
 					else if (si == 0){//first cell
 						ec = e[0] - (e[1] - e[0]) / 2.0;
 						xc = x[0] - (x[1] - x[0]) / 2.0;
 						yc = y[0] - (y[1] - y[0]) / 2.0;						
 						zc = z[0][li] - (z[1][li] - z[0][li]) / 2.0;
-						v = cVec(x[1]-x[0],y[1]-y[0],zc);
+						v = cVec(x[1]-x[0],y[1]-y[0],0.0);
 					}
 					else if (si == nsamples){//last cell
 						ec = e[nsamples - 1] + (e[nsamples - 1] - e[nsamples - 2]) / 2.0;
 						xc = x[nsamples - 1] + (x[nsamples - 1] - x[nsamples - 2]) / 2.0;
 						yc = y[nsamples - 1] + (y[nsamples - 1] - y[nsamples - 2]) / 2.0;
 						zc = z[nsamples - 1][li] + (z[nsamples - 1][li] - z[nsamples - 2][li]) / 2.0;
-						v = cVec(x[nsamples-1]-x[nsamples-2],y[nsamples-1]-y[nsamples-2],zc);
+						v = cVec(x[nsamples-1]-x[nsamples-2],y[nsamples-1]-y[nsamples-2],0.0);
 					}
 					else{
 						printf("Error\n");
@@ -271,7 +283,7 @@ public:
 
 					double ang=90;
 					if(wi==1)ang=-90;							
-					cVec vr = v.rotate(ang,cVec(0,0,1)).unit();						
+					cVec vr = (cellwidth/2.0)*v.rotate(ang,cVec(0.0,0.0,1.0)).unit();
 					xc = xc+vr.x;
 					yc = yc+vr.y;
 
@@ -349,6 +361,105 @@ public:
 
 	}
 
+	void create_sgrid_prop_alignment_points(){
+
+		std::string sgridname = sgridprefix + strprint("%d", linenumber) + sgridsuffix;
+		std::string sgriddatafile = sgridname + ".sg.data";
+		std::string sgriddatapath = sgriddir + sgridname + ".sg.data";
+		std::string sgridhdrpath = sgriddir + sgridname + ".sg";
+		FILE* fp_data = fileopen(sgriddatapath, "w");
+		fprintf(fp_data, "*\n");
+		fprintf(fp_data, "*   X   Y   Z  Conductivity  Log10Conductivity I   J   K\n");
+		fprintf(fp_data, "*\n");
+
+		for (int li = 0; li < nlayers; li++){
+			for (int si = 0; si < nsamples; si++){
+				double xc, yc, zc, ec, c0, lc0;
+				cVec v;
+				if (si>=0 && si<=nsamples){
+					ec = e[si];
+					xc = x[si];
+					yc = y[si];
+					zc = (z[si][li] + z[si][li+1])/2.0;
+				}								
+				else{
+					printf("Error\n");
+				}
+
+				c0 = lc0 = NullOutputProperty;
+				if (li<nlayers && si<nsamples){
+					c0 = c[si][li];
+					if (c0 == NullInputConductivity){
+						c0 = NullOutputProperty;
+						lc0 = NullOutputProperty;
+					}
+					else if (c0 <= 0.0){
+						c0 = 1e-6;
+						lc0 = log10(c0);
+					}
+					else{
+						c0 = c[si][li];
+						lc0 = log10(c0);
+					}
+
+					if (zc<NullBelowElevation){
+						c0 = NullOutputProperty;
+						lc0 = NullOutputProperty;
+					}
+
+					double dc = ec - zc;
+					if (dc>NullBelowDepth){
+						c0 = NullOutputProperty;
+						lc0 = NullOutputProperty;
+					}
+				}
+
+				fprintf(fp_data, "%8.1f %9.1f %7.1f %10.6f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, lc0, si, li, 0);
+			}
+		}
+		fclose(fp_data);
+
+		FILE* fp_hdr = fileopen(sgridhdrpath, "w");
+
+		fprintf(fp_hdr, "GOCAD SGrid 1\n");
+		fprintf(fp_hdr, "HEADER {\n");
+		fprintf(fp_hdr, "name:%s\n", sgridname.c_str());
+		fprintf(fp_hdr, "painted:true\n");
+		fprintf(fp_hdr, "*painted*variable:Log10Conductivity\n");
+		fprintf(fp_hdr, "ascii:on\n");
+		fprintf(fp_hdr, "double_precision_binary:off\n");
+		fprintf(fp_hdr, "cage:false\n");
+		fprintf(fp_hdr, "volume:true\n");
+		fprintf(fp_hdr, "*volume*grid:false\n");
+		fprintf(fp_hdr, "*volume*transparency_allowed:false\n");
+		fprintf(fp_hdr, "*volume*points:false\n");
+		fprintf(fp_hdr, "shaded_painted:false\n");
+		fprintf(fp_hdr, "precise_painted:true\n");
+		fprintf(fp_hdr, "*psections*grid:false\n");
+		fprintf(fp_hdr, "*psections*solid:true\n");
+		fprintf(fp_hdr, "dead_cells_faces:false\n");
+		fprintf(fp_hdr, "}\n");
+
+		fprintf(fp_hdr, "\n");
+		fprintf(fp_hdr, "AXIS_N %d %d %d\n", nsamples, nlayers, 1);
+		fprintf(fp_hdr, "PROP_ALIGNMENT POINTS\n");
+		fprintf(fp_hdr, "ASCII_DATA_FILE %s\n", sgriddatafile.c_str());
+
+		fprintf(fp_hdr, "\n");
+		fprintf(fp_hdr, "PROPERTY 1 Conductivity\n");
+		fprintf(fp_hdr, "PROP_UNIT 1 S/m\n");
+		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 1 -999\n");
+
+		fprintf(fp_hdr, "\n");
+		fprintf(fp_hdr, "PROPERTY 2 Log10Conductivity\n");
+		fprintf(fp_hdr, "PROP_UNIT 2 log10S/m\n");
+		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 2 -999\n");
+
+		fprintf(fp_hdr, "\n");
+		fprintf(fp_hdr, "END\n");
+		fclose(fp_hdr);
+
+	}
 };
 
 int main(int argc, char** argv)
