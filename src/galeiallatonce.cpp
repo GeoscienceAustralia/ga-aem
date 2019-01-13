@@ -42,6 +42,58 @@ class cComponentInfo;
 
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 
+class cLineTiles{
+
+	std::vector<std::vector<double>> L;
+	
+public:
+
+	cLineTiles(const double linelen, const double seglen, const double overlap){
+		calculate_tiles(linelen, seglen, overlap);
+	};
+
+	void calculate_tiles(const double linelen, const double seglen, const double overlap){
+		int n = std::round((linelen - overlap) / (seglen - overlap));		
+		double newseglen = (linelen + 2.0*overlap*(n-1)) / (double)n;
+
+		L.resize(n);				
+		for (size_t i = 0; i < n; i++){
+			L[i].resize(4);
+			if (i == 0){		
+				L[i][0] = 0.0;				
+			}
+			else{
+				L[i][0] = L[i-1][0] + newseglen - 2*overlap;
+			}
+			
+			L[i][1] = L[i][0] + overlap;
+			L[i][2] = L[i][0] + newseglen - overlap;
+			L[i][3] = L[i][0] + newseglen;
+
+			if (i == 0){
+				L[i][1] = L[i][0];
+			}
+
+			if (i == n-1){				
+				L[i][2] = L[i][3];
+			}			
+		}
+		std::cout << *this;
+	};
+	
+	friend std::ostream& operator<<(std::ostream& os, const cLineTiles& t);
+};
+
+std::ostream& operator<<(std::ostream& os, const cLineTiles& t){
+	for (size_t i = 0; i < t.L.size(); i++){
+		os << t.L[i][0] << "\t";
+		os << t.L[i][1] << "\t";
+		os << t.L[i][2] << "\t";
+		os << t.L[i][3] << std::endl;
+	}
+	return os;
+};
+
 class cField{
 
 	std::vector<double> _data;
@@ -662,7 +714,6 @@ public:
 	bool NegativeLayerBottomDepths = false;
 	bool InterfaceElevations = false;
 
-
 	cOutputOptions(){};
 	cOutputOptions(const cBlock& b){
 
@@ -685,7 +736,6 @@ public:
 		b.getvalue("NegativeLayerBottomDepths", NegativeLayerBottomDepths);
 		b.getvalue("InterfaceElevations", InterfaceElevations);
 	}
-
 };
 
 class cGeometryInfo {
@@ -712,8 +762,7 @@ class cAllAtOnceInverter{
 
 private:
 	cBlock Control;
-	//std::string ControlFile;
-
+	
 	cMpiEnv   mpienv;
 	cMpiComm  mpicomm;
 	cRadiusSearcher RS;
@@ -813,8 +862,18 @@ public:
 		Control = cBlock(ControlFile);
 		OutputOp = cOutputOptions(Control.findblock("Output"));
 		std::string s = strprint(".%04d", mpirank);
+		
 		OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
 		mylogfile = fileopen(OutputOp.LogFile, "w");
+
+		
+		//OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
+		//if (mpirank == 0){
+		//	mylogfile = fileopen(OutputOp.LogFile, "w");
+		//}
+		//else{
+		//	mylogfile = (FILE*)NULL;
+		//}
 
 		rootmessage("Opening log file %s\n", OutputOp.LogFile.c_str());
 		rootmessage(mylogfile, "Logfile opened on %s\n", timestamp().c_str());
@@ -1959,12 +2018,18 @@ public:
 		rootmessage(mylogfile, "Step factor = %.5lf\n", bestsf);
 		rootmessage(mylogfile, "Found PhiD  = %.5lf\n", bestphid);
 		rootmessage(mylogfile, "Improvement = %.5lf%%\n", improvement);
+		
+		//if (mpirank == 0){
+		//	std::string stepsfile = strprint("output//steps//steps_%02llu.txt", mLastIteration);
+		//	LS.writetextfile(stepsfile);
+		//}
 
 		std::string stepsfile = strprint("output//steps//steps_%02llu.txt", mLastIteration);
 		if (mpirank == 0)LS.writetextfile(stepsfile);
+
 		return;
 	}
-	
+
 	void iterate(){
 		
 		cPetscDistVector m = mref;
@@ -1992,10 +2057,8 @@ public:
 			if (targetphid < InversionOp.MinimumPhiD) targetphid = InversionOp.MinimumPhiD;
 			
 			log_iteration_msg(lambda, phi, phiv, phih, phib, phir, phid, targetphid);
-			
-			
-			cPetscDistVector dm = cg_solve(A, m, g);
-									
+						
+			cPetscDistVector dm = cg_solve(A, m, g);									
 			double bestsf, bestphid, improvement;
 			find_stepfactor(m, dm, phid, targetphid, bestsf, bestphid, improvement);
 			

@@ -12,8 +12,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <cstring>
 
-
-
 #include "general_types.h"
 #include "general_utils.h"
 #include "general_types.h"
@@ -327,6 +325,11 @@ public:
 		}		
 	}
 
+	std::string getdatasetname(){
+		std::string s = datasetname;
+		return s;
+	}
+
 	std::string basename(){
 		std::string bn = prefix + strprint("%d", D.linenumber) + suffix;
 		return bn;
@@ -352,8 +355,18 @@ public:
 		return s;
 	}
 
-	std::string xmlfile(){
-		std::string s = tilesetdir() + basename() + ".xml";
+	std::string xmlname(){
+		std::string s = basename() + ".xml";
+		return s;
+	}
+
+	std::string xmlpath(){
+		std::string s = tilesetdir() + xmlname();
+		return s;
+	}
+
+	std::string datasetxmlpath(){
+		std::string s = tilesetdir() + datasetname + ".xml";
 		return s;
 	}
 
@@ -442,7 +455,7 @@ public:
 	
 	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
 	{				
-		makedirectorydeep(extractfiledirectory(xmlfile()));
+		makedirectorydeep(extractfiledirectory(xmlpath()));
 		try
 		{
 			//Levels
@@ -454,7 +467,7 @@ public:
 			} 
 
 			Element a, b;
-			Document doc(xmlfile());
+			Document doc(xmlpath());
 			std::string ver = "1.0";
 			std::string enc = "UTF-8";
 			std::string std = "yes";
@@ -590,7 +603,7 @@ public:
 		s += strprint("\n");				
 		file << s.c_str();		
 	}		
-
+	
 	static void appendpause(const std::string filename)
 	{
 		std::ios_base::openmode mode = std::ios::app;		
@@ -598,6 +611,47 @@ public:
 		file << "\npause\n";
 	}
 };
+
+void save_dataset_xml(const std::string xmlpath, 
+	const std::string datasetname,
+	const std::vector<std::string> names,
+	const std::vector<std::string> urls
+	)
+{
+	makedirectorydeep(extractfiledirectory(xmlpath));
+	try
+	{		
+		Element a, b;
+		Document doc(xmlpath);
+		
+		//std::string ver = "1.0";
+		//std::string enc = "UTF-8";
+		//std::string std = "yes";
+		//Declaration dec(ver, enc, std);
+		//doc.InsertEndChild(dec);
+		
+		Element dl("DatasetList");
+
+		Element d("Dataset");
+		d.SetAttribute("name", datasetname);
+		//d.SetAttribute("info", "http://www.ga.gov.au/eftf");
+
+		for (size_t i = 0; i < names.size(); i++){
+			Element l("Layer");
+			l.SetAttribute("name", names[i]);
+			l.SetAttribute("url", urls[i]);
+			//l.SetAttribute("icon", "icon.png");
+			d.InsertEndChild(l);
+		}
+		dl.InsertEndChild(d);
+		doc.InsertEndChild(dl);		
+		doc.SaveFile();
+	}
+	catch (ticpp::Exception& ex)
+	{
+		std::cout << ex.what();
+	}
+}
 
 int main(int argc, char** argv)
 {		
@@ -627,6 +681,11 @@ int main(int argc, char** argv)
 		cStopWatch stopwatch;
 		size_t sequence_number = 0;
 		std::string tilerbatchfile;
+		std::vector<std::string> names;
+		std::vector<std::string> urls;
+		std::string datasetxml;
+		std::string datasetname;
+
 		for (size_t i = 0; i < filelist.size(); i++){
 			std::printf("Processing file %s %3lu of %3lu\n", filelist[i].c_str(), i + 1, filelist.size());
 
@@ -651,8 +710,15 @@ int main(int argc, char** argv)
 				if (sequence_number == 0) C.createcolorbar();
 				sequence_number++;
 				tilerbatchfile = C.ribbontilerbatchfilepath();
+				
+				names.push_back(C.basename());
+				urls.push_back(C.xmlname());
+				datasetxml  = C.datasetxmlpath();
+				datasetname = C.getdatasetname();
 			}
 		}
+				
+		save_dataset_xml(datasetxml,datasetname,names,urls);
 		cCurtainImageSection::appendpause(tilerbatchfile);		
 		printf("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
 		cGDIplusHelper::stop(token);		
