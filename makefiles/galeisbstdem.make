@@ -22,7 +22,7 @@ objects += $(srcdir)/galeisbstdem.o
 %.o : %.cpp
 	@echo ' '
 	@echo 'Compiling ' $<
-	$(cxx) -c $(includes) $(cxxflags) $< -o $@
+	$(mpicxx) -c $(includes) $(cxxflags) $< -o $@
 
 compile: $(objects)
 
