@@ -16,10 +16,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <omp.h>
 #endif
 
-#pragma warning( push )  
+#pragma warning( push )
 #pragma warning (disable: 4251)
 #include <gdal_priv.h>
-#pragma warning( pop )   
+#pragma warning( pop )
 #include <gdal_alg.h>
 #include <ogr_spatialref.h>
 

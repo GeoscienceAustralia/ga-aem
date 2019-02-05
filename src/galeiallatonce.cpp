@@ -56,11 +56,11 @@ public:
 		int n = std::round((linelen - overlap) / (seglen - overlap));		
 		double newseglen = (linelen + 2.0*overlap*(n-1)) / (double)n;
 
-		L.resize(n);				
-		for (size_t i = 0; i < n; i++){
+		L.resize(n);
+		for (size_t i = 0; i < (size_t)n; i++){
 			L[i].resize(4);
-			if (i == 0){		
-				L[i][0] = 0.0;				
+			if (i == 0){
+				L[i][0] = 0.0;
 			}
 			else{
 				L[i][0] = L[i-1][0] + newseglen - 2*overlap;
@@ -74,9 +74,9 @@ public:
 				L[i][1] = L[i][0];
 			}
 
-			if (i == n-1){				
+			if (i == (size_t)(n-1)){
 				L[i][2] = L[i][3];
-			}			
+			}
 		}
 		std::cout << *this;
 	};

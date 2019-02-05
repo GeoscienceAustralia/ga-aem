@@ -36,4 +36,3 @@ clean:
 	@echo Cleaning
 	rm -f $(objects)
 	rm -f $(executable)
-
