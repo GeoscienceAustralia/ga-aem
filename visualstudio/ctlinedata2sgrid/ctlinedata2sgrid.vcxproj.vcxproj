@@ -78,6 +78,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <PostBuildEvent>
+      <Command>icacls $(OutDir)$(TargetName)$(TargetExt) /grant Everyone:RX
+</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ctlinedata2sgrid.cpp" />
