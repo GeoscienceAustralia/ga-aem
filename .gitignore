@@ -1,20 +1,15 @@
 #File patterns that are ignored
 
-# Remove all binary executables
-<<<<<<< HEAD
-# *.exe
-# *.dll
-# *.mexw64
+# Ignore output files from the examples
+examples/**/output
+examples/**/*.out
+examples/**/*.log
 
-output/
-!/bin/x64/Release/*.exe
-=======
+# Ignore all binary executables
 *.exe
+!/bin/x64/Release/*.exe #Keep the Windows executables
 *.dll
 *.mexw64
-
-/bin/x64/Release/*.exe
->>>>>>> tiles
 /bin/x64/Release/*.exp
 /bin/x64/Release/*.lib
 /bin/x64/Debug
@@ -23,6 +18,26 @@ output/
 /bin/x64/Debug/*.lib
 *_debug.dll 
 *_debug.mexw64 
+
+# Matlab
+!/matlab/bin/x64/gatdaem1d.mexw64 #Keep the Windows mexw64 (dll)
+
+# Python
+*.pyc
+*.pyo
+/python/gatdaem1d/gatdaem1d.exp  #Ignore the export lib
+/python/gatdaem1d/gatdaem1d.lib  #Ignore the lib
+/python/gatdaem1d/*.so           #Ignore the Linux shared libraries
+!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
+
+# Ignore all raijin.nci.org.au binaries
+# Compiled executables on linux
+/bin/raijin/*
+
+# Ignore raijin.nci.org.au specific scripts
+# /makefiles/raijin_run_make.sh
+# /makefiles/raijin_install.sh
+
 
 # Compiled Object files
 *.slo
@@ -129,37 +144,4 @@ Desktop.ini
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
-
-
-# Matlab
-<<<<<<< HEAD
-!/matlab/bin/x64/gatdaem1d.mexw64 #Keep the Windows mexw64 (dll)
-=======
-#!/matlab/bin/x64/gatdaem1d.mexw64 #Keep the Windows mexw64 (dll)
->>>>>>> tiles
-
-# Python
-*.pyc
-*.pyo
-/python/gatdaem1d/gatdaem1d.exp  #Ignore the export lib
-/python/gatdaem1d/gatdaem1d.lib  #Ignore the lib
-/python/gatdaem1d/*.so           #Ignore the Linux shared libraries
-<<<<<<< HEAD
-!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
-=======
-#!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
->>>>>>> tiles
-
-# Renove all raijin.nci.org.au binaries
-# Compiled executables on linux
-/bin/raijin/*
-
-# Renove raijin.nci.org.au specific scripts
-# /makefiles/raijin_run_make.sh
-# /makefiles/raijin_install.sh
-<<<<<<< HEAD
-=======
-
-output/
->>>>>>> tiles
 
