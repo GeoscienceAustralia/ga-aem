@@ -53,7 +53,7 @@ public:
 	};
 
 	void calculate_tiles(const double linelen, const double seglen, const double overlap){
-		int n = std::round((linelen - overlap) / (seglen - overlap));		
+		int n = (int)std::round((linelen - overlap) / (seglen - overlap));		
 		double newseglen = (linelen + 2.0*overlap*(n-1)) / (double)n;
 
 		L.resize(n);

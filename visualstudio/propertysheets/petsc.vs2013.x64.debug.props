@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets">
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
-    <PETSC_ROOT>Z:\code\repos\petsc-3.4.3-vs2013</PETSC_ROOT>
+    <PETSC_ROOT>Z:\code\repos\petsc\3.9.4\vs2013</PETSC_ROOT>
   </PropertyGroup>
   <PropertyGroup>
     <LibraryPath>$(PETSC_ROOT)\win64_debug\lib;$(LibraryPath)</LibraryPath>
