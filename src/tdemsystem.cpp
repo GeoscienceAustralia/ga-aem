@@ -678,7 +678,7 @@ void cTDEmSystem::printwindows()
 	printf("Primary   %15.8lf%15.8lf%15.8lf\n\n", PrimaryX, PrimaryY, PrimaryZ);
 	printf("Window#             X               Y               Z\n");
 	for (size_t w = 0; w < NumberOfWindows; w++){
-		printf("%2lu        %15.8lf%15.8lf%15.8lf\n", w + 1, X[w], Y[w], Z[w]);
+		printf("%2zu        %15.8lf%15.8lf%15.8lf\n", w + 1, X[w], Y[w], Z[w]);
 	}
 }
 
@@ -688,7 +688,7 @@ void cTDEmSystem::write_windows(const std::string& path)
 	//printf("Primary   %15.8lf%15.8lf%15.8lf\n\n",PrimaryX,PrimaryY,PrimaryZ);
 	//printf("Window#             X               Y               Z\n");
 	for (size_t w = 0; w < NumberOfWindows; w++){
-		fprintf(fp, "%2lu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, WinSpec[w].TimeLow, WinSpec[w].TimeHigh, X[w], Y[w], Z[w]);
+		fprintf(fp, "%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, WinSpec[w].TimeLow, WinSpec[w].TimeHigh, X[w], Y[w], Z[w]);
 	}
 	fclose(fp);
 }

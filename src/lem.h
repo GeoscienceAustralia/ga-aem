@@ -232,9 +232,9 @@ public:
 	{
 		size_t i;
 		for (i = 0; i < NumLayers - 1; i++){
-			printf("Layer %02lu:\t%10lf mS/m\t%10lf m\n", i, 1000.0*Layer[i].Conductivity, Layer[i].Thickness);
+			printf("Layer %02zu:\t%10lf mS/m\t%10lf m\n", i, 1000.0*Layer[i].Conductivity, Layer[i].Thickness);
 		}
-		printf("Layer %02lu:\t%10lf mS/m\n", i, 1000.0*Layer[i].Conductivity);
+		printf("Layer %02zu:\t%10lf mS/m\n", i, 1000.0*Layer[i].Conductivity);
 	}
 
 	std::vector<double> getconductivity()

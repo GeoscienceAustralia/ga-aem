@@ -1030,11 +1030,11 @@ public:
 		nparampersample = calculate_nparampersample();		
 		nparam = calculate_nparam();
 
-		sown.set_petsc_default(mpisize, mpirank, nsamples);
+		sown.set_petsc_default(mpisize, mpirank, (PetscInt)nsamples);
 
 		//Make sure the ownserships are intergral number of samples
-		cOwnership down(sown.start*nchan, sown.end*nchan);
-		cOwnership pown(sown.start*nparampersample, sown.end*nparampersample);
+		cOwnership down((PetscInt)(sown.start*nchan), (PetscInt)(sown.end*nchan));
+		cOwnership pown((PetscInt)(sown.start*nparampersample), (PetscInt)(sown.end*nparampersample));
 		nlocaldata  = down.nlocal();
 		nlocalparam = pown.nlocal();
 		return true;
@@ -1113,8 +1113,8 @@ public:
 				RS.x[gsi] = fdx.get(tokens);
 				RS.y[gsi] = fdy.get(tokens);
 				RS.elevation[gsi] = fdelevation.get(tokens);
-				if (sown.owns(gsi)){
-					size_t lsi = sown.localind(gsi);
+				if (sown.owns((PetscInt)gsi)){
+					size_t lsi = sown.localind((PetscInt)gsi);
 					parse(tokens, lsi);
 				}
 				gsi++;
@@ -1254,22 +1254,22 @@ public:
 	void J_create(){
 
 		rootmessage(mylogfile, "Creating matrix J\n");
-		J.create_sparse("J", mpicomm, nlocaldata, nlocalparam, ndata, nparam);
+		J.create_sparse("J", mpicomm, (PetscInt)nlocaldata, (PetscInt)nlocalparam, (PetscInt)ndata, (PetscInt)nparam);
 		std::vector<PetscInt> d_nnz(J.nlocalrows(), 0);
 		std::vector<PetscInt> o_nnz(J.nlocalrows(), 0);
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			for (size_t ci = 0; ci < nchan; ci++){
-				PetscInt di = dindex(si, ci);
-				PetscInt lri = J.lri(di);
+				PetscInt di = (PetscInt)dindex(si, ci);
+				PetscInt lri = J.lri((PetscInt)di);
 				for (size_t li = 0; li < nlayers; li++){
-					PetscInt pi = gpindex_c(si, li);
+					PetscInt pi = (PetscInt)gpindex_c(si, li);
 					if (J.inownerdiagonalblock(di, pi)){
 						d_nnz[lri]++;
 					}
 					else o_nnz[lri]++;;
 				}
 				for (size_t gi = 0; gi < UGI.size(); gi++){					
-					PetscInt pi = gpindex_g(si, gi);
+					PetscInt pi = (PetscInt)gpindex_g(si, gi);
 					if (J.inownerdiagonalblock(di, pi)){
 						d_nnz[lri]++;
 					}
@@ -1286,13 +1286,13 @@ public:
 		PetscErrorCode ierr;
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			for (size_t ci = 0; ci < nchan; ci++){
-				PetscInt di = dindex(si, ci);
+				PetscInt di = (PetscInt)dindex(si, ci);
 				for (size_t li = 0; li < nlayers; li++){
-					PetscInt pi = gpindex_c(si, li);
+					PetscInt pi = (PetscInt)gpindex_c(si, li);
 					ierr = MatSetValue(J.mat(), di, pi, 0.0, INSERT_VALUES); CHKERR(ierr);
 				}
 				for (size_t gi = 0; gi < UGI.size(); gi++){
-					PetscInt pi = gpindex_g(si, gi);
+					PetscInt pi = (PetscInt)gpindex_g(si, gi);
 					ierr = MatSetValue(J.mat(), di, pi, 0.0, INSERT_VALUES); CHKERR(ierr);
 				}
 			}
@@ -1325,13 +1325,13 @@ public:
 		size_t nglobalconstraints = (nlayers - 1)*nsamples;
 		size_t nlocalconstraints = (nlayers - 1)*sown.nlocal();
 
-		V.create_sparse("V", mpicomm, nlocalconstraints, nlocalparam, nglobalconstraints, nparam);
+		V.create_sparse("V", mpicomm, (PetscInt)nlocalconstraints, (PetscInt)nlocalparam, (PetscInt)nglobalconstraints, (PetscInt)nparam);
 		V.preallocate(2, 0);
 		PetscInt gri = V.gri(0);
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			for (size_t li = 0; li < nlayers - 1; li++){
-				PetscInt pa = gpindex_c(si, li);
-				PetscInt pb = gpindex_c(si, li + 1);
+				PetscInt pa = (PetscInt)gpindex_c(si, li);
+				PetscInt pb = (PetscInt)gpindex_c(si, li + 1);
 				V.set(gri, pa, 1.0);
 				V.set(gri, pb, -1.0);
 				gri++;
@@ -1348,14 +1348,14 @@ public:
 		size_t nglobalconstraints = (nlayers - 2)*nsamples;
 		size_t nlocalconstraints = (nlayers - 2)*sown.nlocal();
 
-		V.create_sparse("V", mpicomm, nlocalconstraints, nlocalparam, nglobalconstraints, nparam);
+		V.create_sparse("V", mpicomm, (PetscInt)nlocalconstraints, (PetscInt)nlocalparam, (PetscInt)nglobalconstraints, (PetscInt)nparam);
 		V.preallocate(3, 0);
 		PetscInt gri = V.gri(0);
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			for (size_t li = 1; li < nlayers - 1; li++){
-				PetscInt pa = gpindex_c(si, li - 1);
-				PetscInt pb = gpindex_c(si, li);
-				PetscInt pc = gpindex_c(si, li + 1);
+				PetscInt pa = (PetscInt)gpindex_c(si, li - 1);
+				PetscInt pb = (PetscInt)gpindex_c(si, li);
+				PetscInt pc = (PetscInt)gpindex_c(si, li + 1);
 				V.set(gri, pa, 1.0);
 				V.set(gri, pb, -2.0);
 				V.set(gri, pc, 1.0);
@@ -1374,7 +1374,7 @@ public:
 		std::vector<double> d = get_interface_depths(t);
 		d.push_back(d.back() + t.back());
 
-		H.create_sparse("H", mpicomm, nlocalparam, nlocalparam, nparam, nparam);
+		H.create_sparse("H", mpicomm, (PetscInt)nlocalparam, (PetscInt)nlocalparam, (PetscInt)nparam, (PetscInt)nparam);
 		std::vector<PetscInt> d_nnz(H.nlocalrows(), 0);
 		std::vector<PetscInt> o_nnz(H.nlocalrows(), 0);
 		size_t nsum = 0;
@@ -1384,8 +1384,8 @@ public:
 			std::vector<size_t> neighbours = RS.findneighbours(gsi, ndistance);
 			nsum += neighbours.size();
 			for (size_t li = 0; li < nlayers; li++){
-				PetscInt gri = gpindex_c(gsi, li);
-				PetscInt lri = H.lri(gri);
+				PetscInt gri = (PetscInt)gpindex_c(gsi, li);
+				PetscInt lri = (PetscInt)H.lri(gri);
 				d_nnz[lri]++;//non-zero for this samples layer
 				for (size_t ni = 0; ni < neighbours.size(); ni++){
 					size_t ngsi = neighbours[ni];
@@ -1395,7 +1395,7 @@ public:
 					std::vector<double> fo = fractionaloverlaps(d[li], d[li + 1], nd);
 					for (size_t nli = 0; nli < nlayers; nli++){
 						if (fo[nli]>0){
-							PetscInt gci = gpindex_c(ngsi, nli);
+							PetscInt gci = (PetscInt)gpindex_c(ngsi, nli);
 							if (H.inownerdiagonalblock(gri, gci)) d_nnz[lri]++;
 							else o_nnz[lri]++;
 						}
@@ -1429,7 +1429,7 @@ public:
 			//loop over this sample's layers
 			for (size_t li = 0; li < nlayers; li++){
 
-				PetscInt gri = gpindex_c(gsi, li);
+				PetscInt gri = (PetscInt)gpindex_c(gsi, li);
 
 				//Loop over each neighbour/layer
 				double wsum = 0.0;
@@ -1446,14 +1446,14 @@ public:
 				}
 
 				//Set values for current sample/layer
-				PetscInt gci = gpindex_c(gsi, li);
+				PetscInt gci = (PetscInt)gpindex_c(gsi, li);
 				PetscErrorCode ierr = MatSetValue(H.mat(), gri, gci, -wsum, INSERT_VALUES); CHKERR(ierr);
 				//Set values for neighbours
 				for (size_t ni = 0; ni < neighbours.size(); ni++){
 					size_t ngsi = neighbours[ni];
 					for (size_t nli = 0; nli < nlayers; nli++){
 						if (values[ni][nli] == 0.0) continue;
-						gci = gpindex_c(ngsi, nli);
+						gci = (PetscInt)gpindex_c(ngsi, nli);
 						PetscErrorCode ierr = MatSetValue(H.mat(), gri, gci, values[ni][nli], INSERT_VALUES); CHKERR(ierr);
 					}
 				}
@@ -1491,10 +1491,10 @@ public:
 			}
 		}
 		rootmessage(mylogfile, "nconductivitylogconstraints=%d\n", nconstraints);
-		B.create_sparse("B", mpicomm, PETSC_DECIDE, nlocalparam, nconstraints, nparam);
+		B.create_sparse("B", mpicomm, PETSC_DECIDE, (PetscInt)nlocalparam, (PetscInt)nconstraints, (PetscInt)nparam);
 
-		PetscInt nlocalconstraints = B.nlocalrows();
-		PetscInt nglobalconstraints = B.nglobalrows();
+		PetscInt nlocalconstraints = (PetscInt)B.nlocalrows();
+		PetscInt nglobalconstraints = (PetscInt)B.nglobalrows();
 
 		clogref.create("clogref", mpicomm, nlocalconstraints, nglobalconstraints);
 		clogstd.create("clogstd", mpicomm, nlocalconstraints, nglobalconstraints);
@@ -1517,7 +1517,7 @@ public:
 					if (clog.interval_has_overlap(nd[li], nd[li + 1])){
 						if (B.ownsrow(gri)){
 							PetscInt lri = B.lri(gri);
-							PetscInt gci = gpindex_c(ngsi, li);
+							PetscInt gci = (PetscInt)gpindex_c(ngsi, li);
 							if (B.inownerdiagonalblock(gri, gci)) d_nnz[lri]++;
 							else o_nnz[lri]++;
 						}
@@ -1549,10 +1549,10 @@ public:
 				nweights[ni] = std::pow(ndistances[ni], -1.0*InversionOp.InverseDistancePower);
 
 				for (size_t li = 0; li < nlayers; li++){
-					PetscInt gci = gpindex_c(ngsi, li);					
+					PetscInt gci = (PetscInt)gpindex_c(ngsi, li);
 					if (clog.interval_has_overlap(nd[li], nd[li + 1])){
 						if (B.ownsrow(gri)){
-							PetscInt lri = B.lri(gri);														
+							PetscInt lri = (PetscInt)B.lri(gri);
 							
 							//Set rhs vector's value
 							size_t npoints;
@@ -1596,7 +1596,7 @@ public:
 			}
 		}
 		rootmessage(mylogfile, "nconductivitylogconstraints=%d\n", nconstraints);
-		B.create_sparse("B", mpicomm, PETSC_DECIDE, nlocalparam, nconstraints, nparam);
+		B.create_sparse("B", mpicomm, PETSC_DECIDE, (PetscInt)nlocalparam, (PetscInt)nconstraints, (PetscInt)nparam);
 
 		PetscInt nlocalconstraints = B.nlocalrows();
 		PetscInt nglobalconstraints = B.nglobalrows();
@@ -1625,7 +1625,7 @@ public:
 							std::vector<double> fo = fractionaloverlaps(d[li], d[li + 1], nd);
 							for (size_t nli = 0; nli < fo.size(); nli++){
 								if (fo[nli]>0){
-									PetscInt gci = gpindex_c(ngsi, nli);
+									PetscInt gci = (PetscInt)gpindex_c(ngsi, nli);
 									if (B.inownerdiagonalblock(gri, gci)) d_nnz[lri]++;
 									else o_nnz[lri]++;
 								}
@@ -1700,7 +1700,7 @@ public:
 					for (size_t nli = 0; nli < nlayers; nli++){
 						if (values[ni][nli] == 0.0) continue;
 						values[ni][nli] /= wsum;
-						PetscInt gci = gpindex_c(ngsi, nli);
+						PetscInt gci = (PetscInt)gpindex_c(ngsi, nli);
 						B.set(gri, gci, values[ni][nli]);
 					}
 				}
@@ -1795,7 +1795,7 @@ public:
 		cOwnership gdist = g.ownership();
 		//rootmessage(mylogfile, "Starting forward modelling\n");
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
-			size_t lsi = sown.localind(si);
+			size_t lsi = sown.localind((PetscInt)si);
 			//size_t gpi = gpindex_c(si, 0);
 			//size_t lpi = mdist.localind(gpi);
 			
@@ -1804,7 +1804,7 @@ public:
 			cTDEmGeometry       geometry     = get_geometry_model(lsi,mlocal);
 			
 			size_t gdi = dindex(si, 0);
-			size_t ldi = gdist.localind(gdi);
+			size_t ldi = gdist.localind((PetscInt)gdi);
 			for (size_t ti = 0; ti < T.size(); ti++){
 
 				T[ti].forward_model_and_derivatives(conductivity, thickness, geometry, predicted, derivatives, computejacobian, UGI);
@@ -1818,11 +1818,11 @@ public:
 						for (size_t li = 0; li < nlayers; li++){
 							//multiply by natural log(10) as parameters are in log base 10 units
 							const double val = natlog10 * conductivity[li] * derivatives[k][li];
-							J.set(gdi + k, gpindex_c(si,li), val);
+							J.set((PetscInt)(gdi + k), (PetscInt)gpindex_c(si,li), val);
 						}
 						for (size_t gi = 0; gi < UGI.size(); gi++){
 							const double val = derivatives[k][nlayers+gi];
-							J.set(gdi + k, gpindex_g(si,gi), val);
+							J.set((PetscInt)(gdi + k), (PetscInt)gpindex_g(si,gi), val);
 						}
 					}
 				}
@@ -1851,19 +1851,19 @@ public:
 		read_data();
 		read_conductivity_logs();
 
-		dobs.create("dobs", mpicomm, nlocaldata, ndata);
+		dobs.create("dobs", mpicomm, (PetscInt)nlocaldata, (PetscInt)ndata);
 		dobs.set_local(local_data());
 		//dobs.writetextfile("dobs.vec");
 
-		dstd.create("dstd", mpicomm, nlocaldata, ndata);
+		dstd.create("dstd", mpicomm, (PetscInt)nlocaldata, (PetscInt)ndata);
 		dstd.set_local(local_noise());
 		//dstd.writetextfile("dstd.vec");
 
-		mref.create("mref", mpicomm, nlocalparam, nparam);
+		mref.create("mref", mpicomm, (PetscInt)nlocalparam, (PetscInt)nparam);
 		mref.set_local(local_mref());
 		//mref.writetextfile("mref.vec");
 
-		mstd.create("mstd", mpicomm, nlocalparam, nparam);
+		mstd.create("mstd", mpicomm, (PetscInt)nlocalparam, (PetscInt)nparam);
 		mstd.set_local(local_mstd());
 		//mstd.writetextfile("mstd.vec");
 
@@ -1898,7 +1898,7 @@ public:
 		//J.writetextfile("J.smat");
 
 		rootmessage(mylogfile, "Creating preconditioner\n");
-		P.create_identity("P", mpicomm, nlocalparam, nparam);
+		P.create_identity("P", mpicomm, (PetscInt)nlocalparam, (PetscInt)nparam);
 		//P.writetextfile("P.smat");		
 		rootmessage(mylogfile, "Finished creating preconditioner\n");
 
@@ -1931,7 +1931,7 @@ public:
 
 	cPetscDistVector cg_solve(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
 
-		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
+		cPetscDistVector b("b", mpicomm, (PetscInt)nlocalparam, (PetscInt)nparam);
 		rootmessage(mylogfile, "Starting CG solve\n");
 		cStopWatch sw;
 
@@ -1960,7 +1960,7 @@ public:
 	
 	cPetscDistVector cg_solve_dm(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
 
-		cPetscDistVector b("b", mpicomm, nlocalparam, nparam);
+		cPetscDistVector b("b", mpicomm, (PetscInt)nlocalparam, (PetscInt)nparam);
 		rootmessage(mylogfile, "Starting CG solve\n");
 		cStopWatch sw;
 
@@ -2035,7 +2035,7 @@ public:
 		cPetscDistVector m = mref;
 		m.setname("m");
 
-		cPetscDistShellMatrix A("A", mpicomm, nlocalparam, nlocalparam, nparam, nparam, (void*)this);
+		cPetscDistShellMatrix A("A", mpicomm, (PetscInt)nlocalparam, (PetscInt)nlocalparam, (PetscInt)nparam, (PetscInt)nparam, (void*)this);
 		A.set_multiply_function_vec((void*)shellmatrixmult);
 
 		lambda = 1.0;
@@ -2045,7 +2045,7 @@ public:
 		while (keepgoing){			
 			rootmessage(mylogfile, "\n\nItaration = %lu\n", iteration);
 			cStopWatch sw;
-			cPetscDistVector g("g", mpicomm, nlocaldata, ndata);
+			cPetscDistVector g("g", mpicomm, (PetscInt)nlocaldata, (PetscInt)ndata);
 			forwardmodel_and_jacobian(m, g, true);
 			rootmessage(mylogfile, "Forward modelling time=%lf\n", sw.etimenow());
 
@@ -2124,7 +2124,7 @@ public:
 		std::string buf;
 		FILE* fp = fileopen(filename, "a");
 		for (size_t lsi = 0; lsi < (size_t)sown.nlocal(); lsi++){
-			size_t gsi = sown.globalind(lsi);
+			size_t gsi = sown.globalind((PetscInt)lsi);
 			//size_t lpi = mdist.localind(gpindex_c(gsi, 0));
 			std::vector<double> conductivity = get_conductivity_model(lsi, mlocal);
 			std::vector<double> thickness    = get_thicknesses_ref(lsi);
@@ -2265,7 +2265,7 @@ public:
 			}
 
 			if (OutputOp.PredictedData){				
-				size_t ldi = gdist.localind(dindex(gsi, 0));
+				size_t ldi = gdist.localind((PetscInt)dindex(gsi, 0));
 				for (size_t si = 0; si < T.size(); si++){
 					cSystemInfo& S = T[si];
 					S.forward_model(conductivity, thickness, ginv);
@@ -2350,8 +2350,8 @@ public:
 		cOwnership    nr2dist = nr2.ownership();
 		std::vector<double> samplephid((size_t)sown.nlocal());
 		for (size_t lsi = 0; lsi < (size_t)sown.nlocal(); lsi++){
-			size_t gsi = sown.globalind(lsi);
-			size_t ldi = nr2dist.localind(dindex(gsi, 0));
+			size_t gsi = sown.globalind((PetscInt)lsi);
+			size_t ldi = nr2dist.localind((PetscInt)dindex(gsi, 0));
 			double sum = 0.0;
 			for (size_t i = 0; i < nchan; i++){
 				sum += nr2local[ldi + i];
