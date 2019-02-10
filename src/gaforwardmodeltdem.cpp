@@ -214,7 +214,6 @@ int writecsvheader(FILE* fout, const size_t& nw)
 
 int writeoutputrecord(const bool& csvoutput, FILE* fout, FILE* fhdr, size_t recnum, const cTDEmSystem& T, const cTDEmResponse& R)
 {
-	size_t colnum = 1;
 	char delim = ' ';
 	if (csvoutput)delim = ',';	
 	fprintf(fout, " %15g%c", R.PX,delim);	

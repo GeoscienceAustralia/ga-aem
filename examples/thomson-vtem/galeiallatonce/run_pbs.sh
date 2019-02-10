@@ -12,7 +12,10 @@
 #PBS -e galeiallatonce.err
 #PBS -j oe
 
-module load ga-aem/dev-intel
-module list
-mpirun ../../../bin/raijin/intel/galeiallatonce.exe galeiallatonce.con
+#module load ga-aem/dev-intel
+#module list
+#mpirun ../../../bin/raijin/intel/galeiallatonce.exe galeiallatonce.con
 
+module load ga-aem/dev-gnu
+module list
+mpirun ../../../bin/raijin/gnu/galeiallatonce.exe galeiallatonce.con
