@@ -484,7 +484,7 @@ int main(int argc, char** argv)
 	std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
 	double t1 = gettime();	
 	for (size_t i = 0; i < filelist.size(); i++){
-		printf("Processing file %s   %3lu of %3lu\n", filelist[i].c_str(),i+1,filelist.size());
+		printf("Processing file %s   %3zu of %3zu\n", filelist[i].c_str(),i+1,filelist.size());
 		cSGridCreator S(control);
 		S.process(filelist[i]);
 	}

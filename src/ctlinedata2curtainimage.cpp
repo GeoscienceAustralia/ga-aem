@@ -687,7 +687,7 @@ int main(int argc, char** argv)
 		std::string datasetname;
 
 		for (size_t i = 0; i < filelist.size(); i++){
-			std::printf("Processing file %s %3lu of %3lu\n", filelist[i].c_str(), i + 1, filelist.size());
+			std::printf("Processing file %s %3zu of %3zu\n", filelist[i].c_str(), i + 1, filelist.size());
 
 			std::string datafile = filelist[i];
 			std::string dfnfile = extractfiledirectory(datafile);

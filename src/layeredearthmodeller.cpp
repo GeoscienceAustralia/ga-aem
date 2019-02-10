@@ -91,9 +91,9 @@ void LayeredEarthModeller::setconductivitythickness(const std::vector<double>& c
 void LayeredEarthModeller::printearth()
 {	
 	for(size_t i=0; i<NumLayers-1; i++){
-       printf("Layer %02lu:\t%10lf mS/m\t%10lf m\n",i+1,1000.0*Conductivity[i],Thickness[i]);	   	   
+       printf("Layer %02zu:\t%10lf mS/m\t%10lf m\n",i+1,1000.0*Conductivity[i],Thickness[i]);	   	   
 	}
-	printf("Layer %02lu:\t%10lf mS/m\n",NumLayers,1000.0*Conductivity[NumLayers-1]);	   
+	printf("Layer %02zu:\t%10lf mS/m\n",NumLayers,1000.0*Conductivity[NumLayers-1]);	   
 }
 ////////////////////////////////////////////////////////////////////////////////
 void LayeredEarthModeller::setmeanlog10conductivity()

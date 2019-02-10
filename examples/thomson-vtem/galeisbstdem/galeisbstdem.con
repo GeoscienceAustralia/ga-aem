@@ -43,7 +43,7 @@ Control Begin
 
 		MinimumPhiD = 1.0
 		MinimumPercentageImprovement = 1.0
-		MaximumIterations = 1
+		MaximumIterations = 100
 	Options End
 
 	Input Begin

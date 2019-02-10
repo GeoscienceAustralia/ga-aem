@@ -556,7 +556,7 @@ void cSBSInverter::initialise_sample()
 		dumptofile(ES, "earth_std.dat");
 		
 		FILE* fp = fileopen(dumppath() + "Id.dat", "w");
-		fprintf(fp, "%lu\t%lu\t%lu\t%lu\t%lu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
+		fprintf(fp, "%zu\t%zu\t%zu\t%zu\t%zu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
 		fclose(fp);
 	}
 }
@@ -1310,7 +1310,7 @@ void cSBSInverter::iterate()
 
 void cSBSInverter::save_iteration_file(){
 	FILE* fp = fileopen(dumppath() + "iteration.dat", "w");
-	fprintf(fp, "Iteration\t%lu\n", LastIteration);
+	fprintf(fp, "Iteration\t%zu\n", LastIteration);
 	fprintf(fp, "TargetPhiD\t%lf\n", TargetPhiD);
 	fprintf(fp, "PhiD\t%lf\n", LastPhiD);
 	fprintf(fp, "Lambda\t%lf\n", LastLambda);
@@ -1549,7 +1549,7 @@ void cSBSInverter::printtrials(cTrialCache T)
 	printf("CurrentLambda = %lf CurrentPhid = %lf    Target = %lf\n", LastLambda, LastPhiD, T.target);
 	printf("N    Stepfactor       Lambda          Phid\n");
 	for (size_t i = 0; i<T.trial.size(); i++){
-		printf("%2lu %12g %12g %12g\n", T.trial[i].order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
+		printf("%2zu %12g %12g %12g\n", T.trial[i].order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
 	}
 	printf("\n");
 }

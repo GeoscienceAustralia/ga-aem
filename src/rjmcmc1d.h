@@ -216,9 +216,9 @@ public:
 	}
 	void printmodel() const
 	{
-		printf("nl=%lu\tnn=%lu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), misfit());
+		printf("nl=%zu\tnn=%zu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), misfit());
 		for (size_t li = 0; li<nlayers(); li++){
-			printf("%4lu\t%10lf\t%10lf\n", li, layers[li].ptop, layers[li].value);
+			printf("%4zu\t%10lf\t%10lf\n", li, layers[li].ptop, layers[li].value);
 		}
 		printf("\n");
 	}
@@ -226,16 +226,16 @@ public:
 	{
 		std::vector<double> c = getvalues();
 		std::vector<double> t = getthicknesses();
-		printf("nl=%lu\tnn=%lu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), misfit());
+		printf("nl=%zu\tnn=%zu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), misfit());
 		double top = 0;
 		double bot = 0;
 		for (size_t li = 0; li<nlayers(); li++){
 			if (li<nlayers() - 1){
 				bot = top + t[li];
-				printf("%4lu top=%7.2lfm bot=%7.2lfm thk=%7.2lfm conductivity=%6.4lf\n", li, top, bot, t[li], c[li]);
+				printf("%4zu top=%7.2lfm bot=%7.2lfm thk=%7.2lfm conductivity=%6.4lf\n", li, top, bot, t[li], c[li]);
 			}
 			else{
-				printf("%4lu top=%7.2lfm bot= Inf thk= Inf conductivity=%6.4lf\n", li, top, c[li]);
+				printf("%4zu top=%7.2lfm bot= Inf thk= Inf conductivity=%6.4lf\n", li, top, c[li]);
 			}
 			top = bot;
 		}
@@ -288,14 +288,14 @@ public:
 			fprintf(fp, " %lf", s.max);
 			fprintf(fp, " %lf", s.mean);
 			fprintf(fp, " %lf", s.std);
-			fprintf(fp, " %lu", nsamples());
+			fprintf(fp, " %zu", nsamples());
 
-			fprintf(fp, " %lu", hist.nbins);
+			fprintf(fp, " %zu", hist.nbins);
 			for (size_t j = 0; j<hist.nbins; j++){
 				fprintf(fp, " %lf", hist.centre[j]);
 			}
 			for (size_t j = 0; j<hist.nbins; j++){
-				fprintf(fp, " %lu", hist.count[j]);
+				fprintf(fp, " %zu", hist.count[j]);
 			}
 			fprintf(fp, "\n");
 		}
@@ -506,7 +506,7 @@ public:
 		for (size_t si = 0; si < modelchain.size(); si++){
 			rjMcMC1DModel& m = modelchain[si];
 
-			fprintf(fp, "%lu %lu %lu %.6e\n", ci, si, m.nlayers(), m.misfit());
+			fprintf(fp, "%zu %zu %zu %.6e\n", ci, si, m.nlayers(), m.misfit());
 			for (size_t li = 0; li < m.nlayers(); li++){
 				fprintf(fp, " %.6e", m.layers[li].ptop);
 			}

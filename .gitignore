@@ -28,7 +28,7 @@ examples/**/*.log
 /python/gatdaem1d/gatdaem1d.exp  #Ignore the export lib
 /python/gatdaem1d/gatdaem1d.lib  #Ignore the lib
 /python/gatdaem1d/*.so           #Ignore the Linux shared libraries
-!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
+#!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
 
 # Ignore all raijin.nci.org.au binaries
 # Compiled executables on linux
