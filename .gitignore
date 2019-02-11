@@ -1,5 +1,8 @@
 #File patterns that are ignored
 
+# Ignore raijin.nci.org.au specific files
+*raijin*
+
 # Ignore output files from the examples
 examples/**/output
 examples/**/*.out
@@ -7,7 +10,6 @@ examples/**/*.log
 
 # Ignore all binary executables
 *.exe
-!/bin/x64/Release/*.exe #Keep the Windows executables
 *.dll
 *.mexw64
 /bin/x64/Release/*.exp
@@ -19,25 +21,17 @@ examples/**/*.log
 *_debug.dll 
 *_debug.mexw64 
 
-# Matlab
-!/matlab/bin/x64/gatdaem1d.mexw64 #Keep the Windows mexw64 (dll)
-
 # Python
 *.pyc
 *.pyo
 /python/gatdaem1d/gatdaem1d.exp  #Ignore the export lib
 /python/gatdaem1d/gatdaem1d.lib  #Ignore the lib
 /python/gatdaem1d/*.so           #Ignore the Linux shared libraries
-#!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
 
-# Ignore all raijin.nci.org.au binaries
-# Compiled executables on linux
-/bin/raijin/*
-
-# Ignore raijin.nci.org.au specific scripts
-# /makefiles/raijin_run_make.sh
-# /makefiles/raijin_install.sh
-
+# DO NOT IGNORE these Windows binaries
+# !/matlab/bin/x64/gatdaem1d.mexw64 #Keep the Windows mexw64 (dll)
+# !/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
+# !/bin/x64/Release/*.exe #Keep the Windows executables
 
 # Compiled Object files
 *.slo
