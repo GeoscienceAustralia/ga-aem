@@ -3,9 +3,8 @@
 REM Add executable and FFTW directories to yo search path
 REM (Ideally you would add these to your PATH environment variable)
 
-REM set path=C:\Microsoft_HPC_Pack_2012\Bin;%path%
 REM set path=..\..\..\..\fftw3.2.2.dlls\64bit;%path%
-set path=..\..\..\..\petsc\3.9.4\vs2017\win64_release\lib;%path%
+set path=C:\Microsoft_HPC_Pack_2012\Bin;%path%
 set path=..\..\..\bin\x64\Release\;%path%
 
 REM Standalone
