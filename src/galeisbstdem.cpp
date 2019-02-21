@@ -78,8 +78,8 @@ cSBSInverter::cSBSInverter(size_t size, size_t rank)
 }
 cSBSInverter::~cSBSInverter()
 {
-	fclose(fp_log);
-	fclose(ofp);
+	if(fp_log)fclose(fp_log);
+	if(ofp)fclose(ofp);
 };
 void cSBSInverter::initialise(const std::string controlfile)
 {
@@ -244,10 +244,17 @@ void cSBSInverter::initialisesystems()
 {
 	nsystems = Control.getsizetvalue("NumberOfSystems");
 	SV.resize(nsystems);
-	for (size_t si = 0; si < nsystems; si++){
-		cTDEmSystemInfo& S = SV[si];		
+	for (size_t si = 0; si < nsystems; si++) {
+
+		cTDEmSystemInfo& S = SV[si];
 		std::string str = strprint("EMSystem%lu", si + 1);
 		cBlock  b = Control.findblock(str);
+
+		std::string dummy;
+		if (b.getvalue("InvertTotalField", dummy)) {
+			std::string e = strprint("Error: InvertTotalField is no longer an option - exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
+			throw(std::runtime_error(e));
+		};
 
 		cTDEmSystem& T = S.T;
 		std::string stmfile = b.getstringvalue("SystemFile");
@@ -263,10 +270,18 @@ void cSBSInverter::initialisesystems()
 		S.useX = b.getboolvalue("UseXComponent");
 		S.useY = b.getboolvalue("UseYComponent");
 		S.useZ = b.getboolvalue("UseZComponent");
-		S.useTotal = b.getboolvalue("InvertTotalField");
+
+		S.invertXPlusZ = b.getboolvalue("InvertXPlusZ");
+		S.invertPrimaryPlusSecondary = b.getboolvalue("InvertPrimaryPlusSecondary");
 		S.reconstructPrimary = b.getboolvalue("ReconstructPrimaryFieldFromInputGeometry");
 		S.estimateNoise = b.getboolvalue("EstimateNoiseFromModel");
 		S.ncomps = 0;
+
+		if (S.invertXPlusZ){
+			S.useX = true;
+			S.useZ = true;
+		}
+
 		if (S.useX){
 			S.ncomps++;
 			if (S.estimateNoise){
@@ -294,6 +309,7 @@ void cSBSInverter::initialisesystems()
 			S.fd_oSY.set(b, "YComponentSecondary");
 			S.fd_oEY.set(b, "YComponentNoise");
 		}
+
 		if (S.useZ){
 			S.ncomps++;
 			if (S.estimateNoise){
@@ -307,6 +323,7 @@ void cSBSInverter::initialisesystems()
 			S.fd_oSZ.set(b, "ZComponentSecondary");
 			S.fd_oEZ.set(b, "ZComponentNoise");
 		}
+		
 		S.nchans = S.nwindows*S.ncomps;
 	}
 }
@@ -315,16 +332,24 @@ void cSBSInverter::setup_data()
 	ndata = 0;
 	for (size_t si = 0; si < nsystems; si++){
 		cTDEmSystemInfo& S = SV[si];
-		if (S.useX){
-			S.xIndex = ndata;
+		if (S.invertXPlusZ) {
+			S.xzIndex = (int)ndata;
+			S.xIndex = -1;
+			S.zIndex = -1;
 			ndata += S.nwindows;
 		}
-		if (S.useY){
-			S.yIndex = ndata;
-			ndata += S.nwindows;
+		else {
+			if (S.useX) {
+				S.xIndex = (int)ndata;
+				ndata += S.nwindows;
+			}			
+			if (S.useZ) {
+				S.zIndex = (int)ndata;
+				ndata += S.nwindows;
+			}
 		}
-		if (S.useZ){
-			S.zIndex = ndata;
+		if (S.useY) {
+			S.yIndex = (int)ndata;
 			ndata += S.nwindows;
 		}
 	}
@@ -560,6 +585,7 @@ void cSBSInverter::initialise_sample()
 		fclose(fp);
 	}
 }
+
 void cSBSInverter::initialise_data()
 {
 	for (size_t si = 0; si < nsystems; si++){
@@ -575,30 +601,44 @@ void cSBSInverter::initialise_data()
 			S.oPZ = T.PrimaryZ;
 		}
 
-		if (S.useX){
-			for (size_t wi = 0; wi < S.nwindows; wi++){
-				size_t di = wi + S.xIndex;
-				Err[di] = S.oEX[wi];
-				Obs[di] = S.oSX[wi];
-				if (S.useTotal)Obs[di] += S.oPX;
+		if (S.invertXPlusZ) {
+			for (size_t wi = 0; wi < S.nwindows; wi++) {
+				size_t di = wi + S.xzIndex;
+				Err[di] = std::hypot(S.oEX[wi], S.oEZ[wi]);
+				Obs[di] = std::hypot(S.oSX[wi], S.oSZ[wi]);
+				if (S.invertPrimaryPlusSecondary) {
+					Obs[di] += std::hypot(S.oPX, S.oPZ);
+				}
 			}
 		}
+		else {
+			if (S.useX) {
+				for (size_t wi = 0; wi < S.nwindows; wi++) {
+					size_t di = wi + S.xIndex;
+					Err[di] = S.oEX[wi];
+					Obs[di] = S.oSX[wi];
+					if (S.invertPrimaryPlusSecondary)Obs[di] += S.oPX;
+				}
+			}
+			if (S.useZ) {
+				for (size_t wi = 0; wi < S.nwindows; wi++) {
+					size_t di = wi + S.zIndex;
+					Err[di] = S.oEZ[wi];
+					Obs[di] = S.oSZ[wi];
+					if (S.invertPrimaryPlusSecondary)Obs[di] += S.oPZ;
+				}
+			}
+		}
+		
 		if (S.useY){
 			for (size_t wi = 0; wi < S.nwindows; wi++){
 				size_t di = wi + S.yIndex;
 				Err[di] = S.oEY[wi];
 				Obs[di] = S.oSY[wi];
-				if (S.useTotal)Obs[di] += S.oPY;				
+				if (S.invertPrimaryPlusSecondary)Obs[di] += S.oPY;				
 			}
 		}
-		if (S.useZ){
-			for (size_t wi = 0; wi < S.nwindows; wi++){
-				size_t di = wi + S.zIndex;
-				Err[di] = S.oEZ[wi];
-				Obs[di] = S.oSZ[wi];
-				if (S.useTotal)Obs[di] += S.oPZ;				
-			}
-		}
+		
 	}
 
 	if (OO.Dump){
@@ -1016,6 +1056,7 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 	for (size_t si = 0; si < nsystems; si++){
 		cTDEmSystemInfo& S = SV[si];
 		cTDEmSystem& T = S.T;
+		const size_t nw = T.NumberOfWindows;
 		T.setconductivitythickness(e.conductivity, e.thickness);
 		T.setgeometry(g);
 
@@ -1026,76 +1067,58 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 		T.setprimaryfields();
 		T.setsecondaryfields();
 
-		std::vector<double> x, y, z;
-		if (S.useTotal){			
-			x = T.X + T.PrimaryX;
-			y = T.Y + T.PrimaryY;
-			z = T.Z + T.PrimaryZ;
+		std::vector<double> xfm = T.X;
+		std::vector<double> yfm = T.Y;
+		std::vector<double> zfm = T.Z;
+		std::vector<double> xzfm;
+		if (S.invertPrimaryPlusSecondary){			
+			xfm += T.PrimaryX;
+			yfm += T.PrimaryY;
+			zfm += T.PrimaryZ;			
 		}
-		else{
-			x = T.X;
-			y = T.Y;
-			z = T.Z;
+		
+		if (S.invertXPlusZ) {
+			xzfm.resize(T.NumberOfWindows);
+			for (size_t wi = 0; wi < T.NumberOfWindows; wi++) xzfm[wi] = std::hypot(xfm[wi], zfm[wi]);
 		}
-
-
-		size_t nw = T.NumberOfWindows;
-		for (size_t wi = 0; wi < nw; wi++){
-			if (S.useX) predicted[wi + S.xIndex] = x[wi];
-			if (S.useY) predicted[wi + S.yIndex] = y[wi];
-			if (S.useZ) predicted[wi + S.zIndex] = z[wi];
-		}
-
-		if (computederivatives){
-			//Receiver orientation derivatives go here while the forward model is still current
-			if (solve_rx_pitch){
-				size_t pindex = rx_pitchIndex;
-				std::vector<double> dxbdp;
-				std::vector<double> dzbdp;
-				T.drx_pitch(x, z, g.rx_pitch, dxbdp, dzbdp);
-				for (size_t i = 0; i < T.NumberOfWindows; i++){
-					if (S.useX) J[i + S.xIndex][pindex] = dxbdp[i];
-					if (S.useY) J[i + S.yIndex][pindex] = 0.0;
-					if (S.useZ) J[i + S.zIndex][pindex] = dzbdp[i];
-				}
+		
+		if (S.invertXPlusZ){
+			for (size_t wi = 0; wi < nw; wi++) {
+				predicted[wi + S.xzIndex] = xzfm[wi];
+				if (S.useY) predicted[wi + S.yIndex] = yfm[wi];
 			}
-
-			if (solve_rx_roll){
-				size_t pindex = rx_rollIndex;
-				std::vector<double> dybdr;
-				std::vector<double> dzbdr;
-				T.drx_roll(y, z, g.rx_pitch, dybdr, dzbdr);
-				for (size_t i = 0; i < T.NumberOfWindows; i++){
-					if (S.useX) J[i + S.xIndex][pindex] = 0.0;
-					if (S.useY) J[i + S.yIndex][pindex] = dybdr[i];
-					if (S.useZ) J[i + S.zIndex][pindex] = dzbdr[i];
-				}
+		}
+		else {
+			for (size_t wi = 0; wi < nw; wi++) {
+				if (S.useX) predicted[wi + S.xIndex] = xfm[wi];
+				if (S.useY) predicted[wi + S.yIndex] = yfm[wi];
+				if (S.useZ) predicted[wi + S.zIndex] = zfm[wi];
 			}
+		}
+
+		if (computederivatives){		
+
+			std::vector<double> xdrv(nw);
+			std::vector<double> ydrv(nw);
+			std::vector<double> zdrv(nw);
 
 			if (solve_conductivity){
+				
 				for (size_t li = 0; li < nlayers; li++){
 					size_t pindex = li + cIndex;
 					T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
 					T.LEM.derivative_layer = li;
 					T.setprimaryfields();
 					T.setsecondaryfields();
+					
+					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
 					//multiply by natural log(10) as parameters are in logbase10 units
-					double c = log(10.0)*e.conductivity[li];
-					if (S.useTotal){
-						x = c*(T.X + T.PrimaryX); y = c*(T.Y + T.PrimaryY); z = c*(T.Z + T.PrimaryZ);
-					}
-					else{
-						x = c*T.X;
-						y = c*T.Y;
-						z = c*T.Z;
-					}
-					for (size_t wi = 0; wi < nw; wi++){
-						if (S.useX)J[wi + S.xIndex][pindex] = x[wi];
-						if (S.useY)J[wi + S.yIndex][pindex] = y[wi];
-						if (S.useZ)J[wi + S.zIndex][pindex] = z[wi];
-					}
+					double sf = log(10.0)*e.conductivity[li];					
+					xdrv *= sf; ydrv *= sf; zdrv *= sf;					
+					fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 				}
 			}
+
 			if (solve_thickness){
 				for (size_t li = 0; li < nlayers - 1; li++){
 					size_t pindex = li + tIndex;
@@ -1103,19 +1126,11 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 					T.LEM.derivative_layer = li;
 					T.setprimaryfields();
 					T.setsecondaryfields();
+					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
 					//multiply by natural log(10) as parameters are in logbase10 units
-					double c = log(10.0)*e.thickness[li];
-					if (S.useTotal){
-						x = c*(T.X + T.PrimaryX); y = c*(T.Y + T.PrimaryY); z = c*(T.Z + T.PrimaryZ);
-					}
-					else{
-						x = c*T.X; y = c*T.Y; z = c*T.Z;
-					}
-					for (size_t wi = 0; wi < nw; wi++){
-						if (S.useX)J[wi + S.xIndex][pindex] = x[wi];
-						if (S.useY)J[wi + S.yIndex][pindex] = y[wi];
-						if (S.useZ)J[wi + S.zIndex][pindex] = z[wi];
-					}
+					double sf = log(10.0)*e.thickness[li];
+					xdrv *= sf; ydrv *= sf; zdrv *= sf;		
+					fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 				}
 			}
 
@@ -1125,17 +1140,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 				T.setsecondaryfields();
-				if (S.useTotal){
-					x = (T.X + T.PrimaryX); y = (T.Y + T.PrimaryY); z = (T.Z + T.PrimaryZ);
-				}
-				else{
-					x = T.X; y = T.Y; z = T.Z;
-				}
-				for (size_t wi = 0; wi < nw; wi++){
-					if (S.useX)J[wi + S.xIndex][pindex] = x[wi];
-					if (S.useY)J[wi + S.yIndex][pindex] = y[wi];
-					if (S.useZ)J[wi + S.zIndex][pindex] = z[wi];
-				}
+				fillDerivativeVectors(S, xdrv, ydrv, zdrv);				
+				fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);				
 			}
 
 			if (solve_txrx_dx){
@@ -1144,17 +1150,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 				T.setsecondaryfields();
-				if (S.useTotal){
-					x = (T.X + T.PrimaryX); y = (T.Y + T.PrimaryY); z = (T.Z + T.PrimaryZ);
-				}
-				else{
-					x = T.X; y = T.Y; z = T.Z;
-				}
-				for (size_t wi = 0; wi < nw; wi++){
-					if (S.useX)J[wi + S.xIndex][pindex] = x[wi];
-					if (S.useY)J[wi + S.yIndex][pindex] = y[wi];
-					if (S.useZ)J[wi + S.zIndex][pindex] = z[wi];
-				}
+				fillDerivativeVectors(S, xdrv, ydrv, zdrv);				
+				fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);				
 			}
 
 			if (solve_txrx_dy){
@@ -1163,17 +1160,8 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 				T.setsecondaryfields();
-				if (S.useTotal){
-					x = (T.X + T.PrimaryX); y = (T.Y + T.PrimaryY); z = (T.Z + T.PrimaryZ);
-				}
-				else{
-					x = T.X; y = T.Y; z = T.Z;
-				}
-				for (size_t wi = 0; wi < nw; wi++){
-					if (S.useX)J[wi + S.xIndex][pindex] = x[wi];
-					if (S.useY)J[wi + S.yIndex][pindex] = y[wi];
-					if (S.useZ)J[wi + S.zIndex][pindex] = z[wi];
-				}
+				fillDerivativeVectors(S, xdrv, ydrv, zdrv);				
+				fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);				
 			}
 
 			if (solve_txrx_dz){
@@ -1182,30 +1170,58 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 				T.setsecondaryfields();
-				if (S.useTotal){
-					x = (T.X + T.PrimaryX); y = (T.Y + T.PrimaryY); z = (T.Z + T.PrimaryZ);
-				}
-				else{
-					x = T.X; y = T.Y; z = T.Z;
-				}
-				for (size_t wi = 0; wi < nw; wi++){
-					if (S.useX)J[wi + S.xIndex][pindex] = x[wi];
-					if (S.useY)J[wi + S.yIndex][pindex] = y[wi];
-					if (S.useZ)J[wi + S.zIndex][pindex] = z[wi];
-				}
+				fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+				fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+			}
+
+			if (solve_rx_pitch) {
+				size_t pindex = rx_pitchIndex;				
+				T.drx_pitch(xfm, zfm, g.rx_pitch, xdrv, zdrv);				
+				ydrv *= 0.0;
+				fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);				
+			}
+
+			if (solve_rx_roll) {
+				size_t pindex = rx_rollIndex;				
+				T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
+				xdrv *= 0.0;
+				fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 			}
 		}		
-		//JtWd  = transpose_mult(J, Wd);
-		//JtWdJ = JtWd*J;
-
-
-		//if(Dump){		
-		//	writetofile(J,DumpPath+"J.dat");			
-		//	writetofile(JtWd,DumpPath+"JtWd.dat");			
-		//	writetofile(JtWdJ,DumpPath+"JtWdJ.dat");
-		//}	
 	}
 }
+
+void cSBSInverter::fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv)
+{
+	cTDEmSystem& T = S.T;	
+	xdrv = T.X;
+	ydrv = T.Y;
+	zdrv = T.Z;
+	if (S.invertPrimaryPlusSecondary) {
+		xdrv += T.PrimaryX;
+		ydrv += T.PrimaryY;
+		zdrv += T.PrimaryZ;
+	}	
+}
+
+void cSBSInverter::fillJacobianColumn(cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm,	const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
+{
+	const size_t nw = S.T.NumberOfWindows;
+	if (S.invertXPlusZ) {
+		for (size_t w = 0; w < nw; w++) {
+			J[w + S.xzIndex][pindex] = (xfm[w] * xdrv[w] + zfm[w] * zdrv[w]) / xzfm[w];
+			if (S.useY)J[w + S.yIndex][pindex] = ydrv[w];
+		}
+	}
+	else {
+		for (size_t w = 0; w < nw; w++) {
+			if (S.useX)J[w + S.xIndex][pindex] = xdrv[w];
+			if (S.useY)J[w + S.yIndex][pindex] = ydrv[w];
+			if (S.useZ)J[w + S.zIndex][pindex] = zdrv[w];
+		}
+	}
+}
+
 std::vector<double> cSBSInverter::compute_parameter_sensitivity()
 {
 	std::vector<double> s(nparam, 0.0);	
@@ -1846,9 +1862,9 @@ void cSBSInverter::writeresult()
 	if (OO.ObservedData) {
 		for (size_t si = 0; si < nsystems; si++) {
 			cTDEmSystemInfo& S = SV[si];							
-			if (S.useX) writeresult_component(buf, OI, si, "X", "observed", "Observed", 'E', 15, 6, S.oPX, S.oSX, S.useTotal);
-			if (S.useY) writeresult_component(buf, OI, si, "Y", "observed", "Observed", 'E', 15, 6, S.oPY, S.oSY, S.useTotal);
-			if (S.useZ) writeresult_component(buf, OI, si, "Z", "observed", "Observed", 'E', 15, 6, S.oPZ, S.oSZ, S.useTotal);			
+			if (S.useX) writeresult_component(buf, OI, si, "X", "observed", "Observed", 'E', 15, 6, S.oPX, S.oSX, S.invertPrimaryPlusSecondary);
+			if (S.useY) writeresult_component(buf, OI, si, "Y", "observed", "Observed", 'E', 15, 6, S.oPY, S.oSY, S.invertPrimaryPlusSecondary);
+			if (S.useZ) writeresult_component(buf, OI, si, "Z", "observed", "Observed", 'E', 15, 6, S.oPZ, S.oSZ, S.invertPrimaryPlusSecondary);			
 		}
 	}
 
@@ -1866,9 +1882,9 @@ void cSBSInverter::writeresult()
 	if (OO.PredictedData){
 		for (size_t si = 0; si < nsystems; si++){
 			cTDEmSystemInfo& S = SV[si];
-			if (S.useX) writeresult_component(buf, OI, si, "X", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.xcomponent.Secondary, S.useTotal);
-			if (S.useY) writeresult_component(buf, OI, si, "Y", "predicted", "Predicted", 'E', 15, 6, S.predicted.ycomponent.Primary, S.predicted.ycomponent.Secondary, S.useTotal);
-			if (S.useZ) writeresult_component(buf, OI, si, "Z", "predicted", "Predicted", 'E', 15, 6, S.predicted.zcomponent.Primary, S.predicted.zcomponent.Secondary, S.useTotal);
+			if (S.useX) writeresult_component(buf, OI, si, "X", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.xcomponent.Secondary, S.invertPrimaryPlusSecondary);
+			if (S.useY) writeresult_component(buf, OI, si, "Y", "predicted", "Predicted", 'E', 15, 6, S.predicted.ycomponent.Primary, S.predicted.ycomponent.Secondary, S.invertPrimaryPlusSecondary);
+			if (S.useZ) writeresult_component(buf, OI, si, "Z", "predicted", "Predicted", 'E', 15, 6, S.predicted.zcomponent.Primary, S.predicted.zcomponent.Secondary, S.invertPrimaryPlusSecondary);
 		}
 	}
 		
@@ -2069,135 +2085,143 @@ void cSBSInverter::dumptofile(const cTDEmGeometry& g, std::string path)
 ////////////////////////////////////////////////////////////////////
 int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 {
-	cSBSInverter I(Size, Rank);	
-	
-	//If OpenMP is being used set the thread lock while FFTW initialises	
-	if (usingopenmp){
-		#if defined _OPENMP
-			omp_set_lock(&fftw_thread_lock);
-		#endif	
-	}
-	
-	I.initialise(controlfile);
+	try {
+		cSBSInverter I(Size, Rank);
 
-	if (usingopenmp){
-		#if defined _OPENMP			
-			omp_unset_lock(&fftw_thread_lock);
-		#endif	
-	}
-				
-	size_t record = 0;
-	while (I.readnextrecord()){
-		record++;
-		if ((record - 1) % (Size) != Rank)continue;
-		
-		bool nonnumeric = I.contains_non_numeric_characters(I.DataFileRecordString);
-		if (nonnumeric){
-			rootmessage(I.fp_log, "Skipping non-numeric record at line %lu of Input DataFile %s\n", I.DataFileRecord,I.DataFileName.c_str());
-			rootmessage(I.fp_log, "\n%s\n\n", I.DataFileRecordString.c_str());
-			continue;
+		//If OpenMP is being used set the thread lock while FFTW initialises
+		if (usingopenmp) {
+#if defined _OPENMP
+			omp_set_lock(&fftw_thread_lock);
+#endif	
 		}
 
-		//if (I.OO.Dump){
-		//	FILE* fp = fileopen(I.dumppath() + "record.dat", "w");
-		//	fprintf(fp, "Record\t%lu", I.DataFileRecord);
-		//	fclose(fp);
-		//}
+		I.initialise(controlfile);
 
-		double t1 = gettime();
-		I.invert();
+		if (usingopenmp) {
+#if defined _OPENMP			
+			omp_unset_lock(&fftw_thread_lock);
+#endif	
+		}
 
-		double t2 = gettime();
-		double etime = t2 - t1;
-		I.writeresult();
+		size_t record = 0;
+		while (I.readnextrecord()) {
+			record++;
+			if ((record - 1) % (Size) != Rank)continue;
 
-		message(I.fp_log, "Rec %6lu  %3lu  %5lu  %10lf  ", I.DataFileRecord, I.Id.flightnumber, I.Id.linenumber, I.Id.fidnumber);
-		message(I.fp_log, "Its=%3lu  PhiD=%6.2lf  time=%.1lfs %s\n", I.LastIteration, I.LastPhiD, etime, I.TerminationReason.c_str());
+			bool nonnumeric = I.contains_non_numeric_characters(I.DataFileRecordString);
+			if (nonnumeric) {
+				rootmessage(I.fp_log, "Skipping non-numeric record at line %lu of Input DataFile %s\n", I.DataFileRecord, I.DataFileName.c_str());
+				rootmessage(I.fp_log, "\n%s\n\n", I.DataFileRecordString.c_str());
+				continue;
+			}
+
+			//if (I.OO.Dump){
+			//	FILE* fp = fileopen(I.dumppath() + "record.dat", "w");
+			//	fprintf(fp, "Record\t%lu", I.DataFileRecord);
+			//	fclose(fp);
+			//}
+
+			double t1 = gettime();
+			I.invert();
+
+			double t2 = gettime();
+			double etime = t2 - t1;
+			I.writeresult();
+
+			message(I.fp_log, "Rec %6lu  %3lu  %5lu  %10lf  ", I.DataFileRecord, I.Id.flightnumber, I.Id.linenumber, I.Id.fidnumber);
+			message(I.fp_log, "Its=%3lu  PhiD=%6.2lf  time=%.1lfs %s\n", I.LastIteration, I.LastPhiD, etime, I.TerminationReason.c_str());
+		}
+		//my_barrier();	
+		rootmessage(I.fp_log, "Logfile closing at %s\n", timestamp().c_str());
+		return 0;
+	}
+	catch (const std::string msg) {		
+		rootmessage("%s", msg.c_str());		
+	}
+	catch (const std::runtime_error e) {		
+		rootmessage("%s", e.what());		
+	}
+	catch (const std::exception e) {		
+		rootmessage("%s", e.what());		
 	}	
-	//my_barrier();	
-	rootmessage(I.fp_log, "Logfile closing at %s\n", timestamp().c_str());
-	return 0;
 };
 
 int main(int argc, char** argv)
-{		
-	_GSTPUSH_
+{
 	int exitstatus;
-	_GSTPOP_
 	int mpisize = 1;
 	int mpirank = 0;
-	std::string mpipname = "Standalone";
+	std::string mpipname = "No MPI - Standalone";
+
 #if defined _MPI_ENABLED			
 	MPI_Init(&argc, &argv);
-	mpirank  = cMpiEnv::world_rank();
-	mpisize  = cMpiEnv::world_size();
+	mpirank = cMpiEnv::world_rank();
+	mpisize = cMpiEnv::world_size();
 	mpipname = cMpiEnv::processor_name();
 	if (mpirank == 0)printf("MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
 #endif
-
-	if (mpirank == 0){
+	if (mpirank == 0) {
 		printf("%s\n", commandlinestring(argc, argv).c_str());
-		printf("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());				
+		printf("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
 	}
-	
-	if (argc < 2){				
-		printf("Usage: %s control_file_name [number_of_openmp_threads]\n", argv[0]);		
+
+	if (argc < 2) {
+		printf("Usage: %s control_file_name [number_of_openmp_threads]\n", argv[0]);
 		exitstatus = EXIT_FAILURE;
 	}
-	else if (argc == 2){		
+	else if (argc == 2) {
 		bool usingopenmp = false;
-		std::string controlfile = string(argv[1]);							
+		std::string controlfile = string(argv[1]);		
 		process(controlfile, (size_t)mpisize, (size_t)mpirank, usingopenmp);
 		exitstatus = EXIT_SUCCESS;
 	}
-	else if (argc == 3){		
+	else if (argc == 3) {
 		int openmpsize = atoi(argv[2]);
-		if (mpisize > 1){
-			if (mpirank == 0){
+		if (mpisize > 1) {
+			if (mpirank == 0) {
 				printf("**Error: You may not use OpenMP with MPI\n");
 				printf("**       Do not use [number_of_openmp_threads] when launched with mpiexec or mpirun\n");
 			}
 			exitstatus = EXIT_FAILURE;
 		}
-		else if (openmpsize < 1){
+		else if (openmpsize < 1) {
 			printf("**Error: %d is a silly number of threads\n", openmpsize);
-			exitstatus = EXIT_FAILURE;		
+			exitstatus = EXIT_FAILURE;
 		}
-		else{
-			#if defined _OPENMP				
-				bool usingopenmp = true;
-				std::string controlfile = string(argv[1]);
+		else {
+#if defined _OPENMP				
+			bool usingopenmp = true;
+			std::string controlfile = string(argv[1]);
 
-				int openmpmaxthreads = omp_get_max_threads();
-				if (openmpsize > openmpmaxthreads){
-					printf("**Warning: The number of requested threads (%d) is more than the processors available (%d)\n", openmpsize, openmpmaxthreads);
-				}
+			int openmpmaxthreads = omp_get_max_threads();
+			if (openmpsize > openmpmaxthreads) {
+				printf("**Warning: The number of requested threads (%d) is more than the processors available (%d)\n", openmpsize, openmpmaxthreads);
+			}
 
-				printf("OpenMP threading Processes=%d\n", openmpsize);
-				omp_init_lock(&fftw_thread_lock);
-				#pragma omp parallel num_threads(openmpsize)
-				{
-					int openmprank = omp_get_thread_num();
-					process(controlfile, (size_t)openmpsize, (size_t)openmprank, usingopenmp);
-				}
-				exitstatus = EXIT_SUCCESS;
-			#else
-				printf("**Error: This executable has not been compiled with OpenMP enabbled\n");
-				printf("**       Compile with OpenMP or do not specify [number_of_openmp_threads]\n");
-				exitstatus = EXIT_FAILURE;
-			#endif
+			printf("OpenMP threading Processes=%d\n", openmpsize);
+			omp_init_lock(&fftw_thread_lock);
+#pragma omp parallel num_threads(openmpsize)
+			{
+				int openmprank = omp_get_thread_num();
+				process(controlfile, (size_t)openmpsize, (size_t)openmprank, usingopenmp);
+			}
+			exitstatus = EXIT_SUCCESS;
+#else
+			printf("**Error: This executable has not been compiled with OpenMP enabbled\n");
+			printf("**       Compile with OpenMP or do not specify [number_of_openmp_threads]\n");
+			exitstatus = EXIT_FAILURE;
+#endif
 		}
 	}
-	else{		
+	else {
 		printf("Usage: %s control_file_name [number_of_openmp_threads]\n", argv[0]);
-		printf("Too many command line arguments\n");		
+		printf("Too many command line arguments\n");
 		exitstatus = EXIT_FAILURE;
-	}	
+	}
 
-	#if defined _MPI_ENABLED
-		if(mpirank==0)printf("Finalizing MPI\n");		
-		MPI_Finalize();
-	#endif
-
+#if defined _MPI_ENABLED
+	if (mpirank == 0)printf("Finalizing MPI\n");
+	MPI_Finalize();
+#endif	
 	return exitstatus;
 }

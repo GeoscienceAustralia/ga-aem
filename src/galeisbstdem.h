@@ -102,16 +102,19 @@ class cTDEmSystemInfo{
 	size_t ncomps;
 	size_t nchans;
 
-	bool useX;
-	bool useY;
-	bool useZ;
-	bool useTotal;	
+	bool useX=false;
+	bool useY=false;
+	bool useZ=false;
+	bool invertXPlusZ;
+	bool invertPrimaryPlusSecondary;	
 	bool reconstructPrimary;
 	bool estimateNoise;
 
-
-	size_t xIndex,yIndex,zIndex;	
-	double          oPX,oPY,oPZ;
+	int xzIndex = -1;
+	int xIndex  = -1;
+	int yIndex  = -1;
+	int zIndex  = -1;
+	double oPX,oPY,oPZ;
 	std::vector<double>  oSX,oSY,oSZ;	
 	std::vector<double>  oEX,oEY,oEZ;		
 	FieldDefinition fd_oPX,fd_oPY,fd_oPZ;
@@ -228,7 +231,7 @@ public:
 	//Members
 	size_t mRank;
 	size_t mSize;		
-	FILE*  fp_log;
+	FILE*   fp_log = (FILE*)NULL;
 	cBlock  Control;	
 
 	std::string DataFileName;	
@@ -245,7 +248,7 @@ public:
 	std::string InputFile;
 	
 	cOutputOptions OO;	
-	FILE* ofp;	
+	FILE* ofp = (FILE*)NULL;
 	size_t Outputrecord; //output record number
 	
 	//column definitions
@@ -381,8 +384,9 @@ public:
 	cTDEmGeometry get_geometry(const std::vector<double>& parameters);	
 	void set_predicted();
 
-	
 	void forwardmodel(const std::vector<double>& parameters, std::vector<double>& predicted, bool computederivatives);
+	void fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv);
+	void fillJacobianColumn(cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv);
 	std::vector<double> parameterchange(const double lambda);
 	void invert();	
 	void iterate();		
