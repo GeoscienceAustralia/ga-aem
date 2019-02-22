@@ -2148,6 +2148,7 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 	catch (const std::exception e) {		
 		rootmessage("%s", e.what());		
 	}	
+	return 0;
 };
 
 int main(int argc, char** argv)
