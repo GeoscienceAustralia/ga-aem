@@ -605,9 +605,11 @@ void cSBSInverter::initialise_data()
 			for (size_t wi = 0; wi < S.nwindows; wi++) {
 				size_t di = wi + S.xzIndex;
 				Err[di] = std::hypot(S.oEX[wi], S.oEZ[wi]);
-				Obs[di] = std::hypot(S.oSX[wi], S.oSZ[wi]);
-				if (S.invertPrimaryPlusSecondary) {
-					Obs[di] += std::hypot(S.oPX, S.oPZ);
+				if (S.invertPrimaryPlusSecondary){
+					Obs[di] = std::hypot(S.oSX[wi]+S.oPX, S.oSZ[wi]+S.oPZ);
+				}
+				else{								
+					Obs[di] = std::hypot(S.oSX[wi], S.oSZ[wi]);
 				}
 			}
 		}
@@ -1079,7 +1081,9 @@ void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vect
 		
 		if (S.invertXPlusZ) {
 			xzfm.resize(T.NumberOfWindows);
-			for (size_t wi = 0; wi < T.NumberOfWindows; wi++) xzfm[wi] = std::hypot(xfm[wi], zfm[wi]);
+			for (size_t wi = 0; wi < T.NumberOfWindows; wi++){
+				xzfm[wi] = std::hypot(xfm[wi], zfm[wi]);
+			}
 		}
 		
 		if (S.invertXPlusZ){
