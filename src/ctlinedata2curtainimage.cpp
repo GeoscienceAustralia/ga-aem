@@ -676,6 +676,7 @@ int main(int argc, char** argv)
 		cBlock b(argv[1]);
 		cBlock ib = b.findblock("Input");
 		cBlock sb = b.findblock("Section");
+		std::string dfnfile = ib.getstringvalue("DfnFile");
 		std::string infiles = ib.getstringvalue("DataFiles");
 		std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
 		cStopWatch stopwatch;
@@ -690,8 +691,8 @@ int main(int argc, char** argv)
 			std::printf("Processing file %s %3zu of %3zu\n", filelist[i].c_str(), i + 1, filelist.size());
 
 			std::string datafile = filelist[i];
-			std::string dfnfile = extractfiledirectory(datafile);
-			dfnfile += "inversion.output.dfn";
+			//std::string dfnfile = extractfiledirectory(datafile);
+			//dfnfile += "inversion.output.dfn";
 
 			cCTLineData dummy(ib, dfnfile);
 			cRange<int> lcol = dummy.getcolumns("line");
