@@ -1028,7 +1028,8 @@ void cTDEmSystem::digitisewaveform(const dmatrix& wp, std::vector<double>& t, st
 	size_t np = wp.size();
 
 	if (wp[np - 1][0] - wp[0][0] < hp){
-		errormessage("cTDEmSystem::digitisecurrentwaveform: One complete halfcycle of the waveform has not been specified\n");
+		errormessage("cTDEmSystem::digitisecurrentwaveform: One complete halfcycle of the waveform has not been specified\n \
+                                      Last waveform time - first waveform time must be >= 0.5/BaseFrequency\n");
 	}
 
 	std::vector<double> x(np);
