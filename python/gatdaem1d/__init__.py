@@ -138,6 +138,22 @@ tdlib.waveform.restype  = None;
 tdlib.nwindows.argtypes = [c_void_p];
 tdlib.nwindows.restype  = c_int;
 
+#int nturns(void* hS);
+tdlib.nturns.argtypes = [c_void_p];
+tdlib.nturns.restype  = c_int;
+
+#double looparea(void* hS);
+tdlib.looparea.argtypes = [c_void_p];
+tdlib.looparea.restype  = c_double;
+
+#double basefrequency(void* hS);
+tdlib.basefrequency.argtypes = [c_void_p];
+tdlib.basefrequency.restype  = c_double;
+
+#double peakcurrent(void* hS);
+tdlib.peakcurrent.argtypes = [c_void_p];
+tdlib.peakcurrent.restype  = c_double;
+
 #void windowtimes(void* hS, double* low, double* high);
 tdlib.windowtimes.argtypes = [c_void_p, POINTER(c_double), POINTER(c_double)];
 tdlib.windowtimes.restype  = None;
@@ -193,6 +209,21 @@ class TDAEMSystem:
 
     def nwindows(self):
         return self.windows.nwindows();
+
+    def nTurns(self):
+        return tdlib.nturns(self.handle);
+
+    def loopRadius(self):
+        return np.sqrt(self.loopArea() / np.pi)
+
+    def peakCurrent(self):
+        return tdlib.peakcurrent(self.handle)
+
+    def baseFrequency(self):
+        return tdlib.basefrequency(self.handle)
+
+    def loopArea(self):
+        return tdlib.looparea(self.handle);
 
     def forwardmodel(self,G,E):
         R = Response(self.nwindows());
