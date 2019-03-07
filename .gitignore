@@ -2,6 +2,8 @@
 
 # Ignore raijin.nci.org.au specific files
 *raijin*
+!run_make_raijin.sh
+!install_raijin.sh
 
 # Ignore output files from the examples
 examples/**/output
