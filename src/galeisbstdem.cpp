@@ -15,8 +15,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <random>
 
-
-
 #include "file_utils.h"
 #include "file_formats.h"
 #include "lem.h"
@@ -26,10 +24,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "galeisbstdem.h"
 #include "stacktrace.h"
 #include "large_loop.h"
-
-cStackTrace globalstacktrace;
+#include "geophysics_netcdf.h"
+#include "logger.h"
 
 #define VERSION "1.0"
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
 
 #if defined _MPI_ENABLED
 	#include "mpi_wrapper.h"
@@ -77,9 +77,9 @@ cSBSInverter::cSBSInverter(size_t size, size_t rank)
 	mRank = rank;
 }
 cSBSInverter::~cSBSInverter()
-{
-	if(fp_log)fclose(fp_log);
+{	
 	if(ofp)fclose(ofp);
+	glog.close();
 };
 void cSBSInverter::initialise(const std::string controlfile)
 {
@@ -91,55 +91,40 @@ void cSBSInverter::initialise(const std::string controlfile)
 	resize_matrices();
 	_GSTPOP_
 }
+
 void cSBSInverter::loadcontrolfile(const std::string filename)
 {
-	rootmessage("Loading control file %s\n", filename.c_str());
-	Control = cBlock(filename);
-
-	cBlock OB = Control.findblock("Output");
-	OO = cOutputOptions(OB);	
-	std::string suffix = stringvalue(mRank, ".%04lu");
+	glog.logmsg(0,"Loading control file %s\n",filename.c_str());
+	Control = cBlock(filename);		
+	OO = cOutputOptions(Control.findblock("Output"));
+	std::string suffix = stringvalue(mRank, ".%04zu");	
 	OO.Logfile  = insert_after_filename(OO.Logfile, suffix);
 	OO.DataFile = insert_after_filename(OO.DataFile, suffix);
 	openlogfile(); //load this first to get outputlogfile opened	
-	
-	//Load control file				
+		   	  
+	//Load control file
 	parseoptions();
 	initialisesystems();
-
-	cBlock IB = Control.findblock("Input");	
-	DataFileName  = IB.getstringvalue("DataFile");
-	fixseparator(DataFileName);
-
-	DataFileHeaderLines = IB.getsizetvalue("Headerlines");		
-	if (!isdefined(DataFileHeaderLines)){
-		DataFileHeaderLines = 0;
-	}
 	
-	DataFileSubsample   = IB.getsizetvalue("Subsample");
-	if (!isdefined(DataFileSubsample)){
-		DataFileSubsample = 1;
-	}	
-	
-	rootmessage(fp_log, "Opening Input DataFile %s\n", DataFileName.c_str());
-	DataFilePointer = fileopen(DataFileName, "r");
-	DataFileRecord  = 0;
-	
-	rootmessage(fp_log,"Opening Output DataFile %s\n", OO.DataFile.c_str());
+	IM.initialise(Control.findblock("Input"));
+		
+	glog.logmsg(0,"Opening Output DataFile %s\n", OO.DataFile.c_str());
 	ofp = fileopen(OO.DataFile, "w");	
 	Outputrecord = 1;
 }
+
 void cSBSInverter::openlogfile()
 {			
-	rootmessage("Opening log file %s\n", OO.Logfile.c_str());
-	fp_log = fileopen(OO.Logfile, "w");
-	rootmessage(fp_log, "Logfile opened on %s\n", timestamp().c_str());
-	rootmessage(fp_log, "Control file %s\n", Control.Filename.c_str());
-	rootmessage(fp_log, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-	rootmessage(fp_log, "Working directory %s\n", getcurrentdirectory().c_str());
-	rootmessage(fp_log, "Processes=%lu\tRank=%lu\n", mSize, mRank);
-	Control.write(fp_log);	
+	glog.logmsg(0,"Opening log file %s\n", OO.Logfile.c_str());
+	glog.open(OO.Logfile);	
+	glog.logmsg(0,"Control file %s\n", Control.Filename.c_str());
+	glog.logmsg(0,"Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+	glog.logmsg(0,"Working directory %s\n", getcurrentdirectory().c_str());
+	glog.logmsg(0,"Processes=%zu\tRank=%zu\n", mSize, mRank);
+	glog.log(Control.get_as_string());
+	glog.flush();
 }
+
 void cSBSInverter::parseoptions()
 {
 	cBlock b = Control.findblock("Options");
@@ -175,7 +160,7 @@ void cSBSInverter::parseoptions()
 		NormType = L2;
 	}
 	else{
-		errormessage(fp_log, "Unknown NormType %s\n", nt.c_str());
+		glog.errormsg("Unknown NormType %s\n", nt.c_str());
 	}
 
 
@@ -197,7 +182,7 @@ void cSBSInverter::parseoptions()
 		SmoothnessMethod = SM_2ND_DERIVATIVE;
 	}
 	else{
-		errormessage(fp_log,"Unknown SmoothnessMethod %s\n", sm.c_str());
+		glog.errormsg(_SRC_,"Unknown SmoothnessMethod %s\n", sm.c_str());
 	}
 		
 
@@ -205,38 +190,40 @@ void cSBSInverter::parseoptions()
 	MinimumPhiD   = b.getdoublevalue("MinimumPhiD");
 	MinimumImprovement = b.getdoublevalue("MinimumPercentageImprovement");
 }
+
 void cSBSInverter::parsecolumns()
 {	
 	cBlock b = Control.findblock("Input.Columns");
-	sn.set(b, "SurveyNumber");
-	dn.set(b, "DateNumber");
-	fn.set(b, "FlightNumber");
-	ln.set(b, "LineNumber");
-	fidn.set(b, "FidNumber");
-	xord.set(b, "Easting");
-	yord.set(b, "Northing");
-	elevation.set(b, "GroundElevation");	
+	sn.initialise(b, "SurveyNumber");
+	dn.initialise(b, "DateNumber");
+	fn.initialise(b, "FlightNumber");
+	ln.initialise(b, "LineNumber");
+	fidn.initialise(b, "FidNumber");
+	xord.initialise(b, "Easting");
+	yord.initialise(b, "Northing");
+	elevation.initialise(b, "GroundElevation");
 
 	fd_GI = parsegeometry(b);
 
 	cBlock rm = b.findblock("ReferenceModel");
 	fd_GR = parsegeometry(rm);
-	fd_ERc.set(rm, "Conductivity");
-	fd_ERt.set(rm, "Thickness");
+	fd_ERc.initialise(rm, "Conductivity");
+	fd_ERt.initialise(rm, "Thickness");
 
 	cBlock sd = b.findblock("StdDevReferenceModel");
 	fd_GS = parsegeometry(sd);
-	fd_ESc.set(sd, "Conductivity");
-	fd_ESt.set(sd, "Thickness");
+	fd_ESc.initialise(sd, "Conductivity");
+	fd_ESt.initialise(sd, "Thickness");
 
 	cBlock tfr = b.findblock("TotalFieldReconstruction");
 	fd_GTFR = parsegeometry(tfr);
 }
-std::vector<FieldDefinition> cSBSInverter::parsegeometry(const cBlock& b)
+
+std::vector<cFieldDefinition> cSBSInverter::parsegeometry(const cBlock& b)
 {
-	std::vector<FieldDefinition> g(10);
+	std::vector<cFieldDefinition> g(10);
 	for (size_t i = 0; i < g.size(); i++) {
-		g[i].set(b, cTDEmGeometry::fname(i));
+		g[i].initialise(b, cTDEmGeometry::fname(i));
 	}	
 	return g;
 }
@@ -247,7 +234,7 @@ void cSBSInverter::initialisesystems()
 	for (size_t si = 0; si < nsystems; si++) {
 
 		cTDEmSystemInfo& S = SV[si];
-		std::string str = strprint("EMSystem%lu", si + 1);
+		std::string str = strprint("EMSystem%zu", si + 1);
 		cBlock  b = Control.findblock(str);
 
 		std::string dummy;
@@ -260,11 +247,11 @@ void cSBSInverter::initialisesystems()
 		std::string stmfile = b.getstringvalue("SystemFile");
 		fixseparator(stmfile);
 
-		rootmessage("Reading system file %s\n", stmfile.c_str());
+		glog.logmsg(0,"Reading system file %s\n", stmfile.c_str());
 		T.readsystemdescriptorfile(stmfile);
-		fprintf(fp_log, "==============System file %s\n", stmfile.c_str());
-		T.STM.write(fp_log);
-		fprintf(fp_log, "==========================================================================\n");
+		glog.log("==============System file %s\n",stmfile.c_str());
+		glog.log(T.STM.get_as_string());
+		glog.log("==========================================================================\n");
 		S.nwindows = T.NumberOfWindows;
 
 		S.useX = b.getboolvalue("UseXComponent");
@@ -291,9 +278,9 @@ void cSBSInverter::initialisesystems()
 			S.oSX.resize(S.nwindows);
 			S.oEX.resize(S.nwindows);
 
-			S.fd_oPX.set(b, "XComponentPrimary");
-			S.fd_oSX.set(b, "XComponentSecondary");
-			S.fd_oEX.set(b, "XComponentNoise");
+			S.fd_oPX.initialise(b, "XComponentPrimary");
+			S.fd_oSX.initialise(b, "XComponentSecondary");
+			S.fd_oEX.initialise(b, "XComponentNoise");
 		}
 
 		if (S.useY){
@@ -305,9 +292,9 @@ void cSBSInverter::initialisesystems()
 			S.oSY.resize(S.nwindows);
 			S.oEY.resize(S.nwindows);
 
-			S.fd_oPY.set(b, "YComponentPrimary");
-			S.fd_oSY.set(b, "YComponentSecondary");
-			S.fd_oEY.set(b, "YComponentNoise");
+			S.fd_oPY.initialise(b, "YComponentPrimary");
+			S.fd_oSY.initialise(b, "YComponentSecondary");
+			S.fd_oEY.initialise(b, "YComponentNoise");
 		}
 
 		if (S.useZ){
@@ -319,9 +306,9 @@ void cSBSInverter::initialisesystems()
 			S.oSZ.resize(S.nwindows);
 			S.oEZ.resize(S.nwindows);
 
-			S.fd_oPZ.set(b, "ZComponentPrimary");
-			S.fd_oSZ.set(b, "ZComponentSecondary");
-			S.fd_oEZ.set(b, "ZComponentNoise");
+			S.fd_oPZ.initialise(b, "ZComponentPrimary");
+			S.fd_oSZ.initialise(b, "ZComponentSecondary");
+			S.fd_oEZ.initialise(b, "ZComponentNoise");
 		}
 		
 		S.nchans = S.nwindows*S.ncomps;
@@ -429,45 +416,20 @@ void cSBSInverter::resize_matrices()
 {	
 	J     = MatrixDouble(ndata, nparam);	
 }
-bool cSBSInverter::readnextrecord(){
-	if (DataFileRecord == 0){
-		//Skip header lines
-		for (size_t i = 0; i < DataFileHeaderLines; i++){
-			bool status = filegetline(DataFilePointer, DataFileRecordString);
-			if (status == false)return status;
-			DataFileRecord++;
-		}
-	}
-	else{
-		//Skip lines for subsampling
-		for (size_t i = 0; i < DataFileSubsample - 1; i++){
-			bool status = filegetline(DataFilePointer, DataFileRecordString);
-			if (status == false)return status;
-			DataFileRecord++;
-		}
-	}
-		
-	bool status = filegetline(DataFilePointer, DataFileRecordString);	
-	if (status == false)return status;	
-	DataFileRecord++;
-	return true;
-}
 bool cSBSInverter::parserecord()
-{				
-	DataFileFieldStrings = fieldparsestring(DataFileRecordString.c_str(), " ,\t\r\n");
-	if (DataFileFieldStrings.size() <= 1)return false;
+{					
+	if (IM.parsefieldstrings()==false) return false;
 
-	Id.uniqueid = DataFileRecord;
-
-	Id.surveynumber = (size_t)intvalue(sn);
-	Id.daynumber    = (size_t)intvalue(dn);
-	Id.flightnumber = (size_t)intvalue(fn);
-	Id.linenumber   = (size_t)intvalue(ln);
-	Id.fidnumber    = doublevalue(fidn);
-	Location.x      = doublevalue(xord);
-	Location.y      = doublevalue(yord);
-	Location.groundelevation = doublevalue(elevation);
-	Location.z      = ud_double();
+	Id.uniqueid = IM.record();	
+	IM.read(sn,Id.surveynumber);		
+	IM.read(dn,Id.daynumber);
+	IM.read(fn,Id.flightnumber);
+	IM.read(ln,Id.linenumber);
+	IM.read(fidn,Id.fidnumber);
+	IM.read(xord,Location.x);
+	IM.read(yord,Location.y);
+	IM.read(elevation,Location.groundelevation);
+	Location.z = ud_double();
 
 	GI = readgeometry(fd_GI);	
 	GR = readgeometry(fd_GR);
@@ -477,14 +439,14 @@ bool cSBSInverter::parserecord()
 
 	GS = readgeometry(fd_GS);
 
-	ER.conductivity = doublevector(fd_ERc, nlayers);
-	ER.thickness = doublevector(fd_ERt, nlayers - 1);
+	IM.read(fd_ERc,ER.conductivity,nlayers);
+	IM.read(fd_ERt,ER.thickness,nlayers - 1);
 
 	if (solve_conductivity){
-		ES.conductivity = doublevector(fd_ESc, nlayers);
+		IM.read(fd_ESc,ES.conductivity,nlayers);
 	}
 	if (solve_thickness){
-		ES.thickness = doublevector(fd_ESt, nlayers - 1);
+		IM.read(fd_ESt,ES.thickness,nlayers - 1);
 	}
 
 	for (size_t si = 0; si < nsystems; si++){
@@ -492,14 +454,15 @@ bool cSBSInverter::parserecord()
 	}	
 	return true;
 }
+
 void cSBSInverter::readsystemdata(size_t sysindex)
 {
 	cTDEmSystemInfo& S = SV[sysindex];
 	size_t nw = S.nwindows;
 
 	if (S.useX){
-		S.oPX = doublevalue(S.fd_oPX);
-		S.oSX = doublevector(S.fd_oSX, nw);
+		IM.read(S.fd_oPX, S.oPX);
+		IM.read(S.fd_oSX, S.oSX, nw);		
 		S.oEX.resize(nw);
 		if (S.estimateNoise){
 			for (size_t w = 0; w < nw; w++){
@@ -508,14 +471,14 @@ void cSBSInverter::readsystemdata(size_t sysindex)
 				S.oEX[w] = sqrt(an*an + mn*mn);
 			}
 		}
-		else{
-			S.oEX = doublevector(S.fd_oEX, nw);
+		else{						
+			IM.read(S.fd_oEX, S.oEX, nw);
 		}
 	}
 
 	if (S.useY){
-		S.oPY = doublevalue(S.fd_oPY);
-		S.oSY = doublevector(S.fd_oSY, nw);
+		IM.read(S.fd_oPY, S.oPY);
+		IM.read(S.fd_oSY, S.oSY, nw);
 		S.oEY.resize(nw);
 		if (S.estimateNoise){
 			for (size_t w = 0; w < nw; w++){
@@ -525,13 +488,13 @@ void cSBSInverter::readsystemdata(size_t sysindex)
 			}
 		}
 		else{
-			S.oEY = doublevector(S.fd_oEY, nw);
+			IM.read(S.fd_oEY, S.oEY, nw);
 		}
 	}
 
 	if (S.useZ){
-		S.oPZ = doublevalue(S.fd_oPZ);
-		S.oSZ = doublevector(S.fd_oSZ, nw);
+		IM.read(S.fd_oPZ, S.oPZ);
+		IM.read(S.fd_oSZ, S.oSZ, nw);
 		S.oEZ.resize(nw);
 		if (S.estimateNoise){
 			for (size_t w = 0; w < nw; w++){
@@ -541,10 +504,11 @@ void cSBSInverter::readsystemdata(size_t sysindex)
 			}
 		}
 		else{
-			S.oEZ = doublevector(S.fd_oEZ, nw);
+			IM.read(S.fd_oEZ, S.oEZ, nw);
 		}
 	}
 }
+
 void cSBSInverter::initialise_sample()
 {
 	LastIteration = 0;
@@ -855,11 +819,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 		for (size_t li = 0; li < nlayers; li++){
 			size_t pindex = li + cIndex;			
 			if (Param[pindex] + dm[pindex] > log10(max_conductivity)){
-				//printf("upper limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("upper limit li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = log10(max_conductivity) - Param[pindex];
 			}
 			else if (Param[pindex] + dm[pindex] < log10(min_conductivity)){
-				//printf("lower limit li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("lower limit li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = log10(min_conductivity) - Param[pindex];
 			}
 		}
@@ -869,11 +833,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 		for (size_t li = 0; li<nlayers - 1; li++){
 			size_t pindex = li + tIndex;
 			if (dm[pindex] > 0.5){
-				//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = 0.5;
 			}
 			else if (dm[pindex] < -0.5){
-				//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+				//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 				dm[pindex] = -0.5;
 			}
 		}
@@ -882,11 +846,11 @@ std::vector<double> cSBSInverter::parameterchange(const double lambda)
 	if (solve_tx_height){
 		size_t pindex = tx_heightIndex;
 		if (dm[pindex] > 0.5){
-			//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+			//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 			dm[pindex] = 0.5;
 		}
 		else if (dm[pindex] < -0.5){
-			//printf("li=%lu pindex=%lu dm=%lf\n",li,pindex,dm[pindex]);
+			//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 			dm[pindex] = -0.5;
 		}
 
@@ -954,7 +918,7 @@ double cSBSInverter::l2_norm(const std::vector<double>& g)
 
 double cSBSInverter::phiData(const std::vector<double>& g)
 {
-	double phid;		
+	double phid;
 	if (NormType == L1){
 		phid = l1_norm(g);
 	}
@@ -964,7 +928,7 @@ double cSBSInverter::phiData(const std::vector<double>& g)
 	//This reports invalid models 
 	if (phid < 0.0){
 		phid = 1e9;
-		warningmessage("Caught invalid PhiD\n");
+		glog.warningmsg(_SRC_,"Caught invalid PhiD\n");
 	}
 	return phid;
 }
@@ -1363,7 +1327,7 @@ sTrial cSBSInverter::targetsearch(const double currentlambda, const double targe
 		return T.minphidtrial();
 	}
 	else{
-		errormessage(fp_log,"targetsearch(): Unknown value %d returned from target brackettarget()\n", b);
+		glog.errormsg(_SRC_,"targetsearch(): Unknown value %d returned from target brackettarget()\n", b);
 	}
 	return T.minphidtrial();
 }
@@ -1469,7 +1433,7 @@ double cSBSInverter::brentsmethod(cTrialCache& T, const double target, double& n
 	double fa = T.trial[index - 1].phid - target;
 	double fb = T.trial[index].phid - target;
 	if (fa * fb >= 0.0){
-		warningmessage("brentsmethod(): Target must be bracketed for cSBSInverter::brentsmethod()\n");
+		glog.warningmsg(_SRC_,"Target must be bracketed for cSBSInverter::brentsmethod()\n");
 	}
 
 	double c = 0;
@@ -1548,7 +1512,7 @@ double cSBSInverter::brentsmethod(cTrialCache& T, const double target, double& n
 		i++;
 		if (i > 20){
 			printtrials(T);
-			warningmessage("Too many bisections in cSBSInverter::brentsmethod()\n");
+			glog.warningmsg(_SRC_,"Too many bisections in cSBSInverter::brentsmethod()\n");
 			newphid = fb + target;
 			return pow10(b);
 		}
@@ -1978,7 +1942,7 @@ void cSBSInverter::writeresult_component(std::string& buf, cOutputFileInfo& OI, 
 	if (form == 'F') fmt = strprint("%%%d.%dlf", width, decimals);
 	else if (form == 'E') fmt = strprint("%%%d.%dle", width, decimals);
 	else {
-		rootmessage("Invalid output format %c\n", form);
+		glog.logmsg("Invalid output format %c\n", form);
 		std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 		throw(std::runtime_error(e));		
 	}
@@ -2011,41 +1975,19 @@ bool cSBSInverter::solvegeometryindex(const size_t index)
 	case GE_RX_PITCH:  return solve_rx_pitch; break;
 	case GE_RX_YAW:    return solve_rx_yaw; break;
 	default:
-		rootmessage("Geometry index %llu out of range\n", index);
+		glog.logmsg("Geometry index %llu out of range\n", index);
 		std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 		throw(std::runtime_error(e));
 		break;
 	}
 }
-int cSBSInverter::intvalue(const FieldDefinition& cd)
-{
-	return cd.intvalue(DataFileFieldStrings);
-}
-double cSBSInverter::doublevalue(const FieldDefinition& cd)
-{
-	return cd.doublevalue(DataFileFieldStrings);
-}
-std::vector<int> cSBSInverter::intvector(const FieldDefinition& cd, const size_t& n)
-{
-	return cd.intvector(DataFileFieldStrings, n);
-}
-std::vector<double> cSBSInverter::doublevector(const FieldDefinition& cd, const size_t& n)
-{
-	return cd.doublevector(DataFileFieldStrings, n);
-}
-cTDEmGeometry cSBSInverter::readgeometry(const std::vector<FieldDefinition>& gfd)
+
+cTDEmGeometry cSBSInverter::readgeometry(const std::vector<cFieldDefinition>& gfd)
 {
 	cTDEmGeometry g;
-	g.tx_height = doublevalue(gfd[0]);
-	g.tx_roll = doublevalue(gfd[1]);
-	g.tx_pitch = doublevalue(gfd[2]);
-	g.tx_yaw = doublevalue(gfd[3]);
-	g.txrx_dx = doublevalue(gfd[4]);
-	g.txrx_dy = doublevalue(gfd[5]);
-	g.txrx_dz = doublevalue(gfd[6]);
-	g.rx_roll = doublevalue(gfd[7]);
-	g.rx_pitch = doublevalue(gfd[8]);
-	g.rx_yaw = doublevalue(gfd[9]);
+	for (size_t i = 0; i < g.size(); i++) {
+		IM.read(gfd[i],g[i]);
+	}	
 	return g;
 }
 void cSBSInverter::dumptofile(const std::vector<double>& v, std::string path)
@@ -2094,34 +2036,36 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 
 		//If OpenMP is being used set the thread lock while FFTW initialises
 		if (usingopenmp) {
-#if defined _OPENMP
-			omp_set_lock(&fftw_thread_lock);
-#endif	
+			#if defined _OPENMP
+				omp_set_lock(&fftw_thread_lock);				
+			#endif	
 		}
 
 		I.initialise(controlfile);
 
 		if (usingopenmp) {
-#if defined _OPENMP			
-			omp_unset_lock(&fftw_thread_lock);
-#endif	
+			#if defined _OPENMP			
+				omp_unset_lock(&fftw_thread_lock);
+			#endif	
 		}
 
 		size_t record = 0;
-		while (I.readnextrecord()) {
+		while (I.IM.readnextrecord()) {
 			record++;
 			if ((record - 1) % (Size) != Rank)continue;
-
-			bool nonnumeric = I.contains_non_numeric_characters(I.DataFileRecordString);
-			if (nonnumeric) {
-				rootmessage(I.fp_log, "Skipping non-numeric record at line %lu of Input DataFile %s\n", I.DataFileRecord, I.DataFileName.c_str());
-				rootmessage(I.fp_log, "\n%s\n\n", I.DataFileRecordString.c_str());
-				continue;
+			
+			if (I.IM.iotype() == IOType::ASCII) {
+				bool nonnumeric = I.IM.contains_non_numeric_characters(I.IM.recordstring());
+				if (nonnumeric) {
+					glog.logmsg("Skipping non-numeric record at line %zu of Input DataFile %s\n", I.IM.record(), I.IM.filename().c_str());
+					glog.logmsg("\n%s\n\n", I.IM.recordstring().c_str());
+					continue;
+				}
 			}
 
 			//if (I.OO.Dump){
 			//	FILE* fp = fileopen(I.dumppath() + "record.dat", "w");
-			//	fprintf(fp, "Record\t%lu", I.DataFileRecord);
+			//	fprintf(fp, "Record\t%zu", I.DataFileRecord);
 			//	fclose(fp);
 			//}
 
@@ -2131,28 +2075,25 @@ int process(std::string controlfile, size_t Size, size_t Rank, bool usingopenmp)
 			double t2 = gettime();
 			double etime = t2 - t1;
 			I.writeresult();
-
-			message(I.fp_log, "Rec %6lu  %3lu  %5lu  %10lf  ", I.DataFileRecord, I.Id.flightnumber, I.Id.linenumber, I.Id.fidnumber);
-			message(I.fp_log, "Its=%3lu  PhiD=%6.2lf  time=%.1lfs %s\n", I.LastIteration, I.LastPhiD, etime, I.TerminationReason.c_str());
-		}
-		//my_barrier();	
-		rootmessage(I.fp_log, "Logfile closing at %s\n", timestamp().c_str());
+			glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n",I.IM.record(),I.Id.flightnumber, I.Id.linenumber, I.Id.fidnumber, I.LastIteration, I.LastPhiD, etime, I.TerminationReason.c_str());			
+		}		
+		glog.close();
 		return 0;
 	}
 	catch (const std::string msg) {		
-		rootmessage("%s", msg.c_str());		
+		glog.logmsg(msg);
 	}
 	catch (const std::runtime_error e) {		
-		rootmessage("%s", e.what());		
+		glog.logmsg(std::string(e.what()));
 	}
 	catch (const std::exception e) {		
-		rootmessage("%s", e.what());		
+		glog.logmsg(std::string(e.what()));
 	}	
 	return 0;
 };
 
 int main(int argc, char** argv)
-{
+{		
 	int exitstatus;
 	int mpisize = 1;
 	int mpirank = 0;
@@ -2205,6 +2146,8 @@ int main(int argc, char** argv)
 
 			printf("OpenMP threading Processes=%d\n", openmpsize);
 			omp_init_lock(&fftw_thread_lock);
+			glog.set_num_omp_threads(openmpsize);
+			
 #pragma omp parallel num_threads(openmpsize)
 			{
 				int openmprank = omp_get_thread_num();

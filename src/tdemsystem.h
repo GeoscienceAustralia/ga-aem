@@ -131,7 +131,7 @@ public:
 		case 8: return rx_pitch; break;
 		case 9: return rx_yaw; break;
 		default:
-			rootmessage("Geometry index %llu out of range\n", index);
+			glog.logmsg(0,"Geometry index %zu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
 			break;
@@ -175,7 +175,7 @@ public:
 		case 8: return "rx_pitch"; break;
 		case 9: return "rx_yaw"; break;
 		default:
-			rootmessage("Geometry index %llu out of range\n", index);
+			glog.logmsg(0,"Geometry index %lu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
 			break;
@@ -186,9 +186,8 @@ public:
 
 		for (size_t i = 0; i < size(); i++){
 			if (strcasecmp(name, fname(i)) == 0) return i;
-		}
-				
-		rootmessage("Geometry field name %s is bad\n", name.c_str());
+		}				
+		glog.logmsg(0,"Geometry field name %s is bad\n", name.c_str());
 		std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 		throw(std::runtime_error(e));		
 
@@ -209,7 +208,7 @@ public:
 		case 8: return "degrees"; break;
 		case 9: return "degrees"; break;
 		default:
-			rootmessage("Geometry index %llu out of range\n", index);
+			glog.logmsg(0,"Geometry index %zu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
 			break;
@@ -230,7 +229,7 @@ public:
 		case 8: return "Rx pitch - nose down + ve";  break;
 		case 9: return "Rx yaw - turn left + ve";    break;
 		default:
-			rootmessage("Geometry index %llu out of range\n", index);
+			glog.logmsg(0,"Geometry index %zu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
 			break;
@@ -250,7 +249,7 @@ public:
 		case 8: return GE_RX_PITCH;  break;
 		case 9: return GE_RX_YAW;    break;
 		default:
-			rootmessage("Geometry index %llu out of range\n", index);
+			glog.logmsg(0,"Geometry index %zu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
 			break;
@@ -270,7 +269,7 @@ public:
 		case 8: return CT_NONE; break;
 		case 9: return CT_NONE; break;
 		default:
-			rootmessage("Geometry index %llu out of range\n", index);
+			glog.logmsg(0,"Geometry index %zu out of range\n", index);
 			std::string e = strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(std::runtime_error(e));
 			break;

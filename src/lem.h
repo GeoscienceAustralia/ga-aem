@@ -557,7 +557,7 @@ public:
 		//	return rzero_propogationmatrix(fi,lambda);	
 		//}
 		else{
-			errormessage("LE::rzero() unknown rzero calculation option %lu\n", rzerotype);
+			glog.errormsg(_SRC_,"LE::rzero() unknown rzero calculation option %lu\n", rzerotype);
 			return cdouble(0.0, 0.0);
 		}
 	}
@@ -802,7 +802,7 @@ public:
 		}
 		//Last layer case
 		else{
-			warningmessage("LE::dPdtj Zero thickness derivative for halfspace layer\n");
+			glog.warningmsg(_SRC_,"Zero thickness derivative for halfspace layer\n");
 			tmp.e11 = tmp.e12 = tmp.e21 = tmp.e22 = 0;
 			return tmp;
 		}
@@ -889,7 +889,7 @@ public:
 		}
 		else
 		{
-			errormessage("LE::dointegrals_trapezoid Calculation type %lu not yet implemented\n", calculation_type);
+			glog.errormsg(_SRC_,"LE::dointegrals_trapezoid Calculation type %lu not yet implemented\n", calculation_type);
 		}
 	}
 	inline void trapezoid(const size_t& fi)
@@ -996,7 +996,7 @@ public:
 			}
 			break;
 		default:
-			errormessage("LE::integrands Calculation type %lu not yet implemented", calculation_type);
+			glog.errormsg(_SRC_,"LE::integrands Calculation type %lu not yet implemented", calculation_type);
 			break;
 		}
 
@@ -1063,7 +1063,7 @@ public:
 			}
 		}
 		else {
-			errormessage("LE::setverticaldipoleprimaryfields Calculation type %lu not yet implemented", calculation_type);
+			glog.errormsg(_SRC_,"LE::setverticaldipoleprimaryfields Calculation type %lu not yet implemented", calculation_type);
 		}
 		unxyrotateandscale(Fields.v.p, Source_Orientation.z);
 	}
@@ -1135,7 +1135,7 @@ public:
 			}
 		}
 		else {
-			errormessage("LE::setverticaldipolesecondaryfields Calculation type %lu not yet implemented", calculation_type);
+			glog.errormsg(_SRC_,"LE::setverticaldipolesecondaryfields Calculation type %lu not yet implemented", calculation_type);
 		}
 
 		unxyrotateandscale(Fields.v.s, Source_Orientation.z);
@@ -1202,7 +1202,7 @@ public:
 			}			
 		}
 		else {
-			errormessage("LE::sethorizontaldipoleprimaryfields Calculation type %lu not yet implemented", calculation_type);
+			glog.errormsg(_SRC_,"LE::sethorizontaldipoleprimaryfields Calculation type %lu not yet implemented", calculation_type);
 		}
 
 		double scalefactor = sqrt(Source_Orientation.x*Source_Orientation.x + Source_Orientation.y*Source_Orientation.y);
@@ -1314,7 +1314,7 @@ public:
 			}
 		}
 		else {
-			errormessage("LE::sethorizontaldipolesecondaryfields Calculation type %lu not yet implemented", calculation_type);
+			glog.errormsg(_SRC_,"LE::sethorizontaldipolesecondaryfields Calculation type %lu not yet implemented", calculation_type);
 		}
 
 		double scalefactor = sqrt(Source_Orientation.x*Source_Orientation.x + Source_Orientation.y*Source_Orientation.y);

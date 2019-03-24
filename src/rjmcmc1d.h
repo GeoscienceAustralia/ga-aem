@@ -194,7 +194,7 @@ public:
 			return DBL_MAX;
 		}
 		else{
-			errormessage("Invalid thicknes index");
+			glog.errormsg(_SRC_,"Invalid thicknes index");
 			exit(1);
 		}
 	};

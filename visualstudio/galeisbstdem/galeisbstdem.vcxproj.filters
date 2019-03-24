@@ -29,6 +29,12 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\cpp-utils\src\gdal_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
@@ -59,6 +65,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\galeisbstdem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\logger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

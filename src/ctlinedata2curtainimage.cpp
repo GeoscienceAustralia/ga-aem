@@ -36,6 +36,9 @@ using namespace RDP;
 
 #define VERSION "1.0"
 
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
+
 class cCurtainImageSection{
 
 private:
@@ -660,16 +663,16 @@ int main(int argc, char** argv)
 		token = cGDIplusHelper::start();
 
 		if (argc >= 2){
-			message("Executing %s %s\n", argv[0], argv[1]);
-			message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-			message("Working directory %s\n", getcurrentdirectory().c_str());
+			glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
+			glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+			glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 		}
 		else{
-			message("Executing %s\n", argv[0]);
-			message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-			message("Working directory %s\n", getcurrentdirectory().c_str());
-			message("Error: Not enough input arguments\n");
-			message("Usage: %s controlfilename\n", argv[0]);
+			glog.logmsg("Executing %s\n", argv[0]);
+			glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+			glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
+			glog.logmsg("Error: Not enough input arguments\n");
+			glog.logmsg("Usage: %s controlfilename\n", argv[0]);
 			return 0;
 		}
 

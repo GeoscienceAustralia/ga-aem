@@ -130,8 +130,7 @@ class FDEmSampleInverter{
 		cBlock mControl;
 
 		std::string Logfile;
-		FILE*  fp_log;
-		
+				
 		std::string DumpPath;	
 		bool   Dump;	
 
@@ -168,22 +167,22 @@ class FDEmSampleInverter{
 
 		///
 		//column definitions
-		FieldDefinition sn, dn, fn, ln, fidn, time;
-		FieldDefinition xord, yord, elevation, altimeter;	
-		FieldDefinition birdheight;	
-		FieldDefinition birdroll;	
-		FieldDefinition birdpitch;	
-		FieldDefinition birdyaw;	
+		cFieldDefinition sn, dn, fn, ln, fidn, time;
+		cFieldDefinition xord, yord, elevation, altimeter;	
+		cFieldDefinition birdheight;	
+		cFieldDefinition birdroll;	
+		cFieldDefinition birdpitch;	
+		cFieldDefinition birdyaw;	
 	
-		FieldDefinition emchannels;
-		FieldDefinition std_emchannels;
+		cFieldDefinition emchannels;
+		cFieldDefinition std_emchannels;
 	
-		FieldDefinition ref_conductivity;
-		FieldDefinition ref_thickness;
-		FieldDefinition ref_birdheight;	
-		FieldDefinition std_conductivity;
-		FieldDefinition std_thickness;
-		FieldDefinition std_birdheight;	
+		cFieldDefinition ref_conductivity;
+		cFieldDefinition ref_thickness;
+		cFieldDefinition ref_birdheight;	
+		cFieldDefinition std_conductivity;
+		cFieldDefinition std_thickness;
+		cFieldDefinition std_birdheight;	
 
 		///	
 		double AlphaC;
@@ -233,11 +232,11 @@ class FDEmSampleInverter{
 		void addhdrstring(std::string& hstr, const char* s, size_t nband=1);
 		void addhdrstring(std::string& hstr, const std::string s, size_t nband=1);
 
-		FieldDefinition gcdv(const std::string& fieldname);
-		int intvalue(const FieldDefinition& coldef);
-		double doublevalue(const FieldDefinition& coldef);
-		std::vector<double> doublevector(const FieldDefinition& coldef, const size_t& n);
-		std::vector<int> intvector(const FieldDefinition& coldef, const size_t& n);	
+		cFieldDefinition gcdv(const std::string& fieldname);
+		int intvalue(const cFieldDefinition& coldef);
+		double doublevalue(const cFieldDefinition& coldef);
+		std::vector<double> doublevector(const cFieldDefinition& coldef, const size_t& n);
+		std::vector<int> intvector(const cFieldDefinition& coldef, const size_t& n);	
 	
 		std::vector<double> vObs;
 		std::vector<double> vErr;	

@@ -18,6 +18,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "geometry3d.h"
 
 #define VERSION "1.0"
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
 
 class cSGridCreator{
 
@@ -130,7 +132,7 @@ public:
 			InputConductivityScaling = 0.001;
 		}		
 		else{
-			message("Unknown InputConductivityUnits %s\n",cunits.c_str());			
+			glog.logmsg("Unknown InputConductivityUnits %s\n",cunits.c_str());			
 		}
 		
 		NullInputConductivity = b.getdoublevalue("NullInputConductivity");
@@ -155,10 +157,10 @@ public:
 			constantthickness = b.getdoublevector("Thickness");
 			tcol1 = 0; tcol2 = 0;			
 			if(constantthickness.size() == 0){
-				errormessage("Thickness not set\n");
+				glog.errormsg(_SRC_,"Thickness not set\n");
 			}
 			else if((int)constantthickness.size() > 1 && (int)constantthickness.size() < (int) nlayers - 1){
-				errormessage("Thickness not set correctly\n");
+				glog.errormsg(_SRC_,"Thickness not set correctly\n");
 			}
 			else if(constantthickness.size() == 1){
 				constantthickness = std::vector<double>(nlayers-1, constantthickness[0]);
@@ -465,16 +467,16 @@ public:
 int main(int argc, char** argv)
 {
 	if (argc >= 2){
-		message("Executing %s %s\n", argv[0], argv[1]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
+		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 	}
 	else{
-		message("Executing %s\n", argv[0]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
-		message("Error: Not enough input arguments\n");
-		message("Usage: %s controlfilename\n",argv[0]);
+		glog.logmsg("Executing %s\n", argv[0]);
+		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg("Error: Not enough input arguments\n");
+		glog.logmsg("Usage: %s controlfilename\n",argv[0]);
 		return 0;
 	}
 

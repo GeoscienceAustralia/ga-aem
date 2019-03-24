@@ -25,18 +25,18 @@ rjmcmc1dTDEmInverter::rjmcmc1dTDEmInverter(const std::string& executable, const 
 rjmcmc1dTDEmInverter::~rjmcmc1dTDEmInverter()
 {
 	fclose(fp_indata);
-	fclose(fp_log);
+	glog.close();
 }
 void rjmcmc1dTDEmInverter::initialise(const std::string& executable, const std::string& controlfile)
 {
-	rootmessage("Loading control file %s\n", controlfile.c_str());
+	glog.logmsg(0, "Loading control file %s\n", controlfile.c_str());
 	Control = cBlock(controlfile);
 	
 	cBlock OB = Control.findblock("Output");
 	std::string OutputDirectory = OB.getstringvalue("Directory");
 	addtrailingseparator(OutputDirectory);
 	if (exists(OutputDirectory) == false){
-		rootmessage("Creating OutputDirectory: %s\n", OutputDirectory.c_str());
+		glog.logmsg(0, "Creating OutputDirectory: %s\n", OutputDirectory.c_str());
 		makedirectory(OutputDirectory);
 	}
 	
@@ -44,15 +44,15 @@ void rjmcmc1dTDEmInverter::initialise(const std::string& executable, const std::
 	std::string rankstr = stringvalue(mRank, ".%04lu");
 	LogFile = insert_after_filename(s, rankstr);
 
-	rootmessage("Opening log file %s\n", LogFile.c_str());
-	fp_log = fileopen(LogFile, "w");
-	rootmessage(fp_log, "Logfile opened on %s\n", timestamp().c_str());
-	rootmessage(fp_log, "Executing %s\n", executable.c_str());
-	rootmessage(fp_log, "Control file %s\n", controlfile.c_str());
-	rootmessage(fp_log, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-	rootmessage(fp_log, "Working directory %s\n", getcurrentdirectory().c_str());
-	rootmessage(fp_log, "Processes=%lu\tRank=%lu\n", mSize, mRank);
-	Control.write(fp_log);
+	glog.logmsg(0, "Opening log file %s\n", LogFile.c_str());
+	glog.open(LogFile);
+	glog.logmsg(0, "Logfile opened on %s\n", timestamp().c_str());
+	glog.logmsg(0, "Executing %s\n", executable.c_str());
+	glog.logmsg(0, "Control file %s\n", controlfile.c_str());
+	glog.logmsg(0, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+	glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
+	glog.logmsg(0, "Processes=%lu\tRank=%lu\n", mSize, mRank);
+	glog.log(Control.get_as_string());
 
 	//Type of sampling Multichain or not
 	cBlock SB = Control.findblock("Sampler");
@@ -85,7 +85,7 @@ void rjmcmc1dTDEmInverter::initialise(const std::string& executable, const std::
 		MapsDirectory = OB.getstringvalue("MapsDirectory");
 		addtrailingseparator(MapsDirectory);
 		if (exists(MapsDirectory) == false){
-			rootmessage(fp_log, "Creating MapsDirectory: %s\n", MapsDirectory.c_str());
+			glog.logmsg(0,"Creating MapsDirectory: %s\n", MapsDirectory.c_str());
 			makedirectory(MapsDirectory);
 		}
 	}
@@ -94,7 +94,7 @@ void rjmcmc1dTDEmInverter::initialise(const std::string& executable, const std::
 		ChainsDirectory = OB.getstringvalue("ChainsDirectory");
 		addtrailingseparator(ChainsDirectory);
 		if (exists(ChainsDirectory) == false){
-			rootmessage(fp_log, "Creating ChainsDirectory: %s\n", ChainsDirectory.c_str());
+			glog.logmsg(0,"Creating ChainsDirectory: %s\n", ChainsDirectory.c_str());
 			makedirectory(ChainsDirectory);
 		}		
 	}
@@ -115,12 +115,12 @@ void rjmcmc1dTDEmInverter::initialise_systems()
 
 		cTDEmSystem& T = S.T;
 		std::string stmfile = b.getstringvalue("SystemFile");
-		rootmessage("Reading system file %s\n", stmfile.c_str());
+		glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
 		T.readsystemdescriptorfile(stmfile);
 
-		fprintf(fp_log, "==============System file %s\n", stmfile.c_str());
-		T.STM.write(fp_log);
-		fprintf(fp_log, "==========================================================================\n");
+		glog.log("==============System file %s\n", stmfile.c_str());
+		glog.log(T.STM.get_as_string());
+		glog.log("==========================================================================\n");
 
 		S.nwindows = T.NumberOfWindows;
 		S.useX = b.getboolvalue("UseXComponent");
@@ -169,43 +169,36 @@ void rjmcmc1dTDEmInverter::getcolumnnumbers()
 {
 	cBlock b = Control.findblock("Input.Columns");
 
-	fd_surveynumber.set(b, "SurveyNumber");
-	fd_datenumber.set(b, "DateNumber");
-	fd_flightnumber.set(b, "FlightNumber");
-	fd_linenumber.set(b, "LineNumber");
-	fd_fidnumber.set(b, "FidNumber");
-	fd_xord.set(b, "Easting");
-	fd_yord.set(b, "Northing");
-	fd_elevation.set(b, "GroundElevation");
-	fd_altimeter.set(b, "Altimeter");
-
-	fd_geometry[0].set(b, "TX_Height");
-	fd_geometry[1].set(b, "TX_Roll");
-	fd_geometry[2].set(b, "TX_Pitch");
-	fd_geometry[3].set(b, "TX_Yaw");
-	fd_geometry[4].set(b, "TXRX_DX");
-	fd_geometry[5].set(b, "TXRX_DY");
-	fd_geometry[6].set(b, "TXRX_DZ");
-	fd_geometry[7].set(b, "RX_Roll");
-	fd_geometry[8].set(b, "RX_Pitch");
-	fd_geometry[9].set(b, "RX_Yaw");
+	fd_surveynumber.initialise(b, "SurveyNumber");
+	fd_datenumber.initialise(b, "DateNumber");
+	fd_flightnumber.initialise(b, "FlightNumber");
+	fd_linenumber.initialise(b, "LineNumber");
+	fd_fidnumber.initialise(b, "FidNumber");
+	fd_xord.initialise(b, "Easting");
+	fd_yord.initialise(b, "Northing");
+	fd_elevation.initialise(b, "GroundElevation");
+	
+	cTDEmGeometry g;
+	for (size_t gi = 0; gi < g.size(); gi++) {
+		fd_geometry[gi].initialise(b, g.fname(gi));
+	}	
 
 	for (size_t i = 0; i < nsystems; i++){
 		sTDEmSystemInfo& S = SV[i];
-		std::string str = strprint("EMSystem%lu", i + 1);
+		std::string str = strprint("EMSystem%zu", i + 1);
 
 		cBlock c = Control.findblock(str);
-		S.fd_oPX.set(c, "XComponentPrimary");
-		S.fd_oPY.set(c, "YComponentPrimary");
-		S.fd_oPZ.set(c, "ZComponentPrimary");
+		S.fd_oPX.initialise(c, "XComponentPrimary");
+		S.fd_oPY.initialise(c, "YComponentPrimary");
+		S.fd_oPZ.initialise(c, "ZComponentPrimary");
 
-		S.fd_oSX.set(c, "XComponentSecondary");
-		S.fd_oSY.set(c, "YComponentSecondary");
-		S.fd_oSZ.set(c, "ZComponentSecondary");
+		S.fd_oSX.initialise(c, "XComponentSecondary");
+		S.fd_oSY.initialise(c, "YComponentSecondary");
+		S.fd_oSZ.initialise(c, "ZComponentSecondary");
 
-		S.fd_oEX.set(c, "XComponentNoise");
-		S.fd_oEY.set(c, "YComponentNoise");
-		S.fd_oEZ.set(c, "ZComponentNoise");
+		S.fd_oEX.initialise(c, "XComponentNoise");
+		S.fd_oEY.initialise(c, "YComponentNoise");
+		S.fd_oEZ.initialise(c, "ZComponentNoise");
 	}
 }
 void rjmcmc1dTDEmInverter::initialise_sampler()
@@ -324,33 +317,25 @@ void rjmcmc1dTDEmInverter::parsecurrentrecord()
 	CurrentRecordFields = fieldparsestring(CurrentRecordString.c_str(), " ,\t\r\n");
 	std::vector<std::string>& f = CurrentRecordFields;
 
-	surveynumber = (size_t)fd_surveynumber.intvalue(f);
-	datenumber = (size_t)fd_datenumber.intvalue(f);
-	flightnumber = (size_t)fd_flightnumber.intvalue(f);
-	linenumber = (size_t)fd_linenumber.intvalue(f);
-	fidnumber = fd_fidnumber.doublevalue(f);
-	xord = fd_xord.doublevalue(f);
-	yord = fd_yord.doublevalue(f);
-	elevation = fd_elevation.doublevalue(f);
-	altimeter = fd_altimeter.doublevalue(f);
-
-	IG.tx_height = fd_geometry[0].doublevalue(f);
-	IG.tx_roll = fd_geometry[1].doublevalue(f);
-	IG.tx_pitch = fd_geometry[2].doublevalue(f);
-	IG.tx_yaw = fd_geometry[3].doublevalue(f);
-	IG.txrx_dx = fd_geometry[4].doublevalue(f);
-	IG.txrx_dy = fd_geometry[5].doublevalue(f);
-	IG.txrx_dz = fd_geometry[6].doublevalue(f);
-	IG.rx_roll = fd_geometry[7].doublevalue(f);
-	IG.rx_pitch = fd_geometry[8].doublevalue(f);
-	IG.rx_yaw = fd_geometry[9].doublevalue(f);
+	fd_surveynumber.getvalue(f, surveynumber);	
+	fd_datenumber.getvalue(f, datenumber);
+	fd_flightnumber.getvalue(f, flightnumber);
+	fd_linenumber.getvalue(f, linenumber);
+	fd_fidnumber.getvalue(f, linenumber);
+	fd_xord.getvalue(f, xord);
+	fd_yord.getvalue(f, yord);
+	fd_elevation.getvalue(f, elevation);
+	
+	for (size_t gi = 0; gi < IG.size(); gi++) {
+		fd_geometry[gi].getvalue(f, IG[gi]);
+	}	
 
 	for (size_t i = 0; i < nsystems; i++){
 		sTDEmSystemInfo& S = SV[i];
 
 		if (S.useX){
-			S.oPX = S.fd_oPX.doublevalue(f);			
-			S.oSX = S.fd_oSX.doublevector(f, S.nwindows);			
+			S.fd_oPX.getvalue(f, S.oPX);
+			S.fd_oSX.getvalue(f, S.oSX, S.nwindows);
 			if (S.estimateNoiseFromModel){
 				for (size_t wi = 0; wi < S.nwindows; wi++){					
 					double an = S.x_additivenoise[wi];
@@ -359,13 +344,13 @@ void rjmcmc1dTDEmInverter::parsecurrentrecord()
 				}				
 			}
 			else{
-				S.oEX = S.fd_oEX.doublevector(f, S.nwindows);				
+				S.fd_oEX.getvalue(f, S.oEX, S.nwindows);
 			}
 		}
 
-		if (S.useY){			
-			S.oPY = S.fd_oPY.doublevalue(f);						
-			S.oSY = S.fd_oSY.doublevector(f, S.nwindows);			
+		if (S.useY){	
+			S.fd_oPY.getvalue(f, S.oPY);
+			S.fd_oSY.getvalue(f, S.oSY, S.nwindows);			
 			if (S.estimateNoiseFromModel){
 				for (size_t wi = 0; wi < S.nwindows; wi++){					
 					double an = S.y_additivenoise[wi];
@@ -373,14 +358,14 @@ void rjmcmc1dTDEmInverter::parsecurrentrecord()
 					S.oEY[wi] = sqrt(an*an + mn*mn);				
 				}
 			}
-			else{				
-				S.oEY = S.fd_oEY.doublevector(f, S.nwindows);				
+			else{								
+				S.fd_oEY.getvalue(f, S.oEY, S.nwindows);
 			}
 		}
 
 		if (S.useZ){			
-			S.oPZ = S.fd_oPZ.doublevalue(f);			
-			S.oSZ = S.fd_oSZ.doublevector(f, S.nwindows);
+			S.fd_oPZ.getvalue(f, S.oPZ);
+			S.fd_oSZ.getvalue(f, S.oSZ, S.nwindows);
 			if (S.estimateNoiseFromModel){
 				for (size_t wi = 0; wi < S.nwindows; wi++){								
 					double an = S.z_additivenoise[wi];
@@ -388,8 +373,8 @@ void rjmcmc1dTDEmInverter::parsecurrentrecord()
 					S.oEZ[wi] = sqrt(an*an + mn*mn);
 				}
 			}
-			else{				
-				S.oEZ = S.fd_oEZ.doublevector(f, S.nwindows);
+			else{								
+				S.fd_oEZ.getvalue(f, S.oEZ, S.nwindows);
 			}
 		}		
 	}

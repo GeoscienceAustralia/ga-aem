@@ -33,8 +33,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "stacktrace.h"
 
 #define VERSION "1.0"
-
-FILE* mylogfile = (FILE*)NULL;
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
 
 class cSystemInfo;
 
@@ -587,8 +587,8 @@ public:
 		else if (strcasecmp(sm, "Minimize2ndDerivatives") == 0){
 			VerticalSmoothnessMethod = SM_2ND_DERIVATIVE;
 		}
-		else{
-			rootmessage(mylogfile, "Unknown SmoothnessMethod %s\n", sm.c_str());
+		else{			
+			glog.logmsg(0,"Unknown SmoothnessMethod %s\n", sm.c_str());
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw e;
 		}
@@ -623,12 +623,12 @@ public:
 		}
 
 		if (b.getvalue("DataFile", DataFile) == false){
-			rootmessage(mylogfile, "Input DataFile was not specified\n");
+			glog.logmsg(0,  "Input DataFile was not specified\n");
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw e;
 		}
 		else if (exists(DataFile) == false){
-			rootmessage(mylogfile, "Input DataFile %s not found\n", DataFile.c_str());
+			glog.logmsg(0,  "Input DataFile %s not found\n", DataFile.c_str());
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw e;
 		}
@@ -651,7 +651,7 @@ public:
 		for (size_t i = 0; i < t.size(); i++){
 
 			if (t[i][0] == ':' || t[i][t[i].size() - 1] == ':'){
-				rootmessage(mylogfile, "Error bad token (%s) when parsing Input.IncludeLines\n", t[i].c_str());
+				glog.logmsg(0,  "Error bad token (%s) when parsing Input.IncludeLines\n", t[i].c_str());
 				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 				throw e;
 			}
@@ -662,7 +662,7 @@ public:
 				IncludeLines.push_back(r.first);
 			}
 			else{
-				rootmessage(mylogfile, "Error bad token (%s) when parsing Input.IncludeLines\n", t[i].c_str());
+				glog.logmsg(0,  "Error bad token (%s) when parsing Input.IncludeLines\n", t[i].c_str());
 				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 				throw e;
 			}
@@ -718,13 +718,13 @@ public:
 	cOutputOptions(const cBlock& b){
 
 		if (b.getvalue("LogFile", LogFile) == false){
-			rootmessage(mylogfile, "Output LogFile was not specified\n");
+			glog.logmsg(0,  "Output LogFile was not specified\n");
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw e;
 		}
 
 		if (b.getvalue("DataFile", DataFile) == false){
-			rootmessage(mylogfile, "Output DataFile was not specified\n");
+			glog.logmsg(0,  "Output DataFile was not specified\n");
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw e;
 		}
@@ -830,17 +830,17 @@ public:
 	cAllAtOnceInverter(int argc, char** argv)
 	{
 		if(argc < 2){
-			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
-			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
-			rootmessage("Usage: %s control_file_name\n", argv[0]);
-			rootmessage("Too few command line arguments\n");
+			glog.logmsg("%s\n", commandlinestring(argc, argv).c_str());
+			glog.logmsg("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg("Usage: %s control_file_name\n", argv[0]);
+			glog.logmsg("Too few command line arguments\n");
 			exit(1);
 		}
 		else if(argc > 2){
-			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
-			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
-			rootmessage("Usage: %s control_file_name\n", argv[0]);
-			rootmessage("Too many command line arguments\n");
+			glog.logmsg("%s\n", commandlinestring(argc, argv).c_str());
+			glog.logmsg("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg("Usage: %s control_file_name\n", argv[0]);
+			glog.logmsg("Too many command line arguments\n");
 			exit(1);
 		}
 
@@ -852,9 +852,9 @@ public:
 
 		std::string ControlFile = std::string(argv[1]);
 		if(exists(ControlFile) == false){
-			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
-			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
-			rootmessage("Controlfile %s was not found\n", ControlFile.c_str());
+			glog.logmsg(0, "%s\n", commandlinestring(argc, argv).c_str());
+			glog.logmsg(0, "%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg(0, "Controlfile %s was not found\n", ControlFile.c_str());
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(e);
 		}
@@ -864,26 +864,16 @@ public:
 		std::string s = strprint(".%04d", mpirank);
 		
 		OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
-		mylogfile = fileopen(OutputOp.LogFile, "w");
-
-		
-		//OutputOp.LogFile = insert_after_filename(OutputOp.LogFile, s);
-		//if (mpirank == 0){
-		//	mylogfile = fileopen(OutputOp.LogFile, "w");
-		//}
-		//else{
-		//	mylogfile = (FILE*)NULL;
-		//}
-
-		rootmessage("Opening log file %s\n", OutputOp.LogFile.c_str());
-		rootmessage(mylogfile, "Logfile opened on %s\n", timestamp().c_str());
-		rootmessage(mylogfile, "Control file %s\n", Control.Filename.c_str());
-		rootmessage(mylogfile, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		rootmessage(mylogfile, "Working directory %s\n", getcurrentdirectory().c_str());
-		rootmessage(mylogfile, "Processes=%lu\tRank=%lu\n", mpisize, mpirank);
-		rootmessage(mylogfile, "Processor name = %s\n", mpipname.c_str());
+		glog.open(OutputOp.LogFile);
+		glog.logmsg(0,"Opening log file %s\n", OutputOp.LogFile.c_str());
+		glog.logmsg(0,"Logfile opened on %s\n", timestamp().c_str());
+		glog.logmsg(0,"Control file %s\n", Control.Filename.c_str());
+		glog.logmsg(0,"Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg(0,"Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg(0,"Processes=%lu\tRank=%lu\n", mpisize, mpirank);
+		glog.logmsg(0,"Processor name = %s\n", mpipname.c_str());
 		if (mpirank == 0) Control.print();
-		Control.write(mylogfile);
+		glog.log(Control.get_as_string());
 
 		InputOp = cInputOptions(Control.findblock("Input"));
 		InversionOp = cInversionOptions(Control.findblock("Options"));
@@ -898,23 +888,22 @@ public:
 			T[i].initialise(bv[i]);						
 			std::string stmfile = bv[i].getstringvalue("SystemFile");
 			std::string str = T[i].T.STM.get_as_string();
-			rootmessage(mylogfile, "==============System file %s\n", stmfile.c_str());
-			rootmessage(mylogfile, str.c_str());
+			glog.logmsg(0,  "==============System file %s\n", stmfile.c_str());
+			glog.logmsg(0,  str.c_str());
 		}
-		rootmessage(mylogfile, "==========================================================================\n");
+		glog.logmsg(0,  "==========================================================================\n");
 		nchan = calculate_nchan();
-		rootmessage(mylogfile, "\nStarting setup\n");
+		glog.logmsg(0,  "\nStarting setup\n");
 		setup();
-		rootmessage(mylogfile, "\nStarting iterations\n");
+		glog.logmsg(0,  "\nStarting iterations\n");
 		iterate();
-		rootmessage(mylogfile, "\nFinishing at at %s\n", timestamp().c_str());
-		rootmessage(mylogfile, "Elapsed time = %.2lf\n", stopwatch.etimenow());
+		glog.logmsg(0,  "\nFinishing at at %s\n", timestamp().c_str());
+		glog.logmsg(0,  "Elapsed time = %.2lf\n", stopwatch.etimenow());
+		glog.close();
 	};
 
 
-	~cAllAtOnceInverter(){
-		fclose(mylogfile);
-	}
+	~cAllAtOnceInverter(){}
 
 	bool get_columns(){
 
@@ -939,7 +928,7 @@ public:
 			std::string fname = cTDEmGeometry::fname(i);
 			cBlock b = g.findblock(fname);	
 			if (b.Name.size() == 0){				
-				rootmessage(mylogfile,"Could not find block for geometry parameter %s\n", fname.c_str());
+				glog.logmsg(0, "Could not find block for geometry parameter %s\n", fname.c_str());
 				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);				
 				throw(e);
 			}
@@ -963,7 +952,7 @@ public:
 		if (use){
 			ConductivityLogMaximumDistance = b.getdoublevalue("MaximumDistance");
 			ConductivityLogPercentError = b.getdoublevalue("PercentError");
-			rootmessage(mylogfile, "Reading conductivity logs\n");
+			glog.logmsg(0,  "Reading conductivity logs\n");
 			std::string ldir = b.getstringvalue("Directory");
 			auto flist = getfilelist(ldir, "con");
 			for (size_t k = 0; k < flist.size(); k++){
@@ -978,10 +967,10 @@ public:
 					}
 				}
 			}
-			rootmessage(mylogfile, "There are %lu conductivity logs available\n", flist.size());
-			rootmessage(mylogfile, "There are %lu conductivity logs close enough to be included in the inversion\n", ConductivityLogs.size());
+			glog.logmsg(0,  "There are %lu conductivity logs available\n", flist.size());
+			glog.logmsg(0,  "There are %lu conductivity logs close enough to be included in the inversion\n", ConductivityLogs.size());
 			for (size_t i = 0; i < ConductivityLogs.size(); i++){
-				rootmessage(mylogfile, "%s\n", ConductivityLogs[i].infostring().c_str());
+				glog.logmsg(0,  "%s\n", ConductivityLogs[i].infostring().c_str());
 			}
 		}
 	}
@@ -991,7 +980,7 @@ public:
 		if (mpirank == 0){
 			FILE* fp = fileopen(InputOp.DataFile, "r");
 			if (fp == NULL){
-				rootmessage(mylogfile, "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
+				glog.logmsg(0,  "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
 				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 				throw(e);
 			}
@@ -1021,7 +1010,7 @@ public:
 		nsamples = filerecordindex.size();
 
 		if (nsamples == 0){
-			rootmessage(mylogfile, "There were no samples in the included lines and/or line ranges and/or polygon\n");
+			glog.logmsg(0,  "There were no samples in the included lines and/or line ranges and/or polygon\n");
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw e;
 		}
@@ -1099,7 +1088,7 @@ public:
 
 		FILE* fp = fileopen(InputOp.DataFile, "r");
 		if (fp == NULL){
-			rootmessage(mylogfile, "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
+			glog.logmsg(0,  "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw e;
 		}
@@ -1253,7 +1242,7 @@ public:
 
 	void J_create(){
 
-		rootmessage(mylogfile, "Creating matrix J\n");
+		glog.logmsg(0,  "Creating matrix J\n");
 		J.create_sparse("J", mpicomm, (PetscInt)nlocaldata, (PetscInt)nlocalparam, (PetscInt)ndata, (PetscInt)nparam);
 		std::vector<PetscInt> d_nnz(J.nlocalrows(), 0);
 		std::vector<PetscInt> o_nnz(J.nlocalrows(), 0);
@@ -1282,7 +1271,7 @@ public:
 	}
 
 	void J_set_nonzero_pattern(){
-		rootmessage(mylogfile, "Assembling matrix G\n");
+		glog.logmsg(0,  "Assembling matrix G\n");
 		PetscErrorCode ierr;
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			for (size_t ci = 0; ci < nchan; ci++){
@@ -1298,29 +1287,29 @@ public:
 			}
 		}
 		J.assemble();
-		rootmessage(mylogfile, "Finished assembling matrix G\n");
+		glog.logmsg(0,  "Finished assembling matrix G\n");
 		return;
 	}
 
 	void Wd_create(){
-		rootmessage(mylogfile, "Creating matrix Wd\n");
+		glog.logmsg(0,  "Creating matrix Wd\n");
 		Wd.create_diagonal_to_power("Wd", dstd, -2.0);
 		Wd *= (1.0 / Wd.nglobalrows());
-		rootmessage(mylogfile, "Finished creating matrix Wd\n");
+		glog.logmsg(0,  "Finished creating matrix Wd\n");
 		return;
 	};
 
 	void Wr_create(){
-		rootmessage(mylogfile, "Creating matrix Wr\n");
+		glog.logmsg(0,  "Creating matrix Wr\n");
 		Wr.create_diagonal_to_power("Wr", mstd, -2.0);
 		Wr *= (InversionOp.AlphaR / Wr.nglobalrows());
-		rootmessage(mylogfile, "Finished creating matrix Wr\n");
+		glog.logmsg(0,  "Finished creating matrix Wr\n");
 		return;
 	};
 
 	void V_create_1st_derivative(){
 
-		rootmessage(mylogfile, "Creating matrix V\n");
+		glog.logmsg(0,  "Creating matrix V\n");
 		
 		size_t nglobalconstraints = (nlayers - 1)*nsamples;
 		size_t nlocalconstraints = (nlayers - 1)*sown.nlocal();
@@ -1339,12 +1328,12 @@ public:
 		}
 		V.assemble();
 		V *= std::sqrt(InversionOp.AlphaV / (double)V.nglobalrows());
-		rootmessage(mylogfile, "Finished creating matrix V\n");
+		glog.logmsg(0,  "Finished creating matrix V\n");
 	};
 
 	void V_create_2nd_derivative(){
 
-		rootmessage(mylogfile, "Creating matrix V\n");
+		glog.logmsg(0,  "Creating matrix V\n");
 		size_t nglobalconstraints = (nlayers - 2)*nsamples;
 		size_t nlocalconstraints = (nlayers - 2)*sown.nlocal();
 
@@ -1364,12 +1353,12 @@ public:
 		}
 		V.assemble();
 		V *= std::sqrt(InversionOp.AlphaV / (double)V.nglobalrows());
-		rootmessage(mylogfile, "Finished creating matrix V\n");
+		glog.logmsg(0,  "Finished creating matrix V\n");
 	};
 
 	void H_create_elevation(){
 
-		rootmessage(mylogfile, "Creating matrix H\n");
+		glog.logmsg(0,  "Creating matrix H\n");
 		std::vector<double> t = get_thicknesses_ref(0);
 		std::vector<double> d = get_interface_depths(t);
 		d.push_back(d.back() + t.back());
@@ -1405,10 +1394,10 @@ public:
 		}
 		H.preallocate(d_nnz, o_nnz);
 		nsum = mpicomm.sum(nsum);
-		rootmessage(mylogfile, "Average number of neighbours per sample = %lu\n", nsum / nsamples);
+		glog.logmsg(0,  "Average number of neighbours per sample = %lu\n", nsum / nsamples);
 
 		//Set entries
-		rootmessage(mylogfile, "Assembling matrix H\n");
+		glog.logmsg(0,  "Assembling matrix H\n");
 		//loop over each sample
 		int count = 0;
 		for (size_t gsi = (size_t)sown.start; gsi < (size_t)sown.end; gsi++){
@@ -1462,14 +1451,14 @@ public:
 		}//loop over samples
 		H.assemble();
 		H *= std::sqrt(InversionOp.AlphaH / (double)H.nglobalrows());
-		rootmessage(mylogfile, "Finished assembling matrix H\n");
+		glog.logmsg(0,  "Finished assembling matrix H\n");
 		return;
 	}
 
 	void B_create_elevation_new(){
 
 		double clogerr = 0.5*(std::log10(100.0 + ConductivityLogPercentError) - std::log10(100.0 - ConductivityLogPercentError));
-		rootmessage(mylogfile, "Creating matrix B\n");
+		glog.logmsg(0,  "Creating matrix B\n");
 		std::vector<double> lthick = get_thicknesses_ref(0);
 		std::vector<double> ldepth = get_interface_depths(lthick);
 		ldepth.push_back(ldepth.back() + lthick.back());
@@ -1490,7 +1479,7 @@ public:
 				}
 			}
 		}
-		rootmessage(mylogfile, "nconductivitylogconstraints=%d\n", nconstraints);
+		glog.logmsg(0,  "nconductivitylogconstraints=%d\n", nconstraints);
 		B.create_sparse("B", mpicomm, PETSC_DECIDE, (PetscInt)nlocalparam, (PetscInt)nconstraints, (PetscInt)nparam);
 
 		PetscInt nlocalconstraints = (PetscInt)B.nlocalrows();
@@ -1574,13 +1563,13 @@ public:
 		B.assemble();
 		Wb.create_diagonal_to_power("Wb", clogstd, -2.0);
 		Wb *= (InversionOp.AlphaB / Wb.nglobalrows());
-		rootmessage(mylogfile, "Finished creating matrix B\n");
+		glog.logmsg(0,  "Finished creating matrix B\n");
 	}
 
 	void B_create_elevation(){
 
 		double clogerr = 0.5*(std::log10(100.0 + ConductivityLogPercentError) - std::log10(100.0 - ConductivityLogPercentError));
-		rootmessage(mylogfile, "Creating matrix B\n");
+		glog.logmsg(0,  "Creating matrix B\n");
 		std::vector<double> t = get_thicknesses_ref(0);
 		std::vector<double> d = get_interface_depths(t);
 		d.push_back(d.back() + t.back());
@@ -1595,7 +1584,7 @@ public:
 				if (hasoverlap) nconstraints += 1;
 			}
 		}
-		rootmessage(mylogfile, "nconductivitylogconstraints=%d\n", nconstraints);
+		glog.logmsg(0,  "nconductivitylogconstraints=%d\n", nconstraints);
 		B.create_sparse("B", mpicomm, PETSC_DECIDE, (PetscInt)nlocalparam, (PetscInt)nconstraints, (PetscInt)nparam);
 
 		PetscInt nlocalconstraints = B.nlocalrows();
@@ -1713,21 +1702,21 @@ public:
 		if (Wb.nglobalrows() > 0){
 			Wb *= (InversionOp.AlphaB / Wb.nglobalrows());
 		}
-		rootmessage(mylogfile, "Finished creating matrix B\n");
+		glog.logmsg(0,  "Finished creating matrix B\n");
 	}
 
 	void report_matrix_memory_usage(){
-		rootmessage(mylogfile, "J matrix global memory %.3lf MiB\n", J.globalmemory() / 1e6);
-		rootmessage(mylogfile, "Wd matrix global memory %.3lf MiB\n", Wd.globalmemory() / 1e6);
-		rootmessage(mylogfile, "V matrix global memory %.3lf MiB\n", V.globalmemory() / 1e6);
-		rootmessage(mylogfile, "H matrix global memory %.3lf MiB\n", H.globalmemory() / 1e6);
-		rootmessage(mylogfile, "B matrix global memory %.3lf MiB\n", B.globalmemory() / 1e6);
-		rootmessage(mylogfile, "Wb matrix global memory %.3lf MiB\n", Wb.globalmemory() / 1e6);
-		rootmessage(mylogfile, "Wr matrix global memory %.3lf MiB\n", Wr.globalmemory() / 1e6);
-		rootmessage(mylogfile, "P matrix global memory %.3lf MiB\n", P.globalmemory() / 1e6);
+		glog.logmsg(0,  "J matrix global memory %.3lf MiB\n", J.globalmemory() / 1e6);
+		glog.logmsg(0,  "Wd matrix global memory %.3lf MiB\n", Wd.globalmemory() / 1e6);
+		glog.logmsg(0,  "V matrix global memory %.3lf MiB\n", V.globalmemory() / 1e6);
+		glog.logmsg(0,  "H matrix global memory %.3lf MiB\n", H.globalmemory() / 1e6);
+		glog.logmsg(0,  "B matrix global memory %.3lf MiB\n", B.globalmemory() / 1e6);
+		glog.logmsg(0,  "Wb matrix global memory %.3lf MiB\n", Wb.globalmemory() / 1e6);
+		glog.logmsg(0,  "Wr matrix global memory %.3lf MiB\n", Wr.globalmemory() / 1e6);
+		glog.logmsg(0,  "P matrix global memory %.3lf MiB\n", P.globalmemory() / 1e6);
 
 		double total = J.globalmemory() + Wd.globalmemory() + V.globalmemory() + H.globalmemory() + B.globalmemory() + Wb.globalmemory() + Wr.globalmemory() + P.globalmemory();
-		rootmessage(mylogfile, "Total matrix global memory %.3lf MiB\n", total / 1e6);
+		glog.logmsg(0,  "Total matrix global memory %.3lf MiB\n", total / 1e6);
 	}
 
 	std::vector<double> get_conductivity_model(const size_t& localsampleindex, const double* mlocal){
@@ -1793,7 +1782,7 @@ public:
 
 		double* glocal = g.getlocalarray();
 		cOwnership gdist = g.ownership();
-		//rootmessage(mylogfile, "Starting forward modelling\n");
+		//glog.logmsg(0,  "Starting forward modelling\n");
 		for (size_t si = (size_t)sown.start; si < (size_t)sown.end; si++){
 			size_t lsi = sown.localind((PetscInt)si);
 			//size_t gpi = gpindex_c(si, 0);
@@ -1834,19 +1823,19 @@ public:
 		g.restorelocalarray(glocal);
 		if (computejacobian) J.assemble();
 		
-		//rootmessage(mylogfile, "Finished forward modelling\n");
+		//glog.logmsg(0,  "Finished forward modelling\n");
 		return true;
 	}
 
 	bool setup(){
 
 		count_samples();
-		rootmessage(mylogfile, "nsamples=%lu\n", nsamples);
-		rootmessage(mylogfile, "nchannels=%lu\n", nchan);
-		rootmessage(mylogfile, "ndata=%lu\n", ndata);
-		rootmessage(mylogfile, "nlayers=%lu\n", nlayers);
-		rootmessage(mylogfile, "nparampersample=%lu\n", nparampersample);
-		rootmessage(mylogfile, "nparam=%lu\n", nparam);
+		glog.logmsg(0,  "nsamples=%lu\n", nsamples);
+		glog.logmsg(0,  "nchannels=%lu\n", nchan);
+		glog.logmsg(0,  "ndata=%lu\n", ndata);
+		glog.logmsg(0,  "nlayers=%lu\n", nlayers);
+		glog.logmsg(0,  "nparampersample=%lu\n", nparampersample);
+		glog.logmsg(0,  "nparam=%lu\n", nparam);
 
 		read_data();
 		read_conductivity_logs();
@@ -1897,10 +1886,10 @@ public:
 		J_set_nonzero_pattern();
 		//J.writetextfile("J.smat");
 
-		rootmessage(mylogfile, "Creating preconditioner\n");
+		glog.logmsg(0,  "Creating preconditioner\n");
 		P.create_identity("P", mpicomm, (PetscInt)nlocalparam, (PetscInt)nparam);
 		//P.writetextfile("P.smat");		
-		rootmessage(mylogfile, "Finished creating preconditioner\n");
+		glog.logmsg(0,  "Finished creating preconditioner\n");
 
 		report_matrix_memory_usage();
 		
@@ -1932,7 +1921,7 @@ public:
 	cPetscDistVector cg_solve(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
 
 		cPetscDistVector b("b", mpicomm, (PetscInt)nlocalparam, (PetscInt)nparam);
-		rootmessage(mylogfile, "Starting CG solve\n");
+		glog.logmsg(0,  "Starting CG solve\n");
 		cStopWatch sw;
 
 		b = J ^ (Wd*(dobs - g + J*m));
@@ -1940,8 +1929,8 @@ public:
 		if (InversionOp.AlphaR > 0) b += lambda*((Wr^mref));
 
 		cPetscDistVector mtrial = A.solve_CG(P, b, m);
-		rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
-		rootmessage(mylogfile, A.convergence_summary().c_str());
+		glog.logmsg(0,  "Finished CG solve time=%lf\n", sw.etimenow());
+		glog.logmsg(0,  A.convergence_summary().c_str());
 		return (mtrial - m);
 	};
 
@@ -1961,7 +1950,7 @@ public:
 	cPetscDistVector cg_solve_dm(cPetscDistShellMatrix& A, const cPetscDistVector& m, const cPetscDistVector& g){
 
 		cPetscDistVector b("b", mpicomm, (PetscInt)nlocalparam, (PetscInt)nparam);
-		rootmessage(mylogfile, "Starting CG solve\n");
+		glog.logmsg(0,  "Starting CG solve\n");
 		cStopWatch sw;
 
 		b = J ^ (Wd*(dobs - g));
@@ -1972,8 +1961,8 @@ public:
 		if (InversionOp.AlphaR > 0) b += lambda*((Wr^ (mref-m)));
 
 		cPetscDistVector mtrial = A.solve_CG(P, b, m);
-		rootmessage(mylogfile, "Finished CG solve time=%lf\n", sw.etimenow());
-		rootmessage(mylogfile, A.convergence_summary().c_str());
+		glog.logmsg(0,  "Finished CG solve time=%lf\n", sw.etimenow());
+		glog.logmsg(0,  A.convergence_summary().c_str());
 		return (mtrial - m);
 	};
 
@@ -1999,7 +1988,7 @@ public:
 
 	void find_stepfactor(const cPetscDistVector& m, const cPetscDistVector& dm, const double& currentphid, const double& targetphid, double& bestsf, double& bestphid, double& improvement){
 
-		rootmessage(mylogfile, "Finding step factor\n");
+		glog.logmsg(0,  "Finding step factor\n");
 		cStopWatch sw;
 		cPetscDistVector gtrial = dobs;
 		cPetscDistVector mtrial = m;
@@ -2013,11 +2002,11 @@ public:
 			LS.addtrial(sf, phid);
 		}
 		LS.nearestindex(bestsf, bestphid);
-		rootmessage(mylogfile, "Find stepfactor time=%lf\n", sw.etimenow());
+		glog.logmsg(0,  "Find stepfactor time=%lf\n", sw.etimenow());
 		improvement = 100.0*(currentphid - bestphid) / currentphid;
-		rootmessage(mylogfile, "Step factor = %.5lf\n", bestsf);
-		rootmessage(mylogfile, "Found PhiD  = %.5lf\n", bestphid);
-		rootmessage(mylogfile, "Improvement = %.5lf%%\n", improvement);
+		glog.logmsg(0,  "Step factor = %.5lf\n", bestsf);
+		glog.logmsg(0,  "Found PhiD  = %.5lf\n", bestphid);
+		glog.logmsg(0,  "Improvement = %.5lf%%\n", improvement);
 		
 		//if (mpirank == 0){
 		//	std::string stepsfile = strprint("output//steps//steps_%02llu.txt", mLastIteration);
@@ -2043,11 +2032,11 @@ public:
 		bool keepgoing = true;
 		size_t iteration = 1;
 		while (keepgoing){			
-			rootmessage(mylogfile, "\n\nItaration = %lu\n", iteration);
+			glog.logmsg(0,  "\n\nItaration = %lu\n", iteration);
 			cStopWatch sw;
 			cPetscDistVector g("g", mpicomm, (PetscInt)nlocaldata, (PetscInt)ndata);
 			forwardmodel_and_jacobian(m, g, true);
-			rootmessage(mylogfile, "Forward modelling time=%lf\n", sw.etimenow());
+			glog.logmsg(0,  "Forward modelling time=%lf\n", sw.etimenow());
 
 			double phiv = PhiV(m); double phih = PhiH(m);
 			double phib = PhiB(m); double phir = PhiR(m);
@@ -2087,14 +2076,14 @@ public:
 	};
 
 	void log_iteration_msg(const double& lam, const double& phi, const double& phiv, const double& phih, const double& phib,	const double& phir, const double& phid, const double& targetphid){
-		rootmessage(mylogfile, "Current Lambda = %lf\n", lam);
-		rootmessage(mylogfile, "Current Phi  = %lf\n", phi);
-		rootmessage(mylogfile, "Current PhiV = %lf\n", phiv);
-		rootmessage(mylogfile, "Current PhiH = %lf\n", phih);
-		rootmessage(mylogfile, "Current PhiB = %lf\n", phib);
-		rootmessage(mylogfile, "Current PhiR = %lf\n", phir);
-		rootmessage(mylogfile, "Current PhiD = %lf\n", phid);
-		rootmessage(mylogfile, "Target  PhiD = %lf\n", targetphid);
+		glog.logmsg(0,  "Current Lambda = %lf\n", lam);
+		glog.logmsg(0,  "Current Phi  = %lf\n", phi);
+		glog.logmsg(0,  "Current PhiV = %lf\n", phiv);
+		glog.logmsg(0,  "Current PhiH = %lf\n", phih);
+		glog.logmsg(0,  "Current PhiB = %lf\n", phib);
+		glog.logmsg(0,  "Current PhiR = %lf\n", phir);
+		glog.logmsg(0,  "Current PhiD = %lf\n", phid);
+		glog.logmsg(0,  "Target  PhiD = %lf\n", targetphid);
 	}
 	
 	void write_results(const std::string& filename, const cPetscDistVector& m, const cPetscDistVector& g){
@@ -2365,23 +2354,22 @@ public:
 };
 
 int main(int argc, char** argv)
-{
-	mylogfile = (FILE*) NULL;
+{	
 	PetscErrorCode ierr;
 	try{
 		ierr = PetscInitialize(&argc, &argv, PETSC_NULL, PETSC_NULL);
 
 		if(argc < 2){
-			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
-			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
-			rootmessage("Usage: %s control_file_name\n", argv[0]);
-			rootmessage("Too few command line arguments\n");
+			glog.logmsg(0, "%s\n", commandlinestring(argc, argv).c_str());
+			glog.logmsg(0, "%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg(0, "Usage: %s control_file_name\n", argv[0]);
+			glog.logmsg(0, "Too few command line arguments\n");
 		}
 		else if(argc > 2){
-			rootmessage("%s\n", commandlinestring(argc, argv).c_str());
-			rootmessage("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
-			rootmessage("Usage: %s control_file_name\n", argv[0]);
-			rootmessage("Too many command line arguments\n");
+			glog.logmsg(0, "%s\n", commandlinestring(argc, argv).c_str());
+			glog.logmsg(0, "%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg(0, "Usage: %s control_file_name\n", argv[0]);
+			glog.logmsg(0, "Too many command line arguments\n");
 		}
 		else{
 			cAllAtOnceInverter(argc, argv);
@@ -2389,15 +2377,15 @@ int main(int argc, char** argv)
 		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
 	catch (const std::string msg){
-		rootmessage(mylogfile, "%s", msg.c_str());
+		glog.logmsg(0,"%s", msg.c_str());
 		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
 	catch (const std::runtime_error e){
-		rootmessage(mylogfile, "%s", e.what());
+		glog.logmsg(0,"%s", e.what());
 		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
 	catch (const std::exception e){
-		rootmessage(mylogfile, "%s", e.what());
+		glog.logmsg(0,"%s", e.what());
 		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
 

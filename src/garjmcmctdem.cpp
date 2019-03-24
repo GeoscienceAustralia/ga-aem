@@ -20,6 +20,10 @@ using namespace std;
 	#include "mpi_wrapper.h"
 #endif
 
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
+
+
 int main(int argc, char* argv[])
 {	
 	int exitstatus;
@@ -44,26 +48,26 @@ int main(int argc, char* argv[])
 		exitstatus = EXIT_FAILURE;
 	}	
 	else{
-		rootmessage("Executing %s %s\n", argv[0], argv[1]);
-		rootmessage("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		rootmessage("Working directory %s\n", getcurrentdirectory().c_str());
-		rootmessage("This process starting at %s\n", timestamp().c_str());
+		glog.logmsg(0, "Executing %s %s\n", argv[0], argv[1]);
+		glog.logmsg(0, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg(0, "This process starting at %s\n", timestamp().c_str());
 
 		std::string executable = string(argv[0]);
 		std::string controlfile = string(argv[1]);
 
-		rootmessage("Reading control file %s\n", controlfile.c_str());
+		glog.logmsg(0, "Reading control file %s\n", controlfile.c_str());
 		rjmcmc1dTDEmInverter I(executable, controlfile, (size_t)mpisize, (size_t)mpirank);
 
-		rootmessage(I.fp_log, "Starting Inversion\n");
+		glog.logmsg(0,"Starting Inversion\n");
 		while (I.readnextrecord_thisprocess()){
 			I.parsecurrentrecord();
 			I.sample();
 			double stime = I.samplingtime;
 			double norm_mfit = I.mLowestMisfit.misfit() / double(I.ndata);
-			message(I.fp_log, "Rec %6lu\t %3lu\t %5lu\t %10lf nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
+			glog.logmsg("Rec %6lu\t %3lu\t %5lu\t %10lf nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
 		}
-		message(I.fp_log, "This process finishing at %s\n", timestamp().c_str());
+		glog.logmsg("This process finishing at %s\n", timestamp().c_str());
 		exitstatus = EXIT_SUCCESS;
 	}
 

@@ -228,7 +228,7 @@ void cTDEmSystem::setup_splineinterp(const std::vector<double>& xn, const std::v
 		}
 		double h = xn[khi] - xn[klo];
 		if (h == 0.0){
-			errormessage("setup_splineinterp(): Bad xa input to routine splintsetup\n");
+			glog.errormsg(_SRC_,"setup_splineinterp(): Bad xa input to routine splintsetup\n");
 		}
 		double a = (xn[khi] - xi[fi]) / h;
 		double b = (xi[fi] - xn[klo]) / h;
@@ -496,11 +496,11 @@ void cTDEmSystem::initialise_windows()
 	dmatrix wt = STM.getdoublematrix("Receiver.WindowTimes");
 	size_t nw = wt.size();
 	if (nw != NumberOfWindows){
-		errormessage("cTDEmSystem::initialise_windows: the number of WindowTimes does not match the NumberOfWindows\n");
+		glog.errormsg(_SRC_,"cTDEmSystem::initialise_windows: the number of WindowTimes does not match the NumberOfWindows\n");
 	}
 	for (size_t i = 0; i < NumberOfWindows; i++){
 		if (wt[i].size() != 2){
-			errormessage("cTDEmSystem::initialise_windows: the number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
+			glog.errormsg(_SRC_,"cTDEmSystem::initialise_windows: the number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
 		}
 		WinSpec[i].TimeLow = wt[i][0];
 		WinSpec[i].TimeHigh = wt[i][1];
@@ -517,7 +517,7 @@ void cTDEmSystem::initialise_windows()
 		initialise_windows_lineartaper();
 	}
 	else{
-		errormessage("cTDEmSystem::readsystemdescriptorfile: WindowWeightingScheme %s unknown (must be \"AreaUnderCurve\" or  \"Boxcar\" or \"LinearTaper\")\n", WindowWeightingScheme.c_str());
+		glog.errormsg(_SRC_,"cTDEmSystem::readsystemdescriptorfile: WindowWeightingScheme %s unknown (must be \"AreaUnderCurve\" or  \"Boxcar\" or \"LinearTaper\")\n", WindowWeightingScheme.c_str());
 	}
 }
 
@@ -840,7 +840,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 	SystemType = STM.getstringvalue("Type");
 	
 	if (strcasecmp(SystemType, "Time Domain") != 0){
-		errormessage("cTDEmSystem::readsystemdescriptorfile(): System Type is not Time Domain\n");
+		glog.errormsg(_SRC_,"cTDEmSystem::readsystemdescriptorfile(): System Type is not Time Domain\n");
 	}
 	BaseFrequency = STM.getdoublevalue("Transmitter.BaseFrequency");
 	BasePeriod = 1.0 / BaseFrequency;
@@ -903,7 +903,7 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 
 
 	if (wavformdefined == false){
-		errormessage("cTDEmSystem::readsystemdescriptorfile(): The waveform is not defined\n");
+		glog.errormsg(_SRC_,"cTDEmSystem::readsystemdescriptorfile(): The waveform is not defined\n");
 	}
 
 	initialise_windows();
@@ -921,12 +921,12 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		OutputType = OT_DBDT;
 	}
 	else{		
-		errormessage("cTDEmSystem::readsystemdescriptorfile(): OutputType %s unknown (must be one of \"B\" or \"dB/dt\")\n", ot.c_str());
+		glog.errormsg(_SRC_,"cTDEmSystem::readsystemdescriptorfile(): OutputType %s unknown (must be one of \"B\" or \"dB/dt\")\n", ot.c_str());
 	}
 
 	FrequenciesPerDecade = (size_t)STM.getintvalue("ForwardModelling.FrequenciesPerDecade");
 	if (FrequenciesPerDecade < 5){
-		warningmessage("cTDEmSystem::readsystemdescriptorfile: It is wise to use at least 5 frequencies per decade\n");
+		glog.warningmsg(_SRC_,"It is wise to use at least 5 frequencies per decade\n");
 	}
 
 	LEM.NumAbscissa = (size_t)STM.getintvalue("ForwardModelling.NumberOfAbsiccaInHankelTransformEvaluation");
@@ -942,17 +942,17 @@ void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		Normalisation = NT_PPM_PEAKTOPEAK;
 	}
 	else{	
-		errormessage("cTDEmSystem::readsystemdescriptorfile(): Normalisation %s unknown (must be one of \"None,PPM,PPMPEAKTOPEAK\")\n", n.c_str());
+		glog.errormsg(_SRC_,"cTDEmSystem::readsystemdescriptorfile(): Normalisation %s unknown (must be one of \"None,PPM,PPMPEAKTOPEAK\")\n", n.c_str());
 	}
 	
 	SaveDiagnosticFiles = STM.getboolvalue("ForwardModelling.SaveDiagnosticFiles");
 	
 	if (WaveformTime.size() <= 2 || WaveformTime.size() != T_Waveform.size()){
-		errormessage("cTDEmSystem::readsystemdescriptorfile(): The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
+		glog.errormsg(_SRC_,"The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
 	}
 
 	if (LEM.NumAbscissa < 17){
-		warningmessage("cTDEmSystem::readsystemdescriptorfile(): It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
+		glog.warningmsg(_SRC_,"It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
 	}
 
 	LowPassFilterCutoffFrequency = STM.getdoublevector("Receiver.LowPassFilter.CutOffFrequency");
@@ -996,7 +996,7 @@ void cTDEmSystem::setup_scaling(){
 	if (Normalisation == NT_PPM || Normalisation == NT_PPM_PEAKTOPEAK){
 		cBlock b = STM.findblock("ReferenceGeometry");
 		if (b.Entries.size() == 0){
-			errormessage("cTDEmSystem::setup_ppm_normalisation(): Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
+			glog.errormsg(_SRC_,"cTDEmSystem::setup_ppm_normalisation(): Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
 		}
 		NormalizationGeometry = cTDEmGeometry(b);
 		setgeometry(NormalizationGeometry);
@@ -1062,9 +1062,9 @@ void cTDEmSystem::digitisewaveform(const dmatrix& wp, std::vector<double>& t, st
 	size_t np = wp.size();
 
 	if (wp[np - 1][0] - wp[0][0] < hp){
-		errormessage("cTDEmSystem::digitisecurrentwaveform: One complete halfcycle of the waveform has not been specified\n");
+		glog.errormsg(_SRC_,"cTDEmSystem::digitisecurrentwaveform: One complete halfcycle of the waveform has not been specified\n");
 
-		errormessage("cTDEmSystem::digitisecurrentwaveform: One complete halfcycle of the waveform has not been specified\n \
+		glog.errormsg(_SRC_,"cTDEmSystem::digitisecurrentwaveform: One complete halfcycle of the waveform has not been specified\n \
                                       Last waveform time - first waveform time must be >= 0.5/BaseFrequency\n");
 	}
 
@@ -1104,7 +1104,7 @@ void cTDEmSystem::digitisewaveform(const dmatrix& wp, std::vector<double>& t, st
 		}
 
 		if (set == false){
-			errormessage("cTDEmSystem::Error in waveform - not all defined\n");
+			glog.errormsg(_SRC_,"cTDEmSystem::Error in waveform - not all defined\n");
 		}
 	}
 
@@ -1118,7 +1118,7 @@ dmatrix cTDEmSystem::readwaveformfile(const std::string& filename)
 {
 	FILE* fp = fileopen(filename, "r");
 	if (fp == NULL){
-		errormessage("cTDEmSystem::readwaveformfile: Unable to open waveformfile %s\n", filename.c_str());
+		glog.errormsg(_SRC_,"cTDEmSystem::readwaveformfile: Unable to open waveformfile %s\n", filename.c_str());
 		throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 	}
 

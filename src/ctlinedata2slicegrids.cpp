@@ -29,6 +29,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "asciicolumnfile.h"
 #include "blocklanguage.h"
 #define VERSION "1.0"
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
+
 using namespace std;
 
 class cGridOptions{
@@ -671,22 +674,22 @@ public:
 int main(int argc, char** argv)
 {
 	if (argc >= 2){
-		message("Executing %s %s\n", argv[0], argv[1]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
+		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 		#if defined _OPENMP
-		message("Maximum number of OpenMP Threads is %d\n", omp_get_max_threads());
+		glog.logmsg("Maximum number of OpenMP Threads is %d\n", omp_get_max_threads());
 		#endif
 	}
 	else{
-		message("Executing %s %s\n", argv[0], argv[1]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
+		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 		#if defined _OPENMP
-		message("Maximum number of OpenMP Threads is %d\n", omp_get_max_threads());
+		glog.logmsg("Maximum number of OpenMP Threads is %d\n", omp_get_max_threads());
 		#endif
-		message("Error: Not enough input arguments\n");
-		message("Usage: %s controlfilename\n", argv[0]);
+		glog.logmsg("Error: Not enough input arguments\n");
+		glog.logmsg("Usage: %s controlfilename\n", argv[0]);
 		return 0;;
 	}
 

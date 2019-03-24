@@ -8,7 +8,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <cmath>
 
-#define VERSION "1.0"
 
 #if defined _MPI_ENABLED
 #include <mpi.h>
@@ -22,7 +21,11 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "matrix_ops.h"
 #include "fdemsystem.h"
 #include "galeisbsfdem.h"
+#include "logger.h"
 
+#define VERSION "1.0"
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
 
 
 FDEmSampleInverter::FDEmSampleInverter(std::string controlfilename, size_t size, size_t rank)
@@ -30,7 +33,7 @@ FDEmSampleInverter::FDEmSampleInverter(std::string controlfilename, size_t size,
 	mSize = size;
 	mRank = rank;
 	mControlFilename = controlfilename;
-	message("Loading control file %s\n", controlfilename.c_str());
+	glog.logmsg("Loading control file %s\n", controlfilename.c_str());
 	mControl.loadfromfile(mControlFilename);
 	initialise();
 }
@@ -43,16 +46,15 @@ void FDEmSampleInverter::initialise()
 		Logfile = insert_after_filename(Logfile,tmp);		
 	}	
 
-	message("Opening log file %s\n",Logfile.c_str());
-	fp_log = fileopen(Logfile,"w");
-	message(fp_log,"Logfile opened on %s\n",timestamp().c_str());
-	message(fp_log,"Control file %s\n",mControlFilename.c_str());
-	message(fp_log,"Version %s Compiled at %s on %s\n",VERSION,__TIME__,__DATE__);
-	message(fp_log,"Working directory %s\n",getcurrentdirectory().c_str());
-	message(fp_log,"Processes=%d\tRank=%d\n",mSize,mRank);
-	mControl.write(fp_log);
-	fflush(fp_log);
-
+	glog.logmsg("Opening log file %s\n",Logfile.c_str());
+	glog.open(Logfile);
+	glog.logmsg(0,"Logfile opened on %s\n",timestamp().c_str());
+	glog.logmsg(0,"Control file %s\n",mControlFilename.c_str());
+	glog.logmsg(0,"Version %s Compiled at %s on %s\n",VERSION,__TIME__,__DATE__);
+	glog.logmsg(0,"Working directory %s\n",getcurrentdirectory().c_str());
+	glog.logmsg(0,"Processes=%d\tRank=%d\n",mSize,mRank);
+	glog.log(mControl.get_as_string());
+	
 	//Load control file			
 	Dump = mControl.getboolvalue("Dump");
 	if(Dump){
@@ -81,7 +83,7 @@ void FDEmSampleInverter::initialise_emsystems()
 	EMSystem.readsystemdescriptorfile(SystemFile);	
 	nCoilsets = EMSystem.NumberOfCoilSets();
 	nChannels = nCoilsets * 2;	
-	EMSystem.STM.write(fp_log);
+	glog.log(EMSystem.STM.get_as_string());
 }
 void FDEmSampleInverter::getoptions()
 { 	
@@ -123,15 +125,15 @@ void FDEmSampleInverter::getinputs()
 		DataFileSubsample = 1;
 	}
 
-	rootmessage(fp_log, "Opening Input DataFile %s\n", DataFileName.c_str());
+	glog.logmsg(0,"Opening Input DataFile %s\n", DataFileName.c_str());
 	DataFilePointer = fileopen(DataFileName, "r");
 	DataFileRecord = 0;
 
-	rootmessage(fp_log, "Opening Output DataFile %s\n", OutputDataFile.c_str());
+	glog.logmsg(0,"Opening Output DataFile %s\n", OutputDataFile.c_str());
 	ofp = fileopen(OutputDataFile, "w");
-	Outputrecord = 1;
-		
+	Outputrecord = 1;		
 }
+
 void FDEmSampleInverter::getoutputs()	
 {
 	//Output
@@ -152,10 +154,10 @@ void FDEmSampleInverter::getoutputs()
 		OutputDataFile   = insert_after_filename(OutputDataFile, tmp);
 		OutputHeaderFile = insert_after_filename(OutputHeaderFile, tmp);
 	}
-	message("Opening OutputDataFile file %s\n", OutputDataFile.c_str());
+	glog.logmsg("Opening OutputDataFile file %s\n", OutputDataFile.c_str());
 	ofp = fileopen(OutputDataFile, "w");
 
-	message("Opening OutputHeaderFile file %s\n", OutputHeaderFile.c_str());
+	glog.logmsg("Opening OutputHeaderFile file %s\n", OutputHeaderFile.c_str());
 	hfp = fileopen(OutputHeaderFile, "w");
 	Outputrecord = 1;
 
@@ -165,33 +167,33 @@ void FDEmSampleInverter::getoutputs()
 void FDEmSampleInverter::parsecolumns()
 {	
 	cBlock b = mControl.findblock("Input.Columns");
-	sn.set(b,"SurveyNumber");
-	dn.set(b,"DateNumber");
-	fn.set(b,"FlightNumber");
-	ln.set(b,"LineNumber");
-	fidn.set(b,"FidNumber");
-	xord.set(b,"Easting");
-	yord.set(b,"Northing");
-	elevation.set(b,"GroundElevation");
-	altimeter.set(b,"Altimeter");
+	sn.initialise(b,"SurveyNumber");
+	dn.initialise(b,"DateNumber");
+	fn.initialise(b,"FlightNumber");
+	ln.initialise(b,"LineNumber");
+	fidn.initialise(b,"FidNumber");
+	xord.initialise(b,"Easting");
+	yord.initialise(b,"Northing");
+	elevation.initialise(b,"GroundElevation");
+	altimeter.initialise(b,"Altimeter");
 
-	birdheight.set(b,"BirdHeight");
-	birdroll.set(b,"BirdRoll");
-	birdpitch.set(b,"BirdPitch");
-	birdyaw.set(b,"BirdYaw");
+	birdheight.initialise(b,"BirdHeight");
+	birdroll.initialise(b,"BirdRoll");
+	birdpitch.initialise(b,"BirdPitch");
+	birdyaw.initialise(b,"BirdYaw");
 	
-	emchannels.set(b,"EMChannels");
-	std_emchannels.set(b,"StdDevEMChannels");
+	emchannels.initialise(b,"EMChannels");
+	std_emchannels.initialise(b,"StdDevEMChannels");
 
 	cBlock rm = b.findblock("ReferenceModel");	
-	ref_conductivity.set(rm,"Conductivity");
-	ref_thickness.set(rm,"Thickness");
-	ref_birdheight.set(rm,"BirdHeight");
+	ref_conductivity.initialise(rm,"Conductivity");
+	ref_thickness.initialise(rm,"Thickness");
+	ref_birdheight.initialise(rm,"BirdHeight");
 
 	cBlock sd = b.findblock("StdDevReferenceModel");
-	std_conductivity.set(sd,"Conductivity");
-	std_thickness.set(sd,"Thickness");
-	std_birdheight.set(sd,"BirdHeight");
+	std_conductivity.initialise(sd,"Conductivity");
+	std_thickness.initialise(sd,"Thickness");
+	std_birdheight.initialise(sd,"BirdHeight");
 }
 
 void FDEmSampleInverter::setupdata()
@@ -973,8 +975,8 @@ void FDEmSampleInverter::invert()
 	double t2 = gettime();
 
 	double etime = t2 - t1;
-	message(fp_log,"Rec %6lu\t %3lu\t %5lu\t %10lf ...",DataFileRecord,Id.flightnumber,Id.linenumber,Id.fidnumber);
-	message(fp_log,"Its=%3lu\tPhiD=%6.2lf\t%s time=%.1lfs\n",LastIteration,LastPhiD,TerminationReason.c_str(),etime);
+	glog.logmsg("Rec %6lu\t %3lu\t %5lu\t %10lf ...",DataFileRecord,Id.flightnumber,Id.linenumber,Id.fidnumber);
+	glog.logmsg("Its=%3lu\tPhiD=%6.2lf\t%s time=%.1lfs\n",LastIteration,LastPhiD,TerminationReason.c_str(),etime);
 }
 void FDEmSampleInverter::iterate()
 {				
@@ -1082,10 +1084,8 @@ void FDEmSampleInverter::iterate()
 }
 void FDEmSampleInverter::finish()
 {
-	fclose(ofp);
-
-	message(fp_log,"Logfile closing at %s\n", timestamp().c_str());
-	fclose(fp_log);
+	fclose(ofp);	
+	glog.close();
 }
 
 std::vector<double> FDEmSampleInverter::parameterchange(const double lambda)
@@ -1176,7 +1176,7 @@ cTrial FDEmSampleInverter::targetsearch(const double currentlambda, const double
 		return T.minphidtrial();		
 	}
 	else{
-		errormessage("Error unknown value %d returned from target brackettarget()\n",b);
+		glog.errormsg(_SRC_,"Error unknown value %d returned from target brackettarget()\n",b);
 	}	
 	return T.minphidtrial();
 }
@@ -1282,7 +1282,7 @@ double FDEmSampleInverter::brentsmethod(cTrialCache& T, const double target, dou
 	double fa = T.trial[index-1].phid - target;
 	double fb = T.trial[index].phid   - target;	
 	if(fa * fb >= 0.0){
-		warningmessage("Target must be bracketed for cSBSInverter::brentsmethod()\n");
+		glog.warningmsg(_SRC_,"Target must be bracketed for cSBSInverter::brentsmethod()\n");
 	}	
 
 	double c = 0;
@@ -1359,7 +1359,7 @@ double FDEmSampleInverter::brentsmethod(cTrialCache& T, const double target, dou
 		i++;
 		if (i > 20){
 			printtrials(T);
-			warningmessage("Too many bisections in cSBSInverter::brentsmethod()\n");	
+			glog.warningmsg(_SRC_,"Too many bisections in cSBSInverter::brentsmethod()\n");	
 			newphid=fb+target;
 			return pow10(b);
 		}
@@ -1504,32 +1504,40 @@ double FDEmSampleInverter::trialfunction(cTrialCache& T, const double triallambd
 	return t.phid;
 }
 
-int FDEmSampleInverter::intvalue(const FieldDefinition& cd)
+int FDEmSampleInverter::intvalue(const cFieldDefinition& cd)
 { 	
-	return cd.intvalue(DataFileFieldStrings);
+	int v;
+	cd.getvalue(DataFileFieldStrings,v);
+	return v;
 }
-double FDEmSampleInverter::doublevalue(const FieldDefinition& cd)
+double FDEmSampleInverter::doublevalue(const cFieldDefinition& cd)
 { 	
-	return cd.doublevalue(DataFileFieldStrings);
+	double v;
+	cd.getvalue(DataFileFieldStrings,v);
+	return v;
 }
-std::vector<int> FDEmSampleInverter::intvector(const FieldDefinition& cd, const size_t& n)
+std::vector<int> FDEmSampleInverter::intvector(const cFieldDefinition& cd, const size_t& n)
 {
-	return cd.intvector(DataFileFieldStrings, n);
+	std::vector<int> v;
+	cd.getvalue(DataFileFieldStrings, v, n);
+	return v;
 }
-std::vector<double> FDEmSampleInverter::doublevector(const FieldDefinition& cd, const size_t& n)
+std::vector<double> FDEmSampleInverter::doublevector(const cFieldDefinition& cd, const size_t& n)
 {
-	return cd.doublevector(DataFileFieldStrings, n);
+	std::vector<double> v;
+	cd.getvalue(DataFileFieldStrings, v, n);
+	return v;
 }
 
 int process(int argc, char** argv, size_t Size, size_t Rank)
 {
 	if (argc >= 2){
-		message("Executing %s %s\n", argv[0], argv[1]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg(0,"Executing %s %s\n", argv[0], argv[1]);
+		glog.logmsg(0,"Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg(0,"Working directory %s\n", getcurrentdirectory().c_str());
 	}
 	else{
-		errormessage("Not enough input arguments\n");
+		glog.errormsg(_SRC_,"Not enough input arguments\n");
 	}
 
 	std::string controlfile(argv[1]);
@@ -1556,7 +1564,7 @@ int main(int argc, char** argv)
 		printf("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
 		return 0;
 	}
-	message("Starting MPI\n");
+	glog.logmsg("Starting MPI\n");
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &Size);
 	MPI_Comm_rank(MPI_COMM_WORLD, &Rank);
@@ -1564,7 +1572,7 @@ int main(int argc, char** argv)
 	char processor_name[MPI_MAX_PROCESSOR_NAME + 1];
 	MPI_Get_processor_name(processor_name, &len);
 	processor_name[len] = '\0';
-	message("MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", Size, Rank, processor_name);
+	glog.logmsg("MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", Size, Rank, processor_name);
 	process(argc, argv, (size_t)Size, (size_t)Rank);
 	MPI_Finalize();
 #elif defined _OPENMP
@@ -1594,7 +1602,7 @@ int main(int argc, char** argv)
 #pragma omp parallel num_threads(Size)
 	{
 		int Rank = omp_get_thread_num();
-		message("OpenMP threading Processes=%d\tRank=%d\n", Size, Rank);
+		glog.logmsg("OpenMP threading Processes=%d\tRank=%d\n", Size, Rank);
 		process(argc, argv, Size, Rank);
 	}
 
@@ -1607,7 +1615,7 @@ int main(int argc, char** argv)
 		printf("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
 		return 0;
 	}
-	message("Stand-alone Processes=%d\tRank=%d\tProcessor name = %s\n", Size, Rank);
+	glog.logmsg("Stand-alone Processes=%d\tRank=%d\tProcessor name = %s\n", Size, Rank);
 	process(argc, argv, Size, Rank);
 #endif	
 	return 0;

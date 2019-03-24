@@ -39,9 +39,9 @@ struct sTDEmSystemInfo{
 	double  oPX,oPY,oPZ;
 	std::vector<double> oSX,oSY,oSZ;	
 	std::vector<double> oEX,oEY,oEZ;	
-	FieldDefinition fd_oPX,fd_oPY,fd_oPZ;
-	FieldDefinition fd_oSX,fd_oSY,fd_oSZ;
-	FieldDefinition fd_oEX,fd_oEY,fd_oEZ;
+	cFieldDefinition fd_oPX,fd_oPY,fd_oPZ;
+	cFieldDefinition fd_oSX,fd_oSY,fd_oSZ;
+	cFieldDefinition fd_oEX,fd_oEY,fd_oEZ;
 };
 
 class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
@@ -92,8 +92,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	int  SaveChainsRate;
 		
 	cBlock Control;
-	std::string LogFile;
-	FILE*  fp_log;
+	std::string LogFile;	
 	double memoryusedatstart;
 
 	std::string InputDataFile;	
@@ -124,16 +123,15 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	double elevation;
 	double altimeter;
 
-	FieldDefinition fd_surveynumber;
-	FieldDefinition fd_datenumber;	
-	FieldDefinition fd_flightnumber;	
-	FieldDefinition fd_linenumber;
-	FieldDefinition fd_fidnumber;	
-	FieldDefinition fd_xord;
-	FieldDefinition fd_yord;
-	FieldDefinition fd_elevation;
-	FieldDefinition fd_altimeter;	
-	FieldDefinition fd_geometry[10];			
+	cFieldDefinition fd_surveynumber;
+	cFieldDefinition fd_datenumber;	
+	cFieldDefinition fd_flightnumber;	
+	cFieldDefinition fd_linenumber;
+	cFieldDefinition fd_fidnumber;	
+	cFieldDefinition fd_xord;
+	cFieldDefinition fd_yord;
+	cFieldDefinition fd_elevation;	
+	cFieldDefinition fd_geometry[10];			
 };
 
 #endif

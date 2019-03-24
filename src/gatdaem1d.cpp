@@ -14,6 +14,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "earth1d.h"
 #include "gatdaem1d.h"
 
+
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
+
 void* createhandle(const char* systemfile)
 {			
 	cTDEmSystem* T = new cTDEmSystem;

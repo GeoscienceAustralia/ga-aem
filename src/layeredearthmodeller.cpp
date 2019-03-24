@@ -499,7 +499,7 @@ inline sPropogationMatrix LayeredEarthModeller::dPdTj(size_t ai, size_t li)
 	}
 	//Last layer case
 	else{
-		message("Warning: LayeredEarthModeller::dPdtj Zero thickness derivative for halfspace layer\n");
+		glog.logmsg("Warning: LayeredEarthModeller::dPdtj Zero thickness derivative for halfspace layer\n");
 		tmp.e11 = tmp.e12 = tmp.e21 = tmp.e22 =0;
 		return tmp;
 	}
@@ -593,7 +593,7 @@ void LayeredEarthModeller::dointegrals()
 		I2.dY=trapezoid_result[2];
 		break;	
 	default:			
-		message("Error: LayeredEarthModeller::dointegrals() unknown calculation type %c\n",CalculationType);		
+		glog.logmsg("Error: LayeredEarthModeller::dointegrals() unknown calculation type %c\n",CalculationType);		
 		exit(1);
 	}
 }
@@ -697,7 +697,7 @@ inline void LayeredEarthModeller::compute_integrand(size_t ai)
 	    k2 = l2e*j1;
 		break;
 	default:
-		message("Error: LayeredEarthModeller::compute_integrand() unknown calculation type %c\n",CalculationType);		
+		glog.logmsg("Error: LayeredEarthModeller::compute_integrand() unknown calculation type %c\n",CalculationType);		
 		exit(1);			
 	}	
 					
@@ -894,7 +894,7 @@ void LayeredEarthModeller::PT(const CALCULATIONTYPE& calculationtype, Matrix33<d
 	case eDC: break;
 	case eDT: break;
 	default:
-		message("LayeredEarthModeller::pt() unknown calculation type %c\n",calculationtype);		
+		glog.logmsg("LayeredEarthModeller::pt() unknown calculation type %c\n",calculationtype);		
 		exit(1);			
 	}	
 }
@@ -915,7 +915,7 @@ void LayeredEarthModeller::ST(const CALCULATIONTYPE& calculationtype, const size
 	case eDC: dSTdC(T); break;
 	case eDT: dSTdT(T); break;
 	default:
-		message("LayeredEarthModeller::sfield_if unknown calculation type %c\n",calculationtype);		
+		glog.logmsg("LayeredEarthModeller::sfield_if unknown calculation type %c\n",calculationtype);		
 		exit(1);			
 	}		
 }

@@ -14,7 +14,7 @@
     <ProjectGuid>{7B2ABFFB-3AD0-4546-A41B-67F78766418F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>galeisbs</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -38,12 +38,14 @@
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\geophysics-netcdf.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\geophysics-netcdf.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -62,11 +64,12 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>USEGLOBALSTACKTRACE;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -79,7 +82,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -89,14 +93,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.cpp" />
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />
     <ClCompile Include="..\..\src\tdemsystem.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
+    <ClCompile Include="..\..\submodules\cpp-utils\src\gdal_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.h" />
+    <ClInclude Include="..\..\src\galeisbstdem.h" />
     <ClInclude Include="..\..\src\large_loop.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
@@ -105,6 +113,7 @@
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\logger.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h" />
   </ItemGroup>

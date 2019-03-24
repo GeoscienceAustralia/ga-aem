@@ -39,7 +39,7 @@ void cFDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 	//Check system details	
 	size_t nc = frequencies.size();
 	if(separations.size() != nc || orientations.size() != nc){
-		message("Error in system descriptor: Number of frequencies does not match number of seperations and/or orientations\n");
+		glog.logmsg("Error in system descriptor: Number of frequencies does not match number of seperations and/or orientations\n");
 		exit(1);        
 	}
 
@@ -49,7 +49,7 @@ void cFDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
 		else if(strcasecmp("VCP",orientations[i]) == 0)orientation.push_back(eVCP);
 		else if(strcasecmp("PER",orientations[i]) == 0)orientation.push_back(ePER);
 		else{		   
-			message("Error in system descriptor: %s is an unknown orientation\n",orientations[i].c_str());		   
+			glog.logmsg("Error in system descriptor: %s is an unknown orientation\n",orientations[i].c_str());		   
 			exit(1);           
 		}		
 	}	
@@ -234,7 +234,7 @@ cvector cFDEmSystem::noiseestimates(const cvector& response, const sFDEmNoiseMod
 			v[i] = cdouble(sqrt(anr*anr+mnr*mnr),sqrt(ani*ani+mni*mni));
 		}
 		else{	
-			message("cFDEmSystem::noiseestimates unknown noise type\n");
+			glog.logmsg("cFDEmSystem::noiseestimates unknown noise type\n");
 			exit(1);        
 		}
 	}  

@@ -25,6 +25,8 @@ using namespace Gdiplus;
 #include "stretch.h"
 
 #define VERSION "1.0"
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
@@ -96,7 +98,7 @@ public:
 			setcomtal();
 		}
 		else{
-			message("Unknown ColourMap %s\n",name.c_str());			
+			glog.logmsg("Unknown ColourMap %s\n",name.c_str());			
 		}		
 	}
 
@@ -295,7 +297,7 @@ public:
 			cscale = 0.001;
 		}		
 		else{
-			message("Unknown InputConductivityUnits %s\n",cunits.c_str());			
+			glog.logmsg("Unknown InputConductivityUnits %s\n",cunits.c_str());			
 		}
 
 		int lcol, xcol, ycol, ecol;
@@ -327,10 +329,10 @@ public:
 			tcol1 = 0; tcol2 = 0;
 			isconstantthickness = true;
 			if(constantthickness.size() == 0){
-				errormessage("Thickness not set\n");
+				glog.errormsg(_SRC_,"Thickness not set\n");
 			}
 			else if(constantthickness.size() > 1 && constantthickness.size() < nlayers - 1){
-				errormessage("Thickness not set correctly\n");
+				glog.errormsg(_SRC_,"Thickness not set correctly\n");
 			}
 			else if(constantthickness.size() == 1){
 				constantthickness = std::vector<double>(nlayers-1, constantthickness[0]);
@@ -796,16 +798,16 @@ int main(int argc, char** argv)
 	GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
 	if (argc >= 2){
-		message("Executing %s %s\n", argv[0], argv[1]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
+		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 	}
 	else{
-		message("Executing %s\n", argv[0]);
-		message("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
-		message("Working directory %s\n", getcurrentdirectory().c_str());
-		message("Error: Not enough input arguments\n");
-		message("Usage: %s controlfilename\n",argv[0]);		
+		glog.logmsg("Executing %s\n", argv[0]);
+		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
+		glog.logmsg("Error: Not enough input arguments\n");
+		glog.logmsg("Usage: %s controlfilename\n",argv[0]);		
 		return 0;
 	}
 

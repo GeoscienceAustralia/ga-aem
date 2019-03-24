@@ -61,5 +61,8 @@
     <ClCompile Include="..\..\src\tdemsystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

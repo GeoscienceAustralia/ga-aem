@@ -11,6 +11,8 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>_MPI_ENABLED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel />
+      <TreatWarningAsError />
     </ClCompile>
     <Link>
       <AdditionalDependencies>msmpi.lib;%(AdditionalDependencies)</AdditionalDependencies>

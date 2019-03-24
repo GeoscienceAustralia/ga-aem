@@ -18,6 +18,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "matrix_ops.h"
 #include "airborne_types.h"
 #include "tdemsystem.h"
+#include "geophysics_netcdf.h"
 
 enum eNormType { L1, L2 };
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
@@ -117,12 +118,175 @@ class cTDEmSystemInfo{
 	double oPX,oPY,oPZ;
 	std::vector<double>  oSX,oSY,oSZ;	
 	std::vector<double>  oEX,oEY,oEZ;		
-	FieldDefinition fd_oPX,fd_oPY,fd_oPZ;
-	FieldDefinition fd_oSX,fd_oSY,fd_oSZ;
-	FieldDefinition fd_oEX,fd_oEY,fd_oEZ;		
+	cFieldDefinition fd_oPX,fd_oPY,fd_oPZ;
+	cFieldDefinition fd_oSX,fd_oSY,fd_oSZ;
+	cFieldDefinition fd_oEX,fd_oEY,fd_oEZ;		
 	double xmn,ymn,zmn;
 	std::vector<double> xan,yan,zan;
 	sTDEmData predicted;
+};
+
+enum IOType { ASCII, NETCDF };
+
+class cInputManager {
+
+private:		
+
+	IOType IoType = ASCII;
+	cGeophysicsNcFile NC;	
+
+	FILE*  Pointer = (FILE*)NULL;
+	std::string FileName;
+	size_t HeaderLines=0;
+	size_t Subsample=1;
+
+	size_t Record=0;
+	std::string RecordString;
+	std::vector<std::string> FieldStrings;
+
+public:
+
+	cInputManager() {};
+
+	void initialise(const cBlock& b)
+	{		
+		FileName = b.getstringvalue("DataFile");
+		fixseparator(FileName);		
+		std::string ext = extractfileextension(FileName);
+		glog.logmsg(0,"Opening Input DataFile %s\n", FileName.c_str());
+		if (strcasecmp(ext, ".nc") == 0){			
+			IoType = NETCDF;
+ 			NC.open(FileName,netCDF::NcFile::FileMode::read);			
+		}
+		else {
+			IoType = ASCII;
+			HeaderLines = b.getsizetvalue("Headerlines");
+			if (!isdefined(HeaderLines)) {
+				HeaderLines = 0;
+			}					
+			Pointer = fileopen(FileName, "r");			
+		}
+
+		Subsample = b.getsizetvalue("Subsample");
+		if (!isdefined(Subsample)) { Subsample = 1; }		
+	}
+
+	const IOType iotype() const { return IoType; }
+
+	bool readnextrecord()
+	{
+		if (iotype() == NETCDF) {
+			if (Record == 0)Record++;
+			else Record += Subsample;	
+
+			if (Record > NC.ntotalsamples())return false;
+		}
+		else {
+			if (Record == 0) {
+				//Skip header lines
+				for (size_t i = 0; i < HeaderLines; i++) {
+					bool status = filegetline(Pointer, RecordString);
+					if (status == false)return status;
+					Record++;
+				}
+			}
+			else {
+				//Skip lines for subsampling
+				for (size_t i = 0; i < Subsample - 1; i++) {
+					bool status = filegetline(Pointer, RecordString);
+					if (status == false)return status;
+					Record++;
+				}
+			}
+			bool status = filegetline(Pointer, RecordString);
+			if (status == false) return status;
+			Record++;
+		}
+		return true;
+	}
+
+	bool parsefieldstrings() {
+		if (iotype() == ASCII) {
+			FieldStrings = fieldparsestring(RecordString.c_str(), " ,\t\r\n");
+			if (FieldStrings.size() <= 1) return false;
+			return true;
+		}	
+		return true;
+	}
+
+	static bool contains_non_numeric_characters(const std::string& str)
+	{
+		size_t pos = str.find_first_not_of("0123456789.+-eE ,\t\r\n");
+		if (pos == std::string::npos) return false;
+		else return true;
+	}
+
+	const std::string& filename() { return FileName; }
+
+	const size_t& record() { return Record;	}
+	
+	const std::string& recordstring() const { return RecordString; }
+
+	const std::vector<std::string>& fields() const { return FieldStrings; }
+
+	template<typename T>
+	bool netcdf_read(const std::string varname, std::vector<T>& v)
+	{
+		NC.getDataByPointIndex(varname, Record-1, v);
+		return true;
+	}
+
+	template<typename T>
+	bool read(const cFieldDefinition& cd, T& v) 
+	{		
+		if (cd.definitiontype() == UNAVAILABLE) {
+			v = undefinedvalue(v);
+			return false;
+		}
+		else if (cd.definitiontype() == NUMERIC){
+			v = (T) cd.numericvalue[0];
+			return true;
+		}
+
+		if (iotype() == ASCII) {
+			cd.getvalue(fields(),v);
+			return true;
+		}
+		else {	
+			std::vector<T> vec;
+			netcdf_read(cd.varname, vec);
+			v = vec[0];
+			if (cd.flip) { v = -1*v; }
+			cd.applyoperator(v);
+			return true;
+		}	
+	}
+
+	template<typename T>
+	bool read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
+	{
+		vec.resize(n);
+		if (cd.definitiontype() == NUMERIC){
+			size_t deflen = cd.numericvalue.size();
+			for (size_t i = 0; i < n; i++) {
+				if(deflen == 1)vec[i] = (T) cd.numericvalue[0];
+				else           vec[i] = (T) cd.numericvalue[i];
+			}
+			return true;
+		}
+
+		if (iotype() == ASCII) {
+			cd.getvalue(fields(), vec, n);
+			return true;
+		}
+		else {
+			netcdf_read(cd.varname, vec);
+			for (size_t i = 0; i < vec.size(); i++) {
+				if (cd.flip) { vec[i] = -vec[i]; }
+				cd.applyoperator(vec[i]);
+			}
+		}
+	}
 };
 
 class cOutputOptions {
@@ -189,23 +353,15 @@ public:
 	~cSBSInverter();
 	
 	void initialise(const std::string controlfile);
-	void loadcontrolfile(const std::string controlfile);	
+	void loadcontrolfile(const std::string controlfile);		
 	void initialisesystems();
 	void openlogfile();
 	void parseoptions();
 	void parsecolumns();
-
-	static bool contains_non_numeric_characters(const std::string &str)
-	{
-		size_t pos = str.find_first_not_of("0123456789.+-eE ,\t\r\n");
-		if (pos == std::string::npos)return false;
-		else return true;
-	}
-
-	bool readnextrecord();
+	void check(const cFieldDefinition& cd);
 	bool parserecord();
 
-	std::vector<FieldDefinition> parsegeometry(const cBlock& b);		
+	std::vector<cFieldDefinition> parsegeometry(const cBlock& b);		
 		
 	void setup_data();
 	void setup_parameters();
@@ -216,11 +372,7 @@ public:
 	void initialise_data();
 	void initialise_parameters();
 	
-	int intvalue(const FieldDefinition& coldef);
-	double doublevalue(const FieldDefinition& coldef);
-	std::vector<double> doublevector(const FieldDefinition& coldef, const size_t& n);
-	std::vector<int> intvector(const FieldDefinition& coldef, const size_t& n);	
-	cTDEmGeometry readgeometry(const std::vector<FieldDefinition>& gfd);	
+	cTDEmGeometry readgeometry(const std::vector<cFieldDefinition>& gfd);	
 	void readsystemdata(size_t sysindex);
 	bool solvegeometryindex(const size_t index);
 
@@ -231,37 +383,28 @@ public:
 	//Members
 	size_t mRank;
 	size_t mSize;		
-	FILE*   fp_log = (FILE*)NULL;
-	cBlock  Control;	
-
-	std::string DataFileName;	
-	size_t DataFileHeaderLines;	
-	size_t DataFileSubsample;
-	FILE*  DataFilePointer;
-	size_t DataFileRecord;
-	std::string DataFileRecordString;
-	std::vector<std::string> DataFileFieldStrings;
-
+	//FILE*   fp_log = (FILE*)NULL;
+	cBlock  Control;		
 	std::vector<cTDEmSystemInfo> SV;
 		
 	size_t nsystems;	
-	std::string InputFile;
-	
+
+	cInputManager IM;
 	cOutputOptions OO;	
 	FILE* ofp = (FILE*)NULL;
 	size_t Outputrecord; //output record number
 	
-	//column definitions
-	FieldDefinition sn, dn, fn, ln, fidn;
-	FieldDefinition xord, yord, elevation;	
-	std::vector<FieldDefinition> fd_GI;
-	std::vector<FieldDefinition> fd_GR;
-	std::vector<FieldDefinition> fd_GS;	
-	std::vector<FieldDefinition> fd_GTFR;	
-	FieldDefinition fd_ERc;
-	FieldDefinition fd_ERt;
-	FieldDefinition fd_ESc;
-	FieldDefinition fd_ESt;		
+	//Column definitions
+	cFieldDefinition sn, dn, fn, ln, fidn;
+	cFieldDefinition xord, yord, elevation;	
+	std::vector<cFieldDefinition> fd_GI;
+	std::vector<cFieldDefinition> fd_GR;
+	std::vector<cFieldDefinition> fd_GS;	
+	std::vector<cFieldDefinition> fd_GTFR;	
+	cFieldDefinition fd_ERc;
+	cFieldDefinition fd_ERt;
+	cFieldDefinition fd_ESc;
+	cFieldDefinition fd_ESt;		
 			
 	sAirborneSampleId Id;
 	sAirborneSampleLocation Location; 	
@@ -372,7 +515,7 @@ public:
 	double phiS(const std::vector<double>& p);
 
 	std::string dumppath(){
-		return OO.DumpPath(DataFileRecord,LastIteration);
+		return OO.DumpPath(IM.record(),LastIteration);
 	};
 
 	void save_iteration_file();
