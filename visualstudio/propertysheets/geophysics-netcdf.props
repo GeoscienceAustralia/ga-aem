@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets">
+    <Import Project="cgal.props" />
+    <Import Project="boost.props" />
+    <Import Project="netcdf4-cxx.props" />
+    <Import Project="netcdf4.props" />
+    <Import Project="gdal.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <GEOPHYSICS_NETCDF_ROOT>Z:\code\repos\geophysics-netcdf</GEOPHYSICS_NETCDF_ROOT>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IncludePath>$(GEOPHYSICS_NETCDF_ROOT)\src\cpp;$(GEOPHYSICS_NETCDF_ROOT)\submodules\marray\include\andres;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <BuildMacro Include="GEOPHYSICS_NETCDF_ROOT">
+      <Value>$(GEOPHYSICS_NETCDF_ROOT)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+  </ItemGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4061;4350;4514;4668;4710;4711;4820;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+    </ClCompile>
+    <Link />
+    <Link>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+    <PostBuildEvent>
+      <Command>del $(OutDir)$(TargetName).lib
+del $(OutDir)$(TargetName).exp
+icacls $(OutDir)$(TargetName)$(TargetExt) /grant Everyone:RX
+</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Delete .lib and .exp files, and grant read and execute permissions</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+</Project>
