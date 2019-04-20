@@ -4,16 +4,10 @@
     <ClCompile Include="..\..\src\gatdaem1d.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\tdemsystem.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>

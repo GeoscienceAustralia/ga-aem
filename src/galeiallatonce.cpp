@@ -15,7 +15,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <stdexcept>
 #include <mpi.h>
 
-
 #include "radius_searcher.h"
 
 #include "file_utils.h"

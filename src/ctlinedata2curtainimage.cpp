@@ -10,7 +10,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <algorithm>
 #include <numeric>
 #include <vector>
+#include <valarray>
 #include <cstring>
+#include <iostream>
 
 #include "general_types.h"
 #include "general_utils.h"
@@ -39,13 +41,78 @@ using namespace RDP;
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
-class cCurtainImageSection{
+template<typename T> 
+class cBIL {
+	
+private:
+
+	std::vector<T> data;
+	const int nhpixels;
+	const int nvpixels;
+
+public:
+
+	cBIL(const int& _nhpixels, const int& _nvpixels) : 
+		nhpixels(_nhpixels), nvpixels(_nvpixels)
+	{		
+		data.resize(nhpixels * nvpixels, (T)0.0);
+	}
+
+	const T nodata_value() {
+		return (T) -32767;
+	}
+			
+	std::string type_string(const int& v) { return "int"; }
+	std::string type_string(const float& v) { return "float"; }
+	std::string type_string(const double& v) { return "double"; }
+
+	std::string type_string() {
+		return type_string(data[0]);
+	}
+
+	void SetPixel(const size_t& i, const size_t& j, const T& val)
+	{
+		data[(i - 1)*nhpixels + j];
+	}
+
+	void save(const std::string& filename)
+	{
+		sFilePathParts fpp(filename);
+		std::string bilpath = fpp.directory + pathseparatorstring() + fpp.prefix + ".bil";
+		std::string hdrpath = fpp.directory + pathseparatorstring() + fpp.prefix + ".hdr";
+		savebil(bilpath);
+		savehdr(hdrpath);
+	}
+
+	void savebil(const std::string& bilfilename)
+	{				
+		std::ofstream ofs(bilfilename, std::ios::out | std::ios::binary);
+		ofs.write((char*)(&data[0]), sizeof(T)*data.size());
+	}
+
+	void savehdr(const std::string& hdrfilename)
+	{
+		std::ofstream ofs(hdrfilename);
+		ofs << "ncols " << nhpixels << std::endl;
+		ofs << "nrows " << nvpixels << std::endl;
+		ofs << "cellsize " << 1 << std::endl;
+		ofs << "xllcorner " << 0 << std::endl;
+		ofs << "yllcorner " << 0 << std::endl;
+		ofs << "nodata_value " << nodata_value() << std::endl;
+		ofs << "nbits " << 8*sizeof(T) << std::endl;
+		ofs << "pixeltype " << type_string() << std::endl;
+		if (isbigendian()) ofs << "byteorder " << "msb" << std::endl;		
+		else ofs << "byteorder " << "lsb" << std::endl;				
+	}
+};
+
+class cCurtainImageSection {
 
 private:
 
 	const cCTLineData& D;	
 	size_t sequence_number = 0;
-	Bitmap* pBitmap;
+	
 	int nhpixels;
 	int nvpixels;
 	double hlength;
@@ -79,8 +146,6 @@ private:
 
 public:
 	
-	
-
 	cCurtainImageSection(const cCTLineData& _D) : D(_D)
 	{
 
@@ -139,14 +204,21 @@ public:
 	
 	void process(){					
 		calculateextents();
-		createbitmap();
-		generatesectiondata();
+
+		Bitmap bm(nhpixels, nvpixels, PixelFormat32bppARGB);		
+		createbitmap(bm);
+		generatesectiondata(bm);
 		//drawgraticule();		
 		//fixtransparenttext();
-		saveimage();
+		saveimage(bm);
 		savegeometry();		
-		saveribbontilerbatchcommand();
-		deletebitmap();
+		saveribbontilerbatchcommand();		
+
+		//cBIL<float> bil(nhpixels, nvpixels);
+		//generatesectiondata(bil);
+		//saveimage(bil);
+		//savegeometry();
+		//saveribbontilerbatchcommand();
 	}
 
 	void calculateextents()
@@ -182,18 +254,13 @@ public:
 		int iy = (int)roundnearest((v1-wv)/dv,1.0);
 		return iy;
 	}
-	
-	void createbitmap(){
-		pBitmap = new Bitmap(nhpixels, nvpixels, PixelFormat32bppARGB);		
-		for(int i=0; i<nhpixels; i++){
-			for(int j=0; j<nvpixels; j++){				
-				pBitmap->SetPixel(i,j,Color(255,255,255,255));				
+		
+	void createbitmap(Bitmap& bm) {
+		for (int i = 0; i < nhpixels; i++) {
+			for (int j = 0; j < nvpixels; j++) {
+				bm.SetPixel(i, j, Color(255, 255, 255, 255));
 			}
-		}		
-	}
-
-	void deletebitmap(){
-		delete pBitmap;
+		}
 	}
 
 	double fadevalue(const double& spread){
@@ -213,7 +280,7 @@ public:
 		clr = Color(255,r,g,b);				
 	}
 
-	void generatesectiondata(){
+	void generatesectiondata(Bitmap& bm){
 
 		Color BkgColor(255,128,128,128);
 		Color AirColor(0,255,255,255);
@@ -231,18 +298,18 @@ public:
 			}
 			
 			for(int j=vp1; j<=vp0; j++){				
-				pBitmap->SetPixel(i,j,BkgColor);
+				bm.SetPixel(i,j,BkgColor);
 
 				double zp = v1 - (double)j*dv;
 				if(zp>D.e[mini]){
-					pBitmap->SetPixel(i,j,AirColor);					
+					bm.SetPixel(i,j,AirColor);					
 				}
 				else{					
 					for (int li = 0; li<D.nlayers; li++){
 						if (zp < D.z[mini][li] && zp >= D.z[mini][li + 1]){
 							double conductivity = D.c[mini][li];
 							if(conductivity < 0.0){
-								pBitmap->SetPixel(i,j,NullsColor);
+								bm.SetPixel(i,j,NullsColor);
 							}
 							else{							
 								int ind = stretch.index(conductivity);
@@ -255,7 +322,7 @@ public:
 									double fade   = fadevalue(spread);
 									fadecolor(clr,fade);
 								}								
-								pBitmap->SetPixel(i,j,clr);
+								bm.SetPixel(i,j,clr);
 							}
 							break;
 						}						
@@ -265,12 +332,64 @@ public:
 		}//h pixel loop		
 	}
 
-	void drawgraticule(){
+	template<typename T>
+	void generatesectiondata(cBIL<T>& b) {
+
+		T BkgValue(0.0);
+		T AirValue(0.0);
+		T NullsValue(0.0);
+
+		int vp0 = wv2iy(v0);
+		int vp1 = wv2iy(v1);
+
+		int mini = 0;
+		for (int i = 0; i <= nhpixels; i++) {
+			double hp = h0 + (double)i*dh;
+
+			while (mini < D.linedistance.size() - 1 && std::abs(D.linedistance[mini] - hp) > std::abs(D.linedistance[mini + 1] - hp)) {
+				mini++;
+			}
+
+			for (int j = vp1; j <= vp0; j++) {
+				b.SetPixel(i, j, BkgValue);
+
+				double zp = v1 - (double)j*dv;
+				if (zp > D.e[mini]) {
+					b.SetPixel(i, j, AirValue);
+				}
+				else {
+					for (int li = 0; li < D.nlayers; li++) {
+						if (zp < D.z[mini][li] && zp >= D.z[mini][li + 1]) {
+							double conductivity = D.c[mini][li];
+							if (conductivity < 0.0) {
+								b.SetPixel(i, j, NullsValue);
+							}
+							else {
+								//int ind = stretch.index(conductivity);
+								//Color clr(255, cmap.r[ind], cmap.g[ind], cmap.b[ind]);
+								//if (spreadfade) {
+								//	double conductivity_p10 = D.cp10[mini][li];
+								//	double conductivity_p90 = D.cp90[mini][li];
+								//	double spread = log10(conductivity_p90) - log10(conductivity_p10);
+								//	double fade = fadevalue(spread);
+								//	fadecolor(clr, fade);
+								//}
+								b.SetPixel(i, j, (T)conductivity);
+							}
+							break;
+						}
+					}
+				}//layer loop
+			}//v pixel loop
+		}//h pixel loop		
+	}
+
+	void drawgraticule(Bitmap& bm){
 
 		if (gratdiv == ud_double()) return;
 		if (gratdiv <= 0.0) return;
 
-		Graphics gr(pBitmap);
+		Graphics gr(&bm);
 		gr.SetCompositingMode(CompositingModeSourceOver);						
 		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);		
 
@@ -314,7 +433,7 @@ public:
 		delete bm;
 	}
 
-	void fixtransparenttext(){	
+	void fixtransparenttext(Bitmap& bm){
 		int hp0 = wh2ix(h0);
 		int hp1 = wh2ix(h1);
 		int vp1 = wv2iy(v0);
@@ -322,8 +441,8 @@ public:
 		for(int i=hp0; i<=hp1; i++){		
 			for(int j=vp2; j<=vp1; j++){
 				Color c;
-				pBitmap->GetPixel(i,j,&c);				
-				pBitmap->SetPixel(i, j, Color(255, c.GetR(), c.GetG(), c.GetB()));
+				bm.GetPixel(i,j,&c);				
+				bm.SetPixel(i, j, Color(255, c.GetR(), c.GetG(), c.GetB()));
 			}
 		}		
 	}
@@ -358,6 +477,16 @@ public:
 		return s;
 	}
 
+	std::string bilfile_nod() {
+		std::string s = "bil\\" + basename() + ".bil";
+		return s;
+	}
+
+	std::string bilfile() {
+		std::string s = outdir + bilfile_nod();
+		return s;
+	}
+
 	std::string xmlname(){
 		std::string s = basename() + ".xml";
 		return s;
@@ -388,8 +517,14 @@ public:
 		return s;
 	}
 	
-	void saveimage(){
-		cGDIplusHelper::saveimage(pBitmap, jpegfile());
+	void saveimage(Bitmap& bm){
+		cGDIplusHelper::saveimage(&bm, jpegfile());
+	}
+
+	template<typename T>
+	void saveimage(cBIL<T>& bil) {
+		bil.savebil(bilfile());
+		bil.savehdr(bilfile());
 	}
 	
 	void savegeometry(){
@@ -614,6 +749,7 @@ public:
 		file << "\npause\n";
 	}
 };
+
 
 void save_dataset_xml(const std::string xmlpath, 
 	const std::string datasetname,

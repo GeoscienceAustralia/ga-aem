@@ -68,21 +68,31 @@ struct ResponseField{
 	TotalField   t;//due to total dipole
 };
 
-struct PropogationMatrix{
+class PropogationMatrix{
 
+public:
 	cdouble e11;
 	cdouble e12;
 	cdouble e21;
 	cdouble e22;
 
-	PropogationMatrix operator+(const PropogationMatrix& b)
+	PropogationMatrix& operator+=(const PropogationMatrix& rhs)
+	{		
+		e11 += rhs.e11;
+		e12 += rhs.e12;
+		e21 += rhs.e21;
+		e22 += rhs.e22;
+		return *this;
+	}
+
+	PropogationMatrix operator+(const PropogationMatrix& rhs)
 	{
-		PropogationMatrix c = b;
-		c.e11 += e11;
-		c.e12 += e12;
-		c.e21 += e21;
-		c.e22 += e22;
-		return c;
+		PropogationMatrix m = *this;		
+		m.e11 += rhs.e11;
+		m.e12 += rhs.e12;
+		m.e21 += rhs.e21;
+		m.e22 += rhs.e22;
+		return m;
 	}
 
 	PropogationMatrix operator*(const PropogationMatrix& b)

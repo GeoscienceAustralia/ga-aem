@@ -95,11 +95,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.cpp" />
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />
-    <ClCompile Include="..\..\src\tdemsystem.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\gdal_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />
   </ItemGroup>
   <ItemGroup>

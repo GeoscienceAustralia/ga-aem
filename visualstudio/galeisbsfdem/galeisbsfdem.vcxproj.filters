@@ -14,9 +14,6 @@
     <ClCompile Include="..\..\src\galeisbsfdem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\fdemsystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\layeredearthmodeller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -30,6 +27,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\submodules\cpp-utils\src\rollpitchyaw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fdemsystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

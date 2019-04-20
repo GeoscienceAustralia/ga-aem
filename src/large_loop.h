@@ -65,9 +65,9 @@ class cLargeLoop {
 				
 				cVec v1 = r - p1;
 				cVec v2 = r - p2;
-				cVec un = cross(v1, v2).unit();				
-				double cosa1 = dot(l, v1) / len / v1.length();
-				double cosa2 = dot(l, v2) / len / v2.length();
+				cVec un = (v1.cross(v2)).unit();
+				double cosa1 = l.dot(v1) / len / v1.length();
+				double cosa2 = l.dot(v2) / len / v2.length();
 				cVec dH = un*((cosa1 - cosa2) / h);
 				H += dH;
 			}

@@ -10,9 +10,6 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\geometry3d.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Headers">
