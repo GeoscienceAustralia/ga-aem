@@ -5,7 +5,9 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 
 cxxflags   += -D_MPI_ENABLED -fopenmp
-includes   = -I/usr/include/openmpi-x86_64 -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
+includes   = -I/usr/include/openmpi-x86_64
+includes   += -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
+includes   += -I$(geophysics_netcdf)/src/cpp
 libs       = -L$(FFTW_DIR) -lfftw3 -fopenmp
 executable = $(exedir)/galeisbstdem.exe
 
@@ -14,9 +16,7 @@ allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/geometry3d.o
 objects += $(cpputilssrc)/matrix_ops.o
-objects += $(srcdir)/tdemsystem.o
 objects += $(srcdir)/galeisbstdem.o
 
 %.o : %.cpp

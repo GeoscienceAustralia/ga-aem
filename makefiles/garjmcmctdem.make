@@ -14,10 +14,8 @@ allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/geometry3d.o
 objects += $(cpputilssrc)/matrix_ops.o
 objects += $(cpputilssrc)/random.o
-objects += $(srcdir)/tdemsystem.o
 objects += $(srcdir)/rjmcmc1d.o
 objects += $(srcdir)/rjmcmc1dtdeminverter.o
 objects += $(srcdir)/garjmcmctdem.o

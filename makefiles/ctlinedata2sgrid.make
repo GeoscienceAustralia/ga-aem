@@ -12,7 +12,6 @@ allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/geometry3d.o
 objects += $(srcdir)/ctlinedata2sgrid.o
 
 %.o : %.cpp

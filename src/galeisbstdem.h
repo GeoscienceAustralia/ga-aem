@@ -641,13 +641,13 @@ class cSBSInverter{
 		}		
 	};
 
-	cSBSInverter::~cSBSInverter()
+	~cSBSInverter()
 	{
 		if (ofp)fclose(ofp);
 		glog.close();
 	};
 
-	int cSBSInverter::go()
+	int go()
 	{
 		_GSTITEM_
 		size_t record = 0;
@@ -681,7 +681,7 @@ class cSBSInverter{
 		return 0;
 	}
 
-	void cSBSInverter::initialise(const std::string& controlfile)
+	void initialise(const std::string& controlfile)
 	{
 		_GSTITEM_
 		loadcontrolfile(controlfile);
@@ -692,7 +692,7 @@ class cSBSInverter{
 		go();		
 	}
 
-	void cSBSInverter::loadcontrolfile(const std::string& filename)
+	void loadcontrolfile(const std::string& filename)
 	{
 		glog.logmsg(0, "Loading control file %s\n", filename.c_str());
 		Control = cBlock(filename);
@@ -713,7 +713,7 @@ class cSBSInverter{
 		Outputrecord = 1;
 	}
 
-	void cSBSInverter::openlogfile()
+	void openlogfile()
 	{
 		glog.logmsg(0, "Opening log file %s\n", OO.Logfile.c_str());
 		glog.open(OO.Logfile);
@@ -725,7 +725,7 @@ class cSBSInverter{
 		glog.flush();
 	}
 
-	void cSBSInverter::parseoptions()
+	void parseoptions()
 	{
 		cBlock b = Control.findblock("Options");
 		solve_conductivity = b.getboolvalue("SolveConductivity");
@@ -791,7 +791,7 @@ class cSBSInverter{
 		MinimumImprovement = b.getdoublevalue("MinimumPercentageImprovement");
 	}
 
-	void cSBSInverter::parsecolumns()
+	void parsecolumns()
 	{
 		cBlock b = Control.findblock("Input.Columns");
 		sn.initialise(b, "SurveyNumber");
@@ -819,7 +819,7 @@ class cSBSInverter{
 		fd_GTFR = parsegeometry(tfr);
 	}
 
-	std::vector<cFieldDefinition> cSBSInverter::parsegeometry(const cBlock& b)
+	std::vector<cFieldDefinition> parsegeometry(const cBlock& b)
 	{
 		std::vector<cFieldDefinition> g(10);
 		for (size_t i = 0; i < g.size(); i++) {
@@ -857,7 +857,7 @@ class cSBSInverter{
 		unset_fftw_lock();
 	}
 
-	void cSBSInverter::setup_data()
+	void setup_data()
 	{
 		ndata = 0;
 		for (size_t si = 0; si < nsystems; si++) {
@@ -887,7 +887,7 @@ class cSBSInverter{
 		Pred.resize(ndata);
 	}
 
-	void cSBSInverter::setup_parameters()
+	void setup_parameters()
 	{
 		double v;
 		if (Control.getvalue("Earth.MinConductivity", v)) {
@@ -956,12 +956,12 @@ class cSBSInverter{
 		RefParamStd.resize(nparam);
 	}
 
-	void cSBSInverter::resize_matrices()
+	void resize_matrices()
 	{
 		J = MatrixDouble(ndata, nparam);
 	}
 
-	bool cSBSInverter::parserecord()
+	bool parserecord()
 	{
 		if (IM.parsefieldstrings() == false) return false;
 
@@ -1000,7 +1000,7 @@ class cSBSInverter{
 		return true;
 	}
 
-	void cSBSInverter::readsystemdata(size_t sysindex)
+	void readsystemdata(size_t sysindex)
 	{
 		cTDEmSystemInfo& S = SV[sysindex];
 		size_t nw = S.nwindows;
@@ -1060,7 +1060,7 @@ class cSBSInverter{
 		*/
 	}
 
-	void cSBSInverter::initialise_sample()
+	void initialise_sample()
 	{
 		LastIteration = 0;
 		LastLambda = 1e8;
@@ -1101,7 +1101,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::initialise_data()
+	void initialise_data()
 	{
 		for (size_t si = 0; si < nsystems; si++) {
 			cTDEmSystemInfo& S = SV[si];
@@ -1163,7 +1163,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::initialise_parameters()
+	void initialise_parameters()
 	{
 		if (solve_conductivity) {
 			for (size_t i = 0; i < nlayers; i++) {
@@ -1209,7 +1209,7 @@ class cSBSInverter{
 
 	}
 
-	void cSBSInverter::initialise_Wd()
+	void initialise_Wd()
 	{
 		Wd = MatrixDouble(ndata, ndata, 0.0);
 		double s = 1.0 / (double)ndata;
@@ -1219,7 +1219,7 @@ class cSBSInverter{
 		if (OO.Dump) writetofile(Wd, dumppath() + "Wd.dat");
 	}
 
-	void cSBSInverter::initialise_Wc()
+	void initialise_Wc()
 	{
 		Wc = MatrixDouble(nparam, nparam, 0.0);
 		if (solve_conductivity == false)return;
@@ -1251,7 +1251,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::initialise_Wt()
+	void initialise_Wt()
 	{
 		Wt = MatrixDouble(nparam, nparam, 0.0);
 		if (solve_thickness == false)return;
@@ -1264,7 +1264,7 @@ class cSBSInverter{
 
 	}
 
-	void cSBSInverter::initialise_Wg()
+	void initialise_Wg()
 	{
 		Wg = MatrixDouble(nparam, nparam, 0.0);
 		if (ngeomparam <= 0)return;
@@ -1276,7 +1276,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::initialise_L_Ws_1st_derivative()
+	void initialise_L_Ws_1st_derivative()
 	{
 		Ws = MatrixDouble(nparam, nparam, 0.0);
 		if (AlphaS == 0 || nlayers < 3) return;
@@ -1309,7 +1309,7 @@ class cSBSInverter{
 		Ws *= (AlphaS / (double)(nlayers - 1));
 	}
 
-	void cSBSInverter::initialise_L_Ws_2nd_derivative()
+	void initialise_L_Ws_2nd_derivative()
 	{
 		Ws = MatrixDouble(nparam, nparam, 0.0);
 		if (AlphaS == 0 || nlayers < 3) return;
@@ -1349,7 +1349,7 @@ class cSBSInverter{
 		Ws *= (AlphaS / (double)(nlayers - 2));
 	}
 
-	void cSBSInverter::initialise_Wr_Wm()
+	void initialise_Wr_Wm()
 	{
 		Wr = MatrixDouble(nparam, nparam, 0.0);
 		if (AlphaC > 0.0) Wr += Wc;
@@ -1369,7 +1369,7 @@ class cSBSInverter{
 
 	}
 
-	std::vector<double> cSBSInverter::parameterchange(const double lambda)
+	std::vector<double> parameterchange(const double lambda)
 	{
 		std::vector<double> x = solve(lambda);
 		std::vector<double> dm = x - Param;
@@ -1423,7 +1423,7 @@ class cSBSInverter{
 		return dm;
 	}
 
-	std::vector<double> cSBSInverter::solve(const double lambda)
+	std::vector<double> solve(const double lambda)
 	{
 		// Phi = (d-g(m)+Jm) Wd (d-g(m)+Jm) + lambda ( (m-m0)' Wr (m-m0) + m' Ws m) )
 		//Ax = b
@@ -1460,7 +1460,7 @@ class cSBSInverter{
 		return x;
 	}
 
-	double cSBSInverter::l1_norm(const std::vector<double>& g)
+	double l1_norm(const std::vector<double>& g)
 	{
 		double l1 = 0.0;
 		for (size_t i = 0; i < ndata; i++) {
@@ -1469,14 +1469,14 @@ class cSBSInverter{
 		return l1 / ndata;
 	}
 
-	double cSBSInverter::l2_norm(const std::vector<double>& g)
+	double l2_norm(const std::vector<double>& g)
 	{
 		std::vector<double> v = Obs - g;
 		double l2 = mtDm(v, Wd);
 		return l2;
 	}
 
-	double cSBSInverter::phiData(const std::vector<double>& g)
+	double phiData(const std::vector<double>& g)
 	{
 		double phid;
 		if (NormType == L1) {
@@ -1493,13 +1493,13 @@ class cSBSInverter{
 		return phid;
 	}
 
-	double cSBSInverter::phiModel(const std::vector<double>& p)
+	double phiModel(const std::vector<double>& p)
 	{
 		double phic, phit, phig, phis;
 		return phiModel(p, phic, phit, phig, phis);
 	}
 
-	double cSBSInverter::phiModel(const std::vector<double>& p, double& phic, double& phit, double& phig, double& phis)
+	double phiModel(const std::vector<double>& p, double& phic, double& phit, double& phig, double& phis)
 	{
 		phic = phiC(p);
 		phit = phiT(p);
@@ -1510,7 +1510,7 @@ class cSBSInverter{
 		return v;
 	}
 
-	double cSBSInverter::phiC(const std::vector<double>& p)
+	double phiC(const std::vector<double>& p)
 	{
 		if (AlphaC == 0.0)return 0.0;
 		if (solve_conductivity == false)return 0.0;
@@ -1518,7 +1518,7 @@ class cSBSInverter{
 		return mtDm(v, Wc);
 	}
 
-	double cSBSInverter::phiT(const std::vector<double>& p)
+	double phiT(const std::vector<double>& p)
 	{
 		if (AlphaT == 0.0)return 0.0;
 		if (solve_thickness == false)return 0.0;
@@ -1526,7 +1526,7 @@ class cSBSInverter{
 		return mtDm(v, Wt);
 	}
 
-	double cSBSInverter::phiG(const std::vector<double>& p)
+	double phiG(const std::vector<double>& p)
 	{
 		if (AlphaG == 0.0)return 0.0;
 		if (ngeomparam == 0)return 0.0;
@@ -1534,13 +1534,13 @@ class cSBSInverter{
 		return mtDm(v, Wg);
 	}
 
-	double cSBSInverter::phiS(const std::vector<double>& p)
+	double phiS(const std::vector<double>& p)
 	{
 		if (AlphaS == 0)return 0.0;
 		else return mtAm(p, Ws);
 	}
 
-	cEarth1D cSBSInverter::get_earth(const std::vector<double>& parameters)
+	cEarth1D get_earth(const std::vector<double>& parameters)
 	{
 		cEarth1D e = ER;
 		if (solve_conductivity) {
@@ -1557,7 +1557,7 @@ class cSBSInverter{
 		return e;
 	}
 
-	cTDEmGeometry cSBSInverter::get_geometry(const std::vector<double>& parameters)
+	cTDEmGeometry get_geometry(const std::vector<double>& parameters)
 	{
 		cTDEmGeometry g = GI;
 		if (solve_tx_height)g.tx_height = parameters[tx_heightIndex];
@@ -1569,7 +1569,7 @@ class cSBSInverter{
 		return g;
 	}
 
-	void cSBSInverter::set_predicted()
+	void set_predicted()
 	{
 		for (size_t si = 0; si < nsystems; si++) {
 			cTDEmSystemInfo& S = SV[si];
@@ -1585,7 +1585,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::forwardmodel(const std::vector<double>& parameters, std::vector<double>& predicted, bool computederivatives)
+	void forwardmodel(const std::vector<double>& parameters, std::vector<double>& predicted, bool computederivatives)
 	{
 		cEarth1D      e = get_earth(parameters);
 		cTDEmGeometry g = get_geometry(parameters);
@@ -1729,7 +1729,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv)
+	void fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv)
 	{
 		cTDEmSystem& T = S.T;
 		xdrv = T.X;
@@ -1742,7 +1742,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::fillJacobianColumn(cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
+	void fillJacobianColumn(cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
 	{
 		const size_t nw = S.T.NumberOfWindows;
 		if (S.invertXPlusZ) {
@@ -1760,7 +1760,7 @@ class cSBSInverter{
 		}
 	}
 
-	std::vector<double> cSBSInverter::compute_parameter_sensitivity()
+	std::vector<double> compute_parameter_sensitivity()
 	{
 		std::vector<double> s(nparam, 0.0);
 		for (size_t pi = 0; pi < nparam; pi++) {
@@ -1776,7 +1776,7 @@ class cSBSInverter{
 		return s;
 	}
 
-	std::vector<double> cSBSInverter::compute_parameter_uncertainty()
+	std::vector<double> compute_parameter_uncertainty()
 	{
 		MatrixDouble JtWdJ = transpose_mult(J, Wd)*J;
 		MatrixDouble iCm(nparam, nparam, 0.0);
@@ -1793,14 +1793,14 @@ class cSBSInverter{
 		return s;
 	}
 
-	void cSBSInverter::invert()
+	void invert()
 	{
 		parserecord();
 		initialise_sample();
 		iterate();
 	}
 
-	void cSBSInverter::iterate()
+	void iterate()
 	{
 		double percentchange = 100.0;
 		bool   keepiterating = true;
@@ -1863,7 +1863,7 @@ class cSBSInverter{
 		ParameterUncertainty = compute_parameter_uncertainty();
 	}
 
-	void cSBSInverter::save_iteration_file() {
+	void save_iteration_file() {
 		FILE* fp = fileopen(dumppath() + "iteration.dat", "w");
 		fprintf(fp, "Iteration\t%zu\n", LastIteration);
 		fprintf(fp, "TargetPhiD\t%lf\n", TargetPhiD);
@@ -1873,7 +1873,7 @@ class cSBSInverter{
 		fclose(fp);
 	};
 
-	cTrial cSBSInverter::targetsearch(const double currentlambda, const double target)
+	cTrial targetsearch(const double currentlambda, const double target)
 	{
 		cTrialCache T;
 		T.target = target;
@@ -1903,7 +1903,7 @@ class cSBSInverter{
 		return T.minphidtrial();
 	}
 
-	bool cSBSInverter::istargetbraketed(cTrialCache& T)
+	bool istargetbraketed(cTrialCache& T)
 	{
 		double target = T.target;
 		T.sort_lambda();
@@ -1918,7 +1918,7 @@ class cSBSInverter{
 		return false;
 	}
 
-	bool cSBSInverter::isminbraketed(cTrialCache& T)
+	bool isminbraketed(cTrialCache& T)
 	{
 		size_t index = T.minphidindex();
 		if (index == 0 || index == T.trial.size() - 1) {
@@ -1934,7 +1934,7 @@ class cSBSInverter{
 		return false;
 	}
 
-	eBracketResult cSBSInverter::brackettarget(cTrialCache& T, const double target, const double currentlambda)
+	eBracketResult brackettarget(cTrialCache& T, const double target, const double currentlambda)
 	{
 		double startx = log10(currentlambda);
 		if (LastIteration == 0) {
@@ -1986,7 +1986,7 @@ class cSBSInverter{
 		return BR_ALLABOVE;//all above target
 	}
 
-	double cSBSInverter::brentsmethod(cTrialCache& T, const double target, double& newphid)
+	double brentsmethod(cTrialCache& T, const double target, double& newphid)
 	{
 		T.sort_lambda();
 		size_t index = T.trial.size() - 1;
@@ -2008,7 +2008,7 @@ class cSBSInverter{
 		double fa = T.trial[index - 1].phid - target;
 		double fb = T.trial[index].phid - target;
 		if (fa * fb >= 0.0) {
-			glog.warningmsg(_SRC_, "Target must be bracketed for cSBSInverter::brentsmethod()\n");
+			glog.warningmsg(_SRC_, "Target must be bracketed\n");
 		}
 
 		double c = 0;
@@ -2087,7 +2087,7 @@ class cSBSInverter{
 			i++;
 			if (i > 20) {
 				printtrials(T);
-				glog.warningmsg(_SRC_, "Too many bisections in cSBSInverter::brentsmethod()\n");
+				glog.warningmsg(_SRC_, "Too many bisections\n");
 				newphid = fb + target;
 				return pow10(b);
 			}
@@ -2102,7 +2102,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::printtrials(cTrialCache T)
+	void printtrials(cTrialCache T)
 	{
 		T.sort_lambda();
 		printf("\n");
@@ -2114,7 +2114,7 @@ class cSBSInverter{
 		printf("\n");
 	}
 
-	double cSBSInverter::goldensearch(double a, double b, double c, double xtol, const double lambda, const std::vector<double>& m, const std::vector<double>& dm, std::vector<double>& g, cTrialCache& cache)
+	double goldensearch(double a, double b, double c, double xtol, const double lambda, const std::vector<double>& m, const std::vector<double>& dm, std::vector<double>& g, cTrialCache& cache)
 	{
 		//adapted from http://en.wikipedia.org/wiki/Golden_section_search	
 		const double resphi = 2 - ((1 + sqrt(5.0)) / 2.0);
@@ -2182,7 +2182,7 @@ class cSBSInverter{
 		}
 	}
 
-	double cSBSInverter::trialfunction(cTrialCache& T, const double triallambda)
+	double trialfunction(cTrialCache& T, const double triallambda)
 	{
 		std::vector<double> dm(nparam);
 		std::vector<double> p(nparam);
@@ -2235,7 +2235,7 @@ class cSBSInverter{
 		return t.phid;
 	}
 
-	void cSBSInverter::writeresult()
+	void writeresult()
 	{
 		cOutputFileInfo OI;
 		std::string buf;
@@ -2501,7 +2501,7 @@ class cSBSInverter{
 		Outputrecord++;
 	};
 
-	void cSBSInverter::writeresult_geometry(std::string& buf, cOutputFileInfo& OI, const cTDEmGeometry& g, const std::string& fieldnameprefix, const std::string& commentprefix, const bool invertedfieldsonly)
+	void writeresult_geometry(std::string& buf, cOutputFileInfo& OI, const cTDEmGeometry& g, const std::string& fieldnameprefix, const std::string& commentprefix, const bool invertedfieldsonly)
 	{
 		for (size_t i = 0; i < g.size(); i++) {
 			if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
@@ -2512,7 +2512,7 @@ class cSBSInverter{
 		}
 	}
 
-	void cSBSInverter::writeresult_component(std::string& buf, cOutputFileInfo& OI, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& commprefix, const char& form, const size_t& width, const size_t& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
+	void writeresult_component(std::string& buf, cOutputFileInfo& OI, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& commprefix, const char& form, const size_t& width, const size_t& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
 	{
 		std::string sysfield = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
 		std::string syscomm = commprefix + strprint(" EMSystem %d ", (int)sysnum + 1);
@@ -2536,7 +2536,7 @@ class cSBSInverter{
 		}
 	}
 
-	bool cSBSInverter::solvegeometryindex(const size_t index)
+	bool solvegeometryindex(const size_t index)
 	{
 		eGeometryElementType getype = cTDEmGeometry::elementtype(index);
 
@@ -2557,7 +2557,7 @@ class cSBSInverter{
 		}
 	}
 
-	cTDEmGeometry cSBSInverter::readgeometry(const std::vector<cFieldDefinition>& gfd)
+	cTDEmGeometry readgeometry(const std::vector<cFieldDefinition>& gfd)
 	{
 		cTDEmGeometry g;
 		for (size_t i = 0; i < g.size(); i++) {
@@ -2566,7 +2566,7 @@ class cSBSInverter{
 		return g;
 	}
 
-	void cSBSInverter::dumptofile(const std::vector<double>& v, std::string path)
+	void dumptofile(const std::vector<double>& v, std::string path)
 	{
 		FILE* fp = fileopen(dumppath() + path, "w");
 		for (size_t i = 0; i < v.size(); i++) {
@@ -2575,7 +2575,7 @@ class cSBSInverter{
 		fclose(fp);
 	}
 
-	void cSBSInverter::dumptofile(const cEarth1D& e, std::string path)
+	void dumptofile(const cEarth1D& e, std::string path)
 	{
 		FILE* fp = fileopen(dumppath() + path, "w");
 		size_t nl = e.conductivity.size();
@@ -2590,7 +2590,7 @@ class cSBSInverter{
 		fclose(fp);
 	}
 
-	void cSBSInverter::dumptofile(const cTDEmGeometry& g, std::string path)
+	void dumptofile(const cTDEmGeometry& g, std::string path)
 	{
 		FILE* fp = fileopen(dumppath() + path, "w");
 		fprintf(fp, "tx_height\t%lf\n", g.tx_height);

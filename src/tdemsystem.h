@@ -133,6 +133,7 @@ public:
 		default:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 		}
+		return tx_height;
 	}
 
 	
@@ -174,6 +175,7 @@ public:
 		default:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 		}
+		return "unknown";
 	};
 
 	static size_t findex(const std::string& name){
@@ -202,6 +204,7 @@ public:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 			break;
 		}
+		return "unknown";
 	};
 
 	static std::string description(const size_t& index){
@@ -220,6 +223,7 @@ public:
 		default:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);
 		}
+		return "Error unknown geometry parameter";
 	};
 
 	static eGeometryElementType elementtype(const size_t& index){		
@@ -238,6 +242,7 @@ public:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 			break;
 		}
+		return GE_TX_HEIGHT;
 	}
 
 	static eCalculationType derivativetype(const size_t& index){		
@@ -256,6 +261,7 @@ public:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 			break;
 		}
+		return CT_NONE;
 	}
 
 };
@@ -408,25 +414,25 @@ public:
 	  else return std::vector<double>(0);
   }
   
-  cTDEmSystem::cTDEmSystem()
+  cTDEmSystem()
   {
 	  initialise();
   };
 
-  cTDEmSystem::cTDEmSystem(std::string systemdescriptorfile)
+  cTDEmSystem(std::string systemdescriptorfile)
   {
 	  initialise();
 	  readsystemdescriptorfile(systemdescriptorfile);
   };
 
-  cTDEmSystem::~cTDEmSystem()
+  ~cTDEmSystem()
   {
 	  if (fftwplan_backward) {
 		  fftw_destroy_plan(fftwplan_backward);
 	  }
   };
 
-  void cTDEmSystem::initialise()
+  void initialise()
   {
 	  xaxis = cVec(1.0, 0.0, 0.0);
 	  yaxis = cVec(0.0, 1.0, 0.0);
@@ -436,7 +442,7 @@ public:
 	  fftwplan_backward = 0;
   }
 
-  void cTDEmSystem::createwaveform()
+  void createwaveform()
   {
 	  NumberOfFFTFrequencies = SamplesPerWaveform / 2 + 1;
 	  fft_frequency.resize(NumberOfFFTFrequencies);
@@ -517,7 +523,7 @@ public:
 	  fftwplan_backward = fftw_plan_dft_c2r_1d((int)N, invin, invout, FLAGS);
   }
 
-  double cTDEmSystem::calculate_fft_frequency(size_t index)
+  double calculate_fft_frequency(size_t index)
   {
 	  double deltaF = 1.0 / ((double)SamplesPerWaveform*SampleInterval);
 
@@ -528,7 +534,7 @@ public:
 	  return s * deltaF;
   }
 
-  void cTDEmSystem::setup_splines()
+  void setup_splines()
   {
 	  HxR = std::vector<double>(NumberOfDiscreteFrequencies);
 	  HxI = std::vector<double>(NumberOfDiscreteFrequencies);
@@ -561,7 +567,7 @@ public:
 
 	  LEM.setfrequencies(DiscreteFrequencies);
   }
-  void cTDEmSystem::spline(const std::vector<double>& x, const std::vector<double>& y, double yp1, double ypn, std::vector<double>& y2)
+  void spline(const std::vector<double>& x, const std::vector<double>& y, double yp1, double ypn, std::vector<double>& y2)
   {
 	  double p, qn, sig, un;
 
@@ -598,7 +604,7 @@ public:
 	  //	if (k == 0)break;
 	  //}
   }
-  void cTDEmSystem::setup_splineinterp(const std::vector<double>& xn, const std::vector<double>& xi)
+  void setup_splineinterp(const std::vector<double>& xn, const std::vector<double>& xi)
   {
 	  size_t n = xn.size();
 	  for (size_t fi = 0; fi < NumberOfSplinedFrequencies; fi++) {
@@ -629,7 +635,7 @@ public:
 	  }
 
   }
-  void cTDEmSystem::spline_interp()
+  void spline_interp()
   {
 	  //y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;			
 	  for (size_t k = 0; k < NumberOfSplinedFrequencies; k++) {
@@ -667,17 +673,17 @@ public:
 	  fftw_execute(fftwplan_backward); 
   }
 
-  void cTDEmSystem::setearthproperties(const cEarth1D& E)
+  void setearthproperties(const cEarth1D& E)
   {
 	  LEM.setproperties(E);
   }
 
-  void cTDEmSystem::setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness)
+  void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness)
   {
 	  LEM.setconductivitythickness(conductivity, thickness);
   }
 
-  void cTDEmSystem::setgeometry(const cTDEmGeometry& g)
+  void setgeometry(const cTDEmGeometry& g)
   {
 	  //X = +ve in flight direction
 	  //Y = +ve on left wing
@@ -703,18 +709,18 @@ public:
 	  RX_pitch = g.rx_pitch;
 	  RX_roll = g.rx_roll;
   };
-  void cTDEmSystem::setgeometry(const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
+  void setgeometry(const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
   {
 	  cTDEmGeometry g(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	  setgeometry(g);
   }
-  void cTDEmSystem::setupcomputations()
+  void setupcomputations()
   {
 	  for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
 		  LEM.setfrequencyabscissalayers(fi);
 	  }
   }
-  void cTDEmSystem::setprimaryfields()
+  void setprimaryfields()
   {
 	  LEM.setprimaryfields();
 	  PrimaryX = LEM.Fields.t.p.x;
@@ -756,14 +762,14 @@ public:
 	  PrimaryZ *= ZScale;
 
   }
-  cVec cTDEmSystem::rotatetoreceiverorientation(cVec v)
+  cVec rotatetoreceiverorientation(cVec v)
   {
 	  //Rotating in opposite sense because we are rotating the axes
 	  if (RX_roll != 0.0) v = v.rotate(-RX_roll, xaxis);
 	  if (RX_pitch != 0.0) v = v.rotate(-RX_pitch, yaxis);
 	  return v;
   }
-  void cTDEmSystem::setsecondaryfields()
+  void setsecondaryfields()
   {
 	  //Computation for discrete frequencies 	
 	  for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
@@ -872,7 +878,7 @@ public:
 
   }
 
-  void cTDEmSystem::initialise_windows()
+  void initialise_windows()
   {
 	  NumberOfWindows = (size_t)STM.getintvalue("Receiver.NumberOfWindows");
 
@@ -885,11 +891,11 @@ public:
 	  dmatrix wt = STM.getdoublematrix("Receiver.WindowTimes");
 	  size_t nw = wt.size();
 	  if (nw != NumberOfWindows) {
-		  glog.errormsg(_SRC_, "cTDEmSystem::initialise_windows: the number of WindowTimes does not match the NumberOfWindows\n");
+		  glog.errormsg(_SRC_, "The number of WindowTimes does not match the NumberOfWindows\n");
 	  }
 	  for (size_t i = 0; i < NumberOfWindows; i++) {
 		  if (wt[i].size() != 2) {
-			  glog.errormsg(_SRC_, "cTDEmSystem::initialise_windows: the number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
+			  glog.errormsg(_SRC_, "The number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
 		  }
 		  WinSpec[i].TimeLow = wt[i][0];
 		  WinSpec[i].TimeHigh = wt[i][1];
@@ -906,11 +912,11 @@ public:
 		  initialise_windows_lineartaper();
 	  }
 	  else {
-		  glog.errormsg(_SRC_, "cTDEmSystem::readsystemdescriptorfile: WindowWeightingScheme %s unknown (must be \"AreaUnderCurve\" or  \"Boxcar\" or \"LinearTaper\")\n", WindowWeightingScheme.c_str());
+		  glog.errormsg(_SRC_, "WindowWeightingScheme %s unknown (must be \"AreaUnderCurve\" or  \"Boxcar\" or \"LinearTaper\")\n", WindowWeightingScheme.c_str());
 	  }
   }
 
-  void cTDEmSystem::initialise_windows_area()
+  void initialise_windows_area()
   {
 	  double tlow, thigh, t, tp, tn, tleft, tright;
 
@@ -964,7 +970,7 @@ public:
 	  }
   }
 
-  void cTDEmSystem::initialise_windows_boxcar()
+  void initialise_windows_boxcar()
   {
 	  double eps = 1.0e-7;
 	  for (size_t w = 0; w < NumberOfWindows; w++) {
@@ -1003,7 +1009,7 @@ public:
 	  }
   }
 
-  void cTDEmSystem::initialise_windows_lineartaper()
+  void initialise_windows_lineartaper()
   {
 	  double eps = 1.0e-7;
 	  for (size_t w = 0; w < NumberOfWindows; w++) {
@@ -1052,7 +1058,7 @@ public:
 	  }
   }
 
-  void cTDEmSystem::computewindow(const double* timeseries, std::vector<double>& W)
+  void computewindow(const double* timeseries, std::vector<double>& W)
   {
 	  for (size_t w = 0; w < NumberOfWindows; w++) {
 		  W[w] = 0.0;
@@ -1062,7 +1068,7 @@ public:
 	  }
   }
 
-  void cTDEmSystem::printwindows()
+  void printwindows()
   {
 	  printf("Primary   %15.8lf%15.8lf%15.8lf\n\n", PrimaryX, PrimaryY, PrimaryZ);
 	  printf("Window#             X               Y               Z\n");
@@ -1071,7 +1077,7 @@ public:
 	  }
   }
 
-  void cTDEmSystem::write_windows(const std::string& path)
+  void write_windows(const std::string& path)
   {
 	  FILE* fp = fileopen(path, "w");
 	  //printf("Primary   %15.8lf%15.8lf%15.8lf\n\n",PrimaryX,PrimaryY,PrimaryZ);
@@ -1082,7 +1088,7 @@ public:
 	  fclose(fp);
   }
 
-  void cTDEmSystem::write_timedomainwaveform(const std::string& path)
+  void write_timedomainwaveform(const std::string& path)
   {
 	  FILE* fp = fileopen(path, "w");
 	  for (size_t i = 0; i < SamplesPerWaveform; i++) {
@@ -1091,7 +1097,7 @@ public:
 	  fclose(fp);
   }
 
-  void cTDEmSystem::write_frequencydomainwaveform(const std::string& path)
+  void write_frequencydomainwaveform(const std::string& path)
   {
 	  FILE* fp = fileopen(path, "w");
 	  for (size_t i = 0; i < NumberOfFFTFrequencies; i++) {
@@ -1100,7 +1106,7 @@ public:
 	  fclose(fp);
   }
 
-  void cTDEmSystem::write_discretefrequencies(const std::string& path)
+  void write_discretefrequencies(const std::string& path)
   {
 	  FILE* fp = fileopen(path, "w");
 	  for (size_t i = 0; i < NumberOfDiscreteFrequencies; i++) {
@@ -1109,7 +1115,7 @@ public:
 	  fclose(fp);
   }
 
-  void cTDEmSystem::write_splinedfrequencies(const std::string& path)
+  void write_splinedfrequencies(const std::string& path)
   {
 	  FILE* fp = fileopen(path, "w");
 	  for (size_t i = 0; i < NumberOfSplinedFrequencies; i++) {
@@ -1119,7 +1125,7 @@ public:
 	  fclose(fp);
   }
 
-  void cTDEmSystem::write_frequencyseries(const std::string& path)
+  void write_frequencyseries(const std::string& path)
   {
 	  FILE* fp = fileopen(path, "w");
 	  for (size_t i = 0; i < NumberOfFFTFrequencies; i++) {
@@ -1128,7 +1134,7 @@ public:
 	  fclose(fp);
   }
 
-  void cTDEmSystem::write_timesseries(const std::string& path)
+  void write_timesseries(const std::string& path)
   {
 	  FILE* fp = fileopen(path, "w");
 	  double* ts = (double*)&(FFTWork[0]);
@@ -1138,7 +1144,7 @@ public:
 	  fclose(fp);
   }
 
-  void cTDEmSystem::forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry)
+  void forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry)
   {
 	  setconductivitythickness(conductivity, thickness);
 	  setgeometry(geometry);
@@ -1150,7 +1156,7 @@ public:
 	  setsecondaryfields();
   }
 
-  void cTDEmSystem::drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp)
+  void drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp)
   {
 	  //xi = (  xb*cosp  + zb*sinp);Inertial
 	  //zi = ( -xb*sinp  + zb*cosp);
@@ -1167,7 +1173,7 @@ public:
 	  dzbdp = D2R * (+xi * cosp - zi * sinp);
 
   }
-  void cTDEmSystem::drx_roll(double yb, double zb, double r, double& dybdr, double& dzbdr)
+  void drx_roll(double yb, double zb, double r, double& dybdr, double& dzbdr)
   {
 	  //yi = (  yb*cosr  - zb*sinr);Inertial
 	  //zi = (  yb*sinr  + zb*cosr);
@@ -1185,7 +1191,7 @@ public:
 
   }
 
-  void cTDEmSystem::drx_pitch(const std::vector<double>& xb, const std::vector<double>& zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp)
+  void drx_pitch(const std::vector<double>& xb, const std::vector<double>& zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp)
   {
 	  //xi = (  xb*cosp  + zb*sinp);Inertial
 	  //zi = ( -xb*sinp  + zb*cosp);
@@ -1203,7 +1209,7 @@ public:
 	  dzbdp = (xi * cosp - zi * sinp)*D2R;
 
   }
-  void  cTDEmSystem::drx_roll(const std::vector<double>& yb, const std::vector<double>& zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr)
+  void  drx_roll(const std::vector<double>& yb, const std::vector<double>& zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr)
   {
 	  //yi = (  yb*cosr  - zb*sinr);Inertial
 	  //zi = (  yb*sinr  + zb*cosr);
@@ -1222,7 +1228,7 @@ public:
 
   }
 
-  void cTDEmSystem::readsystemdescriptorfile(std::string systemdescriptorfile)
+  void readsystemdescriptorfile(std::string systemdescriptorfile)
   {
 	  STM = cBlock(systemdescriptorfile);
 	  SystemName = STM.getstringvalue("Name");
@@ -1349,7 +1355,7 @@ public:
 	  systeminitialise();
   };
 
-  void cTDEmSystem::systeminitialise()
+  void systeminitialise()
   {
 	  createwaveform();
 	  setupdiscretefrequencies();
@@ -1357,7 +1363,7 @@ public:
 	  setup_scaling();
   }
 
-  double cTDEmSystem::compute_peak_didt()
+  double compute_peak_didt()
   {
 	  double maxdidt = 0.0;
 	  for (size_t i = 1; i < WaveformCurrent.size(); i++) {
@@ -1370,7 +1376,7 @@ public:
 	  return maxdidt;
   }
 
-  void cTDEmSystem::setup_scaling() {
+  void setup_scaling() {
 
 	  TX_PeakdIdT = compute_peak_didt();
 	  double txscale = MUZERO * TX_LoopArea*TX_NumberOfTurns*TX_PeakCurrent;
@@ -1385,7 +1391,7 @@ public:
 	  if (Normalisation == NT_PPM || Normalisation == NT_PPM_PEAKTOPEAK) {
 		  cBlock b = STM.findblock("ReferenceGeometry");
 		  if (b.Entries.size() == 0) {
-			  glog.errormsg(_SRC_, "cTDEmSystem::setup_ppm_normalisation(): Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
+			  glog.errormsg(_SRC_, "Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
 		  }
 		  NormalizationGeometry = cTDEmGeometry(b);
 		  setgeometry(NormalizationGeometry);
@@ -1414,7 +1420,7 @@ public:
 
   }
 
-  void cTDEmSystem::setupdiscretefrequencies()
+  void setupdiscretefrequencies()
   {
 	  double lf1 = log10(BaseFrequency);
 	  double lf2 = log10(SampleFrequency / 2);
@@ -1439,7 +1445,7 @@ public:
 	  }
   }
 
-  void cTDEmSystem::digitisewaveform(const dmatrix& wp, std::vector<double>& t, std::vector<double>& v)
+  void digitisewaveform(const dmatrix& wp, std::vector<double>& t, std::vector<double>& v)
   {
 	  double hp = 0.5 / BaseFrequency;
 	  SampleInterval = 1.0 / SampleFrequency;
@@ -1451,9 +1457,9 @@ public:
 	  size_t np = wp.size();
 
 	  if (wp[np - 1][0] - wp[0][0] < hp) {
-		  glog.errormsg(_SRC_, "cTDEmSystem::digitisecurrentwaveform: One complete halfcycle of the waveform has not been specified\n");
+		  glog.errormsg(_SRC_, "One complete halfcycle of the waveform has not been specified\n");
 
-		  glog.errormsg(_SRC_, "cTDEmSystem::digitisecurrentwaveform: One complete halfcycle of the waveform has not been specified\n \
+		  glog.errormsg(_SRC_, "One complete halfcycle of the waveform has not been specified\n \
                                       Last waveform time - first waveform time must be >= 0.5/BaseFrequency\n");
 	  }
 
@@ -1493,7 +1499,7 @@ public:
 		  }
 
 		  if (set == false) {
-			  glog.errormsg(_SRC_, "cTDEmSystem::Error in waveform - not all defined\n");
+			  glog.errormsg(_SRC_, "Error in waveform - not all defined\n");
 		  }
 	  }
 
@@ -1503,7 +1509,7 @@ public:
 	  }
   }
 
-  dmatrix cTDEmSystem::readwaveformfile(const std::string& filename)
+  dmatrix readwaveformfile(const std::string& filename)
   {
 	  FILE* fp = fileopen(filename, "r");
 	  if (fp == NULL) {
@@ -1524,7 +1530,7 @@ public:
 
   }
 
-  void cTDEmSystem::forwardmodel(const cTDEmGeometry& G, const cEarth1D& E, cTDEmResponse& R)
+  void forwardmodel(const cTDEmGeometry& G, const cEarth1D& E, cTDEmResponse& R)
   {
 	  setgeometry(G);
 	  setearthproperties(E);

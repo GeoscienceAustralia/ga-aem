@@ -11,10 +11,8 @@ executable = $(exedir)/example_forward_model.exe
 all: compile link
 allclean: clean compile link
 
-objects += $(cpputilssrc)/geometry3d.o
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(srcdir)/tdemsystem.o
 objects += $(srcdir)/example_forward_model.o
 
 %.o : %.cpp
