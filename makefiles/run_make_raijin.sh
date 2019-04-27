@@ -17,9 +17,10 @@ export geophysics_netcdf='/short/cr78/rcb547/code/repos/geophysics-netcdf'
 module load ga-aem/dev-intel
 export cxx=icpc
 export mpicxx=mpiCC
-export cxxflags='-std=c++11 -O3 -Wall -diag-disable remark'
+export cxxflags='-std=c++11 -O3 -Wall -diag-disable remark -D_GLIBCXX_USE_CXX11_ABI=0'
 export exedir='../bin/raijin/intel'
 
+module list
 echo ---------------------------------------
 echo cxx = $cxx
 echo mpicxx = $mpicxx ... which is ...
@@ -28,8 +29,8 @@ echo ---------------------------------------
 
 
 #Compiled as shared libs
-#make -f gatdaem1d_python.make $1
-#make -f gatdaem1d_matlab.make $1
+make -f gatdaem1d_python.make $1
+make -f gatdaem1d_matlab.make $1
 
 #Compile without MPI
 make -f ctlinedata2sgrid.make $1
@@ -38,10 +39,10 @@ make -f example_forward_model.make $1
 make -f gaforwardmodeltdem.make $1
 
 #Compile with MPI
-#make -f galeisbstdem.make $1
-#make -f garjmcmctdem.make $1
-#make -f galeiallatonce.make $1
-#make -f galeisbsfdem.make $1
+make -f galeisbstdem.make $1
+make -f garjmcmctdem.make $1
+make -f galeiallatonce.make $1
+make -f galeisbsfdem.make $1
 
 #cd ..
 #installpath='/short/public/rcb547/apps/ga-aem/dev'

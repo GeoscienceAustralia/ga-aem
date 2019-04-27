@@ -659,12 +659,7 @@ public:
 		//point rasterio to last line with negative line increment		
 		int nLineSpace = -(int)GO.nx()*sizeof(float);
 		float* plastline = &(griddata[(GO.ny() - 1)*GO.nx()]);
-		pdataset->RasterIO(GF_Write,
-			0, 0, GO.nx(), GO.ny(),
-			plastline,
-			GO.nx(), GO.ny(), GDT_Float32,
-			1, 0, 0, nLineSpace, 0);
-
+		pdataset->RasterIO(GF_Write, 0, 0, GO.nx(), GO.ny(), plastline, GO.nx(), GO.ny(), GDT_Float32, 1, 0, 0, nLineSpace, 0);
 		GDALRasterBand* pband = pdataset->GetRasterBand(1);
 		pband->SetNoDataValue(GO.nullcellvalue());
 		GDALClose(pdataset);				

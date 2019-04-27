@@ -164,8 +164,7 @@ public:
 			IoType = NETCDF;
  			//NC.open(FileName,netCDF::NcFile::FileMode::read);			
 			glog.logmsg("Debug 1\n");
-			//NC.open(FileName, netCDF::NcFile::FileMode::read);
-			NC.open1(FileName, netCDF::NcFile::FileMode::read);			
+			NC.open(FileName, netCDF::NcFile::FileMode::read);
 			glog.logmsg("Debug 2\n");			
 		}
 		else {
@@ -181,7 +180,7 @@ public:
 		if (!isdefined(Subsample)) { Subsample = 1; }		
 	}
 
-	const IOType iotype() const { return IoType; }
+	IOType iotype() const { return IoType; }
 
 	bool readnextrecord()
 	{
@@ -411,7 +410,7 @@ public:
 		fd_oE.initialise(b, "Noise");
 	}
 
-	const size_t nw() const
+	size_t nw() const
 	{
 		return oS.size();
 	}
