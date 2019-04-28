@@ -443,8 +443,7 @@ public:
 			for (size_t k = 0; k < SubSample-1; k++){
 				A.readnextrecord();
 			}
-		}
-		A.closefile();
+		}		
 		double t2 = gettime();
 		printf("Reading input data elapsed time = %.2f\n", t2 - t1);
 

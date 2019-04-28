@@ -14,6 +14,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cstring>
 #include <algorithm>
 
+#include "asciicolumnfile.h"
+
 #include "blocklanguage.h"
 #include "fielddefinition.h"
 #include "matrix_ops.h"
@@ -138,17 +140,13 @@ class cInputManager {
 
 private:		
 
-	IOType IoType = ASCII;
-	cGeophysicsNcFile NC;	
-
-	FILE*  Pointer = (FILE*)NULL;
+	bool AtStart = true;
 	std::string FileName;
-	size_t HeaderLines=0;
+	IOType IoType = ASCII;	
+	cGeophysicsNcFile NC;	
+	cAsciiColumnFile AF;	
 	size_t Subsample=1;
-
 	size_t Record=0;
-	std::string RecordString;
-	std::vector<std::string> FieldStrings;
 
 public:
 
@@ -161,19 +159,20 @@ public:
 		std::string ext = extractfileextension(FileName);
 		glog.logmsg(0,"Opening Input DataFile %s\n", FileName.c_str());
 		if (strcasecmp(ext, ".nc") == 0){			
-			IoType = NETCDF;
- 			//NC.open(FileName,netCDF::NcFile::FileMode::read);			
-			glog.logmsg("Debug 1\n");
-			NC.open(FileName, netCDF::NcFile::FileMode::read);
-			glog.logmsg("Debug 2\n");			
+			IoType = NETCDF; 						
+			NC.open(FileName, netCDF::NcFile::FileMode::read);			
 		}
 		else {
 			IoType = ASCII;
-			HeaderLines = b.getsizetvalue("Headerlines");
-			if (!isdefined(HeaderLines)) {
-				HeaderLines = 0;
-			}					
-			Pointer = fileopen(FileName, "r");			
+			AF.openfile(FileName);
+			size_t headerlines = b.getsizetvalue("Headerlines");
+			if (!isdefined(headerlines)) { headerlines = 0; }								
+			
+			//Skip header lines				
+			for (size_t k = 0; k < headerlines; k++) {
+				AF.readnextrecord();				
+			}							
+			//Pointer = fileopen(FileName, "r");			
 		}
 
 		Subsample = b.getsizetvalue("Subsample");
@@ -183,41 +182,39 @@ public:
 	IOType iotype() const { return IoType; }
 
 	bool readnextrecord()
-	{
+	{		
+		bool status = true;
 		if (iotype() == NETCDF) {
-			if (Record == 0)Record++;
-			else Record += Subsample;	
-
-			if (Record > NC.ntotalsamples())return false;
+			if (AtStart == true) {
+				AtStart = false;
+				Record = 0;
+			}
+			else {				
+				Record += Subsample;
+				if (Record > NC.ntotalsamples()) return false;
+			}
 		}
 		else {
-			if (Record == 0) {
-				//Skip header lines
-				for (size_t i = 0; i < HeaderLines; i++) {
-					bool status = filegetline(Pointer, RecordString);
-					if (status == false)return status;
-					Record++;
-				}
-			}
+			if (AtStart==true){				
+				status = AF.readnextrecord();
+				if (status == false)return false;
+				AtStart = false;				
+				Record = 0;
+			}			
 			else {
-				//Skip lines for subsampling
-				for (size_t i = 0; i < Subsample - 1; i++) {
-					bool status = filegetline(Pointer, RecordString);
-					if (status == false)return status;
-					Record++;
-				}
+				AF.skiprecords(Subsample - 1);
+				status = AF.readnextrecord();
+				if (status == false)return false;
+				Record += Subsample;
 			}
-			bool status = filegetline(Pointer, RecordString);
-			if (status == false) return status;
-			Record++;
-		}
+		}				
 		return true;
 	}
 
 	bool parsefieldstrings() {
 		if (iotype() == ASCII) {
-			FieldStrings = fieldparsestring(RecordString.c_str(), " ,\t\r\n");
-			if (FieldStrings.size() <= 1) return false;
+			size_t n = AF.parserecord();			
+			if (n <= 1) return false;
 			return true;
 		}	
 		return true;
@@ -234,14 +231,14 @@ public:
 
 	const size_t& record() { return Record;	}
 	
-	const std::string& recordstring() const { return RecordString; }
+	const std::string& recordstring() const { return AF.currentrecord_string(); }
 
-	const std::vector<std::string>& fields() const { return FieldStrings; }
+	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
 
 	template<typename T>
 	bool netcdf_read(const std::string varname, std::vector<T>& v)
 	{
-		NC.getDataByPointIndex(varname, Record-1, v);
+		NC.getDataByPointIndex(varname, Record, v);
 		return true;
 	}
 
@@ -649,10 +646,9 @@ class cSBSInverter{
 	int go()
 	{
 		_GSTITEM_
-		size_t record = 0;
-		while (IM.readnextrecord()) {
-			record++;
-			if (((record-1) % Size) != Rank) continue;
+		size_t job = 0;
+		while (IM.readnextrecord()) {			
+			if ( (job % Size) != Rank) continue;
 			if (IM.iotype() == IOType::ASCII) {
 				bool nonnumeric = IM.contains_non_numeric_characters(IM.recordstring());
 				if (nonnumeric) {
@@ -662,11 +658,11 @@ class cSBSInverter{
 				}
 			}
 
-			//if (I.OO.Dump){
-			//	FILE* fp = fileopen(I.dumppath() + "record.dat", "w");
-			//	fprintf(fp, "Record\t%zu", I.DataFileRecord);
-			//	fclose(fp);
-			//}
+			if (OO.Dump){
+				FILE* fp = fileopen(dumppath() + "record.dat", "w");
+				fprintf(fp, "Record\t%zu", IM.record());
+				fclose(fp);
+			}
 
 			double t1 = gettime();
 			invert();
@@ -674,7 +670,8 @@ class cSBSInverter{
 			double t2 = gettime();
 			double etime = t2 - t1;
 			writeresult();
-			glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", IM.record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());
+			glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM.record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());			
+			job++;
 		}
 		glog.close();
 		return 0;

@@ -23,9 +23,6 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\submodules\cpp-utils\src\gdal_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
