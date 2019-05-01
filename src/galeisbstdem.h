@@ -446,20 +446,7 @@ public:
 	bool invertXPlusZ;
 	bool invertPrimaryPlusSecondary;
 	bool reconstructPrimary;
-	//bool estimateNoise;
-
-
-	//int xIndex  = -1;
-	//int yIndex  = -1;
-	//int zIndex  = -1;
-	//double oPX,oPY,oPZ;
-	//std::vector<double>  oSX,oSY,oSZ;	
-	//std::vector<double>  oEX,oEY,oEZ;		
-	//cFieldDefinition fd_oPX,fd_oPY,fd_oPZ;
-	//cFieldDefinition fd_oSX,fd_oSY,fd_oSZ;
-	//cFieldDefinition fd_oEX,fd_oEY,fd_oEZ;		
-	//double xmn,ymn,zmn;
-	//std::vector<double> xan,yan,zan;
+	
 	sTDEmData predicted;
 
 	void initialise(const cBlock& b) {
