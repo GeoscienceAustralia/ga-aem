@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbstdem", "galeisbstdem.vcxproj", "{7B2ABFFB-3AD0-4546-A41B-67F78766418F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2slicegrids", "..\ctlinedata2slicegrids\ctlinedata2slicegrids.vcxproj", "{C0300794-FB6C-4D98-8F4A-8FF11D07A1DD}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -20,12 +18,6 @@ Global
 		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Release|x64.Build.0 = Release|x64
 		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Release-nompi|x64.ActiveCfg = Release|x64
 		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Release-nompi|x64.Build.0 = Release|x64
-		{C0300794-FB6C-4D98-8F4A-8FF11D07A1DD}.Debug|x64.ActiveCfg = Debug|x64
-		{C0300794-FB6C-4D98-8F4A-8FF11D07A1DD}.Debug|x64.Build.0 = Debug|x64
-		{C0300794-FB6C-4D98-8F4A-8FF11D07A1DD}.Release|x64.ActiveCfg = Release|x64
-		{C0300794-FB6C-4D98-8F4A-8FF11D07A1DD}.Release|x64.Build.0 = Release|x64
-		{C0300794-FB6C-4D98-8F4A-8FF11D07A1DD}.Release-nompi|x64.ActiveCfg = Release|x64
-		{C0300794-FB6C-4D98-8F4A-8FF11D07A1DD}.Release-nompi|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

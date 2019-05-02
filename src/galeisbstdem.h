@@ -44,24 +44,20 @@ public:
 	double phim;
 	double stepfactor;
 
-	static bool lambda_compare(const cTrial& a, cTrial& b)
+	static bool lambda_compare(const cTrial& a, const cTrial& b)
 	{				
 		if (a.lambda < b.lambda) return true;
-		else if (a.lambda > b.lambda) return false;
-		else{
-			if (a.stepfactor <= b.stepfactor) return true;				
-			else return false;
-		}		
+		if (a.lambda > b.lambda) return false;		
+		if (a.stepfactor < b.stepfactor) return true;				
+		return false;		
 	}
 
-	static bool phid_compare(const cTrial& a, cTrial& b)
+	static bool phid_compare(const cTrial& a, const cTrial& b)
 	{
 		if (a.phid < b.phid) return true;
-		else if (a.phid > b.phid) return false;
-		else {
-			if (a.stepfactor <= b.stepfactor) return true;
-			else return false;
-		}
+		if (a.phid > b.phid) return false;		
+		if (a.stepfactor < b.stepfactor) return true;
+		return false;		
 	}	
 };
 
@@ -131,6 +127,18 @@ class cTrialCache{
 	void sort_phid()
 	{
 		std::sort(trial.begin(), trial.end(), cTrial::phid_compare);
+	}
+
+	void print(const double& lambda, const double& phid)
+	{
+		sort_lambda();
+		printf("\n");
+		printf("CurrentLambda = %lf CurrentPhid = %lf    Target = %lf\n", lambda, phid, target);
+		printf("N    Stepfactor       Lambda          Phid\n");
+		for (size_t i = 0; i < trial.size(); i++) {
+			printf("%2zu %12g %12g %12g\n", trial[i].order, trial[i].stepfactor, trial[i].lambda, trial[i].phid);
+		}
+		printf("\n");
 	}
 };
 
@@ -367,6 +375,7 @@ public:
 	bool EstimateNoiseFromModel;
 	std::vector<double> mn;
 	std::vector<double> an;
+	int dataindex = 0;
 
 	cComponentInfo() {};
 
@@ -440,26 +449,12 @@ public:
 	size_t ncomps;
 	size_t nchans;
 	cComponentInfo Comp[3];
-	int CompIndex[3];
-	int xzIndex;
+	//int CompIndex[3];//Start index of component in data array
+	int xzIndex;//Start index of XZ in data array
 
 	bool invertXPlusZ;
 	bool invertPrimaryPlusSecondary;
-	bool reconstructPrimary;
-	//bool estimateNoise;
-
-
-	//int xIndex  = -1;
-	//int yIndex  = -1;
-	//int zIndex  = -1;
-	//double oPX,oPY,oPZ;
-	//std::vector<double>  oSX,oSY,oSZ;	
-	//std::vector<double>  oEX,oEY,oEZ;		
-	//cFieldDefinition fd_oPX,fd_oPY,fd_oPZ;
-	//cFieldDefinition fd_oSX,fd_oSY,fd_oSZ;
-	//cFieldDefinition fd_oEX,fd_oEY,fd_oEZ;		
-	//double xmn,ymn,zmn;
-	//std::vector<double> xan,yan,zan;
+	bool reconstructPrimary;		
 	sTDEmData predicted;
 
 	void initialise(const cBlock& b) {
@@ -859,20 +854,20 @@ class cSBSInverter{
 		for (size_t si = 0; si < nsystems; si++) {
 			cTDEmSystemInfo& S = SV[si];
 			if (S.invertXPlusZ) {
-				S.xzIndex = (int)ndata;
-				S.CompIndex[0] = -1;
-				S.CompIndex[2] = -1;
+				S.xzIndex = (int) ndata;
+				S.Comp[0].dataindex = -1;
+				S.Comp[2].dataindex = -1;
 				ndata += S.nwindows;
 
 				if (S.Comp[1].Use) {
-					S.CompIndex[1] = (int)ndata;
+					S.Comp[1].dataindex = (int) ndata;
 					ndata += S.nwindows;
 				}
 			}
 			else {
 				for (size_t i = 0; i < 3; i++) {
 					if (S.Comp[i].Use) {
-						S.CompIndex[i] = (int)ndata;
+						S.Comp[i].dataindex = (int) ndata;
 						ndata += S.nwindows;
 					}
 				}
@@ -1082,16 +1077,17 @@ class cSBSInverter{
 		TerminationReason = "Has not terminated";
 
 		if (OO.Dump) {
-			dumptofile(GR, "geometry_start.dat");
-			dumptofile(ER, "earth_start.dat");
+			const std::string dp = dumppath();
+			GR.write(dp+"geometry_start.dat");
+			ER.write(dp+"earth_start.dat");
 
-			dumptofile(GR, "geometry_ref.dat");
-			dumptofile(ER, "earth_ref.dat");
+			GR.write(dp+"geometry_ref.dat");
+			ER.write(dp+"earth_ref.dat");
 
-			dumptofile(GS, "geometry_std.dat");
-			dumptofile(ES, "earth_std.dat");
+			GS.write(dp+"geometry_std.dat");
+			ES.write(dp+"earth_std.dat");
 
-			FILE* fp = fileopen(dumppath() + "Id.dat", "w");
+			FILE* fp = fileopen(dp+"Id.dat","w");
 			fprintf(fp, "%zu\t%zu\t%zu\t%zu\t%zu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
 			fclose(fp);
 		}
@@ -1130,7 +1126,7 @@ class cSBSInverter{
 
 					//Y Comp
 					if (S.Comp[1].Use) {
-						di = S.CompIndex[1] + wi;
+						di = S.Comp[1].dataindex + wi;
 						Obs[di] = S.Comp[1].oS[wi];
 						if (S.invertPrimaryPlusSecondary) {
 							Obs[di] += S.Comp[1].oP;
@@ -1141,8 +1137,9 @@ class cSBSInverter{
 			}
 			else {
 				for (size_t ci = 0; ci < 3; ci++) {
+					if (S.Comp[ci].Use == false) continue;
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
-						size_t di = S.CompIndex[ci] + wi;
+						size_t di = S.Comp[ci].dataindex + wi;
 						Obs[di] = S.Comp[ci].oS[wi];
 						if (S.invertPrimaryPlusSecondary) {
 							Obs[di] += S.Comp[ci].oP;
@@ -1154,8 +1151,8 @@ class cSBSInverter{
 		}
 
 		if (OO.Dump) {
-			dumptofile(Obs, "observed.dat");
-			dumptofile(Err, "observed_std.dat");
+			write(Obs, dumppath()+"observed.dat");
+			write(Err, dumppath()+"observed_std.dat");
 		}
 	}
 
@@ -1619,14 +1616,14 @@ class cSBSInverter{
 			if (S.invertXPlusZ) {
 				for (size_t wi = 0; wi < nw; wi++) {
 					predicted[wi + S.xzIndex] = xzfm[wi];
-					if (S.Comp[1].Use) predicted[wi + S.CompIndex[1]] = yfm[wi];
+					if (S.Comp[1].Use) predicted[wi + S.Comp[1].dataindex] = yfm[wi];
 				}
 			}
 			else {
 				for (size_t wi = 0; wi < nw; wi++) {
-					if (S.Comp[0].Use) predicted[wi + S.CompIndex[0]] = xfm[wi];
-					if (S.Comp[1].Use) predicted[wi + S.CompIndex[1]] = yfm[wi];
-					if (S.Comp[2].Use) predicted[wi + S.CompIndex[2]] = zfm[wi];
+					if (S.Comp[0].Use) predicted[wi + S.Comp[0].dataindex] = xfm[wi];
+					if (S.Comp[1].Use) predicted[wi + S.Comp[1].dataindex] = yfm[wi];
+					if (S.Comp[2].Use) predicted[wi + S.Comp[2].dataindex] = zfm[wi];
 				}
 			}
 
@@ -1744,14 +1741,14 @@ class cSBSInverter{
 		if (S.invertXPlusZ) {
 			for (size_t w = 0; w < nw; w++) {
 				J[w + S.xzIndex][pindex] = (xfm[w] * xdrv[w] + zfm[w] * zdrv[w]) / xzfm[w];
-				if (S.Comp[1].Use)J[w + S.CompIndex[1]][pindex] = xdrv[w];
+				if (S.Comp[1].Use)J[w + S.Comp[1].dataindex][pindex] = xdrv[w];
 			}
 		}
 		else {
-			for (size_t w = 0; w < nw; w++) {
-				for (size_t c = 0; c < 3; c++) {
-					if (S.Comp[c].Use)J[w + S.CompIndex[c]][pindex] = xdrv[w];
-				}
+			for (size_t w = 0; w < nw; w++) {				
+				if (S.Comp[0].Use)J[w + S.Comp[0].dataindex][pindex] = xdrv[w];
+				if (S.Comp[1].Use)J[w + S.Comp[1].dataindex][pindex] = ydrv[w];
+				if (S.Comp[2].Use)J[w + S.Comp[2].dataindex][pindex] = zdrv[w];				
 			}
 		}
 	}
@@ -1807,13 +1804,13 @@ class cSBSInverter{
 			LastPhiD = phiData(Pred);
 			TargetPhiD = std::max(LastPhiD * 0.7, MinimumPhiD);
 			if (OO.Dump) {
-				writetofile(Obs, dumppath() + "d.dat");
-				writetofile(Err, dumppath() + "e.dat");
-				writetofile(Pred, dumppath() + "g.dat");
+				writetofile(Obs,dumppath() + "d.dat");
+				writetofile(Err,dumppath() + "e.dat");
+				writetofile(Pred,dumppath() + "g.dat");
 				EM = get_earth(Param);
 				GM = get_geometry(Param);
-				dumptofile(EM, "earth_inv.dat");
-				dumptofile(GM, "geometry_inv.dat");
+				EM.write(dumppath()+"earth_inv.dat");
+				GM.write(dumppath()+"geometry_inv.dat");
 				save_iteration_file();
 			}
 
@@ -1957,19 +1954,22 @@ class cSBSInverter{
 		else {
 			trialfunction(T, pow10(startx));
 		}
+		//T.print(LastLambda,LastPhiD);
+		//prompttocontinue();
 
 		std::vector<double> x;
 		x.push_back(+1); x.push_back(-1);
 		x.push_back(+2); x.push_back(-2);
 		x.push_back(+3); x.push_back(-3);
 		for (size_t k = 0; k < x.size(); k++) {
+			//T.print(LastLambda, LastPhiD);
 			trialfunction(T, pow10(startx + x[k]));
 			bool tarbrak = istargetbraketed(T);
 			if (tarbrak) {
 				return BR_BRACKETED;//target bracketed		
 			}
-		}
-		//printtrials(T);
+		}		
+		//T.print(LastLambda, LastPhiD);
 		//prompttocontinue();
 
 		if (T.maxphid() < target) {
@@ -2082,7 +2082,7 @@ class cSBSInverter{
 			}
 			i++;
 			if (i > 20) {
-				printtrials(T);
+				//T.print(LastLambda, LastPhiD);				
 				glog.warningmsg(_SRC_, "Too many bisections\n");
 				newphid = fb + target;
 				return pow10(b);
@@ -2096,18 +2096,6 @@ class cSBSInverter{
 			newphid = fa + target;
 			return pow10(a);
 		}
-	}
-
-	void printtrials(cTrialCache T)
-	{
-		T.sort_lambda();
-		printf("\n");
-		printf("CurrentLambda = %lf CurrentPhid = %lf    Target = %lf\n", LastLambda, LastPhiD, T.target);
-		printf("N    Stepfactor       Lambda          Phid\n");
-		for (size_t i = 0; i < T.trial.size(); i++) {
-			printf("%2zu %12g %12g %12g\n", T.trial[i].order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
-		}
-		printf("\n");
 	}
 
 	double goldensearch(double a, double b, double c, double xtol, const double lambda, const std::vector<double>& m, const std::vector<double>& dm, std::vector<double>& g, cTrialCache& cache)
@@ -2562,46 +2550,15 @@ class cSBSInverter{
 		return g;
 	}
 
-	void dumptofile(const std::vector<double>& v, std::string path)
+	void write(const std::vector<double>& v, std::string path) const 
 	{
-		FILE* fp = fileopen(dumppath() + path, "w");
+		FILE* fp = fileopen(path, "w");
 		for (size_t i = 0; i < v.size(); i++) {
 			fprintf(fp, "%le\n", v[i]);
 		}
 		fclose(fp);
 	}
 
-	void dumptofile(const cEarth1D& e, std::string path)
-	{
-		FILE* fp = fileopen(dumppath() + path, "w");
-		size_t nl = e.conductivity.size();
-		for (size_t i = 0; i < nl; i++) {
-			if (i < e.thickness.size()) {
-				fprintf(fp, "%e\t%e\n", e.conductivity[i], e.thickness[i]);
-			}
-			else {
-				fprintf(fp, "%e\tInf\n", e.conductivity[i]);
-			}
-		}
-		fclose(fp);
-	}
-
-	void dumptofile(const cTDEmGeometry& g, std::string path)
-	{
-		FILE* fp = fileopen(dumppath() + path, "w");
-		fprintf(fp, "tx_height\t%lf\n", g.tx_height);
-		fprintf(fp, "tx_roll\t%lf\n", g.tx_roll);
-		fprintf(fp, "tx_pitch\t%lf\n", g.tx_pitch);
-		fprintf(fp, "tx_yaw\t%lf\n", g.tx_yaw);
-		fprintf(fp, "txrx_dx\t%lf\n", g.txrx_dx);
-		fprintf(fp, "txrx_dy\t%lf\n", g.txrx_dy);
-		fprintf(fp, "txrx_dz\t%lf\n", g.txrx_dz);
-		fprintf(fp, "rx_roll\t%lf\n", g.rx_roll);
-		fprintf(fp, "rx_pitch\t%lf\n", g.rx_pitch);
-		fprintf(fp, "rx_yaw\t%lf\n", g.rx_yaw);
-		fclose(fp);
-	}
-	
 	std::string dumppath(){
 		return OO.DumpPath(IM.record(),LastIteration);
 	};

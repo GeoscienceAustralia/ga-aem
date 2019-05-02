@@ -264,6 +264,22 @@ public:
 		return CT_NONE;
 	}
 
+	void write(std::string path) const 
+	{
+		FILE* fp = fileopen(path,"w");
+		fprintf(fp, "tx_height\t%lf\n", tx_height);
+		fprintf(fp, "tx_roll\t%lf\n", tx_roll);
+		fprintf(fp, "tx_pitch\t%lf\n", tx_pitch);
+		fprintf(fp, "tx_yaw\t%lf\n", tx_yaw);
+		fprintf(fp, "txrx_dx\t%lf\n", txrx_dx);
+		fprintf(fp, "txrx_dy\t%lf\n", txrx_dy);
+		fprintf(fp, "txrx_dz\t%lf\n", txrx_dz);
+		fprintf(fp, "rx_roll\t%lf\n", rx_roll);
+		fprintf(fp, "rx_pitch\t%lf\n", rx_pitch);
+		fprintf(fp, "rx_yaw\t%lf\n", rx_yaw);
+		fclose(fp);
+	}
+
 };
 
 struct WindowSpecification{
