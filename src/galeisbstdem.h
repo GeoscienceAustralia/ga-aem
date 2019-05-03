@@ -149,7 +149,8 @@ class cInputManager {
 private:		
 
 	bool AtStart = true;
-	std::string FileName;
+	std::string DataFileName;
+	std::string HeaderFileName;
 	IOType IoType = ASCII;	
 	cGeophysicsNcFile NC;	
 	cAsciiColumnFile AF;	
@@ -162,22 +163,25 @@ public:
 
 	void initialise(const cBlock& b)
 	{		
-		FileName = b.getstringvalue("DataFile");
-		fixseparator(FileName);		
-		std::string ext = extractfileextension(FileName);
-		glog.logmsg(0,"Opening Input DataFile %s\n", FileName.c_str());
+		DataFileName   = b.getstringvalue("DataFile");
+		HeaderFileName = b.getstringvalue("DfnFile");		
+		std::string ext = extractfileextension(DataFileName);
+		glog.logmsg(0,"Opening Input DataFile %s\n", DataFileName.c_str());
 		if (strcasecmp(ext, ".nc") == 0){			
 			IoType = NETCDF; 						
-			NC.open(FileName, netCDF::NcFile::FileMode::read);			
+			NC.open(DataFileName, netCDF::NcFile::FileMode::read);			
 		}
 		else {
 			IoType = ASCII;
-			AF.openfile(FileName);
-			std::string dfnfile = extractfilepath_noextension(FileName) + ".dfn";				
-			AF.parse_aseggdf2_header(dfnfile);
+			AF.openfile(DataFileName);
+			fixseparator(DataFileName);			
+			if (isdefined(HeaderFileName)){
+				fixseparator(HeaderFileName);
+				AF.parse_aseggdf2_header(HeaderFileName);
+			}
+
 			size_t headerlines = b.getsizetvalue("Headerlines");
-			if (!isdefined(headerlines)) { headerlines = 0; }								
-			
+			if (!isdefined(headerlines)) { headerlines = 0; }
 			//Skip header lines				
 			for (size_t k = 0; k < headerlines; k++) {
 				AF.readnextrecord();				
@@ -236,7 +240,7 @@ public:
 		else return true;
 	}
 
-	const std::string& filename() { return FileName; }
+	const std::string& datafilename() { return DataFileName; }
 
 	const size_t& record() { return Record;	}
 	
@@ -658,7 +662,7 @@ class cSBSInverter{
 			if (IM.iotype() == IOType::ASCII) {
 				bool nonnumeric = IM.contains_non_numeric_characters(IM.recordstring());
 				if (nonnumeric) {
-					glog.logmsg("Skipping non-numeric record at line %zu of Input DataFile %s\n", IM.record(), IM.filename().c_str());
+					glog.logmsg("Skipping non-numeric record at line %zu of Input DataFile %s\n", IM.record(), IM.datafilename().c_str());
 					glog.logmsg("\n%s\n\n", IM.recordstring().c_str());
 					continue;
 				}
