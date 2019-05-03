@@ -173,14 +173,15 @@ public:
 		else {
 			IoType = ASCII;
 			AF.openfile(FileName);
+			std::string dfnfile = extractfilepath_noextension(FileName) + ".dfn";				
+			AF.parse_aseggdf2_header(dfnfile);
 			size_t headerlines = b.getsizetvalue("Headerlines");
 			if (!isdefined(headerlines)) { headerlines = 0; }								
 			
 			//Skip header lines				
 			for (size_t k = 0; k < headerlines; k++) {
 				AF.readnextrecord();				
-			}							
-			//Pointer = fileopen(FileName, "r");			
+			}										
 		}
 
 		Subsample = b.getsizetvalue("Subsample");
@@ -243,6 +244,15 @@ public:
 
 	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
 
+
+	template<typename T>
+	bool ascii_read(const std::string varname, std::vector<T>& v)
+	{
+		size_t cindex;
+		bool status = AF.fieldindexbyname(varname,cindex),		
+		return true;
+	}
+
 	template<typename T>
 	bool netcdf_read(const std::string varname, std::vector<T>& v)
 	{
@@ -263,7 +273,9 @@ public:
 		}
 
 		if (iotype() == ASCII) {
-			cd.getvalue(fields(),v);
+			std::vector<T> vec;
+			cd.getvalue(AF, vec, 1);
+			v = vec[0];			
 			return true;
 		}
 		else {	
@@ -289,9 +301,9 @@ public:
 			return true;
 		}
 
-		if (iotype() == ASCII) {
-			cd.getvalue(fields(), vec, n);
-			return true;
+		if (iotype() == ASCII) {			
+			cd.getvalue(AF, vec, n);			
+			return true;			
 		}
 		else {
 			netcdf_read(cd.varname, vec);
@@ -448,8 +460,7 @@ public:
 	size_t nwindows;
 	size_t ncomps;
 	size_t nchans;
-	cComponentInfo Comp[3];
-	//int CompIndex[3];//Start index of component in data array
+	cComponentInfo Comp[3];	
 	int xzIndex;//Start index of XZ in data array
 
 	bool invertXPlusZ;
