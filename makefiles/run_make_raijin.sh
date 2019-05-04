@@ -4,13 +4,13 @@
 export srcdir='../src'
 export cpputilssrc='../submodules/cpp-utils/src'
 export tntdir='../submodules/tnt'
-export geophysics_netcdf='/short/cr78/rcb547/code/repos/geophysics-netcdf'
+export geophysics_netcdf_root='/short/cr78/rcb547/code/repos/geophysics-netcdf'
 
 #GNU compiler on raijin.nci.org.au
 #module load ga-aem/dev-gnu
 #export cxx=g++
 #export mpicxx=mpiCC
-#export cxxflags='-std=c++11 -O3 -Wall -fdiagnostics-color=always'
+#export cxxflags='-std=c++11 -O3 -Wall -fdiagnostics-color=always -D_GLIBCXX_USE_CXX11_ABI=0 -Wno-unknown-pragmas'
 #export exedir='../bin/raijin/gnu'
 
 #Intel compiler on raijin.nci.org.au

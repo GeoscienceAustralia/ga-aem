@@ -652,7 +652,6 @@ public:
 		pdataset->SetProjection(wkt);
 		CPLFree(wkt);
 
-		
 		//Write griddata to file
 		//Because the buffer is south-up rather than north-down order
 		//point rasterio to last line with negative line increment		
@@ -661,7 +660,7 @@ public:
 		pdataset->RasterIO(GF_Write, 0, 0, GO.nx(), GO.ny(), plastline, GO.nx(), GO.ny(), GDT_Float32, 1, 0, 0, nLineSpace, 0);
 		GDALRasterBand* pband = pdataset->GetRasterBand(1);
 		pband->SetNoDataValue(GO.nullcellvalue());
-		GDALClose(pdataset);				
+		GDALClose(pdataset);
 	}
 };
 

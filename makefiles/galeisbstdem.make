@@ -7,7 +7,7 @@ SHELL = /bin/sh
 cxxflags   += -D_MPI_ENABLED -fopenmp
 includes   = -I/usr/include/openmpi-x86_64
 includes   += -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
-includes   += -I$(geophysics_netcdf)/src/cpp -I$(geophysics_netcdf)/submodules/marray/include/andres
+includes   += -I$(geophysics_netcdf_root)/src/cpp -I$(geophysics_netcdf_root)/submodules/marray/include/andres
 libs       = -L$(FFTW_DIR) -lfftw3 -fopenmp -lnetcdf -lnetcdf_c++4 -lgdal -lCGAL_Core
 executable = $(exedir)/galeisbstdem.exe
 

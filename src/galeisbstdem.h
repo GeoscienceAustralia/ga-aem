@@ -249,15 +249,6 @@ public:
 
 	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
 
-
-	template<typename T>
-	bool ascii_read(const std::string varname, std::vector<T>& v)
-	{
-		size_t cindex;
-		bool status = AF.fieldindexbyname(varname,cindex),		
-		return true;
-	}
-
 	template<typename T>
 	bool netcdf_read(const std::string varname, std::vector<T>& v)
 	{
@@ -280,7 +271,7 @@ public:
 		if (iotype() == ASCII) {
 			std::vector<T> vec;
 			cd.getvalue(AF, vec, 1);
-			v = vec[0];			
+			v = vec[0];
 			return true;
 		}
 		else {	
@@ -657,9 +648,10 @@ class cSBSInverter{
 	int go()
 	{
 		_GSTITEM_
-		size_t job = 0;
-		while (IM.readnextrecord()) {			
-			if ( (job % Size) != Rank) continue;
+		int job = 0;
+		while (IM.readnextrecord()){
+			   job++;
+			if (((job-1) % Size) != Rank) continue;
 			if (IM.iotype() == IOType::ASCII) {
 				bool nonnumeric = IM.contains_non_numeric_characters(IM.recordstring());
 				if (nonnumeric) {
@@ -682,7 +674,6 @@ class cSBSInverter{
 			double etime = t2 - t1;
 			writeresult();
 			glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM.record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());			
-			job++;
 		}
 		glog.close();
 		return 0;
@@ -1010,61 +1001,9 @@ class cSBSInverter{
 	void readsystemdata(size_t sysindex)
 	{
 		cTDEmSystemInfo& S = SV[sysindex];
-		size_t nw = S.nwindows;
-
 		S.Comp[0].readdata(IM);
 		S.Comp[1].readdata(IM);
 		S.Comp[2].readdata(IM);
-
-		/*
-		if (S.useX){
-			IM.read(S.fd_oPX, S.oPX);
-			IM.read(S.fd_oSX, S.oSX, nw);
-			S.oEX.resize(nw);
-			if (S.estimateNoise){
-				for (size_t w = 0; w < nw; w++){
-					const double an = S.xan[w];
-					const double mn = 0.01*S.xmn*S.oSX[w];
-					S.oEX[w] = sqrt(an*an + mn*mn);
-				}
-			}
-			else{
-				IM.read(S.fd_oEX, S.oEX, nw);
-			}
-		}
-
-		if (S.useY){
-			IM.read(S.fd_oPY, S.oPY);
-			IM.read(S.fd_oSY, S.oSY, nw);
-			S.oEY.resize(nw);
-			if (S.estimateNoise){
-				for (size_t w = 0; w < nw; w++){
-					const double an = S.yan[w];
-					const double mn = 0.01*S.ymn*S.oSY[w];
-					S.oEY[w] = sqrt(an*an + mn*mn);
-				}
-			}
-			else{
-				IM.read(S.fd_oEY, S.oEY, nw);
-			}
-		}
-
-		if (S.useZ){
-			IM.read(S.fd_oPZ, S.oPZ);
-			IM.read(S.fd_oSZ, S.oSZ, nw);
-			S.oEZ.resize(nw);
-			if (S.estimateNoise){
-				for (size_t w = 0; w < nw; w++){
-					const double an = S.zan[w];
-					const double mn = 0.01*S.zmn*S.oSZ[w];
-					S.oEZ[w] = sqrt(an*an + mn*mn);
-				}
-			}
-			else{
-				IM.read(S.fd_oEZ, S.oEZ, nw);
-			}
-		}
-		*/
 	}
 
 	void initialise_sample()
