@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd ..
-installpath='/short/public/rcb547/apps/ga-aem/dev'
+installpath='/short/public/rcb547/apps/ga-aem/2.0.beta'
 
 mkdir -p $installpath
 mkdir -p $installpath/bin/raijin/intel

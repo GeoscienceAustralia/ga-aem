@@ -164,7 +164,10 @@ public:
 	void initialise(const cBlock& b)
 	{		
 		DataFileName   = b.getstringvalue("DataFile");
+		fixseparator(DataFileName);
 		HeaderFileName = b.getstringvalue("DfnFile");		
+		fixseparator(HeaderFileName);
+
 		std::string ext = extractfileextension(DataFileName);
 		glog.logmsg(0,"Opening Input DataFile %s\n", DataFileName.c_str());
 		if (strcasecmp(ext, ".nc") == 0){			
@@ -174,18 +177,16 @@ public:
 		else {
 			IoType = ASCII;
 			AF.openfile(DataFileName);
-			fixseparator(DataFileName);			
 			if (isdefined(HeaderFileName)){
-				fixseparator(HeaderFileName);
+				glog.logmsg(0,"Parsing Input DfnFile %s\n", HeaderFileName.c_str());
 				AF.parse_aseggdf2_header(HeaderFileName);
 			}
 
 			size_t headerlines = b.getsizetvalue("Headerlines");
 			if (!isdefined(headerlines)) { headerlines = 0; }
-			//Skip header lines				
 			for (size_t k = 0; k < headerlines; k++) {
-				AF.readnextrecord();				
-			}										
+				AF.readnextrecord();
+			}
 		}
 
 		Subsample = b.getsizetvalue("Subsample");
