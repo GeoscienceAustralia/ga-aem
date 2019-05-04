@@ -1,0 +1,76 @@
+DEFN   ST=RECD,RT=COMM;RT:A4;COMMENTS:A76
+DEFN 1 ST=RECD,RT=;project_ga:I8:NULL=99999,COMMENT=Geoscience Australia Project Number
+DEFN 2 ST=RECD,RT=;project_geotech:I9:NULL=99999,COMMENT=Geotech Ltd. Project Number
+DEFN 3 ST=RECD,RT=;flight:I6:NULL=99999,COMMENT=Flight Number
+DEFN 4 ST=RECD,RT=;line:I6:NULL=99999,COMMENT=Line Number
+DEFN 5 ST=RECD,RT=;fiducial:I9:NULL=99999,COMMENT=Fiducial Number
+DEFN 6 ST=RECD,RT=;date:I10:UNIT=yyyymmdd:NULL=99999,COMMENT=Date
+DEFN 7 ST=RECD,RT=;timeofday:F9.1:UNIT=s:NULL=99999,COMMENT=Seconds since midnight local time
+DEFN 8 ST=RECD,RT=;bearing:F8.1:UNIT=degrees:NULL=99999,COMMENT=Flight Direction Azimuth East of North
+DEFN 9 ST=RECD,RT=;heli_longitude:F15.8:UNIT=degrees:NULL=-99999,COMMENT=Helicopter GPS Longitude (GDA94
+DEFN 10 ST=RECD,RT=;heli_latitude:F15.8:UNIT=degrees:NULL=-99999,COMMENT=Helicopter GPS Latitude (GDA94
+DEFN 11 ST=RECD,RT=;heli_easting:F11.1:UNIT=m:NULL=-99999,COMMENT=Helicopter GPS Easting (GDA94, Map Grid of Australia Zone 55)
+DEFN 12 ST=RECD,RT=;heli_northing:F12.1:UNIT=m:NULL=-99999,COMMENT=Helicopter GPS Northing (GDA94, Map Grid of Australia Zone 55)
+DEFN 13 ST=RECD,RT=;heli_gpsheight:F10.2:UNIT=m:NULL=-99999,COMMENT=Helicopter GPS height above EGM96 Geoid
+DEFN 14 ST=RECD,RT=;heli_gpstime:F11.1:UNIT=s:NULL=-99999,COMMENT=Helicopter GPS second of the GPS week
+DEFN 15 ST=RECD,RT=;radar:F10.2:UNIT=m:NULL=99999,COMMENT=Helicopter radar altimeter height above ground
+DEFN 16 ST=RECD,RT=;gloop_longitude:F15.8:UNIT=degrees:NULL=-99999,COMMENT=Gradiometer Loop GPS Longitude (GDA94)
+DEFN 17 ST=RECD,RT=;gloop_latitude:F15.8:UNIT=degrees:NULL=-99999,COMMENT=Gradiometer Loop GPS Latitude (GDA94)
+DEFN 18 ST=RECD,RT=;gloop_easting:F11.1:UNIT=m:NULL=-99999,COMMENT=Gradiometer Loop GPS Easting (GDA94, Map Grid of Australia Zone 55)
+DEFN 19 ST=RECD,RT=;gloop_northing:F12.1:UNIT=m:NULL=-99999,COMMENT=Gradiometer Loop GPS Northing (GDA94, Map Grid of Australia Zone 55)
+DEFN 20 ST=RECD,RT=;gloop_gpsheight:F10.2:UNIT=m:NULL=-99999,COMMENT=Gradiometer Loop GPS height above EGM96 Geoid
+DEFN 21 ST=RECD,RT=;gloop_gpstime:F11.1:UNIT=s:NULL=-99999,COMMENT=Gradiometer Loop GPS second of the GPS week
+DEFN 22 ST=RECD,RT=;laser:F10.2:UNIT=m:NULL=99999,COMMENT=Gradiometer Loop laser altimeter height above ground
+DEFN 23 ST=RECD,RT=;roll:F10.2:UNIT=degrees:NULL=-9999,COMMENT=Gradiometer Loop rotation about the in-line (x) axis
+DEFN 24 ST=RECD,RT=;pitch:F10.2:UNIT=degrees:NULL=-9999,COMMENT=Gradiometer Loop rotation about the cross-line (y) axis
+DEFN 25 ST=RECD,RT=;yaw:F10.2:UNIT=degrees:NULL=-9999,COMMENT=Gradiometer Loop rotation about the vertical (z) axis
+DEFN 26 ST=RECD,RT=;em_mag_data_longitude:F15.8:UNIT=degrees:NULL=-99999,COMMENT=Reference Longitude for EM and magnetic data - derived centre of magnetic gradiometer loop (GDA94)
+DEFN 27 ST=RECD,RT=;em_mag_data_latitude:F15.8:UNIT=degrees:NULL=-99999,COMMENT=Reference Latitude  for EM and magnetic data - derived centre of magnetic gradiometer loop (GDA94)
+DEFN 28 ST=RECD,RT=;em_mag_data_easting:F11.1:UNIT=m:NULL=-99999,COMMENT=Reference Easting for EM and magnetic data - derived centre of magnetic gradiometer loop (GDA94, Map Grid of Australia Zone 55)
+DEFN 29 ST=RECD,RT=;em_mag_data_northing:F12.1:UNIT=m:NULL=-99999,COMMENT=Reference Northing for EM and magnetic data - derived centre of magnetic gradiometer loop (GDA94, Map Grid of Australia Zone 55)
+DEFN 30 ST=RECD,RT=;emloop_height:F10.2:UNIT=m:NULL=99999,COMMENT=Derived height of EM loop above ground
+DEFN 31 ST=RECD,RT=;elevation_laser:F10.2:UNIT=m:NULL=99999,COMMENT=Digital Elevation Model (Australian Height Datum) derived from laser altimeter and Gradiometer Loop GPS
+DEFN 32 ST=RECD,RT=;elevation_radar:F10.2:UNIT=m:NULL=99999,COMMENT=Digital Elevation Model (Australian Height Datum) derived from radar altimeter and Helicopter GPS
+DEFN 33 ST=RECD,RT=;mag_1L:F11.3:UNIT=nT:NULL=99999,COMMENT=Measured Total Magnetic field - left sensor
+DEFN 34 ST=RECD,RT=;mag_1R:F11.3:UNIT=nT:NULL=99999,COMMENT=Measured Total Magnetic field - right sensor
+DEFN 35 ST=RECD,RT=;mag_2L:F11.3:UNIT=nT:NULL=99999,COMMENT=Diurnal and IGRF corrected Total Magnetic field - left sensor
+DEFN 36 ST=RECD,RT=;mag_2R:F11.3:UNIT=nT:NULL=99999,COMMENT=Diurnal and IGRF corrected Total Magnetic field - right sensor
+DEFN 37 ST=RECD,RT=;mag_average:F11.3:UNIT=nT:NULL=99999,COMMENT=Total Magnetic field (average of left and right sensors)
+DEFN 38 ST=RECD,RT=;mag_diurnal:F11.3:UNIT=nT:NULL=99999,COMMENT=Base station magnetic diurnal
+DEFN 39 ST=RECD,RT=;mag_igrf:F11.3:UNIT=nT:NULL=99999,COMMENT=IGRF Total Field
+DEFN 40 ST=RECD,RT=;tx_current:F8.1:UNIT=A:NULL=99999,COMMENT=Transmitter Peak Current
+DEFN 41 ST=RECD,RT=;powerline_monitor:F8.1:NULL=99999,COMMENT=50 Hz power line monitor
+DEFN 42 ST=RECD,RT=;ZRaw:45F15.8:UNIT=pV/(A.m^4):NULL=99999,COMMENT=Raw Z dB/dt data for time channels 4 to 48
+DEFN 43 ST=RECD,RT=;ZComp:45F15.8:UNIT=pV/(A.m^4):NULL=99999,COMMENT=Compensated Z dB/dt data for time channels 4 to 48
+DEFN 44 ST=RECD,RT=;ZFilt:45F15.8:UNIT=pV/(A.m^4):NULL=99999,COMMENT=Compensated and filtered Z dB/dt data for time channels 4 to 48
+DEFN 45 ST=RECD,RT=;ZFinal:45F15.8:UNIT=pV/(A.m^4):NULL=99999,COMMENT=Final Z dB/dt data for time channels 4 to 48
+DEFN 46 ST=RECD,RT=;BZRaw:45F15.8:UNIT=pV.ms/(A.m^4):NULL=99999,COMMENT=Raw Z B-field data for time channels 4 to 48
+DEFN 47 ST=RECD,RT=;BZComp:45F15.8:UNIT=pV.ms/(A.m^4):NULL=99999,COMMENT=Compensated Z B-field data for time channels 4 to 48
+DEFN 48 ST=RECD,RT=;BZFilt:45F15.8:UNIT=pV.ms/(A.m^4):NULL=99999,COMMENT=Compensated and filtered Z B-field data for time channels 4 to 48
+DEFN 49 ST=RECD,RT=;BZFinal:45F15.8:UNIT=pV.ms/(A.m^4):NULL=99999,COMMENT=Final Z B-field data for time channels 4 to 48
+DEFN 50 ST=RECD,RT=;XRaw:29F15.8:UNIT=pV/(A.m^4):NULL=99999,COMMENT=Raw X dB/dt data for time channels 20 to 48
+DEFN 51 ST=RECD,RT=;XComp:29F15.8:UNIT=pV/(A.m^4):NULL=99999,COMMENT=Compensated X dB/dt data for time channels 20 to 48
+DEFN 52 ST=RECD,RT=;XFilt:29F15.8:UNIT=pV/(A.m^4):NULL=99999,COMMENT=Compensated and Fileterd X dB/dt data for time channels 20 to 48
+DEFN 53 ST=RECD,RT=;XFinal:29F15.8:UNIT=pV/(A.m^4):NULL=99999,COMMENT=Final X dB/dt data for time channels 20 to 48
+DEFN 54 ST=RECD,RT=;BXRaw:29F15.8:UNIT=pV.ms/(A.m^4):NULL=99999,COMMENT=Raw X B-field data for time channels 20 to 48
+DEFN 55 ST=RECD,RT=;BXComp:29F15.8:UNIT=pV.ms/(A.m^4):NULL=99999,COMMENT=Compensated X B-field data for time channels 20 to 48
+DEFN 56 ST=RECD,RT=;BXFilt:29F15.8:UNIT=pV.ms/(A.m^4):NULL=99999,COMMENT=Compensated and filtered X B-field data for time channels 20 to 48
+DEFN 57 ST=RECD,RT=;BXFinal:29F15.8:UNIT=pV.ms/(A.m^4):NULL=99999,COMMENT=Raw X B-field data for time channels 20 to 48
+;END DEFN
+DEFN 1 ST=RECD,RT=PROJ; RT:A4
+DEFN 2 ST=RECD,RT=PROJ; PROJNAME:A30: COMMENT=GDA94 / MGA zone 55
+DEFN 3 ST=RECD,RT=PROJ; ELLPSNAM:A30: COMMENT=GRS 1980
+DEFN 4 ST=RECD,RT=PROJ; MAJ_AXIS: D12.1: UNIT=m, COMMENT=6378137.000000
+DEFN 5 ST=RECD,RT=PROJ; ECCENT: D12.9: COMMENT=298.257222
+DEFN 6 ST=RECD,RT=PROJ; PRIMEMER: F10.1: UNIT=deg, COMMENT=0.000000
+DEFN 7 ST=RECD,RT=PROJ; PROJMETH: A30: COMMENT=Transverse Mercator
+DEFN 8 ST=RECD,RT=PROJ; PARAM1: D14.0: COMMENT=      0.000000
+DEFN 9 ST=RECD,RT=PROJ; PARAM2: D14.0: COMMENT=    147.000000
+DEFN 10 ST=RECD,RT=PROJ; PARAM3: D14.0: COMMENT=      0.999600
+DEFN 11 ST=RECD,RT=PROJ; PARAM4: D14.0: COMMENT= 500000.000000
+DEFN 12 ST=RECD,RT=PROJ; PARAM5: D14.0: COMMENT=10000000.00000
+DEFN 13 ST=RECD,RT=PROJ; PARAM6: D14.0:
+DEFN 14 ST=RECD,RT=PROJ; PARAM7: D14.0:
+DEFN 15 ST=RECD,RT=PROJ; END DEFN
+PROJGDA94 / MGA zone 55           GRS 1980                      6378137.0000  298.257222  0.000000Transverse Mercator                 0.000000    147.000000      0.999600 500000.00000010000000.00000
+COMMIntrepid ASEG-GDF2 Export
