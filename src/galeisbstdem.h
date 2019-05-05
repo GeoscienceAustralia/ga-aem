@@ -814,7 +814,7 @@ class cSBSInverter{
 		fd_ESt.initialise(sd, "Thickness");
 
 		cBlock tfr = b.findblock("TotalFieldReconstruction");
-		fd_GTFR = parsegeometry(tfr);
+		fd_GTFR = parsegeometry(tfr);		
 	}
 
 	std::vector<cFieldDefinition> parsegeometry(const cBlock& b)

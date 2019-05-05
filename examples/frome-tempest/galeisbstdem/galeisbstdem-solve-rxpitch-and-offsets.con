@@ -86,6 +86,7 @@ Control Begin
 				//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing
 				//Skyvan platform use TX_Pitch = -0.45 (=+0.45 in TEMPEST sign convention)
 				//Casa platform use   TX_Pitch = -0.90 (=+0.90 in TEMPEST sign convention)
+				TX_Height = Tx_Height
 				TX_Roll   = 0
 				TX_Pitch  = -0.45
 				TX_Yaw    = 0
