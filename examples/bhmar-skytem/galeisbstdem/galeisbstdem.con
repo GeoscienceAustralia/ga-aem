@@ -1,33 +1,33 @@
 Control Begin
 
-	NumberOfSystems = 2
-	
-	EMSystem1 Begin
+	EMSystem Begin
 		SystemFile      = ../stmfiles/Skytem-LM.stm
-		UseXComponent   = no
-		UseYComponent   = no
-		UseZComponent   = yes
-		InvertTotalField = no
-		ReconstructPrimaryFieldFromInputGeometry = no
-		EstimateNoiseFromModel = no
-		ZComponentSecondary    = -Column 33
-		ZComponentNoise        = Column 72
-	EMSystem1 End
+		InvertXPlusZ    = no
+		InvertPrimaryPlusSecondary = no
+		ZComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = no
+			Secondary              = -Column 33
+			Noise                  =  Column 72
+		ZComponent End
+	EMSystem End
 	
-	EMSystem2 Begin
+	EMSystem Begin
 		SystemFile      = ../stmfiles/Skytem-HM.stm
-		UseXComponent   = no
-		UseYComponent   = no
-		UseZComponent   = yes
-		InvertTotalField = no
-		ReconstructPrimaryFieldFromInputGeometry = no
-		EstimateNoiseFromModel = no
-		ZComponentSecondary    = -Column 51
-		ZComponentNoise        = Column 90
-	EMSystem2 End
+		InvertXPlusZ    = no
+		InvertPrimaryPlusSecondary = no
+		ZComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = no
+			Secondary              = -Column 51
+			Noise                  =  Column 90
+		ZComponent End
+	EMSystem End
 
 	Earth Begin
 		NumberOfLayers = 30
+		MinConductivity = 1e-6
+		MaxConductivity = 10.0
 	Earth End
 
 	Options Begin
@@ -51,6 +51,7 @@ Control Begin
 		AlphaSmoothness   = 333 //Set to 0 for no vertical conductivity smoothing
 		SmoothnessMethod  = Minimise2ndDerivatives
 
+		NormType    = L2
 		MinimumPhiD = 1.0
 		MinimumPercentageImprovement = 1.0
 		MaximumIterations = 100
@@ -97,13 +98,14 @@ Control Begin
 	Output Begin
 		DataFile = output/inversion.output.asc
 		LogFile  = output/inversion.output.log
-
 		PositiveLayerBottomDepths = no
-		NegativeLayerBottomDepths = yes
+		NegativeLayerBottomDepths = no
 		InterfaceElevations       = no
-		ParameterSensitivity      = yes
-		ParameterUncertainty      = yes
-		PredictedData             = no
+		ParameterSensitivity      = no
+		ParameterUncertainty      = no
+		PredictedData             = yes
+		ObservedData              = yes
+		NoiseEstimates            = yes
 	Output End
 
 Control End
