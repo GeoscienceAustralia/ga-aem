@@ -43,7 +43,7 @@ Mag1R			nT			Measured Total Magnetic field - right sensor
 Mag2L			nT			Diurnal and IGRF corrected Total Magnetic field - left sensor
 Mag2R			nT			Diurnal and IGRF corrected Total Magnetic field - right sensor
 Mag_average		nT			Total Magnetic field (average of left and right sensors)
-Basemag			nT    			Base station magnetic diurnal
+Basemag			nT			Base station magnetic diurnal
 IGRF_Tot		nT			IGRF Total Field
 TX_Current		Amperes			Transmitter Current
 Powerline_monitor	N/A			50 Hz power line monitor

@@ -65,13 +65,32 @@ public:
 		frequencydependence = std::vector<double>(_frequencydependence, _frequencydependence + nlayers);		
 	}
 	
-	size_t nlayers(){ return conductivity.size(); }
+	size_t nlayers() const
+	{ 
+		return conductivity.size();
+	}
 
-	void print(){
+	void print() const	
+	{
 		for (size_t i = 0; i<nlayers() - 1; i++){
 			printf("%d\t%8.6lf\t%6.2lf\n", (int)i, conductivity[i], thickness[i]);
 		}
 		printf("%d\t%8.6lf\n\n", (int)nlayers(), conductivity[nlayers() - 1]);
+	}
+
+	void write(const std::string& filepath) const 
+	{
+		FILE* fp = fileopen(filepath, "w");
+		size_t nl = conductivity.size();
+		for (size_t i = 0; i < nl; i++) {
+			if (i < thickness.size()) {
+				fprintf(fp, "%e\t%e\n", conductivity[i], thickness[i]);
+			}
+			else {
+				fprintf(fp, "%e\tInf\n", conductivity[i]);
+			}
+		}
+		fclose(fp);
 	}
 };
 
