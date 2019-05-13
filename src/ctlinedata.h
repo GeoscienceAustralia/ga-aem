@@ -26,9 +26,10 @@ public:
 	size_t nsamples;
 	bool spreadfade = false;
 	std::string inputdatumprojection;
+	std::vector<double> fid;
 	std::vector<double> x;
 	std::vector<double> y;
-	std::vector<double> e;
+	std::vector<double> e;	
 	std::vector<double> linedistance;
 	std::vector<std::vector<double>> c;
 	std::vector<std::vector<double>> z;
@@ -49,10 +50,11 @@ public:
 		if (isdefined(subsample) == false)subsample = 1;
 
 		cRange<int> lcol = getcolumns("Line");
+		cRange<int> fcol = getcolumns("Fiducial");
 		cRange<int> xcol = getcolumns("Easting");
 		cRange<int> ycol = getcolumns("Northing");
 		cRange<int> ecol = getcolumns("Elevation");
-
+		
 		bool isresistivity = false;
 		cRange<int> crcol = getcolumns("Conductivity");
 		if (crcol.valid() == false){
@@ -124,6 +126,7 @@ public:
 		nsamples = M.size();
 		linenumber = (int)M[0][lcol.from];
 
+		fid.resize(nsamples);
 		x.resize(nsamples);
 		y.resize(nsamples);
 		e.resize(nsamples);
@@ -135,10 +138,11 @@ public:
 		}
 
 		for (int si = 0; si < nsamples; si++){
+			fid[si] = M[si][fcol.from];
 			x[si] = M[si][xcol.from];
 			y[si] = M[si][ycol.from];
 			e[si] = M[si][ecol.from];
-
+			
 			c[si].resize(nlayers);
 			for (int li = 0; li < nlayers; li++){
 				c[si][li] = M[si][crcol.from + li];

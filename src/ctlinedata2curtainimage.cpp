@@ -114,11 +114,17 @@ private:
 	size_t sequence_number = 0;
 	
 	int nhpixels;
-	int nvpixels;
-	double hlength;
-	double vlength;
-	double h0, h1, dh;
-	double v0, v1, dv;
+	int nvpixels;	
+	double h0;//Centre of left pixel column
+	double h1;//Centre of right pixel column
+	double dh;//Horizontal pixel size
+	double v0;//Centre of bottom pixel row
+	double v1;//Centre of top pixel row
+	double dv;//Vertical pixel size
+	std::vector<double> imagefid;
+	std::vector<double> imagex;
+	std::vector<double> imagey;	
+	std::vector<double> imageelevation;
 
 	double gratdiv;
 
@@ -130,8 +136,8 @@ private:
 	cStretch stretch;
 	std::vector<double> cbarticks;
 
-	bool autozsectiontop;
-	bool autozsectionbot;
+	bool autozsectiontop=true;
+	bool autozsectionbot=true;
 
 	bool   spreadfade;
 	double spreadfadelowclip;
@@ -211,6 +217,7 @@ public:
 		//drawgraticule();		
 		//fixtransparenttext();
 		saveimage(bm);
+		save_world_file();
 		savegeometry();		
 		saveribbontilerbatchcommand();		
 
@@ -223,11 +230,13 @@ public:
 
 	void calculateextents()
 	{												
-		hlength = D.linedistance.back();
+		double hlength = D.linedistance.back();
+		std::cout << hlength << std::endl;
 		hlength = roundupnearest(hlength,dh);	
+		std::cout << hlength << std::endl;
 		h0 = 0.0;
 		h1 = hlength;
-		nhpixels  = 1 + (int)(hlength/dh);
+		nhpixels  = 1+(int)(hlength/dh);
 		
 		double zmin =  DBL_MAX;
 		double zmax = -DBL_MAX;
@@ -238,7 +247,7 @@ public:
 
 		if(autozsectionbot==true) v0 = zmin;
 		if(autozsectiontop==true) v1 = zmax;		
-		vlength = v1-v0;
+		double vlength = v1-v0;
 		//Adjust extents to nearest pixel
 		vlength = roundupnearest(vlength,dv);		
 		v0 = v1-vlength;
@@ -289,25 +298,37 @@ public:
 		int vp0 = wv2iy(v0);
 		int vp1 = wv2iy(v1);
 
-		int mini = 0;
-		for (int i = 0; i <= nhpixels; i++){
+		imagefid.resize(nhpixels);
+		imagex.resize(nhpixels);
+		imagey.resize(nhpixels);
+		imageelevation.resize(nhpixels);
+				
+		int k = 0;
+		for (int i = 0; i < nhpixels; i++){
 			double hp = h0 + (double)i*dh;
 
-			while (mini < D.linedistance.size() - 1 && std::abs(D.linedistance[mini] - hp) > std::abs(D.linedistance[mini + 1] - hp)){
-				mini++;
+			while (k < D.linedistance.size() - 1 
+				   && std::abs(D.linedistance[k] - hp) > 
+				      std::abs(D.linedistance[k + 1] - hp)){
+				k++;
 			}
-			
+						
+			imagefid[i] = linearinterp(D.linedistance[k], D.fid[k], D.linedistance[k + 1], D.fid[k + 1], hp);
+			imagex[i] = linearinterp(D.linedistance[k], D.x[k], D.linedistance[k + 1], D.x[k + 1], hp);
+			imagey[i] = linearinterp(D.linedistance[k], D.y[k], D.linedistance[k + 1], D.y[k + 1], hp);;
+			imageelevation[i] = linearinterp(D.linedistance[k], D.e[k], D.linedistance[k + 1], D.e[k + 1], hp);
+						
 			for(int j=vp1; j<=vp0; j++){				
 				bm.SetPixel(i,j,BkgColor);
 
 				double zp = v1 - (double)j*dv;
-				if(zp>D.e[mini]){
+				if(zp>D.e[k]){
 					bm.SetPixel(i,j,AirColor);					
 				}
 				else{					
 					for (int li = 0; li<D.nlayers; li++){
-						if (zp < D.z[mini][li] && zp >= D.z[mini][li + 1]){
-							double conductivity = D.c[mini][li];
+						if (zp < D.z[k][li] && zp >= D.z[k][li + 1]){
+							double conductivity = D.c[k][li];
 							if(conductivity < 0.0){
 								bm.SetPixel(i,j,NullsColor);
 							}
@@ -316,8 +337,8 @@ public:
 								Color clr(255,cmap.r[ind],cmap.g[ind],cmap.b[ind]);
 
 								if(spreadfade){
-									double conductivity_p10 = D.cp10[mini][li];
-									double conductivity_p90 = D.cp90[mini][li];
+									double conductivity_p10 = D.cp10[k][li];
+									double conductivity_p90 = D.cp90[k][li];
 									double spread = log10(conductivity_p90) - log10(conductivity_p10);
 									double fade   = fadevalue(spread);
 									fadecolor(clr,fade);
@@ -477,6 +498,21 @@ public:
 		return s;
 	}
 
+	std::string jgwfile_nod() {
+		std::string s = "jpeg\\" + basename() + ".jgw";
+		return s;
+	}
+
+	std::string jgwfile() {
+		std::string s = outdir + jgwfile_nod();
+		return s;
+	}
+
+	std::string xyfile() {
+		std::string s = outdir + "xy\\" + basename() + ".xy";
+		return s;
+	}
+
 	std::string bilfile_nod() {
 		std::string s = "bil\\" + basename() + ".bil";
 		return s;
@@ -529,16 +565,6 @@ public:
 	
 	void savegeometry(){
 		
-		//std::string txtpath = outdir + basename() + ".txt";
-		//FILE* fp = fileopen(txtpath, "w");
-		//fprintf(fp, "top %lf\n", zsectiontop);
-		//fprintf(fp, "bottom %lf\n", zsectionbot);
-		//fprintf(fp, "hlength %lf\n", hlength);
-		//fprintf(fp, "vlength %lf\n", vlength);
-		//fprintf(fp, "nhpixels %d\n", nhpixels);
-		//fprintf(fp, "nvpixels %d\n", nvpixels);				
-		//fclose(fp);
-
 		std::vector<RDP::Point> pl(D.x.size());
 		std::vector<RDP::Point> plout;
 		for (size_t i = 0; i < D.x.size(); i++){
@@ -551,27 +577,32 @@ public:
 		std::string pfpath = outdir + basename() + ".points_filtered.dat";
 		//savepoints(pl, ppath);
 		//savepoints(plout, pfpath);
-		
+
+		saveimage_geometry();
+				
 		std::vector<double> x(plout.size());
-		std::vector<double> y(plout.size());
-		std::vector<double> longitude(plout.size());
-		std::vector<double> latitude(plout.size());
+		std::vector<double> y(plout.size());		
 		for (size_t i = 0; i < plout.size(); i++){
 			x[i] = plout[i].first;
 			y[i] = plout[i].second;
 		}
-		
+
+		std::vector<double> longitude(plout.size());
+		std::vector<double> latitude(plout.size());		
+		en2ll(x, y, longitude, latitude);
+		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";		
+		savexml(longitude, latitude);
+	}
+
+	void en2ll(const std::vector<double>& e_in, const std::vector<double>& n_in, std::vector<double>& lon_out, std::vector<double>& lat_out)
+	{
 		int inepsgcode = cCRS::epsgcode(D.inputdatumprojection);
-		if (inepsgcode < 0){
+		if (inepsgcode < 0) {
 			std::string msg = strprint("Invalid DatumProjection %s was specified\n", D.inputdatumprojection.c_str()) + _SRC_;
 			throw(std::runtime_error(msg));
-		}
-
+		}		
 		int outepsgcode = cCRS::epsgcode("WGS84|GEODETIC");
-		transform(inepsgcode, x, y, outepsgcode, longitude, latitude);
-		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";
-		//savepoints(longitude, latitude, pfpathll);
-		savexml(longitude, latitude);
+		transform(inepsgcode, e_in, n_in, outepsgcode, lon_out, lat_out);
 	}
 
 	void savepoints(const std::vector<RDP::Point>& p, const std::string& filename){
@@ -586,10 +617,52 @@ public:
 	{
 		FILE* fp = fileopen(filename, "w");
 		for (size_t i = 0; i < x.size(); i++){
-			fprintf(fp, "%10lf %10lf\n", x[i], y[i]);
+			fprintf(fp, "%10.2lf %10.2lf\n", x[i], y[i]);
 		}
 		fclose(fp);
 	};
+
+	void saveimage_geometry()
+	{
+		std::vector<double> imagelon(nhpixels);
+		std::vector<double> imagelat(nhpixels);		
+		en2ll(imagex, imagey, imagelon, imagelat);
+		std::string xypath = outdir + "geometry\\" + basename() + ".path.txt";
+		FILE* fp = fileopen(xypath,"w");
+		for (size_t i = 0; i < nhpixels; i++) {
+			double hp = dh/2.0 + dh * i;
+			fprintf(fp,"%10d %10d %10.2lf %10.2lf %10.2lf %10.2lf %12.6lf %12.6lf %10.2lf\n",
+				D.linenumber, i + 1, hp, imagefid[i], imagex[i], imagey[i], imagelon[i], imagelat[i], imageelevation[i]);
+		}
+		fclose(fp);
+
+		double ulx = h0 - dh/2.0 + dh/2.0;
+		double uly = v1 + dv/2.0; 
+		double lrx = h1 + dh/2.0 + dh/2.0;
+		double lry = v0 - dv/2.0;
+		std::string xyext = outdir + "geometry\\" + basename() + ".extent.txt";
+		fp = fileopen(xyext, "w");
+		fprintf(fp, "%10d %10d %10d %10d", 0, 0, nhpixels, -nvpixels);
+		fprintf(fp, " %10.2lf %10.2lf %10.2lf %10.2lf\n", ulx, uly, lrx, lry);
+		fclose(fp);
+	};
+
+	void save_world_file()
+	{
+		//Line 1 : A: pixel size in the x - direction in map units / pixel
+		//Line 2 : D : rotation about y - axis
+		//Line 3 : B : rotation about x - axis
+		//Line 4 : E : pixel size in the y - direction in map units, almost always negative[3]
+		//Line 5 : C : x - coordinate of the center of the upper left pixel
+		//Line 6 : F : y - coordinate of the center of the upper left pixel		
+		std::ofstream ofs(jgwfile());
+		ofs << dh  << std::endl;
+		ofs << 0.0 << std::endl;
+		ofs << 0.0 << std::endl;
+		ofs << -dv << std::endl;
+		ofs << h0  << std::endl;
+		ofs << v1  << std::endl;
+	}
 	
 	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
 	{				
