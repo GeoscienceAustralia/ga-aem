@@ -13,6 +13,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <valarray>
 #include <cstring>
 #include <iostream>
+#include <iomanip>
 
 #include "general_types.h"
 #include "general_utils.h"
@@ -230,10 +231,8 @@ public:
 
 	void calculateextents()
 	{												
-		double hlength = D.linedistance.back();
-		std::cout << hlength << std::endl;
-		hlength = roundupnearest(hlength,dh);	
-		std::cout << hlength << std::endl;
+		double hlength = D.linedistance.back();		
+		hlength = roundupnearest(hlength,dh);			
 		h0 = 0.0;
 		h1 = hlength;
 		nhpixels  = 1+(int)(hlength/dh);
@@ -309,15 +308,32 @@ public:
 
 			while (k < D.linedistance.size() - 1 
 				   && std::abs(D.linedistance[k] - hp) > 
-				      std::abs(D.linedistance[k + 1] - hp)){
+				      std::abs(D.linedistance[k + 1] - hp))
+			{
 				k++;
 			}
-						
-			imagefid[i] = linearinterp(D.linedistance[k], D.fid[k], D.linedistance[k + 1], D.fid[k + 1], hp);
-			imagex[i] = linearinterp(D.linedistance[k], D.x[k], D.linedistance[k + 1], D.x[k + 1], hp);
-			imagey[i] = linearinterp(D.linedistance[k], D.y[k], D.linedistance[k + 1], D.y[k + 1], hp);;
-			imageelevation[i] = linearinterp(D.linedistance[k], D.e[k], D.linedistance[k + 1], D.e[k + 1], hp);
-						
+			
+			int a = k;
+			int b = k + 1;
+			if (k == D.linedistance.size()-1){
+				a = k-1; b = k;
+			}
+			imagefid[i]       = linearinterp(D.linedistance[a], D.fid[a], D.linedistance[b], D.fid[b], hp);
+			imagex[i]         = linearinterp(D.linedistance[a], D.x[a],   D.linedistance[b], D.x[b], hp);
+			imagey[i]         = linearinterp(D.linedistance[a], D.y[a],   D.linedistance[b], D.y[b], hp);;
+			imageelevation[i] = linearinterp(D.linedistance[a], D.e[a],   D.linedistance[b], D.e[b], hp);
+			
+
+			/*if (i > 10270) {
+				std::cout << i << " ";
+				std::cout << k << " ";
+				std::cout << std::setprecision(10) << D.linedistance[k] << " ";
+				std::cout << std::setprecision(10) << D.x[k] << " ";
+				std::cout << std::setprecision(10) << D.y[k] << " ";
+				std::cout << std::setprecision(10) << D.y[k+1] << " ";
+				std::cout << std::endl;
+			}*/
+
 			for(int j=vp1; j<=vp0; j++){				
 				bm.SetPixel(i,j,BkgColor);
 
@@ -642,7 +658,7 @@ public:
 		double lry = v0 - dv/2.0;
 		std::string xyext = outdir + "geometry\\" + basename() + ".extent.txt";
 		fp = fileopen(xyext, "w");
-		fprintf(fp, "%10d %10d %10d %10d", 0, 0, nhpixels, -nvpixels);
+		fprintf(fp, "%10d %10d %10d %10d %10d", D.linenumber, 0, 0, nhpixels, -nvpixels);
 		fprintf(fp, " %10.2lf %10.2lf %10.2lf %10.2lf\n", ulx, uly, lrx, lry);
 		fclose(fp);
 	};
@@ -660,7 +676,7 @@ public:
 		ofs << 0.0 << std::endl;
 		ofs << 0.0 << std::endl;
 		ofs << -dv << std::endl;
-		ofs << h0  << std::endl;
+		ofs << h0+dh/2.0  << std::endl;
 		ofs << v1  << std::endl;
 	}
 	
