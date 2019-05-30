@@ -105,6 +105,7 @@
     <ClInclude Include="..\..\src\large_loop.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\asciicolumnfile.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
