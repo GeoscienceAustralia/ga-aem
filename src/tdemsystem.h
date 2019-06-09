@@ -694,12 +694,17 @@ public:
 	  LEM.setproperties(E);
   }
 
+  void setconductivitythickness(const size_t nlayers, const double* conductivity, const double* thickness)
+  {
+	  LEM.setconductivitythickness(nlayers, conductivity, thickness);
+  }
+
   void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness)
   {
 	  LEM.setconductivitythickness(conductivity, thickness);
   }
 
-  void setgeometry(const cTDEmGeometry& g)
+  void setgeometry(const cTDEmGeometry& G)
   {
 	  //X = +ve in flight direction
 	  //Y = +ve on left wing
@@ -710,32 +715,42 @@ public:
 	  //Left wing up is positive roll  Y->Z axis
 	  //Nose down is positive pitch	 Z->X axis
 
-	  TX_height = g.tx_height;
-	  TX_pitch = g.tx_pitch;
-	  TX_roll = g.tx_roll;
+	  TX_height = G.tx_height;
+	  TX_pitch = G.tx_pitch;
+	  TX_roll = G.tx_roll;
 	  TX_orientation = cVec(0.0, 0.0, 1.0);
 	  if (TX_pitch != 0.0) TX_orientation = TX_orientation.rotate(TX_pitch, yaxis);
 	  if (TX_roll != 0.0) TX_orientation = TX_orientation.rotate(TX_roll, xaxis);
 
-	  TX_RX_separation = cVec(g.txrx_dx, g.txrx_dy, g.txrx_dz);
+	  TX_RX_separation = cVec(G.txrx_dx, G.txrx_dy, G.txrx_dz);
 
 	  LEM.setgeometry(LEM.pitchrolldipole(TX_pitch, TX_roll), TX_height, TX_RX_separation.x, TX_RX_separation.y, TX_height + TX_RX_separation.z);
 
-	  RX_height = TX_height + g.txrx_dz;
-	  RX_pitch = g.rx_pitch;
-	  RX_roll = g.rx_roll;
+	  RX_height = TX_height + G.txrx_dz;
+	  RX_pitch = G.rx_pitch;
+	  RX_roll = G.rx_roll;
   };
+
   void setgeometry(const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
   {
-	  cTDEmGeometry g(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
-	  setgeometry(g);
+	  cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	  setgeometry(G);
   }
+
+  void setgeometry(const double* g)
+  {
+	  //const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
+	  cTDEmGeometry G(g[0],g[1],g[2],g[3],g[4],g[5],g[6],g[7],g[8],g[9]);
+	  setgeometry(G);
+  }
+
   void setupcomputations()
   {
 	  for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
 		  LEM.setfrequencyabscissalayers(fi);
 	  }
   }
+
   void setprimaryfields()
   {
 	  LEM.setprimaryfields();
@@ -778,6 +793,7 @@ public:
 	  PrimaryZ *= ZScale;
 
   }
+
   cVec rotatetoreceiverorientation(cVec v)
   {
 	  //Rotating in opposite sense because we are rotating the axes
@@ -891,7 +907,6 @@ public:
 	  if (SaveDiagnosticFiles) {
 		  write_windows("diag_windows.txt");
 	  }
-
   }
 
   void initialise_windows()
@@ -1158,18 +1173,6 @@ public:
 		  fprintf(fp, "%20.10le\t%20.10le\n", WaveformTime[i], ts[i]);
 	  }
 	  fclose(fp);
-  }
-
-  void forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry)
-  {
-	  setconductivitythickness(conductivity, thickness);
-	  setgeometry(geometry);
-	  LEM.calculation_type = CT_FORWARDMODEL;
-	  LEM.derivative_layer = INT_MAX;
-
-	  setupcomputations();
-	  setprimaryfields();
-	  setsecondaryfields();
   }
 
   void drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp)
@@ -1560,6 +1563,45 @@ public:
 	  R.SX = X;
 	  R.SY = Y;
 	  R.SZ = Z;
+  }
+
+  void forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry)
+  {
+	  setconductivitythickness(conductivity, thickness);
+	  setgeometry(geometry);
+	  LEM.calculation_type = CT_FORWARDMODEL;
+	  LEM.derivative_layer = INT_MAX;
+
+	  setupcomputations();
+	  setprimaryfields();
+	  setsecondaryfields();
+  }
+
+  void forwardmodel(
+	  const size_t nlayers,
+	  const double* conductivity,
+	  const double* thickness,
+	  const double* g,
+	  double& PX, double& PY, double& PZ, double* SX, double* SY, double* SZ)
+  {
+	  //Order const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
+	  cTDEmGeometry G(g[0],g[1],g[2],g[3],g[4],g[5],g[6],g[7],g[8],g[9]);
+	  setgeometry(G);
+	  setconductivitythickness(nlayers,conductivity,thickness);
+	  setupcomputations();
+	  setprimaryfields();
+	  setsecondaryfields();
+	  getfields(PX,PY,PZ,SX,SY,SZ);
+  }
+
+  void getfields(double& PX, double& PY, double& PZ, double* SX, double* SY, double* SZ)
+  {
+	  PX = PrimaryX;
+	  PY = PrimaryY;
+	  PZ = PrimaryZ;
+	  for(size_t i=0; i<NumberOfWindows; i++) SX[i]=X[i];
+	  for(size_t i=0; i<NumberOfWindows; i++) SY[i]=Y[i];
+	  for(size_t i=0; i<NumberOfWindows; i++) SZ[i]=Z[i];
   }
 
 };
