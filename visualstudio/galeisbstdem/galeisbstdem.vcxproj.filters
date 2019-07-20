@@ -58,9 +58,6 @@
     <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\galeisbstdem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -68,6 +65,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\submodules\cpp-utils\src\asciicolumnfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\geophysics-netcdf\src\geophysics_netcdf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

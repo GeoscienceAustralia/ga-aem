@@ -11,7 +11,7 @@
     <GEOPHYSICS_NETCDF_ROOT>Z:\code\repos\geophysics-netcdf</GEOPHYSICS_NETCDF_ROOT>
   </PropertyGroup>
   <PropertyGroup>
-    <IncludePath>$(GEOPHYSICS_NETCDF_ROOT)\src\cpp;$(GEOPHYSICS_NETCDF_ROOT)\submodules\marray\include\andres;$(IncludePath)</IncludePath>
+    <IncludePath>$(GEOPHYSICS_NETCDF_ROOT)\src;$(GEOPHYSICS_NETCDF_ROOT)\submodules\marray\include\andres;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
     <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>

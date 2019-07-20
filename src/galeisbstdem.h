@@ -2205,9 +2205,9 @@ class cSBSInverter{
 		buf += strprint("%12.2lf", Id.fidnumber);
 
 		//Location
-		OI.addfield("easting", 'F', 9, 1);
+		OI.addfield("easting", 'F', 10, 1);
 		OI.setunits("m"); OI.setcomment("IntrepidX");
-		buf += strprint("%9.1lf", Location.x);
+		buf += strprint("%10.1lf", Location.x);
 
 		OI.addfield("northing", 'F', 10, 1);
 		OI.setunits("m"); OI.setcomment("IntrepidY");

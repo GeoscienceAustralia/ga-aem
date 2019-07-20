@@ -100,7 +100,7 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\geophysics-netcdf\src\cpp\geophysics_netcdf.h" />
+    <ClInclude Include="..\..\..\geophysics-netcdf\src\geophysics_netcdf.h" />
     <ClInclude Include="..\..\src\galeisbstdem.h" />
     <ClInclude Include="..\..\src\large_loop.h" />
     <ClInclude Include="..\..\src\lem.h" />
