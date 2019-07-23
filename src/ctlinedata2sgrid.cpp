@@ -11,13 +11,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <numeric>
 #include <vector>
 
+#include "gaaem_version.h"
 #include "general_types.h"
 #include "general_utils.h"
 #include "file_utils.h"
 #include "blocklanguage.h"
 #include "geometry3d.h"
 
-#define VERSION "1.0"
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
@@ -468,12 +468,12 @@ int main(int argc, char** argv)
 {
 	if (argc >= 2){
 		glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
-		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 	}
 	else{
 		glog.logmsg("Executing %s\n", argv[0]);
-		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 		glog.logmsg("Error: Not enough input arguments\n");
 		glog.logmsg("Usage: %s controlfilename\n",argv[0]);

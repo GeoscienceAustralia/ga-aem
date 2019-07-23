@@ -15,8 +15,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <stdexcept>
 #include <mpi.h>
 
+#include "gaaem_version.h"
 #include "radius_searcher.h"
-
 #include "file_utils.h"
 #include "file_formats.h"
 #include "lem.h"
@@ -31,7 +31,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "inversion_line_searcher.h"
 #include "stacktrace.h"
 
-#define VERSION "1.0"
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
@@ -830,14 +829,14 @@ public:
 	{
 		if(argc < 2){
 			glog.logmsg("%s\n", commandlinestring(argc, argv).c_str());
-			glog.logmsg("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 			glog.logmsg("Usage: %s control_file_name\n", argv[0]);
 			glog.logmsg("Too few command line arguments\n");
 			exit(1);
 		}
 		else if(argc > 2){
 			glog.logmsg("%s\n", commandlinestring(argc, argv).c_str());
-			glog.logmsg("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 			glog.logmsg("Usage: %s control_file_name\n", argv[0]);
 			glog.logmsg("Too many command line arguments\n");
 			exit(1);
@@ -852,7 +851,7 @@ public:
 		std::string ControlFile = std::string(argv[1]);
 		if(exists(ControlFile) == false){
 			glog.logmsg(0, "%s\n", commandlinestring(argc, argv).c_str());
-			glog.logmsg(0, "%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 			glog.logmsg(0, "Controlfile %s was not found\n", ControlFile.c_str());
 			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 			throw(e);
@@ -867,7 +866,7 @@ public:
 		glog.logmsg(0,"Opening log file %s\n", OutputOp.LogFile.c_str());
 		glog.logmsg(0,"Logfile opened on %s\n", timestamp().c_str());
 		glog.logmsg(0,"Control file %s\n", Control.Filename.c_str());
-		glog.logmsg(0,"Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg(0,"Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg(0,"Working directory %s\n", getcurrentdirectory().c_str());
 		glog.logmsg(0,"Processes=%lu\tRank=%lu\n", mpisize, mpirank);
 		glog.logmsg(0,"Processor name = %s\n", mpipname.c_str());
@@ -2360,13 +2359,13 @@ int main(int argc, char** argv)
 
 		if(argc < 2){
 			glog.logmsg(0, "%s\n", commandlinestring(argc, argv).c_str());
-			glog.logmsg(0, "%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 			glog.logmsg(0, "Usage: %s control_file_name\n", argv[0]);
 			glog.logmsg(0, "Too few command line arguments\n");
 		}
 		else if(argc > 2){
 			glog.logmsg(0, "%s\n", commandlinestring(argc, argv).c_str());
-			glog.logmsg(0, "%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+			glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 			glog.logmsg(0, "Usage: %s control_file_name\n", argv[0]);
 			glog.logmsg(0, "Too many command line arguments\n");
 		}

@@ -9,6 +9,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 using namespace std;
 
+#include "gaaem_version.h"
 #include "general_utils.h"
 #include "file_utils.h"
 #include "random.h"
@@ -22,7 +23,6 @@ using namespace std;
 
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
-
 
 int main(int argc, char* argv[])
 {	
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 
 	if (mpirank == 0){
 		printf("%s\n", commandlinestring(argc, argv).c_str());
-		printf("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+		printf("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 	}
 
 	if(argc!=2){						
@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 	}	
 	else{
 		glog.logmsg(0, "Executing %s %s\n", argv[0], argv[1]);
-		glog.logmsg(0, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg(0, "Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
 		glog.logmsg(0, "This process starting at %s\n", timestamp().c_str());
 

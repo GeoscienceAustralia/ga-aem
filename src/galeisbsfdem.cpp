@@ -13,6 +13,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <mpi.h>
 #endif
 #include <cstring>
+
+#include "gaaem_version.h"
 #include "general_utils.h"
 #include "general_types.h"
 #include "file_utils.h"
@@ -23,7 +25,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "galeisbsfdem.h"
 #include "logger.h"
 
-#define VERSION "1.0"
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
@@ -50,7 +51,7 @@ void FDEmSampleInverter::initialise()
 	glog.open(Logfile);
 	glog.logmsg(0,"Logfile opened on %s\n",timestamp().c_str());
 	glog.logmsg(0,"Control file %s\n",mControlFilename.c_str());
-	glog.logmsg(0,"Version %s Compiled at %s on %s\n",VERSION,__TIME__,__DATE__);
+	glog.logmsg(0,"Version %s Compiled at %s on %s\n",GAAEM_VERSION,__TIME__,__DATE__);
 	glog.logmsg(0,"Working directory %s\n",getcurrentdirectory().c_str());
 	glog.logmsg(0,"Processes=%d\tRank=%d\n",mSize,mRank);
 	glog.log(mControl.get_as_string());
@@ -1533,7 +1534,7 @@ int process(int argc, char** argv, size_t Size, size_t Rank)
 {
 	if (argc >= 2){
 		glog.logmsg(0,"Executing %s %s\n", argv[0], argv[1]);
-		glog.logmsg(0,"Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg(0,"Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg(0,"Working directory %s\n", getcurrentdirectory().c_str());
 	}
 	else{
@@ -1561,7 +1562,7 @@ int main(int argc, char** argv)
 	if (argc<2){
 		printf("Executing %s\n", argv[0]);
 		printf("Usage: %s control_file_name\n", argv[0]);
-		printf("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		printf("Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		return 0;
 	}
 	glog.logmsg("Starting MPI\n");

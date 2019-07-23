@@ -15,15 +15,16 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <algorithm>
 
 #include "asciicolumnfile.h"
-
 #include "blocklanguage.h"
 #include "fielddefinition.h"
 #include "matrix_ops.h"
 #include "airborne_types.h"
 #include "tdemsystem.h"
-#include "geophysics_netcdf.h"
+#include "gaaem_version.h"
 
-#define VERSION "1.0"
+#if defined _NETCDF_ENABLED
+	#include "geophysics_netcdf.h"
+#endif
 
 #if defined _OPENMP
 	#include <omp.h>
@@ -151,8 +152,10 @@ private:
 	bool AtStart = true;
 	std::string DataFileName;
 	std::string HeaderFileName;
-	IOType IoType = ASCII;	
+	IOType IoType = ASCII;
+	#if defined _NETCDF_ENABLED
 	cGeophysicsNcFile NC;	
+	#endif
 	cAsciiColumnFile AF;	
 	size_t Subsample=1;
 	size_t Record=0;
@@ -171,8 +174,12 @@ public:
 		std::string ext = extractfileextension(DataFileName);
 		glog.logmsg(0,"Opening Input DataFile %s\n", DataFileName.c_str());
 		if (strcasecmp(ext, ".nc") == 0){			
-			IoType = NETCDF; 						
+			IoType = NETCDF;
+			#if defined _NETCDF_ENABLED
 			NC.open(DataFileName, netCDF::NcFile::FileMode::read);			
+			#else if 
+			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
+			#endif
 		}
 		else {
 			IoType = ASCII;
@@ -205,7 +212,9 @@ public:
 			}
 			else {				
 				Record += Subsample;
-				if (Record > NC.ntotalsamples()) return false;
+				#if defined _NETCDF_ENABLED
+					if (Record > NC.ntotalsamples()) return false;
+				#endif
 			}
 		}
 		else {
@@ -249,12 +258,16 @@ public:
 
 	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
 
-	template<typename T>
-	bool netcdf_read(const std::string varname, std::vector<T>& v)
-	{
-		NC.getDataByPointIndex(varname, Record, v);
-		return true;
-	}
+	
+		template<typename T>
+		bool netcdf_read(const std::string varname, std::vector<T>& v)
+		{
+			#if defined _NETCDF_ENABLED
+				NC.getDataByPointIndex(varname, Record, v);
+			#endif 
+			return true;
+		}
+
 
 	template<typename T>
 	bool read(const cFieldDefinition& cd, T& v) 
@@ -716,7 +729,7 @@ class cSBSInverter{
 		glog.logmsg(0, "Opening log file %s\n", OO.Logfile.c_str());
 		glog.open(OO.Logfile);
 		glog.logmsg(0, "Control file %s\n", Control.Filename.c_str());
-		glog.logmsg(0, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg(0, "Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
 		glog.logmsg(0, "Processes=%d\tRank=%d\n", Size, Rank);
 		glog.log(Control.get_as_string());

@@ -49,7 +49,7 @@ void rjmcmc1dTDEmInverter::initialise(const std::string& executable, const std::
 	glog.logmsg(0, "Logfile opened on %s\n", timestamp().c_str());
 	glog.logmsg(0, "Executing %s\n", executable.c_str());
 	glog.logmsg(0, "Control file %s\n", controlfile.c_str());
-	glog.logmsg(0, "Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+	glog.logmsg(0, "Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 	glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
 	glog.logmsg(0, "Processes=%lu\tRank=%lu\n", mSize, mRank);
 	glog.log(Control.get_as_string());

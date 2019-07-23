@@ -8,6 +8,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <cstring>
 
+#include "gaaem_version.h"
 #include "general_utils.h"
 #include "file_utils.h"
 #include "blocklanguage.h"
@@ -15,7 +16,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "lem.h"
 #include "tdemsystem.h"
 
-#define VERSION "1.0"
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 		printf("Geoscience Australia's Airborne Electromagnetic Layered Earth Forward Modelling\n\n");
 		printf("Working directory: %s\n", getcurrentdirectory().c_str());
 		printf("%s\n", commandlinestring(argc, argv).c_str());
-		printf("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());		
+		printf("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());		
 		std::string controlfilename = argv[1];
 		process(controlfilename);
 		return EXIT_SUCCESS;

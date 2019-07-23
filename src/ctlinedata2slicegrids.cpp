@@ -23,12 +23,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <gdal_alg.h>
 #include <ogr_spatialref.h>
 
+#include "gaaem_version.h"
 #include "general_utils.h"
 #include "file_utils.h"
 #include "vector_utils.h"
 #include "asciicolumnfile.h"
 #include "blocklanguage.h"
-#define VERSION "1.0"
+
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
@@ -668,7 +669,7 @@ int main(int argc, char** argv)
 {
 	if (argc >= 2){
 		glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
-		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 		#if defined _OPENMP
 		glog.logmsg("Maximum number of OpenMP Threads is %d\n", omp_get_max_threads());
@@ -676,7 +677,7 @@ int main(int argc, char** argv)
 	}
 	else{
 		glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
-		glog.logmsg("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		glog.logmsg("Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 		#if defined _OPENMP
 		glog.logmsg("Maximum number of OpenMP Threads is %d\n", omp_get_max_threads());

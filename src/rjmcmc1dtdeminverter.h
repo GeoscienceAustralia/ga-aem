@@ -9,13 +9,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 #ifndef _rjmcmc1dtdeminverter_H
 #define _rjmcmc1dtdeminverter_H
 
+#include "gaaem_version.h"
 #include "blocklanguage.h"
 #include "fielddefinition.h"
 #include "tdemsystem.h"
 #include "file_formats.h"
 #include "rjmcmc1d.h"
-
-#define VERSION "1.0"
 
 struct sTDEmSystemInfo{
 	cTDEmSystem T;	

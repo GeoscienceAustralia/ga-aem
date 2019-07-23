@@ -26,7 +26,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "galeisbstdem.h"
 #include "stacktrace.h"
 #include "large_loop.h"
-#include "geophysics_netcdf.h"
 #include "logger.h"
 
 class cLogger glog; //The global instance of the log file manager
@@ -36,8 +35,7 @@ class cStackTrace gtrace; //The global instance of the stacktrace
 	#include "mpi_wrapper.h"
 #endif
 
-#if defined _OPENMP
-	#include <omp.h>
+#if defined _OPENMP	
 	//This thread lock must be set when fftw is being initialised
 	omp_lock_t fftw_thread_lock;
 #endif
@@ -58,7 +56,7 @@ int main(int argc, char** argv)
 #endif
 	if (mpirank == 0) {
 		printf("%s\n", commandlinestring(argc, argv).c_str());
-		printf("%s\n", versionstring(VERSION, __TIME__, __DATE__).c_str());
+		printf("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 	}
 
 	if (argc < 2) {
