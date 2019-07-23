@@ -177,7 +177,7 @@ public:
 			IoType = NETCDF;
 			#if defined _NETCDF_ENABLED
 			NC.open(DataFileName, netCDF::NcFile::FileMode::read);			
-			#else if 
+			#else
 			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
 			#endif
 		}

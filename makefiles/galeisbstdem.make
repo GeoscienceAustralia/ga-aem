@@ -5,12 +5,15 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 
 cxxflags   += -D_MPI_ENABLED -fopenmp
-includes   = -I/usr/include/openmpi-x86_64
-includes   += -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
-includes   += -I$(geophysics_netcdf_root)/src -I$(geophysics_netcdf_root)/submodules/marray/include/andres
-libs       = -L$(FFTW_DIR) -lfftw3 -fopenmp -lnetcdf -lnetcdf_c++4 -lgdal -lCGAL_Core
-executable = $(exedir)/galeisbstdem.exe
 
+includes   =  -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
+includes   += -I/usr/include/openmpi-x86_64
+#includes   += -I$(geophysics_netcdf_root)/src -I$(geophysics_netcdf_root)/submodules/marray/include/andres
+
+libs       =  -fopenmp -L$(FFTW_DIR) -lfftw3
+#libs       +=  -lnetcdf -lnetcdf_c++4 -lgdal -lCGAL_Core
+
+executable = $(exedir)/galeisbstdem.exe
 
 
 all: compile link
