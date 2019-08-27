@@ -321,7 +321,7 @@ void rjmcmc1dTDEmInverter::parsecurrentrecord()
 	fd_datenumber.getvalue(f, datenumber);
 	fd_flightnumber.getvalue(f, flightnumber);
 	fd_linenumber.getvalue(f, linenumber);
-	fd_fidnumber.getvalue(f, linenumber);
+	fd_fidnumber.getvalue(f, fidnumber);
 	fd_xord.getvalue(f, xord);
 	fd_yord.getvalue(f, yord);
 	fd_elevation.getvalue(f, elevation);

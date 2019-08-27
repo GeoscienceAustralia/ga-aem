@@ -39,8 +39,8 @@ echo ---------------------------------------
 #make -f gaforwardmodeltdem.make $1
 
 #Compile with MPI
-make -f galeisbstdem.make $1
-#make -f garjmcmctdem.make $1
+#make -f galeisbstdem.make $1
+make -f garjmcmctdem.make $1
 #make -f galeiallatonce.make $1
 #make -f galeisbsfdem.make $1
 
