@@ -2,6 +2,10 @@
 
 #Script to load compiler modules and dependent software 
 
+#Must enable the devtoolset-4 first
+#scl enable devtoolset-4 bash
+
+
 #Set the directory path for dependencies
 export cpputilssrc='../submodules/cpp-utils/src'
 export tntdir='../submodules/tnt'
