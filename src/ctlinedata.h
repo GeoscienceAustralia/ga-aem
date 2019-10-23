@@ -91,7 +91,7 @@ public:
 
 		//Thickness
 		bool isconstantthickness = false;
-		std::vector<double> constantthickness;
+		std::vector<double> constantthickness;						
 		cRange<int> tcol = getcolumns("Thickness");
 		if (tcol.valid() == true){
 			isconstantthickness = false;
@@ -103,17 +103,16 @@ public:
 				std::string msg("Thickness not set\n");
 				throw(std::runtime_error(msg));
 			}
+			else if (constantthickness.size() == 1) {
+				constantthickness = std::vector<double>(nlayers - 1, constantthickness[0]);
+			}
 			else if (constantthickness.size() > 1 && constantthickness.size() < nlayers - 1){
 				std::string msg("Thickness not set correctly\n");
 				throw(std::runtime_error(msg));
-			}
-			else if (constantthickness.size() == 1){
-				constantthickness = std::vector<double>(nlayers - 1, constantthickness[0]);
-			}
+			}			
 			else{
 				//all good
 			}
-
 		}
 
 		std::vector<std::vector<double>> M;
@@ -225,12 +224,16 @@ public:
 		}
 		else{
 			size_t findex = A.fieldindexbyname(s);
-			r.from = (int)A.fields[findex].startcolumn;
-			r.to = (int)A.fields[findex].endcolumn();
-			r.from--; r.to--;
-			return r;
-		}
+			if (findex >= 0 && findex < A.fields.size()) {
+				r.from = (int)A.fields[findex].startcolumn;
+				r.to = (int)A.fields[findex].endcolumn();
+				r.from--; r.to--;
+				return r;
+			}
+			return r;//invalid;
+		}		
 	}
+	
 
 };
 
