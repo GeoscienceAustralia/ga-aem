@@ -641,13 +641,13 @@ class cSBSInverter{
 			UsingOpenMP = usingopenmp;
 			initialise(controlfile);			
 		}
-		catch (const std::string msg) {
+		catch (const std::string& msg) {
 			glog.logmsg(msg);
 		}
-		catch (const std::runtime_error e) {
+		catch (const std::runtime_error& e) {
 			glog.logmsg(std::string(e.what()));
 		}
-		catch (const std::exception e) {
+		catch (const std::exception& e) {
 			glog.logmsg(std::string(e.what()));
 		}		
 	};
