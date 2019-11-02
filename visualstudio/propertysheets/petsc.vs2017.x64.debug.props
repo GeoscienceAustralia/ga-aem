@@ -1,10 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ImportGroup Label="PropertySheets">
-  </ImportGroup>
-  <PropertyGroup Label="UserMacros">
-    <PETSC_ROOT>Z:\code\repos\petsc\3.9.4\vs2017</PETSC_ROOT>
-  </PropertyGroup>
   <PropertyGroup>
     <LibraryPath>$(PETSC_ROOT)\win64_debug\lib;$(LibraryPath)</LibraryPath>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
@@ -21,9 +16,4 @@
       <IgnoreSpecificDefaultLibraries>libcmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <BuildMacro Include="PETSC_ROOT">
-      <Value>$(PETSC_ROOT)</Value>
-    </BuildMacro>
-  </ItemGroup>
 </Project>
