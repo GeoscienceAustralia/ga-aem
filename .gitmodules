@@ -1,6 +1,3 @@
-[submodule "submodules/tnt"]
-	path = submodules/tnt
-	url  = https://github.com/rcb547/tnt.git
 [submodule "submodules/cpp-utils"]
 	path = submodules/cpp-utils
 	url = https://github.com/rcb547/cpp-utils.git
