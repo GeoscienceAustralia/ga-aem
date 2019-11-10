@@ -13,7 +13,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <climits>
 #include <cstdint>
 #include "general_utils.h"
-#include "matrix_ops.h"
+//#include "matrix_ops.h"
 
 enum proposal_type {VALUECHANGE, BIRTH, DEATH, MOVE, NUISANCE};
 enum parameterization_type {NOTSET, LINEAR, LOG10};
@@ -254,7 +254,7 @@ private:
 	
 public:
 	size_t nsamples() const { return ns; }
-	std::vector<vector<double>> nuisance;
+	std::vector<std::vector<double>> nuisance;
 	void resettozero(){
 		for (size_t i = 0; i < nuisance.size(); i++){
 			nuisance[i].clear();
@@ -338,7 +338,7 @@ private:
 	double dv;	
 	std::vector<double> pbin;//positions
 	std::vector<double> vbin;//values
-	std::vector<vector<uint32_t>> counts;//frequency
+	std::vector<std::vector<uint32_t>> counts;//frequency
 	std::vector<uint32_t> cpcounts;//changepoints
 	std::vector<uint32_t> layercounts;//number of layers
 

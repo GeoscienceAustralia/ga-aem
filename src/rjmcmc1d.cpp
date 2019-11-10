@@ -5,6 +5,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 
 Author: Ross C. Brodie, Geoscience Australia.
 */
+
 #include <cmath>
 #include <ctime>
 #include <cfloat>
@@ -14,7 +15,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 	#include "mpi.h"
 #endif
 #include "general_utils.h"
-#include "random.h"
+#include "random_utils.h"
+//#include "eigen_utils.h"
 #include "rjmcmc1d.h"
 
 rjMcMC1DSampler::rjMcMC1DSampler()
@@ -170,14 +172,14 @@ bool rjMcMC1DSampler::propose_valuechange(rjMcMC1DModel& mcur, rjMcMC1DModel& mp
 	double vnew;
 	double pqratio;
 	if (param_value == LINEAR){
-		double m = (pow(10.0, logstd) - pow(10.0, -logstd)) / 2.0;
-		vnew = vold + m*vold*nrand();
+		double m = (std::pow(10.0, logstd) - std::pow(10.0, -logstd)) / 2.0;
+		vnew = vold + m * vold * nrand<double>();
 		double qpdfforward = gaussian_pdf(vold, m*vold, vnew);
 		double qpdfreverse = gaussian_pdf(vnew, m*vnew, vold);
 		pqratio = qpdfreverse / qpdfforward;
 	}
 	else{
-		vnew = vold + logstd*nrand();
+		vnew = vold + logstd*nrand<double>();
 		pqratio = 1.0;
 	}
 
@@ -189,7 +191,7 @@ bool rjMcMC1DSampler::propose_valuechange(rjMcMC1DModel& mcur, rjMcMC1DModel& mp
 	double logpqratio = log(pqratio);
 	double logliker = -(mpro.misfit() - mcur.misfit()) / 2.0;
 	double logar = logpqratio + logliker;
-	if (log(urand()) < logar){
+	if (std::log(urand<double>()) < logar){
 		na_valuechange++;
 		return true;
 	}
@@ -207,7 +209,7 @@ bool rjMcMC1DSampler::propose_move(rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 
 	//double std = sd_move;	
 	double std = DEFAULTMOVESTDFRACTION*pold;
-	double pnew = pold + std*nrand();
+	double pnew = pold + std*nrand<double>();
 	double qpdfforward = gaussian_pdf(pold, pold*DEFAULTMOVESTDFRACTION, pnew);
 	double qpdfreverse = gaussian_pdf(pnew, pnew*DEFAULTMOVESTDFRACTION, pold);
 
@@ -217,11 +219,11 @@ bool rjMcMC1DSampler::propose_move(rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 
 	set_misfit(mpro);
 	double pqratio = qpdfreverse / qpdfforward;
-	double logpqratio = log(pqratio);
+	double logpqratio = std::log(pqratio);
 
 	double loglr = -(mpro.misfit() - mcur.misfit()) / 2.0;
 	double logar = logpqratio + loglr;
-	double logu = log(urand());
+	double logu = std::log(urand<double>());
 	if (logu < logar){
 		na_move++;
 		return true;
@@ -249,11 +251,11 @@ bool rjMcMC1DSampler::propose_birth(rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 		double logstd = DEFAULTLOGSTDDECADES;
 		if (param_value == LINEAR){
 			double m = (pow(10.0, logstd) - pow(10.0, -logstd)) / 2.0;
-			vnew = vold + m*vold*nrand();
+			vnew = vold + m*vold*nrand<double>();
 			vcpdf = gaussian_pdf(vold, m*vold, vnew);
 		}
 		else{
-			vnew  = vold + logstd*nrand();
+			vnew  = vold + logstd*nrand<double>();
 			vcpdf = gaussian_pdf(vold, logstd, vnew);
 		}
 		pqratio = 1.0 / ((vmax - vmin)*vcpdf);
@@ -264,10 +266,10 @@ bool rjMcMC1DSampler::propose_birth(rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 	if (isvalid == false)return false;
 	set_misfit(mpro);
 
-	double logpqratio = log(pqratio);
+	double logpqratio = std::log(pqratio);
 	double loglikeratio = -(mpro.misfit() - mcur.misfit()) / 2.0;
 	double logar = logpqratio + loglikeratio;
-	if (log(urand()) < logar){
+	if (std::log(urand<double>()) < logar){
 		na_birth++;
 		return true;
 	}
@@ -308,7 +310,7 @@ bool rjMcMC1DSampler::propose_death(rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 	double logpqratio = log(pqratio);
 	double loglikeratio = -(mpro.misfit() - mcur.misfit()) / 2.0;
 	double logar = logpqratio + loglikeratio;
-	if (log(urand()) < logar){
+	if (log(urand<double>()) < logar){
 		na_death++;
 		return true;
 	}
@@ -319,7 +321,7 @@ bool rjMcMC1DSampler::propose_nuisancechange(rjMcMC1DModel& mcur, rjMcMC1DModel&
 	np_nuisancechange++;
 
 	size_t ni = irand((size_t)0,mcur.nnuisances() - 1);
-	double delta = nrand() * mcur.nuisances[ni].sd_valuechange;
+	double delta = nrand<double>() * mcur.nuisances[ni].sd_valuechange;
 	double nv = mcur.nuisances[ni].value + delta;;
 	bool isvalid = isinbounds(mcur.nuisances[ni].min, mcur.nuisances[ni].max, nv);
 	if (isvalid == false)return false;
@@ -328,7 +330,7 @@ bool rjMcMC1DSampler::propose_nuisancechange(rjMcMC1DModel& mcur, rjMcMC1DModel&
 
 	set_misfit(mpro);
 	double logar = -(mpro.misfit() - mcur.misfit()) / 2.0;
-	double logu = log(urand());
+	double logu = log(urand<double>());
 	if (logu < logar){
 		na_nuisancechange++;
 		return true;
@@ -348,10 +350,10 @@ bool rjMcMC1DSampler::propose_independent(rjMcMC1DModel& mcur, rjMcMC1DModel& mp
 	double priorratio = a*b*c;
 	priorratio = 1.0;
 
-	double logpriorratio = log(priorratio);
+	double logpriorratio = std::log(priorratio);
 	double logliker = -(mpro.misfit() - mcur.misfit()) / 2.0;
 	double logar = logpriorratio + logliker;
-	double logu = log(urand());
+	double logu = std::log(urand<double>());
 	if (logu < logar){		
 		return true;
 	}
@@ -382,10 +384,7 @@ void rjMcMC1DSampler::sample()
 	starttime = timestamp();
 	double t1 = gettime();
 	mChainInfo.resize(nchains);
-	for (size_t ci = 0; ci < nchains; ci++){		
-		unsigned int seed = (unsigned int)(ci + mRank + (unsigned int)time(NULL));		
-		seedrand(seed);		
-		
+	for (size_t ci = 0; ci < nchains; ci++){				
 		mChainInfo[ci].reset();
 		//mChainInfo[ci].modelchain.resize(nsamples);
 		rjMcMC1DModel mcur;		

@@ -12,7 +12,7 @@ using namespace std;
 #include "gaaem_version.h"
 #include "general_utils.h"
 #include "file_utils.h"
-#include "random.h"
+#include "random_utils.h"
 #include "tdemsystem.h"
 #include "rjmcmc1d.h"
 #include "rjmcmc1dtdeminverter.h"

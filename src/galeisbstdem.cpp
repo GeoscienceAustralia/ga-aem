@@ -6,8 +6,6 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include "tdemsystem.h"
-
 #include <cstdio>
 #include <cfloat>
 #include <cmath>
@@ -21,7 +19,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "file_formats.h"
 #include "lem.h"
 #include "tdemsystem.h"
-#include "matrix_ops.h"
+//#include "matrix_ops.h"
 #include "vector_utils.h"
 #include "galeisbstdem.h"
 #include "stacktrace.h"
