@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#This is an example PBS shell script for running on raijin.nci.org.au
+#This is an example PBS shell script for running on gadi.nci.org.au
 
-#PBS -P r17
-#PBS -q express
-#PBS -l ncpus=16
-#PBS -l mem=16GB
+#PBS -P cr78
+#PBS -q normal
+#PBS -l ncpus=48
+#PBS -l mem=48GB
 #PBS -l walltime=01:00:00
 #PBS -l wd
 #PBS -N galeisbstdem
@@ -13,8 +13,13 @@
 #PBS -e galeisbstdem.err
 #PBS -j oe
 
-module load ga-aem/1.0/gnu
+module load openmpi/4.0.1
+module load fftw3/3.3.8
+module load eigen/3.3.7
 module list
 
+export PATH=/home/547/rcb547/code/repos/ga-aem-develop/bin/gadi/intel:$PATH
+echo   $PATH
 mpirun galeisbstdem.exe galeisbstdem.con
+
 
