@@ -919,7 +919,7 @@ public:
 	  Z.resize(NumberOfWindows);
 
 	  //Read window times
-	  dmatrix wt = STM.getdoublematrix("Receiver.WindowTimes");
+	  std::vector<std::vector<double>> wt = STM.getdoublematrix("Receiver.WindowTimes");
 	  size_t nw = wt.size();
 	  if (nw != NumberOfWindows) {
 		  glog.errormsg(_SRC_, "The number of WindowTimes does not match the NumberOfWindows\n");
@@ -1272,7 +1272,7 @@ public:
 		  std::string path = b.getstringvalue("WaveformReceived.File");
 		  if (isdefined(path)) {
 			  sFilePathParts fpp = getfilepathparts(systemdescriptorfile);
-			  dmatrix wp = readwaveformfile(fpp.directory + path);
+			  std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
 			  if (wp.size() > 0) {
 				  digitisewaveform(wp, WaveformTime, WaveformReceived);
 				  WaveformType = WT_RX;
@@ -1286,7 +1286,7 @@ public:
 		  std::string path = b.getstringvalue("WaveformCurrent.File");
 		  if (isdefined(path)) {
 			  sFilePathParts fpp = getfilepathparts(systemdescriptorfile);
-			  dmatrix wp = readwaveformfile(fpp.directory + path);
+			  std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
 			  if (wp.size() > 0) {
 				  digitisewaveform(wp, WaveformTime, WaveformCurrent);
 				  WaveformType = WT_TX;
@@ -1297,7 +1297,7 @@ public:
 	  }
 
 	  if (wavformdefined == false) {
-		  dmatrix wp = b.getdoublematrix("WaveformCurrent");
+		  std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformCurrent");
 		  if (wp.size() > 0) {
 			  digitisewaveform(wp, WaveformTime, WaveformCurrent);
 			  WaveformType = WT_TX;
@@ -1307,7 +1307,7 @@ public:
 	  }
 
 	  if (wavformdefined == false) {
-		  dmatrix wp = b.getdoublematrix("WaveformReceived");
+		  std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformReceived");
 		  if (wp.size() > 0) {
 			  digitisewaveform(wp, WaveformTime, WaveformReceived);
 			  WaveformType = WT_RX;
@@ -1464,7 +1464,7 @@ public:
 	  }
   }
 
-  void digitisewaveform(const dmatrix& wp, std::vector<double>& t, std::vector<double>& v)
+  void digitisewaveform(const std::vector<std::vector<double>>& wp, std::vector<double>& t, std::vector<double>& v)
   {
 	  double hp = 0.5 / BaseFrequency;
 	  SampleInterval = 1.0 / SampleFrequency;
@@ -1528,7 +1528,7 @@ public:
 	  }
   }
 
-  dmatrix readwaveformfile(const std::string& filename)
+  std::vector<std::vector<double>> readwaveformfile(const std::string& filename)
   {
 	  FILE* fp = fileopen(filename, "r");
 	  if (fp == NULL) {
@@ -1536,7 +1536,7 @@ public:
 	  }
 
 	  int num;
-	  dmatrix w;
+	  std::vector<std::vector<double>> w;
 	  double time, value;
 	  while ((num = fscanf(fp, "%lf %lf\n", &time, &value)) == 2) {
 		  std::vector<double> v(2);

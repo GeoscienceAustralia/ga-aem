@@ -5,7 +5,6 @@
 	path = submodules/ticpp
 	url = https://github.com/wxFormBuilder/ticpp.git
 [submodule "submodules/eigen"]
-	
 	path = submodules/eigen
 	url = https://github.com/eigenteam/eigen-git-mirror.git
 

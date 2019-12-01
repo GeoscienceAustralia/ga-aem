@@ -4,18 +4,19 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
+executable  = $(exedir)/garjmcmctdem.exe
+includes    = -I$(srcdir)
+includes   += -I$(cpputilssrc)
+libs        = -L$(FFTW_DIR) -lfftw3
 cxxflags   += -D_MPI_ENABLED
-includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
-libs       = -L$(FFTW_DIR) -lfftw3
-executable = $(exedir)/garjmcmctdem.exe
+#cxxflags   += -DUSEGLOBALSTACKTRACE
+
 
 all: compile link
 allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/matrix_ops.o
-objects += $(cpputilssrc)/random.o
 objects += $(srcdir)/rjmcmc1d.o
 objects += $(srcdir)/rjmcmc1dtdeminverter.o
 objects += $(srcdir)/garjmcmctdem.o

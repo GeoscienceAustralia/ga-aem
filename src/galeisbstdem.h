@@ -14,16 +14,16 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cstring>
 #include <algorithm>
 
-#include <Eigen\Dense>
+#include <Eigen/Dense>
 #include "asciicolumnfile.h"
 #include "blocklanguage.h"
 #include "fielddefinition.h"
 #include "airborne_types.h"
 #include "tdemsystem.h"
-#include "gaaem_version.h"
 #include "eigen_utils.h"
+#include "gaaem_version.h"
 
-#if defined _NETCDF_ENABLED
+#if defined HAVE_NETCDF
 	#include "geophysics_netcdf.h"
 #endif
 
@@ -154,7 +154,7 @@ private:
 	std::string DataFileName;
 	std::string HeaderFileName;
 	IOType IoType = ASCII;
-	#if defined _NETCDF_ENABLED
+	#if defined HAVE_NETCDF
 	cGeophysicsNcFile NC;	
 	#endif
 	cAsciiColumnFile AF;	
@@ -176,7 +176,7 @@ public:
 		glog.logmsg(0,"Opening Input DataFile %s\n", DataFileName.c_str());
 		if (strcasecmp(ext, ".nc") == 0){			
 			IoType = NETCDF;
-			#if defined _NETCDF_ENABLED
+			#if defined HAVE_NETCDF
 			NC.open(DataFileName, netCDF::NcFile::FileMode::read);			
 			#else
 			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
@@ -213,7 +213,7 @@ public:
 			}
 			else {				
 				Record += Subsample;
-				#if defined _NETCDF_ENABLED
+				#if defined HAVE_NETCDF
 					if (Record > NC.ntotalsamples()) return false;
 				#endif
 			}
@@ -263,7 +263,7 @@ public:
 		template<typename T>
 		bool netcdf_read(const std::string varname, std::vector<T>& v)
 		{
-			#if defined _NETCDF_ENABLED
+			#if defined HAVE_NETCDF
 				NC.getDataByPointIndex(varname, Record, v);
 			#endif 
 			return true;
@@ -2526,7 +2526,7 @@ class cSBSInverter{
 	void write(const VectorDouble& v, std::string path) const 
 	{
 		FILE* fp = fileopen(path, "w");
-		for (auto i = 0; i < v.rows(); i++) {
+		for (auto  i = 0; i < v.rows(); i++) {
 			fprintf(fp, "%le\n", v[i]);
 		}
 		fclose(fp);
@@ -2535,7 +2535,7 @@ class cSBSInverter{
 	void write(const std::vector<double>& v, std::string path) const
 	{
 		FILE* fp = fileopen(path, "w");
-		for (auto i = 0; i < v.size(); i++) {
+		for (size_t i = 0; i < v.size(); i++) {
 			fprintf(fp, "%le\n", v[i]);
 		}
 		fclose(fp);

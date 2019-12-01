@@ -19,11 +19,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "file_formats.h"
 #include "lem.h"
 #include "tdemsystem.h"
-//#include "matrix_ops.h"
 #include "vector_utils.h"
 #include "galeisbstdem.h"
 #include "stacktrace.h"
-#include "large_loop.h"
 #include "logger.h"
 
 class cLogger glog; //The global instance of the log file manager

@@ -4,18 +4,20 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-cxxflags   += -D_MPI_ENABLED -fopenmp
-includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
-libs       = -fopenmp
-executable = $(exedir)/galeisbsfdem.exe
+executable  = $(exedir)/galeisbsfdem.exe
+includes    = -I$(srcdir)
+includes   += -I$(cpputilssrc)
+libs        = -fopenmp
+cxxflags    = -fopenmp
+cxxflags   += -D_MPI_ENABLED
+#cxxflags   += -DUSEGLOBALSTACKTRACE
+
 
 all: compile link
 allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/matrix_ops.o
-objects += $(cpputilssrc)/rollpitchyaw.o
 objects += $(srcdir)/layeredearthmodeller.o
 objects += $(srcdir)/fdemsystem.o
 objects += $(srcdir)/galeisbsfdem.o
