@@ -6,8 +6,8 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef galeisbsfdemH
-#define galeisbsfdemH
+#ifndef galeisbsfdem_H
+#define galeisbsfdem_H
 
 #include "eigen_utils.h"
 #include "asciicolumnfile.h"
@@ -15,7 +15,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "airborne_types.h"
 #include "fdemsystem.h"
 
-enum  bracket_t { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
+enum  class BracketResult { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
+
 class cTrial {
 
 public:
@@ -48,6 +49,7 @@ public:
 		else return 1;
 	}
 };
+
 class cTrialCache {
 
 public:
@@ -201,14 +203,14 @@ private:
 
 	sAirborneSampleId Id;
 	sAirborneSampleLocation Location;
-	sFDEmData DI;
-	sFDEmData DE;
-	sFDEmData DM;
+	cFDEmData DI;
+	cFDEmData DE;
+	cFDEmData DM;
 
-	sFDEmGeometry GI;
-	sFDEmGeometry GM;
-	sFDEmGeometry GR;
-	sFDEmGeometry GS;
+	cFDEmGeometry GI;
+	cFDEmGeometry GM;
+	cFDEmGeometry GR;
+	cFDEmGeometry GS;
 	cEarth1D EM;
 	cEarth1D ER;
 	cEarth1D ES;
@@ -518,18 +520,18 @@ private:
 
 		//Observed Geometry
 		addhdrstring(hdr, "birdheight");
-		buf += strprint("%7.2lf ", GI.birdheight);
+		buf += strprint("%7.2lf ", GI.Height);
 		addhdrstring(hdr, "birdroll");
-		buf += strprint("%7.2lf ", GI.birdroll);
+		buf += strprint("%7.2lf ", GI.Roll);
 		addhdrstring(hdr, "birdpitch");
-		buf += strprint("%7.2lf ", GI.birdpitch);
+		buf += strprint("%7.2lf ", GI.Pitch);
 		addhdrstring(hdr, "birdyaw");
-		buf += strprint("%7.2lf ", GI.birdyaw);
+		buf += strprint("%7.2lf ", GI.Yaw);
 
 		//Predicted TX height
 		if (OutputPredictedBirdHeight) {
 			addhdrstring(hdr, "predicted_birdheight");
-			buf += strprint("%7.2lf ", GM.birdheight);
+			buf += strprint("%7.2lf ", GM.Height);
 		}
 
 		//Earth
@@ -735,8 +737,8 @@ private:
 		}
 
 		if (SolveBirdHeight) {
-			vRefParam[birdheightIndex] = GI.birdheight;
-			vRefParamStd[birdheightIndex] = GS.birdheight;
+			vRefParam[birdheightIndex] = GI.Height;
+			vRefParamStd[birdheightIndex] = GS.Height;
 		}
 	}
 	
@@ -896,10 +898,10 @@ private:
 		fclose(fp);
 	}
 
-	void dumptofile(const sFDEmGeometry& g, std::string path)
+	void dumptofile(const cFDEmGeometry& g, std::string path)
 	{
 		FILE* fp = fileopen(DumpPath + path, "w");
-		fprintf(fp, "height\t%lf\n", g.birdheight);
+		fprintf(fp, "height\t%lf\n", g.Height);
 		fclose(fp);
 	}
 
@@ -984,18 +986,18 @@ private:
 		return e;
 	}
 	
-	sFDEmGeometry get_geometry(const VectorDouble& parameters)
+	cFDEmGeometry get_geometry(const VectorDouble& parameters)
 	{
-		sFDEmGeometry g = GR;
+		cFDEmGeometry g = GR;
 		if (SolveBirdHeight) {
-			g.birdheight = parameters[birdheightIndex];
+			g.Height = parameters[birdheightIndex];
 		}
 		return g;
 	}
 	
-	sFDEmData get_data(const VectorDouble& data)
+	cFDEmData get_data(const VectorDouble& data)
 	{
-		sFDEmData d;
+		cFDEmData d;
 		d.inphase.resize(nCoilsets);
 		d.quadrature.resize(nCoilsets);
 		for (size_t i = 0; i < nCoilsets; i++) {
@@ -1008,11 +1010,10 @@ private:
 	void forwardmodel(const VectorDouble& parameters, VectorDouble& predicted, bool computederivatives)
 	{
 		cEarth1D e = get_earth(parameters);
-		sFDEmGeometry g = get_geometry(parameters);
+		cFDEmGeometry g = get_geometry(parameters);
 
 		EMSystem.setearth(e);
-		EMSystem.setrollpitchyaw(g.birdroll, g.birdpitch, g.birdyaw);
-		EMSystem.setheight(g.birdheight);
+		EMSystem.setgeometry(g);		
 		EMSystem.setupcomputations();
 
 		//Forwardmodel
@@ -1032,7 +1033,7 @@ private:
 
 			if (SolveConductivity) {
 				for (size_t li = 0; li < nlayers; li++) {
-					deriv = EMSystem.dppms(eDC, li);
+					deriv = EMSystem.dppms(cLayeredEarthModeller::CalculationType::DC, li);
 					size_t pindex = li + cIndex;
 					for (size_t i = 0; i < nCoilsets; i++) {
 						//multiply by natural log(10) as parameters are in logbase10 units
@@ -1044,7 +1045,7 @@ private:
 
 			if (SolveThickness) {
 				for (size_t li = 0; li < nlayers - 1; li++) {
-					deriv = EMSystem.dppms(eDT, li);
+					deriv = EMSystem.dppms(cLayeredEarthModeller::CalculationType::DT, li);
 					size_t pindex = li + tIndex;
 					for (size_t i = 0; i < nCoilsets; i++) {
 						//multiply by natural log(10) as parameters are in logbase10 units
@@ -1055,7 +1056,7 @@ private:
 			}
 
 			if (SolveBirdHeight) {
-				deriv = EMSystem.dppms(eDB, 0);
+				deriv = EMSystem.dppms(cLayeredEarthModeller::CalculationType::DB, 0);
 				size_t pindex = birdheightIndex;
 				for (size_t i = 0; i < nCoilsets; i++) {
 					J(emIndex + i * 2, pindex) = deriv[i].real();
@@ -1152,7 +1153,7 @@ private:
 
 		TerminationReason = "Has not terminated";
 		cEarth1D earth = get_earth(vParam);
-		sFDEmGeometry geometry = get_geometry(vParam);
+		cFDEmGeometry geometry = get_geometry(vParam);
 
 		bool keepiterating = true;
 		if (LastPhiD < MinimumPhiD) {
@@ -1298,11 +1299,11 @@ private:
 	{
 		cTrialCache T;
 		T.target = target;
-		bracket_t b = brackettarget(T, target, currentlambda);
+		BracketResult b = brackettarget(T, target, currentlambda);
 		//printtrials(T);
 		//prompttocontinue();
 
-		if (b == BRACKETED) {
+		if (b == BracketResult::BRACKETED) {
 			//bracketed target - find with Brents Method
 			double newphid = DBL_MIN;
 			double lambda = brentsmethod(T, target, newphid);
@@ -1310,15 +1311,15 @@ private:
 			//prompttocontinue();
 			return T.findlambda(lambda);
 		}
-		else if (b == MINBRACKETED) {
+		else if (b == BracketResult::MINBRACKETED) {
 			//bracketed minimum but above target - take smallest phid
 			return T.minphidtrial();
 		}
-		else if (b == ALLBELOW) {
+		else if (b == BracketResult::ALLBELOW) {
 			//all below target	- take the largest lambda			
 			return T.maxlambdatrial();
 		}
-		else if (b == ALLABOVE) {
+		else if (b == BracketResult::ALLABOVE) {
 			//all above target - take smallest phid
 			return T.minphidtrial();
 		}
@@ -1359,7 +1360,7 @@ private:
 		return false;
 	}
 	
-	bracket_t brackettarget(cTrialCache& T, const double target, const double currentlambda)
+	BracketResult brackettarget(cTrialCache& T, const double target, const double currentlambda)
 	{
 		double startx = log10(currentlambda);
 		if (LastIteration == 0) {
@@ -1371,7 +1372,7 @@ private:
 				trialfunction(T, pow10(x[k]));
 				bool tarbrak = istargetbraketed(T);
 				if (tarbrak) {
-					return BRACKETED;//target bracketed		
+					return BracketResult::BRACKETED;//target bracketed		
 				}
 			}
 
@@ -1395,20 +1396,20 @@ private:
 			trialfunction(T, pow10(startx + x[k]));
 			bool tarbrak = istargetbraketed(T);
 			if (tarbrak) {
-				return BRACKETED;//target bracketed		
+				return BracketResult::BRACKETED;//target bracketed		
 			}
 		}
 		//printtrials(T);
 		//prompttocontinue();
 
 		if (T.maxphid() < target) {
-			return ALLBELOW;//all below target	
+			return BracketResult::ALLBELOW;//all below target	
 		}
 
 		bool minbrak = isminbraketed(T);
-		if (minbrak)return MINBRACKETED;//min bracketed											
+		if (minbrak)return BracketResult::MINBRACKETED;//min bracketed											
 
-		return ALLABOVE;//all above target
+		return BracketResult::ALLABOVE;//all above target
 	}
 	
 	double brentsmethod(cTrialCache& T, const double target, double& newphid)
@@ -1740,10 +1741,10 @@ public:
 		Location.groundelevation = doublevalue(elevation);
 		Location.z = doublevalue(altimeter);
 
-		GI.birdheight = doublevalue(birdheight);
-		GI.birdroll = doublevalue(birdroll);
-		GI.birdpitch = doublevalue(birdpitch);
-		GI.birdyaw = doublevalue(birdyaw);
+		GI.Height = doublevalue(birdheight);
+		GI.Roll = doublevalue(birdroll);
+		GI.Pitch = doublevalue(birdpitch);
+		GI.Yaw = doublevalue(birdyaw);
 
 		std::vector<double> chan = doublevector(emchannels, nChannels);
 		std::vector<double> stdchan = doublevector(std_emchannels, nChannels);
@@ -1771,8 +1772,8 @@ public:
 
 		GR = GI;
 		if (SolveBirdHeight) {
-			GR.birdheight = doublevalue(ref_birdheight);
-			GS.birdheight = doublevalue(std_birdheight);
+			GR.Height = doublevalue(ref_birdheight);
+			GS.Height = doublevalue(std_birdheight);
 		}
 
 		return true;

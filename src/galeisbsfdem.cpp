@@ -53,7 +53,59 @@ int process(int argc, char** argv, size_t Size, size_t Rank)
 	return 0;
 };
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) {
+	std::string stmfile = "C:/Users/rossc/code/repos/ga-aem-eigen/examples/resolve/stmfiles/Resolve-2006.stm";	
+	
+	std::vector<double> c = { 0.1, 1.0, 0.05 };
+	std::vector<double> t = { 10, 5 };
+	cEarth1D e(c,t);
+	cFDEmSystem F;
+	F.readsystemdescriptorfile(stmfile);	
+	
+	cFDEmGeometry g(30,0,10,0);	
+	F.setgeometry(g);
+	F.setearth(e);	
+	F.setupcomputations();
+	cvector fm = F.ppms();
+
+	//cvector dba = F.dppms(cLayeredEarthModeller::CalculationType::DB, 0);
+	//double delta = g.Height * 0.001;
+	//g.Height -= delta / 2.0;
+
+	int dlayer = 2;
+	cvector dba = F.dppms(cLayeredEarthModeller::CalculationType::DC, dlayer);
+	double delta = e.conductivity[dlayer] * 0.001;
+	e.conductivity[dlayer] -= delta / 2.0;
+
+	/*int dlayer = 2;
+	cvector dba = F.dppms(cLayeredEarthModeller::CalculationType::DT, dlayer);
+	double delta = e.thickness[dlayer] * 0.001;
+	e.thickness[dlayer] -= delta / 2.0;*/
+	
+	F.setgeometry(g);
+	F.setearth(e);
+	F.setupcomputations();
+	fm = F.ppms();
+
+	//g.Height += delta;
+	e.conductivity[dlayer] += delta;
+	//e.thickness[dlayer] += delta;
+	F.setgeometry(g);
+	F.setearth(e);
+	F.setupcomputations();
+	cvector fm1 = F.ppms();
+	
+	for (auto i = 0; i < fm.size(); i++) {
+		std::cout << fm[i] << " " << fm1[i] << std::endl;
+	}		
+
+	cvector dbn = (fm1 - fm) / delta;
+	for (auto i = 0; i < fm.size(); i++) {
+		std::cout << dbn[i] << " " << dba[i] << std::endl;
+	}
+}
+
+int main1(int argc, char** argv)
 {
 #ifdef _MPI_ENABLED
 	int Size, Rank;
