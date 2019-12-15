@@ -27,11 +27,12 @@ fi
 
 export mpicxx=mpiCC
 export HAVE_NETCDF=1
-export HAVE_GDAL=0
+export HAVE_GDAL=1
 export HAVE_CGAL=0
 module load openmpi/4.0.1
 module load fftw3/3.3.8
 module load eigen/3.3.7
+module load petsc/3.12.2
 
 if [ $HAVE_NETCDF == 1 ] ; then
 	echo 'Building with NETCDF'
@@ -41,7 +42,7 @@ fi
 
 if [ $HAVE_GDAL == 1 ] ; then
 	echo 'Building with GDAL'
-	module load gdal
+	module load gdal/3.0.2
 fi
 
 if [ $HAVE_CGAL == 1 ] ; then
@@ -64,14 +65,13 @@ make -f gatdaem1d_matlab.make $makemode
 
 #Compile without MPI
 make -f ctlinedata2sgrid.make $makemode
-# Need GDAL make -f ctlinedata2slicegrids.make $makemode
+make -f ctlinedata2slicegrids.make $makemode
 make -f example_forward_model.make $makemode
 make -f gaforwardmodeltdem.make $makemode
 
 #Compile with MPI
 make -f galeisbstdem.make $makemode
 make -f garjmcmctdem.make $makemode
+make -f galeiallatonce.make $makemode
 # make -f galeisbsfdem.make $makemode
-# NEED PETSC make -f galeiallatonce.make $makemode
-
 
