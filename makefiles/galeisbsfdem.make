@@ -18,8 +18,6 @@ allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(srcdir)/layeredearthmodeller.o
-objects += $(srcdir)/fdemsystem.o
 objects += $(srcdir)/galeisbsfdem.o
 
 %.o : %.cpp

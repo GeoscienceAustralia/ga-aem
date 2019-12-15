@@ -73,5 +73,5 @@ make -f gaforwardmodeltdem.make $makemode
 make -f galeisbstdem.make $makemode
 make -f garjmcmctdem.make $makemode
 make -f galeiallatonce.make $makemode
-# make -f galeisbsfdem.make $makemode
+make -f galeisbsfdem.make $makemode
 
