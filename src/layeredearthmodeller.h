@@ -543,10 +543,10 @@ public:
 		double peak_exp3 = 3.0 / (Z + H);
 
 		ApproximateHalfspace = approximatehalfspace();
-		PeakLambda = sqrt(MuZeroOmega * ApproximateHalfspace / 4.0);
+		PeakLambda = std::sqrt(MuZeroOmega * ApproximateHalfspace / 4.0);
 
-		double lp = log(std::min(PeakLambda, peak_exp2));
-		double up = log(std::max(PeakLambda, peak_exp3));
+		double lp = std::log(std::min(PeakLambda, peak_exp2));
+		double up = std::log(std::max(PeakLambda, peak_exp3));
 
 		LowerBound = lp - LowerFractionalWidth;
 		UpperBound = up + UpperFractionalWidth;
@@ -930,8 +930,8 @@ public:
 		case CalculationType::DY: return dPTdY();
 		case CalculationType::DZ: return dPTdZ();
 		case CalculationType::DH: return dPTdH();
-		//case CalculationType::DC: return Mat3d::Zero();
-		//case CalculationType::DT: return Mat3d::Zero();
+		case CalculationType::DC: return Mat3d::Zero();
+		case CalculationType::DT: return Mat3d::Zero();
 		default:
 			glog.errormsg(_SRC_,"Unknown calculation type %c\n", calculationtype);
 		}
@@ -1029,6 +1029,8 @@ public:
 	{
 		double  pf = primary(txdir, rxdir);
 		cdouble sf = secondary(txdir, rxdir);
+		
+		sf = std::complex<double>(sf.real(), -sf.imag());
 		return 1.0e6 * (sf / pf);
 	}
 
@@ -1036,6 +1038,7 @@ public:
 	{
 		double  pf  = primary(txdir, rxdir);
 		cdouble dsf = ds(calculationtype, derivativelayer, txdir, rxdir);
+		dsf = std::complex<double>(dsf.real(), -dsf.imag());
 		return 1.0e6 * (dsf / pf);
 	}
 

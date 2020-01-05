@@ -185,6 +185,10 @@ public:
 
 	cFDEmSystem() {};
 
+	cFDEmSystem(const std::string stmfile) {
+		readsystemdescriptorfile(stmfile);
+	};
+
 	~cFDEmSystem() {};
 
 	size_t NumberOfCoilSets() const {
@@ -334,6 +338,139 @@ public:
 			cv[i] = cdouble(dv[i * 2], dv[i * 2 + 1]);
 		}
 		return cv;
+	}
+
+	std::vector<double> get_frequencies()
+	{
+		std::vector<double> f(NumberOfCoilSets());
+		for (auto i = 0; i < NumberOfCoilSets(); i++) {
+			f[i] = CoilSets[i].Frequency;
+		}
+		return f;
+	};
+
+	void test_derivatives(const std::string& stmfile, cEarth1D e, cFDEmGeometry g, cLayeredEarthModeller::CalculationType dtype, int dlayer=-1)
+	{		
+		cvector fm, fm1, fm2, dfma, dfmn;
+		double delta;
+		std::string suffix;
+		setgeometry(g);
+		setearth(e);
+		setupcomputations();
+		fm = ppms();
+		dfma = dppms(dtype, dlayer);
+		
+		if (dtype == cLayeredEarthModeller::CalculationType::DC) {			
+			delta = e.conductivity[dlayer] * 0.01;
+			e.conductivity[dlayer] -= delta / 2.0;
+			setgeometry(g); setearth(e); setupcomputations(); fm1 = ppms();
+			e.conductivity[dlayer] += delta;
+			setgeometry(g); setearth(e); setupcomputations(); fm2 = ppms();
+			suffix = strprint("dC_%03d",dlayer);
+		}
+		else if (dtype == cLayeredEarthModeller::CalculationType::DT) {
+			delta = e.thickness[dlayer] * 0.001;
+			e.thickness[dlayer] -= delta / 2.0;
+			setgeometry(g); setearth(e); setupcomputations(); fm1 = ppms();
+			e.thickness[dlayer] += delta;
+			setgeometry(g); setearth(e); setupcomputations(); fm2 = ppms();
+			suffix = strprint("dT_%03d", dlayer);
+		}
+		else if (dtype == cLayeredEarthModeller::CalculationType::DB) {
+			delta = g.Height * 0.001;
+			g.Height -= delta / 2.0;
+			setgeometry(g); setearth(e); setupcomputations(); fm1 = ppms();
+			g.Height += delta;
+			setgeometry(g); setearth(e); setupcomputations(); fm2 = ppms();
+			suffix = strprint("dB");
+		}		
+		dfmn = (fm2 - fm1) / delta;
+		
+		write("frequencies.dat", get_frequencies());
+		write("fm.dat", fm);
+		write("dfma_" + suffix + ".dat", dfma);
+		write("fm1_" + suffix + ".dat", fm1);
+		write("fm2_" + suffix + ".dat", fm2);
+		write("dfmn_" + suffix + ".dat", dfmn);
+	}
+
+	static void test_calculations(const std::string& stmfile)
+	{
+		std::vector<double> c = { 0.1, 0.5, 0.001 };
+		std::vector<double> t = { 10, 20 };
+		cEarth1D e(c, t);
+		cFDEmGeometry g(30, 0, 0, 0);
+		cFDEmSystem F(stmfile);
+
+		for (auto i = 0; i < e.nlayers(); i++) {
+			cLayeredEarthModeller::CalculationType dtype = cLayeredEarthModeller::CalculationType::DC;
+			F.test_derivatives(stmfile, e, g, dtype, i);
+		}
+
+		for (auto i = 0; i < e.nlayers() - 1; i++) {
+			cLayeredEarthModeller::CalculationType dtype = cLayeredEarthModeller::CalculationType::DT;
+			F.test_derivatives(stmfile, e, g, dtype, i);
+		}
+
+		cLayeredEarthModeller::CalculationType dtype = cLayeredEarthModeller::CalculationType::DB;
+		F.test_derivatives(stmfile, e, g, dtype);
+	}
+
+	static void create_synthetic_dataset(const std::string& stmfile, const std::string& syntheticdatafile)
+	{
+		std::vector<double> c = { 0.1, 0.5, 0.001 };
+		std::vector<double> t = { 10, 20 };		
+		cFDEmSystem F(stmfile);
+
+		int survey = 666;
+		int flight = 111;
+		int line=10000;
+		int fiducial=10;
+		double x =  325000;
+		double y = 6500000;
+		double height = 30;		
+
+		std::ofstream of(syntheticdatafile);
+		of.setf(std::ios_base::scientific);
+		for(auto i = 0; i < 10; i++) {			
+			fiducial += 1;
+			x += 20;
+			y += 1;
+			height += 1;
+
+			cEarth1D e(c, t);
+			cFDEmGeometry g(height, 0, 0, 0);
+
+			F.setgeometry(g);
+			F.setearth(e);
+			F.setupcomputations();
+			cvector fm = F.ppms();
+
+			of << line << " ";
+			of << fiducial << " ";
+			of << x << " ";
+			of << y << " ";
+			of << height << " ";
+			of << e.nlayers() << " ";
+
+			for (auto i = 0; i < c.size(); i++) {
+				of << c[i] << " ";				
+			}
+
+			for (auto i = 0; i < t.size(); i++) {
+				of << t[i] << " ";
+			}
+
+			for (auto i = 0; i < fm.size(); i++) {
+				of << fm[i].real() << " ";
+				of << fm[i].imag() << " ";
+			}
+
+			of << std::endl;
+		}
+
+		
+		
 	}
 };
 
