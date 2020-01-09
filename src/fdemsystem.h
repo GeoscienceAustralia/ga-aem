@@ -421,6 +421,7 @@ public:
 		std::vector<double> c = { 0.1, 0.5, 0.001 };
 		std::vector<double> t = { 10, 20 };		
 		cFDEmSystem F(stmfile);
+		int nsamples = 10;
 
 		int survey = 666;
 		int flight = 111;
@@ -432,11 +433,13 @@ public:
 
 		std::ofstream of(syntheticdatafile);
 		of.setf(std::ios_base::scientific);
-		for(auto i = 0; i < 10; i++) {			
+		for(auto i = 0; i < nsamples; i++) {			
 			fiducial += 1;
 			x += 20;
 			y += 1;
 			height += 1;
+
+			t[1] += 10*(double)i/(double)nsamples;
 
 			cEarth1D e(c, t);
 			cFDEmGeometry g(height, 0, 0, 0);
@@ -451,12 +454,16 @@ public:
 			of << x << " ";
 			of << y << " ";
 			of << height << " ";
-			of << e.nlayers() << " ";
 
+			of << g.Height << " ";
+			of << g.Roll   << " ";
+			of << g.Pitch  << " ";
+			of << g.Yaw    << " ";
+
+			of << e.nlayers() << " ";
 			for (auto i = 0; i < c.size(); i++) {
 				of << c[i] << " ";				
 			}
-
 			for (auto i = 0; i < t.size(); i++) {
 				of << t[i] << " ";
 			}
