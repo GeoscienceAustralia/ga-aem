@@ -12,9 +12,6 @@ using namespace std;
 #include "gaaem_version.h"
 #include "general_utils.h"
 #include "file_utils.h"
-#include "random_utils.h"
-#include "tdemsystem.h"
-#include "rjmcmc1d.h"
 #include "rjmcmc1dtdeminverter.h"
 
 #if defined _MPI_ENABLED
@@ -25,7 +22,7 @@ class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
 int main(int argc, char* argv[])
-{	
+{		
 	int exitstatus;
 	int mpisize = 1;
 	int mpirank = 0;
