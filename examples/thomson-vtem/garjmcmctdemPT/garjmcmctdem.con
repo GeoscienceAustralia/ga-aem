@@ -1,0 +1,84 @@
+Control Begin
+
+	NumberOfSystems = 1
+
+	EMSystem1 Begin
+		SystemFile      = ../stmfiles/VTEM-plus-7.3ms-pulse-southernthomson.stm
+		UseXComponent   = no
+		UseYComponent   = no
+		UseZComponent   = yes
+
+		InvertTotalField = no
+		ReconstructPrimaryFieldFromInputGeometry = no
+
+		EstimateNoiseFromModel = yes
+		ZMultiplicativeNoise   = 3.0
+		ZAdditiveNoise         = 0.161167  0.124984  0.094229  0.073026  0.058675  0.045173  0.038207  0.026160  0.019157  0.014366  0.011281  0.009552  0.008378  0.007234  0.006111  0.005186  0.004356  0.003580  0.003004  0.002447  0.002047  0.001648  0.001398  0.001154  0.000957  0.000809  0.000687  0.000589  0.000507  0.000444  0.000405  0.000352  0.000328  0.000303  0.000301  0.000319  0.000348  0.000360  0.000344  0.000310  0.000245  0.000196  0.000219  0.000177  0.000159
+		ZComponentSecondary    = -Column 177
+	EMSystem1 End
+
+	Sampler Begin
+		SaveMaps       = Yes
+		SaveMapsRate   = 1
+		SaveChains     = Yes
+		SaveChainsRate = 1
+
+		NChains  = 4
+		NSamples = 10000
+		NBurnIn  = 1000
+		ThinRate = 100
+
+		NLayersMin  =   1
+		NLayersMax  =  15
+
+		DepthMin        = 0.0
+		DepthMax        = 400
+		DepthScaling    = LINEAR
+		NDepthCells     = 100
+
+		ConductivityMin          = 0.001
+		ConductivityMax          = 5.0
+		ConductivityScaling      = LOG10
+		NConductivityCells       = 100
+	Sampler End
+
+	Input Begin
+		DataFile   = ..\data\thomson-vtem.dat
+		HeaderLines = 0
+		FirstRecord = 1
+		LastRecord  = 1
+		Subsample   = 1
+
+		Columns Begin
+			SurveyNumber    = Column 1
+			DateNumber      = Column 6
+			FlightNumber    = Column 3
+			LineNumber      = Column 4
+			FidNumber       = Column 5
+			Easting         = Column 28
+			Northing        = Column 29
+			GroundElevation = Column 32
+			Altimeter       = Column 22
+
+			TX_Height       = Column 30
+			TX_Roll         = Column 23
+			TX_Pitch        = Column 24
+			TX_Yaw          = Column 25
+			TXRX_DX         = 0
+			TXRX_DY         = 0
+			TXRX_DZ         = 0
+			RX_Roll         = Column 23
+			RX_Pitch        = Column 24
+			RX_Yaw          = Column 25
+		Columns End
+	Input End
+
+	Output Begin
+		LogFile    = rjmcmc.log
+		DataFile   = rjmcmc.asc
+
+		Directory  = output\
+		MapsDirectory    = output\pmaps\
+		ChainsDirectory  = output\chains\
+	Output End
+Control End
