@@ -514,10 +514,11 @@ class cChain{
 public:
 
 	double temperature = 0.0;
-	std::vector<rjMcMC1DModel> modelchain;
+	std::vector<float> Temp;
+	std::vector<rjMcMC1DModel> modelchain;	
 	std::vector<uint32_t> sample;
 	std::vector<uint32_t> nlayers;
-	std::vector<float> misfit;
+	std::vector<float> misfit;	
 	std::vector<float> logppd;
 	std::vector<float> ar_valuechange;
 	std::vector<float> ar_move;
@@ -786,7 +787,7 @@ public:
 		return false;
 	}
 
-	bool propose_valuechange(const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_valuechange(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 	{
 		pvaluechange.inc_np();
 
@@ -814,8 +815,8 @@ public:
 		set_misfit(mpro);
 
 		double logpqratio = std::log(pqratio);
-		double logliker = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0;
-		double logar = logpqratio + logliker;
+		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
+		double logar = logpqratio + loglr;
 		if (std::log(urand<double>()) < logar) {
 			pvaluechange.inc_na();
 			return true;
@@ -823,7 +824,7 @@ public:
 		return false;
 	}
 
-	bool propose_move(const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_move(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 	{
 		pmove.inc_np();
 
@@ -847,7 +848,7 @@ public:
 		double pqratio = qpdfreverse / qpdfforward;
 		double logpqratio = std::log(pqratio);
 
-		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0;
+		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
 		double logar = logpqratio + loglr;
 		double logu = std::log(urand<double>());
 		if (logu < logar) {
@@ -857,7 +858,7 @@ public:
 		return false;
 	}
 	
-	bool propose_birth(const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_birth(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 	{
 		pbirth.inc_np();
 
@@ -894,8 +895,8 @@ public:
 		set_misfit(mpro);
 
 		double logpqratio = std::log(pqratio);
-		double loglikeratio = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0;
-		double logar = logpqratio + loglikeratio;
+		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
+		double logar = logpqratio + loglr;
 		if (std::log(urand<double>()) < logar) {
 			pbirth.inc_na();
 			return true;
@@ -903,7 +904,7 @@ public:
 		return false;
 	}
 	
-	bool propose_death(const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_death(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 	{
 		pdeath.inc_np();
 
@@ -936,8 +937,8 @@ public:
 		//pqratio *= (double)(n) / double(n - 1);
 
 		double logpqratio = log(pqratio);
-		double loglikeratio = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0;
-		double logar = logpqratio + loglikeratio;
+		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
+		double logar = logpqratio + loglr;
 		if (log(urand<double>()) < logar) {
 			pdeath.inc_na();
 			return true;
@@ -945,7 +946,7 @@ public:
 		return false;
 	}
 	
-	bool propose_nuisancechange(const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_nuisancechange(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 	{
 		pnuisancechange.inc_np();
 
@@ -958,16 +959,16 @@ public:
 		mpro.nuisances[ni].value = nv;
 
 		set_misfit(mpro);
-		double logar = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0;
+		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
 		double logu = log(urand<double>());
-		if (logu < logar) {
+		if (logu < loglr) {
 			pnuisancechange.inc_na();
 			return true;
 		}
 		return false;
 	}
 	
-	bool propose_independent(const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_independent(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
 	{
 		mpro = choosefromprior();
 		set_misfit(mpro);
@@ -981,8 +982,8 @@ public:
 		priorratio = 1.0;
 
 		double logpriorratio = std::log(priorratio);
-		double logliker = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0;
-		double logar = logpriorratio + logliker;
+		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
+		double logar = logpriorratio + loglr;
 		double logu = std::log(urand<double>());
 		if (logu < logar) {
 			return true;
@@ -1010,8 +1011,8 @@ public:
 	void set_chain_temperatures() {
 		Chains[0].temperature = 1.0;
 		for (size_t ci = 1; ci < nchains(); ci++) {
-			//Chains[ci].temperature = Chains[ci-1].temperature + 0.5;
-			Chains[ci].temperature = Chains[ci - 1].temperature * 2.0;
+			Chains[ci].temperature = Chains[ci-1].temperature + 0.5;
+			//Chains[ci].temperature = Chains[ci - 1].temperature * 2.0;
 		}
 	}
 
@@ -1025,7 +1026,8 @@ public:
 		for (size_t si = 0; si < nsamples; si++) {
 			for (size_t ci = 0; ci < nchains(); ci++) {
 				rjMcMC1DModel& mcur = current_models[ci];//Current model on chain
-								
+				const double& temperature = Chains[ci].temperature;
+
 				if (si == 0) {
 					//Initialise chain
 					mcur = choosefromprior();
@@ -1039,12 +1041,12 @@ public:
 
 					bool accept = false;
 					switch (option) {
-					case 0: accept = propose_valuechange(mcur, mpro); break;
-					case 1: accept = propose_move(mcur, mpro); break;
-					case 2: accept = propose_birth(mcur, mpro); break;
-					case 3: accept = propose_death(mcur, mpro); break;
-					case 4: accept = propose_nuisancechange(mcur, mpro); break;
-					case 5: accept = propose_independent(mcur, mpro); break;
+					case 0: accept = propose_valuechange(temperature,mcur, mpro); break;
+					case 1: accept = propose_move(temperature, mcur, mpro); break;
+					case 2: accept = propose_birth(temperature, mcur, mpro); break;
+					case 3: accept = propose_death(temperature, mcur, mpro); break;
+					case 4: accept = propose_nuisancechange(temperature, mcur, mpro); break;
+					case 5: accept = propose_independent(temperature, mcur, mpro); break;
 					default: glog.errormsg(_SRC_, "Proposal option %zu out of range\n", option);
 					}
 					if (accept) mcur = mpro;
@@ -1073,7 +1075,8 @@ public:
 				}
 
 				if (should_save_convergence_record(si)) {
-					Chains[ci].sample.push_back((uint32_t)si);
+					Chains[ci].Temp.push_back((float)Chains[ci].temperature);
+					Chains[ci].sample.push_back((uint32_t)si);					
 					Chains[ci].nlayers.push_back((uint32_t)mcur.nlayers());
 					Chains[ci].misfit.push_back((float)mcur.getmisfit());
 					Chains[ci].logppd.push_back((float)mcur.logppd());
@@ -1086,25 +1089,18 @@ public:
 				//print_report(si, ci, mcur);
 			}
 
-			if (true) {				
-				//Parallel Tempering
-				std::vector<double> phis(nchains());//Temporary array for misfits to be swapped with the temperatures
-				for (auto i = 0; i < nchains(); i++) {
-					phis[i] = current_models[i].getmisfit();
-				}
-
-				std::vector<size_t> p = get_swap_partners();
-				for (auto i = 0; i < nchains() - 1; i++) {					
-					const size_t& j = p[i];
-					if (i != j) {
-						bool swapped = swap_temperature(Chains[i].temperature, phis[i], Chains[j].temperature, phis[j]);
-						//if (swapped) {
-						//	std::cout << si << " swapped " << i << " & " << j << std::endl;
-						//	print_temperatures_misfits(current_models);
-						//}
-					}
+			if (true) {
+				//Parallel Tempering								
+				for (size_t i = nchains()-1; i >=1; i--) {
+					const size_t j = irand<size_t>(0,i-1);
+					bool swapped = swap_temperature(Chains[i].temperature, current_models[i].getmisfit(), Chains[j].temperature, current_models[j].getmisfit());
+					//if (swapped) {
+					//	std::cout << si << " swapped " << i << " & " << j << std::endl;
+					//	print_temperatures_misfits(current_models);
+					//}					
 				}
 			}
+			
 		}
 		double t2 = gettime();
 		endtime = timestamp();
@@ -1118,13 +1114,12 @@ public:
 		return p;
 	}
 
-	static bool swap_temperature(double& T_i, double& Phi_i, double& T_j, double& Phi_j) {
+	static bool swap_temperature(double& T_i, const double& Phi_i, double& T_j, const double& Phi_j) {
 		//double ar = std::exp((1.0 / T_i - 1.0 / T_j) * (Phi_i - Phi_j));
 		double logar = (1.0 / T_i - 1.0 / T_j) * (Phi_i - Phi_j);
 		double logu  = std::log(urand<double>());
 		if (logu < logar) {
-			std::swap(T_i, T_j);
-			std::swap(Phi_i, Phi_j);
+			std::swap(T_i, T_j);		
 			return true;
 		}
 		return false;
@@ -1161,7 +1156,7 @@ public:
 			" ci=" << ci <<	std::fixed <<		
 			" t="   << std::setprecision(1) << Chains[ci].temperature <<
 			" np="  << std::setw(2) << np <<
-			" nmf=" << std::setw(8) << nmf <<
+			" nmf=" << std::setw(8) << std::setprecision(2) << nmf <<
 			" vc="  << std::setprecision(2) << pvaluechange.ar() <<
 			" mv="  << std::setprecision(2) << pmove.ar() <<
 			" b="   << std::setprecision(2) << pbirth.ar() <<
@@ -1236,6 +1231,7 @@ public:
 		std::vector<NcDim> dims = { chain_dim, cvs_dim };
 
 		for (size_t ci = 0; ci < nchains(); ci++) {
+			write_chain_variable(ci, Chains[ci].Temp, "temperature", NcType::nc_FLOAT, nc, dims);
 			write_chain_variable(ci, Chains[ci].nlayers, "nlayers", NcType::nc_UINT, nc, dims);
 			write_chain_variable(ci, Chains[ci].misfit, "misfit", NcType::nc_FLOAT, nc, dims);
 			write_chain_variable(ci, Chains[ci].logppd, "logppd", NcType::nc_FLOAT, nc, dims);

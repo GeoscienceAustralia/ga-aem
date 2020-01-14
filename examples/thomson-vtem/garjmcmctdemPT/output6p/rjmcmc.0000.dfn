@@ -1,0 +1,27 @@
+DEFN   ST=RECD,RT=COMM;RT:A4;COMMENTS:A76
+DEFN 1 ST=RECD,RT=; uniqueid : I12 : Inversion sequence number
+DEFN 2 ST=RECD,RT=; survey : I12 : Survey number
+DEFN 3 ST=RECD,RT=; date : I12 : Date number
+DEFN 4 ST=RECD,RT=; flight : I12 : Flight number, IntrepidFlightNumber
+DEFN 5 ST=RECD,RT=; line : I12 : Line number, IntrepidLineNumber
+DEFN 6 ST=RECD,RT=; fiducial : F12.2 : Fiducial number, IntrepidFiducial
+DEFN 7 ST=RECD,RT=; easting : F9.1 : UNITS = m , IntrepidX
+DEFN 8 ST=RECD,RT=; northing : F10.1 : UNITS = m , IntrepidY
+DEFN 9 ST=RECD,RT=; elevation : F10.2 : UNITS = m , Ground elevation relative to sea-level
+DEFN 10 ST=RECD,RT=; nchains : I9 : Number of chains
+DEFN 11 ST=RECD,RT=; nsamples : I9 : Number of samples per chain
+DEFN 12 ST=RECD,RT=; nburnin : I9 : Number of samples in burn-in
+DEFN 13 ST=RECD,RT=; sampletime : F8.2 : UNITS = s , Sampling wall time in seconds
+DEFN 14 ST=RECD,RT=; misfit_lowest : E10.6 : Lowest misfit on any chain
+DEFN 15 ST=RECD,RT=; misfit_average : E10.6 : Average misfit over all chains
+DEFN 16 ST=RECD,RT=; ndepthcells : I4 : Number of depth cells or bins in histograms
+DEFN 17 ST=RECD,RT=; depthcelltop : 100F8.2 : UNITS = m , Depths of cell tops
+DEFN 18 ST=RECD,RT=; conductivity_mean : 100E15.6 : UNITS = S/m , Conductivity of mean model
+DEFN 19 ST=RECD,RT=; conductivity_mode : 100E15.6 : UNITS = S/m , Conductivity of mode model
+DEFN 20 ST=RECD,RT=; conductivity_p50 : 100E15.6 : UNITS = S/m , Conductivity at 50th percentile or median
+DEFN 21 ST=RECD,RT=; conductivity_p10 : 100E15.6 : UNITS = S/m , Conductivity at 10th percentile
+DEFN 22 ST=RECD,RT=; conductivity_p90 : 100E15.6 : UNITS = S/m , Conductivity at 90th percentile
+DEFN 23 ST=RECD,RT=; conductivity_highestlikelihood : 100E15.6 : UNITS = S/m , Conductivity of highest likelihood model
+DEFN 24 ST=RECD,RT=; conductivity_lowestmisfit : 100E15.6 : UNITS = S/m , Conductivity of howest misfit model
+DEFN 25 ST=RECD,RT=; changepoint : 100I11 : UNITS = counts , Changepoint histogram
+DEFN 26 ST=RECD,RT=;END DEFN
