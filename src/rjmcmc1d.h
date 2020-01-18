@@ -23,17 +23,71 @@ using namespace netCDF;
 using namespace netCDF::exceptions;
 
 
-enum class ParameterizationType {LINEAR, LOG10};
+class cParameterization {
+	
+	public: enum class Type { LINEAR, LOG10 };
+	
+	private:
+		Type type = Type::LINEAR;
+	
+	public:
+		
+		cParameterization() {};
+
+		cParameterization(const Type& t) {
+			type = t;
+		}
+
+		cParameterization(const std::string& s) {
+			type = get_type(s);
+		}
+
+		bool islinear() const {
+			if (type == Type::LINEAR) return true;
+			return false;
+		}
+
+		bool islog10() const {
+			if (type == Type::LOG10) return true;
+			return false;
+		}
+
+		std::string get_typestring() const {
+			return get_typestring(type);
+		}
+
+		static std::string get_typestring(const Type& t) {
+			std::string s;
+				switch (t) {
+				case Type::LINEAR: s = "LINEAR"; break;
+				case Type::LOG10: s = "LOG10"; break;
+				default: glog.errormsg(_SRC_, "Invalid ParameterizationType\n");
+				}
+			return s;
+		};
+
+		static Type get_type(const std::string& s)
+		{			
+			if (strcasecmp(s, get_typestring(Type::LOG10)) == 0 ){
+				return Type::LOG10;
+			}
+			else if(strcasecmp(s,get_typestring(Type::LINEAR)) == 0){
+				return Type::LINEAR;
+			}
+			glog.errormsg(_SRC_, "Invalid ParameterizationType %s\n",s.c_str());
+		};
+
+};
 
 class cProposal {
 
 	public:
-		enum class ProposalType { VALUECHANGE, BIRTH, DEATH, MOVE, NUISANCE };
-		ProposalType type;
+		enum class Type { VALUECHANGE, BIRTH, DEATH, MOVE, NUISANCE };
+		Type type;
 		uint32_t np = 0;
 		uint32_t na = 0;
 
-		cProposal(const ProposalType& t) {
+		cProposal(const Type& t) {
 			type = t;
 		}
 
@@ -71,9 +125,9 @@ public:
 class rjMcMCNuisance{
 
 public:	
-	enum class NuisanceType { TX_HEIGHT, TX_ROLL, TX_PITCH, TX_YAW, TXRX_DX, TXRX_DY, TXRX_DZ, RX_ROLL, RX_PITCH, RX_YAW,		TXRX_ANGLE, TXRX_DISTANCE, UNKNOWN };
+	enum class Type { TX_HEIGHT, TX_ROLL, TX_PITCH, TX_YAW, TXRX_DX, TXRX_DY, TXRX_DZ, RX_ROLL, RX_PITCH, RX_YAW,		TXRX_ANGLE, TXRX_DISTANCE, UNKNOWN };
 
-	NuisanceType type;
+	Type type;
 	double value;
 	double min;
 	double max;
@@ -81,33 +135,33 @@ public:
 	
 	static size_t number_of_types() { return 13; }
 
-	static std::string ntype2str(NuisanceType t){
-		if(t == NuisanceType::TX_HEIGHT) return "tx_height";
-		else if (t == NuisanceType::TX_ROLL) return "tx_roll";
-		else if (t == NuisanceType::TX_PITCH) return "tx_pitch";
-		else if (t == NuisanceType::TX_YAW) return "tx_yaw";
-		else if (t == NuisanceType::TXRX_DX) return "txrx_dx";
-		else if (t == NuisanceType::TXRX_DY) return "txrx_dy";
-		else if (t == NuisanceType::TXRX_DZ) return "txrx_dz";
-		else if (t == NuisanceType::RX_ROLL) return "rx_roll";
-		else if (t == NuisanceType::RX_PITCH) return "rx_pitch";
-		else if (t == NuisanceType::RX_YAW) return "rx_yaw";
-		else if (t == NuisanceType::TXRX_DISTANCE) return "txrx_distance";
-		else if (t == NuisanceType::TXRX_ANGLE) return "txrx_angle";
-		else if (t == NuisanceType::UNKNOWN) return "UnknownNuisanceType";
+	static std::string ntype2str(Type t){
+		if(t == Type::TX_HEIGHT) return "tx_height";
+		else if (t == Type::TX_ROLL) return "tx_roll";
+		else if (t == Type::TX_PITCH) return "tx_pitch";
+		else if (t == Type::TX_YAW) return "tx_yaw";
+		else if (t == Type::TXRX_DX) return "txrx_dx";
+		else if (t == Type::TXRX_DY) return "txrx_dy";
+		else if (t == Type::TXRX_DZ) return "txrx_dz";
+		else if (t == Type::RX_ROLL) return "rx_roll";
+		else if (t == Type::RX_PITCH) return "rx_pitch";
+		else if (t == Type::RX_YAW) return "rx_yaw";
+		else if (t == Type::TXRX_DISTANCE) return "txrx_distance";
+		else if (t == Type::TXRX_ANGLE) return "txrx_angle";
+		else if (t == Type::UNKNOWN) return "UnknownNuisanceType";
 		else{
 			return "UnknownNuisanceType";
 		}			
 	};
 	
-	static NuisanceType str2ntype(std::string s){
+	static Type str2ntype(std::string s){
 		for(size_t i=0; i < number_of_types(); i++){
-			NuisanceType nt = (NuisanceType)i;
+			Type nt = (Type)i;
 			if(strcasecmp(s,ntype2str(nt))==0){
 				return nt;
 			}			
 		}
-		return NuisanceType::UNKNOWN;
+		return Type::UNKNOWN;
 	}
 
 	void settype(std::string s){
@@ -153,20 +207,20 @@ public:
 		return np;
 	}
 
-	const double& getmisfit() const { return misfit; }
+	const double& get_misfit() const { return misfit; }
+	
+	void set_misfit(const double mfit) { misfit = mfit; }
 
-	void setmisfit(const double mfit) { misfit = mfit; }
-
-	double logppd() const { return -misfit / 2.0 - log((double)nparams()); }
+	double logppd() const { return -misfit / 2.0 - std::log((double)nparams()); }
 
 	void sort_layers()
 	{
 		std::sort(layers.begin(), layers.end());
 	}
 
-	size_t which_layer(double pos) const
+	size_t which_layer(const double& pos) const
 	{
-		for (size_t li = 0; li<nlayers() - 1; li++){
+		for (size_t li = 0; li < nlayers() - 1; li++){
 			if (pos < layers[li + 1].ptop){
 				return li;
 			}
@@ -174,7 +228,7 @@ public:
 		return nlayers() - 1;
 	}
 
-	bool move_interface(size_t index, double pnew)
+	bool move_interface(const size_t& index, const double& pnew)
 	{
 		misfit = DBL_MAX;
 		if(index == 0)return false;
@@ -188,14 +242,17 @@ public:
 		return true;
 	}
 
-	bool insert_interface(double pos, double vbelow)
+	bool insert_interface(const double& pos, const double& vbelow)
 	{
 		misfit = DBL_MAX;
 		if (pos < 0.0 || pos > pmax)return false;
 		if (vbelow < vmin || vbelow > vmax)return false;
 
+		const double minimumthickness = DBL_EPSILON;
 		for (size_t li=0; li<nlayers(); li++){
-			if (fabs(pos - layers[li].ptop) < DBL_EPSILON){
+			if (std::fabs(pos - layers[li].ptop) < minimumthickness){
+				//don't allow crazy thin layers
+				//std::cout << "*******************" << std::endl;
  				return false;
 			}
 		}
@@ -227,7 +284,7 @@ public:
 		return true;
 	}
 
-	double value(const size_t index){
+	double value(const size_t& index){
 		return layers[index].value;
 	};
 
@@ -266,7 +323,7 @@ public:
 
 	void printmodel() const
 	{
-		printf("nl=%zu\tnn=%zu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), getmisfit());
+		printf("nl=%zu\tnn=%zu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), get_misfit());
 		for (size_t li = 0; li<nlayers(); li++){
 			printf("%4zu\t%10lf\t%10lf\n", li, layers[li].ptop, layers[li].value);
 		}
@@ -277,7 +334,7 @@ public:
 	{
 		std::vector<double> c = getvalues();
 		std::vector<double> t = getthicknesses();
-		printf("nl=%zu\tnn=%zu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), getmisfit());
+		printf("nl=%zu\tnn=%zu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), get_misfit());
 		double top = 0;
 		double bot = 0;
 		for (size_t li = 0; li<nlayers(); li++){
@@ -300,11 +357,12 @@ public:
 class rjMcMC1DNuisanceMap{
 	
 private:
-	size_t ns=0;
+	size_t nentries=0;
 	std::vector<std::string> typestring;
 	
 public:
-	size_t nsamples() const { return ns; }
+	
+	size_t get_nentries() const { return nentries; }
 	
 	std::vector<std::vector<double>> nuisance;
 	
@@ -328,7 +386,7 @@ public:
 			nuisance[i].push_back(m.nuisances[i].value);
 		};
 
-		ns++;
+		nentries++;
 	}
 
 	void writedata(FILE* fp)
@@ -343,7 +401,7 @@ public:
 			fprintf(fp, " %lf", s.max);
 			fprintf(fp, " %lf", s.mean);
 			fprintf(fp, " %lf", s.std);
-			fprintf(fp, " %zu", nsamples());
+			fprintf(fp, " %zu", get_nentries());
 
 			fprintf(fp, " %zu", hist.nbins);
 			for (size_t j = 0; j<hist.nbins; j++){
@@ -381,24 +439,26 @@ public:
 class rjMcMC1DPPDMap{
 
 private:	
+	size_t nentries;//number of samples	
 	size_t nlmin;
 	size_t nlmax;
 	double pmax;
 	double vmin;
-	double vmax;
-	size_t nsamples;//number of samples	
+	double vmax;	
 	size_t np;//number of positions
 	size_t nv;//number of values
 	double dp;
 	double dv;		
 
 public:
-
+	
 	std::vector<double> pbin;//positions
 	std::vector<double> vbin;//values	
 	std::vector<uint32_t> counts;//frequency
 	std::vector<uint32_t> cpcounts;//changepoints
 	std::vector<uint32_t> layercounts;//number of layers
+
+	size_t get_nentries() const { return nentries; }
 
 	size_t npbins() { return np; }
 	
@@ -451,15 +511,15 @@ public:
 	
 	void resettozero()
 	{
-		nsamples = 0;
-		layercounts.resize(nlmax - nlmin + 1, 0);
-		counts.resize(np*nv,0);
+		nentries = 0;
+		layercounts.assign(nlmax - nlmin + 1, 0);
+		counts.assign(np*nv,0);
 		cpcounts.assign(np,0);
 	}
 	
 	void addmodel(const rjMcMC1DModel& m)
 	{		
-		nsamples++;
+		nentries++;
 		
 		layercounts[m.nlayers()-nlmin]++;
 
@@ -499,24 +559,43 @@ public:
 		return hs;
 	}
 
-	void writedata(FILE* fp){				
-		bwrite(fp, layercounts);
-		bwrite(fp, cpcounts);
-		for (size_t pi = 0; pi < np; pi++){
-			bwrite(fp, counts[pi]);
+	struct cSummaryModels {
+		std::vector<float> mean;
+		std::vector<float> mode;
+		std::vector<float> p10;
+		std::vector<float> p50;
+		std::vector<float> p90;
+
+	public:
+		cSummaryModels(const size_t& n) {
+			mean.resize(n);
+			mode.resize(n);
+			p10.resize(n);
+			p50.resize(n);
+			p90.resize(n);
 		}
+	};
+
+	cSummaryModels get_summary_models() {
+		cSummaryModels s(np);		 
+		for (size_t pi = 0; pi < np; pi++) {
+			cHistogramStats<double> hs = hstats(pi);
+			s.mean[pi] = hs.mean;
+			s.mode[pi] = hs.mode;			
+			s.p10[pi]  = hs.p10;
+			s.p50[pi] = hs.p50;
+			s.p90[pi]  = hs.p90;
+		}
+		return s;
 	}
-	
+	   	
 };
 
-class cChain{
+class cChainHistory{
 
-public:
-
-	double temperature = 0.0;
-	std::vector<float> Temp;
-	std::vector<rjMcMC1DModel> modelchain;	
-	std::vector<uint32_t> sample;
+public:	
+	std::vector<float> temperature;
+	std::vector<uint32_t> sample;		
 	std::vector<uint32_t> nlayers;
 	std::vector<float> misfit;	
 	std::vector<float> logppd;
@@ -524,116 +603,66 @@ public:
 	std::vector<float> ar_move;
 	std::vector<float> ar_birth;
 	std::vector<float> ar_death;
-	std::vector<float> ar_nuisancechange;	
+	std::vector<float> ar_nuisancechange;		
+};
 
-	void reset(){
-		sample.clear();
-		nlayers.clear();
-		misfit.clear();
-		logppd.clear();
-		ar_valuechange.clear();
-		ar_move.clear();
-		ar_birth.clear();
-		ar_death.clear();
-		ar_nuisancechange.clear();
-	}
+class rjMcMC1DSampler;
 
-	void writeconvergencedata(size_t ci, FILE* fp)
-	{		
-		bwrite(fp, (uint32_t)ci);
-		bwrite(fp, (uint32_t)sample.size());
-		bwrite(fp, sample);
-		bwrite(fp, nlayers);
-		bwrite(fp, misfit);
-		bwrite(fp, logppd);
-		bwrite(fp, ar_valuechange);
-		bwrite(fp, ar_move);
-		bwrite(fp, ar_birth);
-		bwrite(fp, ar_death);
-		bwrite(fp, ar_nuisancechange);
-	}
+class cChain {
 
-	void writemodelchain_binary(size_t ci, FILE* fp)
-	{
-		bwrite(fp, (uint32_t)modelchain.size());
-		for (size_t si = 0; si < modelchain.size(); si++){
-			rjMcMC1DModel& m = modelchain[si];
-			bwrite(fp, (uint32_t)ci);
-			bwrite(fp, (uint32_t)si);
-			bwrite(fp, (uint32_t)m.nlayers());
-			bwrite(fp, (float)m.getmisfit());			
-			for (size_t li = 0; li < m.nlayers(); li++){
-				bwrite(fp, (float)m.layers[li].ptop);
-			}			
-			for (size_t li = 0; li<m.nlayers(); li++){
-				bwrite(fp, (float)m.layers[li].value);				
-			}			
-		}
-	}
+private:
+	
+public:		
 
-	void writemodelchain_ascii(size_t ci, FILE* fp)
-	{
-		for (size_t si = 0; si < modelchain.size(); si++){
-			rjMcMC1DModel& m = modelchain[si];
-
-			fprintf(fp, "%zu %zu %zu %.6e\n", ci, si, m.nlayers(), m.getmisfit());
-			for (size_t li = 0; li < m.nlayers(); li++){
-				fprintf(fp, " %.6e", m.layers[li].ptop);
-			}
-			fprintf(fp, "\n");
-			for (size_t li = 0; li<m.nlayers(); li++){
-				fprintf(fp, " %.6e", m.layers[li].value);
-			}
-			fprintf(fp, "\n");//%end of line
-		}
-	}
+	cProposal pvaluechange = cProposal(cProposal::Type::VALUECHANGE);
+	cProposal pmove = cProposal(cProposal::Type::MOVE);
+	cProposal pbirth = cProposal(cProposal::Type::BIRTH);
+	cProposal pdeath = cProposal(cProposal::Type::DEATH);
+	cProposal pnuisancechange = cProposal(cProposal::Type::NUISANCE);
+	cChainHistory history;
+	std::vector<uint32_t> swap_histogram;	
+	double temperature;
+	rjMcMC1DModel model;
 };
 
 class rjMcMC1DSampler{
 
 public:
-	
-	double DEFAULTLOGSTDDECADES   = 0.05;
-	double DEFAULTMOVESTDFRACTION = 0.05;
 	size_t mpiRank;
-	size_t mpiSize;	
+	size_t mpiSize;
 
-	std::string description;
+	const double DEFAULTLOGSTDDECADES   = 0.05;
+	const double DEFAULTMOVESTDFRACTION = 0.05;
+	
 	std::string starttime;
 	std::string endtime;
 	double samplingtime;
 
 	std::vector<rjMcMCNuisance> nuisance_init;
-	size_t nl_min;
-	size_t nl_max;	
+	size_t  nl_min;
+	size_t  nl_max;	
 	double  pmax;	
 	double  vmin;
 	double  vmax;		
-		
+	cParameterization param_position;
+	cParameterization param_value;
+
 	size_t nsamples;
 	size_t nburnin;
 	size_t thinrate;
 		
-	cProposal pvaluechange = cProposal(cProposal::ProposalType::VALUECHANGE);
-	cProposal pmove = cProposal(cProposal::ProposalType::MOVE);
-	cProposal pbirth = cProposal(cProposal::ProposalType::BIRTH);
-	cProposal pdeath = cProposal(cProposal::ProposalType::DEATH);
-	cProposal pnuisancechange = cProposal(cProposal::ProposalType::NUISANCE);
-
-	ParameterizationType param_position;
-	ParameterizationType param_value;
+	bool BirthDeathFromPrior;
 	
 	rjMcMC1DPPDMap pmap;
 	rjMcMC1DNuisanceMap nmap;
-	std::vector<cChain>  Chains;
-
+	std::vector<cChain> chains;	
+	std::vector<rjMcMC1DModel> ensemble;
 	rjMcMC1DModel  HighestLikelihood;
 	rjMcMC1DModel  LowestMisfit;
 			
 	size_t ndata;		 	
 	std::vector<double> obs;
 	std::vector<double> err;
-	bool BirthDeathFromPrior;
 	
 	static double gaussian_pdf(const double mean, const double std, const double x)
 	{
@@ -641,7 +670,17 @@ public:
 		return p;
 	}
 	
-	const size_t nchains() const { return Chains.size(); };
+	double get_misfit(const rjMcMC1DModel& m) const 
+	{
+		return m.get_misfit();
+	};
+
+	double get_normalised_misfit(const rjMcMC1DModel& m) const 
+	{
+		return m.get_misfit()/(double)ndata;
+	};
+
+	const size_t nchains() const { return chains.size(); };
 
 	void addmodel(const rjMcMC1DModel& m)
 	{
@@ -650,17 +689,7 @@ public:
 	}
 	
 	virtual std::vector<double> forwardmodel(const rjMcMC1DModel& m) = 0;		
-	
-	void reset()
-	{
-		description = "";
-		starttime = "";
-		endtime = "";
-		samplingtime = 0;		
-		pmap.resettozero();
-		nmap.resettozero();
-	}
-	
+		
 	size_t nnuisances()
 	{
 		return nuisance_init.size();
@@ -702,94 +731,23 @@ public:
 	{
 		double mfit = computemisfit(m);
 		//double mfit = (double)ndata;
-		m.setmisfit(mfit);
-	}
-	
-	void writeresults(FILE* fp)
-	{		
-		writeheader(fp);
-		writemodel(fp, HighestLikelihood);
-		writemodel(fp, LowestMisfit);
-		pmap.writedata(fp);
-		nmap.writedata(fp);
-		for (size_t ci = 0; ci < nchains(); ci++) {
-			Chains[ci].writeconvergencedata(ci, fp);
-			Chains[ci].writemodelchain_binary(ci, fp);
-		}
-	}
-	
-	void writeheader(FILE* fp)
-	{
-
-		std::string pparm = "LINEAR";
-		if (param_position == ParameterizationType::LOG10) pparm = "LOG10";
-
-		std::string vparm = "LINEAR";
-		if (param_value == ParameterizationType::LOG10) vparm = "LOG10";
-
-		fprintf(fp, "%s\n", description.c_str());
-		fprintf(fp, "Start time %s\n", starttime.c_str());
-		fprintf(fp, "End time %s\n", endtime.c_str());
-		fprintf(fp, "%lf sec sampling time \n", samplingtime);
-
-		fprintf(fp, "%zu nchains\n", nchains());
-		fprintf(fp, "%zu nsamples\n", nsamples);
-		fprintf(fp, "%zu nburnin\n", nburnin);
-		fprintf(fp, "%zu nnuisance\n", nnuisances());
-
-		fprintf(fp, "%zu nl_min\n", nl_min);
-		fprintf(fp, "%zu nl_max\n", nl_max);
-
-		fprintf(fp, "%s position parameterization\n", pparm.c_str());
-		fprintf(fp, "%lf pmin\n", 0.0);
-		fprintf(fp, "%lf pmax\n", pmax);
-		fprintf(fp, "%zu npcells\n", pmap.npbins());
-
-		fprintf(fp, "%s value parameterization\n", vparm.c_str());
-		fprintf(fp, "%lf vmin\n", vmin);
-		fprintf(fp, "%lf vmax\n", vmax);
-		fprintf(fp, "%zu nvcells\n", pmap.nvbins());
-
-		//fprintf(fp, "%lf sd_value\n", sd_valuechange);
-		//fprintf(fp, "%lf sd_move\n", sd_move);
-		//fprintf(fp, "%lf sd_bd_value\n", sd_bd_valuechange);
-		
-		fprintf(fp, "%lf sd_value\n", 0.0);
-		fprintf(fp, "%lf sd_move\n", 0.0);
-		fprintf(fp, "%lf sd_bd_value\n", 0.0);
-
-		fprintf(fp, "%lf Acceptance_Rate_birth\n", pbirth.ar());
-		fprintf(fp, "%lf Acceptance_Rate_death\n", pdeath.ar());
-		fprintf(fp, "%lf Acceptance_Rate_value\n", pvaluechange.ar());
-		fprintf(fp, "%lf Acceptance_Rate_move\n", pmove.ar());
-		fprintf(fp, "%lf Acceptance_Rate_nuisance\n", pnuisancechange.ar());
-
-	}
-	
-	void writemodel(FILE* fp, const rjMcMC1DModel& m)
-	{
-		fprintf(fp, "%.6e %.6e %zu", m.getmisfit(), m.logppd(), m.nlayers());
-		for (size_t li = 0; li < m.nlayers(); li++) {
-			fprintf(fp, " %.6e", m.layers[li].ptop);
-		}
-		for (size_t li = 0; li < m.nlayers(); li++) {
-			fprintf(fp, " %.6e", m.layers[li].value);
-		}
-		fprintf(fp, "\n");
+		m.set_misfit(mfit);
 	}
 	
 	bool should_save_convergence_record(const size_t& si)
 	{
 		if (si == 0 || si == nsamples - 1)return true;
-		size_t k = (size_t)pow(10, floor(log10((double)si)));
+		size_t k = (size_t) std::pow(10, std::floor(std::log10(si)));
 		if (k > thinrate) k = thinrate;
 		if (si % k == 0)return true;
 		return false;
 	}
 
-	bool propose_valuechange(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
-	{
-		pvaluechange.inc_np();
+	bool propose_valuechange(cChain& chn, rjMcMC1DModel& mpro)
+	{		
+		const rjMcMC1DModel& mcur = chn.model;
+		const double& temperature = chn.temperature;		
+		chn.pvaluechange.inc_np();
 
 		size_t index = irand((size_t)0, (size_t)(mcur.nlayers() - 1));
 
@@ -797,7 +755,7 @@ public:
 		double vold = mcur.layers[index].value;
 		double vnew;
 		double pqratio;
-		if (param_value == ParameterizationType::LINEAR) {
+		if (param_value.islinear()) {
 			double m = (std::pow(10.0, logstd) - std::pow(10.0, -logstd)) / 2.0;
 			vnew = vold + m * vold * nrand<double>();
 			double qpdfforward = gaussian_pdf(vold, m * vold, vnew);
@@ -814,19 +772,21 @@ public:
 		mpro.layers[index].value = vnew;
 		set_misfit(mpro);
 
-		double logpqratio = std::log(pqratio);
-		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
-		double logar = logpqratio + loglr;
+		double logpqr = std::log(pqratio);
+		double loglr = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
+		double logar = logpqr + loglr;
 		if (std::log(urand<double>()) < logar) {
-			pvaluechange.inc_na();
+			chn.pvaluechange.inc_na();
 			return true;
 		}
 		return false;
 	}
 
-	bool propose_move(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_move(cChain& chn, rjMcMC1DModel& mpro)
 	{
-		pmove.inc_np();
+		const rjMcMC1DModel& mcur = chn.model;
+		const double& temperature = chn.temperature;
+		chn.pmove.inc_np();
 
 		size_t n = mcur.nlayers();
 		if (n <= 1)return false;
@@ -840,27 +800,28 @@ public:
 		double qpdfforward = gaussian_pdf(pold, pold * DEFAULTMOVESTDFRACTION, pnew);
 		double qpdfreverse = gaussian_pdf(pnew, pnew * DEFAULTMOVESTDFRACTION, pold);
 
-
 		bool isvalid = mpro.move_interface(index, pnew);
 		if (isvalid == false)return false;
 
 		set_misfit(mpro);
 		double pqratio = qpdfreverse / qpdfforward;
-		double logpqratio = std::log(pqratio);
+		double logpqr = std::log(pqratio);
 
-		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
-		double logar = logpqratio + loglr;
+		double loglr = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
+		double logar = logpqr + loglr;
 		double logu = std::log(urand<double>());
 		if (logu < logar) {
-			pmove.inc_na();
+			chn.pmove.inc_na();
 			return true;
 		}
 		return false;
 	}
 	
-	bool propose_birth(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_birth(cChain& chn, rjMcMC1DModel& mpro)
 	{
-		pbirth.inc_np();
+		const rjMcMC1DModel& mcur = chn.model;
+		const double& temperature = chn.temperature;
+		chn.pbirth.inc_np();
 
 		size_t n = mcur.nlayers();
 		if (n >= nl_max)return false;
@@ -877,7 +838,7 @@ public:
 		else {
 			double vcpdf;
 			double logstd = DEFAULTLOGSTDDECADES;
-			if (param_value == ParameterizationType::LINEAR) {
+			if (param_value.islinear()) {
 				double m = (std::pow(10.0, logstd) - std::pow(10.0, -logstd)) / 2.0;
 				vnew = vold + m * vold * nrand<double>();
 				vcpdf = gaussian_pdf(vold, m * vold, vnew);
@@ -888,25 +849,28 @@ public:
 			}
 			pqratio = 1.0 / ((vmax - vmin) * vcpdf);
 		}
+		//Jefferies?
 		//pqratio *= (double)(n) / double(n + 1);
 
-		bool   isvalid = mpro.insert_interface(pos, vnew);
+		bool isvalid = mpro.insert_interface(pos, vnew);
 		if (isvalid == false)return false;
 		set_misfit(mpro);
 
-		double logpqratio = std::log(pqratio);
-		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
-		double logar = logpqratio + loglr;
+		double logpqr = std::log(pqratio);
+		double loglr  = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
+		double logar  = logpqr + loglr;
 		if (std::log(urand<double>()) < logar) {
-			pbirth.inc_na();
+			chn.pbirth.inc_na();
 			return true;
 		}
 		return false;
 	}
 	
-	bool propose_death(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_death(cChain& chn, rjMcMC1DModel& mpro)
 	{
-		pdeath.inc_np();
+		const rjMcMC1DModel& mcur = chn.model;
+		const double& temperature = chn.temperature;
+		chn.pdeath.inc_np();
 
 		size_t n = mcur.nlayers();
 		if (n <= nl_min)return false;
@@ -925,7 +889,7 @@ public:
 			double vnew = mcur.layers[index - 1].value;
 			double vold = mcur.layers[index].value;
 			double vcpdf;
-			if (param_value == ParameterizationType::LINEAR) {
+			if (param_value.islinear()) {
 				double m = (pow(10.0, logstd) - pow(10.0, -logstd)) / 2.0;
 				vcpdf = gaussian_pdf(vnew, m * vnew, vold);
 			}
@@ -934,21 +898,24 @@ public:
 			}
 			pqratio = (vmax - vmin) * vcpdf;
 		}
+		//Jefferies?
 		//pqratio *= (double)(n) / double(n - 1);
 
-		double logpqratio = log(pqratio);
-		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
-		double logar = logpqratio + loglr;
-		if (log(urand<double>()) < logar) {
-			pdeath.inc_na();
+		double logpqr = std::log(pqratio);
+		double loglr  = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
+		double logar  = logpqr + loglr;
+		if (std::log(urand<double>()) < logar) {
+			chn.pdeath.inc_na();
 			return true;
 		}
 		return false;
 	}
 	
-	bool propose_nuisancechange(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_nuisancechange(cChain& chn, rjMcMC1DModel& mpro)
 	{
-		pnuisancechange.inc_np();
+		const rjMcMC1DModel& mcur = chn.model;
+		const double& temperature = chn.temperature;
+		chn.pnuisancechange.inc_np();
 
 		size_t ni = irand((size_t)0, mcur.nnuisances() - 1);
 		double delta = nrand<double>() * mcur.nuisances[ni].sd_valuechange;
@@ -959,17 +926,19 @@ public:
 		mpro.nuisances[ni].value = nv;
 
 		set_misfit(mpro);
-		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
+		double loglr = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
 		double logu = log(urand<double>());
 		if (logu < loglr) {
-			pnuisancechange.inc_na();
+			chn.pnuisancechange.inc_na();
 			return true;
 		}
 		return false;
 	}
 	
-	bool propose_independent(const double& temperature, const rjMcMC1DModel& mcur, rjMcMC1DModel& mpro)
+	bool propose_independent(cChain& chn, rjMcMC1DModel& mpro)
 	{
+		const rjMcMC1DModel& mcur = chn.model;
+		const double& temperature = chn.temperature;
 		mpro = choosefromprior();
 		set_misfit(mpro);
 
@@ -982,7 +951,7 @@ public:
 		priorratio = 1.0;
 
 		double logpriorratio = std::log(priorratio);
-		double loglr = -(mpro.getmisfit() - mcur.getmisfit()) / 2.0 / temperature;
+		double loglr = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
 		double logar = logpriorratio + loglr;
 		double logu = std::log(urand<double>());
 		if (logu < logar) {
@@ -991,8 +960,7 @@ public:
 		return false;
 	}
 
-	rjMcMC1DModel choosefromprior()
-	{
+	rjMcMC1DModel choosefromprior()	{
 		rjMcMC1DModel m;
 		size_t nl = irand(nl_min, nl_max);
 		m.initialise(pmax, vmin, vmax);
@@ -1008,26 +976,42 @@ public:
 		return m;
 	}
 
-	void set_chain_temperatures() {
-		Chains[0].temperature = 1.0;
-		for (size_t ci = 1; ci < nchains(); ci++) {
-			Chains[ci].temperature = Chains[ci-1].temperature + 0.5;
-			//Chains[ci].temperature = Chains[ci - 1].temperature * 2.0;
+	std::vector<double> get_temperature_ladder() {
+		std::vector<double> t = log10space(1.0, 2.5, nchains());
+		//std::vector<double> t = log10space(1.0, 4.605, nchains());
+		return t;
+	}
+
+	void reset()
+	{
+		starttime = "";
+		endtime = "";
+		samplingtime = 0;
+		pmap.resettozero();
+		nmap.resettozero();		
+		for (size_t ci = 0; ci < nchains(); ci++) {
+			chains[ci] = cChain();
+			chains[ci].swap_histogram.resize(nchains());			
 		}
+
 	}
 
 	void sample()
-	{								
+	{							
 		starttime = timestamp();
 		double t1 = gettime();
 		BirthDeathFromPrior = false;
-		set_chain_temperatures();
-		std::vector<rjMcMC1DModel> current_models(nchains());
+
+		std::vector<double> ladder = get_temperature_ladder();
+		for (size_t ci = 0; ci < nchains(); ci++) {
+			chains[ci].temperature = ladder[ci];			
+		}
+		
 		for (size_t si = 0; si < nsamples; si++) {
 			for (size_t ci = 0; ci < nchains(); ci++) {
-				rjMcMC1DModel& mcur = current_models[ci];//Current model on chain
-				const double& temperature = Chains[ci].temperature;
-
+				cChain& chn = chains[ci];//Current chain
+				rjMcMC1DModel& mcur = chn.model;//Current model on chain
+				
 				if (si == 0) {
 					//Initialise chain
 					mcur = choosefromprior();
@@ -1041,18 +1025,18 @@ public:
 
 					bool accept = false;
 					switch (option) {
-					case 0: accept = propose_valuechange(temperature,mcur, mpro); break;
-					case 1: accept = propose_move(temperature, mcur, mpro); break;
-					case 2: accept = propose_birth(temperature, mcur, mpro); break;
-					case 3: accept = propose_death(temperature, mcur, mpro); break;
-					case 4: accept = propose_nuisancechange(temperature, mcur, mpro); break;
-					case 5: accept = propose_independent(temperature, mcur, mpro); break;
+					case 0: accept = propose_valuechange(chn,mpro); break;
+					case 1: accept = propose_move(chn,mpro); break;
+					case 2: accept = propose_birth(chn,mpro); break;
+					case 3: accept = propose_death(chn,mpro); break;
+					case 4: accept = propose_nuisancechange(chn,mpro); break;
+					case 5: accept = propose_independent(chn,mpro); break;
 					default: glog.errormsg(_SRC_, "Proposal option %zu out of range\n", option);
 					}
 					if (accept) mcur = mpro;
 				}
 
-				if (Chains[ci].temperature == 1.0) {										
+				if (chn.temperature == 1.0) {
 					if(ci == 0 && si == 0){
 						HighestLikelihood = mcur;
 						LowestMisfit = mcur;
@@ -1061,7 +1045,7 @@ public:
 						if (mcur.logppd() > HighestLikelihood.logppd()) {
 							HighestLikelihood = mcur;
 						}
-						if (mcur.getmisfit() < LowestMisfit.getmisfit()) {
+						if (mcur.get_misfit() < LowestMisfit.get_misfit()) {
 							LowestMisfit = mcur;
 						}
 					}
@@ -1069,35 +1053,38 @@ public:
 					if (should_include_in_maps(si)) {
 						pmap.addmodel(mcur);
 						nmap.addmodel(mcur);
-						Chains[ci].modelchain.push_back(mcur);
+						ensemble.push_back(mcur);
 					}		
-					print_report(si, ci, mcur);
+					print_report(si, ci, chn.temperature, mcur);
 				}
 
 				if (should_save_convergence_record(si)) {
-					Chains[ci].Temp.push_back((float)Chains[ci].temperature);
-					Chains[ci].sample.push_back((uint32_t)si);					
-					Chains[ci].nlayers.push_back((uint32_t)mcur.nlayers());
-					Chains[ci].misfit.push_back((float)mcur.getmisfit());
-					Chains[ci].logppd.push_back((float)mcur.logppd());
-					Chains[ci].ar_valuechange.push_back(pvaluechange.ar());
-					Chains[ci].ar_move.push_back(pmove.ar());
-					Chains[ci].ar_birth.push_back(pbirth.ar());
-					Chains[ci].ar_death.push_back(pdeath.ar());
-					Chains[ci].ar_nuisancechange.push_back(pnuisancechange.ar());
+					chn.history.temperature.push_back((float)chn.temperature);
+					chn.history.sample.push_back((uint32_t)si);
+					chn.history.nlayers.push_back((uint32_t)mcur.nlayers());
+					chn.history.misfit.push_back((float)mcur.get_misfit());
+					chn.history.logppd.push_back((float)mcur.logppd());
+					chn.history.ar_valuechange.push_back(chn.pvaluechange.ar());
+					chn.history.ar_move.push_back(chn.pmove.ar());
+					chn.history.ar_birth.push_back(chn.pbirth.ar());
+					chn.history.ar_death.push_back(chn.pdeath.ar());
+					chn.history.ar_nuisancechange.push_back(chn.pnuisancechange.ar());
 				}
 				//print_report(si, ci, mcur);
 			}
-
+			
 			if (true) {
 				//Parallel Tempering								
-				for (size_t i = nchains()-1; i >=1; i--) {
-					const size_t j = irand<size_t>(0,i-1);
-					bool swapped = swap_temperature(Chains[i].temperature, current_models[i].getmisfit(), Chains[j].temperature, current_models[j].getmisfit());
-					//if (swapped) {
-					//	std::cout << si << " swapped " << i << " & " << j << std::endl;
-					//	print_temperatures_misfits(current_models);
-					//}					
+				for (size_t i = nchains()-1; i >= 1; i--) {
+					const size_t j = irand<size_t>(0,i);
+					chains[i].swap_histogram[j]++;
+					if (i != j) {												
+						bool swapped = propose_chain_swap(chains[i].temperature, chains[i].model, chains[j].temperature, chains[j].model);
+						//if (swapped) {
+						//	std::cout << si << " swapped " << i << " & " << j << std::endl;
+						//	print_temperatures_misfits(current_models);
+						//}			
+					}
 				}
 			}
 			
@@ -1106,79 +1093,80 @@ public:
 		endtime = timestamp();
 		samplingtime = t2 - t1;
 	}
-	
-	std::vector<size_t> get_swap_partners(){
-		std::vector<size_t> p(nchains());
-		for (auto i = 0; i < p.size(); i++) p[i] = i;
-		std::random_shuffle(p.begin(), p.end());
-		return p;
-	}
-
-	static bool swap_temperature(double& T_i, const double& Phi_i, double& T_j, const double& Phi_j) {
-		//double ar = std::exp((1.0 / T_i - 1.0 / T_j) * (Phi_i - Phi_j));
-		double logar = (1.0 / T_i - 1.0 / T_j) * (Phi_i - Phi_j);
+		
+	static bool propose_chain_swap(double& Ti, rjMcMC1DModel& Mi, double& Tj, rjMcMC1DModel& Mj) {
+		//double ar = std::exp((1.0 / Ti - 1.0 / Tj) * (Phii - Phij));
+		double logar = (1.0 / Ti - 1.0 / Tj) * (Mi.get_misfit() - Mj.get_misfit());
 		double logu  = std::log(urand<double>());
 		if (logu < logar) {
-			std::swap(T_i, T_j);		
+			std::swap(Ti, Tj);
+			//std::swap(Mi, Mj);
 			return true;
 		}
 		return false;
 	}
 
-	void print_temperatures_misfits(std::vector<rjMcMC1DModel> current_models){
+	void print_temperatures_misfits(const std::vector<double>& tladder, const std::vector<rjMcMC1DModel>& current_models){
 		for (auto i = 0; i < nchains(); i++) {
-			std::cout << "\t" << Chains[i].temperature << "\t" << current_models[i].getmisfit() << std::endl;
+			std::cout << "\t" << tladder[i] << "\t" << current_models[i].get_misfit() << std::endl;
 		}
 	}
 
-	void print_report(const size_t& si, const size_t& ci, const rjMcMC1DModel& mcur) const 
+	void print_report(const size_t& si, const size_t& ci, const double& temperature, const rjMcMC1DModel& mcur) const 
 	{
 		#ifdef _WIN32		
 		if (mpiRank == 0 && is_sample_reportable(si)) {
-			printstats(si, ci, mcur.nlayers(), mcur.getmisfit() / (double)ndata);
+			printstats(si, ci, mcur.nlayers(), get_normalised_misfit(mcur), temperature);
 		}		
 		#endif
 	}
 
-	bool is_sample_reportable(size_t si) const 
+	bool is_sample_reportable(const size_t& si) const 
 	{
 		if (si == 0 || si == nsamples - 1) return true;
 		size_t k = (size_t)std::pow(10, std::floor(log10((double)si)));
-		if (k > 1000)k = 1000;
+		if (k > thinrate) k = thinrate;
 		if (si % k == 0)return true;
 		return false;
 	}
 
-	void printstats(size_t si, size_t ci, size_t np, double nmf) const
+	void printstats(const size_t& si, const size_t& ci, const size_t& np, const double& nmf, const double& temperature) const
 	{
 		std::cout <<
 			"si=" << si <<
 			" ci=" << ci <<	std::fixed <<		
-			" t="   << std::setprecision(1) << Chains[ci].temperature <<
+			" t="   << std::setprecision(1) << temperature <<
 			" np="  << std::setw(2) << np <<
 			" nmf=" << std::setw(8) << std::setprecision(2) << nmf <<
-			" vc="  << std::setprecision(2) << pvaluechange.ar() <<
-			" mv="  << std::setprecision(2) << pmove.ar() <<
-			" b="   << std::setprecision(2) << pbirth.ar() <<
-			" d="   << std::setprecision(2) << pdeath.ar() <<
-			" n="   << std::setprecision(2) << pnuisancechange.ar() << std::endl;
+			" vc="  << std::setprecision(2) << chains[ci].pvaluechange.ar() <<
+			" mv="  << std::setprecision(2) << chains[ci].pmove.ar() <<
+			" b="   << std::setprecision(2) << chains[ci].pbirth.ar() <<
+			" d="   << std::setprecision(2) << chains[ci].pdeath.ar() <<
+			" n="   << std::setprecision(2) << chains[ci].pnuisancechange.ar() << std::endl;
 	}
 
 	void writemapstofile_netcdf(NcFile& nc) {
 
 		NcGroupAtt a;
 		a = nc.putAtt("ndata", NcType::nc_UINT, ndata);
+		a = nc.putAtt("value_parameterization", param_value.get_typestring());
 		a = nc.putAtt("vmin", NcType::nc_DOUBLE, vmin);
 		a = nc.putAtt("vmax", NcType::nc_DOUBLE, vmax);
+		a = nc.putAtt("position_parameterization", param_position.get_typestring());
 		a = nc.putAtt("pmin", NcType::nc_DOUBLE, 0.0);
 		a = nc.putAtt("pmax", NcType::nc_DOUBLE, pmax);
-		a = nc.putAtt("nlmin", NcType::nc_UINT, nl_min);
-		a = nc.putAtt("nlmax", NcType::nc_UINT, nl_max);
+		a = nc.putAtt("nlayers_min", NcType::nc_UINT, nl_min);
+		a = nc.putAtt("nlayers_max", NcType::nc_UINT, nl_max);
 
 		a = nc.putAtt("nsamples", NcType::nc_UINT, nsamples);
 		a = nc.putAtt("nchains", NcType::nc_UINT, nchains());
 		a = nc.putAtt("nburnin", NcType::nc_UINT, nburnin);
 		a = nc.putAtt("thinrate", NcType::nc_UINT, thinrate);
+				
+		a = nc.putAtt("starttime", starttime);
+		a = nc.putAtt("endtime", endtime);
+		a = nc.putAtt("samplingtime", NcType::nc_DOUBLE, samplingtime);
+
 
 		NcVar var;
 		NcDim data_dim = nc.addDim("data", ndata);
@@ -1211,36 +1199,56 @@ public:
 		var = nc.addVar("nlayers_histogram", NcType::nc_UINT, nl_dim);
 		var.putVar(pmap.layercounts.data());
 
-		a = nc.putAtt("ar_valuechange", NcType::nc_FLOAT, pvaluechange.ar());
-		a = nc.putAtt("ar_move", NcType::nc_FLOAT, pmove.ar());
-		a = nc.putAtt("ar_birth", NcType::nc_FLOAT, pbirth.ar());
-		a = nc.putAtt("ar_death", NcType::nc_FLOAT, pdeath.ar());
-		a = nc.putAtt("ar_nuisancechange", NcType::nc_FLOAT, pnuisancechange.ar() );
+		//a = nc.putAtt("ar_valuechange", NcType::nc_FLOAT, pvaluechange.ar());
+		//a = nc.putAtt("ar_move", NcType::nc_FLOAT, pmove.ar());
+		//a = nc.putAtt("ar_birth", NcType::nc_FLOAT, pbirth.ar());
+		//a = nc.putAtt("ar_death", NcType::nc_FLOAT, pdeath.ar());
+		//a = nc.putAtt("ar_nuisancechange", NcType::nc_FLOAT, pnuisancechange.ar() );
 
 		//Convergence Records
 		NcDim chain_dim = nc.addDim("chain", nchains());
 		var = nc.addVar("chain", NcType::nc_UINT, chain_dim);
-		var.putVar(Chains[0].sample.data());
+		var.putVar(chains[0].history.sample.data());
 
-		size_t ncvs = Chains[0].sample.size();//Number of samples in the convergence record
+		size_t ncvs = chains[0].history.sample.size();//Number of samples in the convergence record
 		NcDim cvs_dim = nc.addDim("convergence_sample", ncvs);
 		var = nc.addVar("convergence_sample", NcType::nc_UINT, cvs_dim);
-		var.putVar(Chains[0].sample.data());
+		var.putVar(chains[0].history.sample.data());
 
 		std::vector<unsigned int> chn = increment(nchains(), 1U, 1U);
-		std::vector<NcDim> dims = { chain_dim, cvs_dim };
+		std::vector<NcDim> dims    = { chain_dim, cvs_dim };
+		std::vector<NcDim> dchnchn = { chain_dim, chain_dim };
 
 		for (size_t ci = 0; ci < nchains(); ci++) {
-			write_chain_variable(ci, Chains[ci].Temp, "temperature", NcType::nc_FLOAT, nc, dims);
-			write_chain_variable(ci, Chains[ci].nlayers, "nlayers", NcType::nc_UINT, nc, dims);
-			write_chain_variable(ci, Chains[ci].misfit, "misfit", NcType::nc_FLOAT, nc, dims);
-			write_chain_variable(ci, Chains[ci].logppd, "logppd", NcType::nc_FLOAT, nc, dims);
-			write_chain_variable(ci, Chains[ci].ar_valuechange, "ar_valuechange", NcType::nc_FLOAT, nc, dims);
-			write_chain_variable(ci, Chains[ci].ar_move, "ar_move", NcType::nc_FLOAT, nc, dims);
-			write_chain_variable(ci, Chains[ci].ar_birth, "ar_birth", NcType::nc_FLOAT, nc, dims);
-			write_chain_variable(ci, Chains[ci].ar_death, "ar_death", NcType::nc_FLOAT, nc, dims);
-			write_chain_variable(ci, Chains[ci].ar_nuisancechange, "ar_nuisancechange", NcType::nc_FLOAT, nc, dims);
+			cChain& chn = chains[ci];
+			write_chain_variable(ci, chn.history.temperature, "temperature", NcType::nc_FLOAT, nc, dims);
+			write_chain_variable(ci, chn.history.nlayers, "nlayers", NcType::nc_UINT, nc, dims);
+			write_chain_variable(ci, chn.history.misfit, "misfit", NcType::nc_FLOAT, nc, dims);
+			write_chain_variable(ci, chn.history.logppd, "logppd", NcType::nc_FLOAT, nc, dims);
+			write_chain_variable(ci, chn.history.ar_valuechange, "ar_valuechange", NcType::nc_FLOAT, nc, dims);
+			write_chain_variable(ci, chn.history.ar_move, "ar_move", NcType::nc_FLOAT, nc, dims);
+			write_chain_variable(ci, chn.history.ar_birth, "ar_birth", NcType::nc_FLOAT, nc, dims);
+			write_chain_variable(ci, chn.history.ar_death, "ar_death", NcType::nc_FLOAT, nc, dims);
+			write_chain_variable(ci, chn.history.ar_nuisancechange, "ar_nuisancechange", NcType::nc_FLOAT, nc, dims);
+
+			write_chain_variable(ci, chn.swap_histogram, "swap_histogram", NcType::nc_UINT, nc, dchnchn);
 		}		
+
+		rjMcMC1DPPDMap::cSummaryModels s = pmap.get_summary_models();
+		var = nc.addVar("mean_model", NcType::nc_FLOAT, np_dim);
+		var.putVar(s.mean.data());
+
+		var = nc.addVar("mode_model", NcType::nc_FLOAT, np_dim);
+		var.putVar(s.mode.data());
+
+		var = nc.addVar("p10_model", NcType::nc_FLOAT, np_dim);
+		var.putVar(s.p10.data());
+
+		var = nc.addVar("p50_model", NcType::nc_FLOAT, np_dim);
+		var.putVar(s.p50.data());
+
+		var = nc.addVar("p90_model", NcType::nc_FLOAT, np_dim);
+		var.putVar(s.p90.data());
 	}
 
 	template<typename T>

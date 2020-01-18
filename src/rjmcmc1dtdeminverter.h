@@ -180,12 +180,12 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		}
 
 		if (SaveChains) {
-			ChainsDirectory = OB.getstringvalue("ChainsDirectory");
-			addtrailingseparator(ChainsDirectory);
-			if (exists(ChainsDirectory) == false) {
-				glog.logmsg(0, "Creating ChainsDirectory: %s\n", ChainsDirectory.c_str());
-				makedirectory(ChainsDirectory);
-			}
+			//ChainsDirectory = OB.getstringvalue("ChainsDirectory");
+			//addtrailingseparator(ChainsDirectory);
+			//if (exists(ChainsDirectory) == false) {
+			//	glog.logmsg(0, "Creating ChainsDirectory: %s\n", ChainsDirectory.c_str());
+			//	makedirectory(ChainsDirectory);
+			//}
 		}
 
 		//Load stm file		
@@ -295,49 +295,36 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	
 	void initialise_sampler()
 	{
-		cBlock b = Control.findblock("Sampler");
-
-		description = "";
-		//reportstats = true;
-
+		cBlock b = Control.findblock("Sampler");				
 		nl_min = (size_t)b.getintvalue("NLayersMin");
 		nl_max = (size_t)b.getintvalue("NLayersMax");
 
 		pmax = b.getdoublevalue("DepthMax");
 		std::string str = b.getstringvalue("DepthScaling");
-		if (strcmp("LOG10", str.c_str()) == 0) {
-			param_position = ParameterizationType::LOG10;
+		param_position = cParameterization(str);
+		if(param_position.islog10()) {			
 			pmax = std::log10(pmax);
-		}
-		else {
-			param_position = ParameterizationType::LINEAR;
-		}
+		}		
 		size_t ndepth = (size_t)b.getintvalue("NDepthCells");
 
 		vmin = b.getdoublevalue("ConductivityMin");
 		vmax = b.getdoublevalue("ConductivityMax");
 		str = b.getstringvalue("ConductivityScaling");
-		if (strcmp("LOG10", str.c_str()) == 0) {
-			param_value = ParameterizationType::LOG10;
+		param_value = cParameterization(str);
+		if (param_value.islog10()) {			
 			vmin = std::log10(vmin);
 			vmax = std::log10(vmax);
 		}
-		else {
-			param_value = ParameterizationType::LINEAR;
-		}
+
 		size_t ncond = (size_t)b.getintvalue("NConductivityCells");
 		pmap.initialise(nl_min, nl_max, pmax, ndepth, vmin, vmax, ncond);
 
 		size_t nc = b.getsizetvalue("NChains");
-		Chains.resize(nc);
+		chains.resize(nc);
 		nsamples = b.getsizetvalue("NSamples");
 		nburnin  = b.getsizetvalue("NBurnIn");
 		thinrate = b.getsizetvalue("ThinRate");
-		//sd_bd_valuechange = b.getdoublevalue("STDValueChangeBirthDeath");
-		//sd_valuechange = b.getdoublevalue("STDValueChange");
-		//sd_move = b.getdoublevalue("STDMove");
-
-
+		
 		for (size_t i = 0; i < rjMcMCNuisance::number_of_types(); i++) {
 			std::string str = strprint("Nuisance%lu", i + 1);
 			cBlock c = b.findblock(str);
@@ -561,30 +548,30 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 			if (n.value == DBL_MIN) {
 				switch (n.type) {
-				case rjMcMCNuisance::NuisanceType::TX_HEIGHT:
+				case rjMcMCNuisance::Type::TX_HEIGHT:
 					n.value = IG.tx_height; break;
-				case rjMcMCNuisance::NuisanceType::TX_ROLL:
+				case rjMcMCNuisance::Type::TX_ROLL:
 					n.value = IG.tx_roll; break;
-				case rjMcMCNuisance::NuisanceType::TX_PITCH:
+				case rjMcMCNuisance::Type::TX_PITCH:
 					n.value = IG.tx_pitch; break;
-				case rjMcMCNuisance::NuisanceType::TX_YAW:
+				case rjMcMCNuisance::Type::TX_YAW:
 					n.value = IG.tx_yaw;	break;
-				case rjMcMCNuisance::NuisanceType::TXRX_DX:
+				case rjMcMCNuisance::Type::TXRX_DX:
 					n.value = IG.txrx_dx; break;
-				case rjMcMCNuisance::NuisanceType::TXRX_DY:
+				case rjMcMCNuisance::Type::TXRX_DY:
 					n.value = IG.txrx_dy; break;
-				case rjMcMCNuisance::NuisanceType::TXRX_DZ:
+				case rjMcMCNuisance::Type::TXRX_DZ:
 					n.value = IG.txrx_dz; break;
-				case rjMcMCNuisance::NuisanceType::RX_ROLL:
+				case rjMcMCNuisance::Type::RX_ROLL:
 					n.value = IG.rx_roll; break;
-				case rjMcMCNuisance::NuisanceType::RX_PITCH:
+				case rjMcMCNuisance::Type::RX_PITCH:
 					n.value = IG.rx_pitch; break;
-				case rjMcMCNuisance::NuisanceType::RX_YAW:
+				case rjMcMCNuisance::Type::RX_YAW:
 					n.value = IG.rx_yaw; break;
-				case rjMcMCNuisance::NuisanceType::TXRX_DISTANCE:
+				case rjMcMCNuisance::Type::TXRX_DISTANCE:
 					n.value = sqrt(IG.txrx_dx * IG.txrx_dx + IG.txrx_dz * IG.txrx_dz);
 					break;
-				case rjMcMCNuisance::NuisanceType::TXRX_ANGLE:
+				case rjMcMCNuisance::Type::TXRX_ANGLE:
 					n.value = R2D * atan2(IG.txrx_dz, IG.txrx_dx);
 					break;
 				default:break;
@@ -594,11 +581,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	}
 	
 	void sample()
-	{
-		std::string desc = strprint("%lu %lu %lu %lf %lf %lf %lu", CurrentRecord, flightnumber, linenumber, fidnumber, xord, yord, ndata);
-
-		rjMcMC1DSampler::reset();
-		description = desc;
+	{		
+		rjMcMC1DSampler::reset();		
 		rjMcMC1DSampler::sample();
 		std::string dstr = results_string();
 
@@ -616,9 +600,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		FILE* fp = fileopen(OutputDataFile, "a");
 		fprintf(fp, dstr.c_str());
 		fclose(fp);
-
-		//write_maps_to_file_old();
-		//write_chains_to_file_old();
+		
 		write_maps_to_file_netcdf();
 		
 	}
@@ -629,7 +611,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		std::vector<cHistogramStats<double>> hs = pmap.hstats();
 		std::vector<double> hlike = pmap.modelmap(HighestLikelihood);
 		std::vector<double> lmfit = pmap.modelmap(LowestMisfit);
-		if (param_value == ParameterizationType::LOG10) {
+		if (param_value.islog10()) {
 			for (size_t j = 0; j < ndepthcells; j++) {
 				hs[j].p10 = pow10(hs[j].p10);
 				hs[j].p50 = pow10(hs[j].p50);
@@ -640,16 +622,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				lmfit[j] = pow10(lmfit[j]);
 			}
 		}
-		double misfit_lowest = LowestMisfit.getmisfit() / double(ndata);
+		double misfit_lowest = LowestMisfit.get_misfit() / double(ndata);
 
 		size_t n = 0;
-		double sum = 0.0;
-		for (size_t ci = 0; ci < nchains(); ci++) {
-			for (size_t mi = 0; mi < Chains[ci].modelchain.size(); mi++) {
-				sum += Chains[ci].modelchain[mi].getmisfit();
-				n++;
-			}
-		}
+		double sum = 0.0;		
+		for (size_t mi = 0; mi < ensemble.size(); mi++) {
+			sum += ensemble[mi].get_misfit();
+			n++;
+		}		
 		double misfit_average = sum / double(n) / double(ndata);
 
 		std::string buf;
@@ -691,10 +671,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		OI.setunits("m"); OI.setcomment("Ground elevation relative to sea-level");
 		buf += strprint("%10.2lf", elevation);
 
-		//OI.addfield("altimeter", 'F', 8, 2);
-		//OI.setunits("m"); OI.setcomment("Height of altimeter above ground-level");
-		//buf += strprint("%8.2lf", altimeter);
-
 		///////////////////
 
 		OI.addfield("nchains", 'I', 9, 0);
@@ -729,7 +705,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		OI.setunits("m"); OI.setcomment("Depths of cell tops");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			double dcc = pmap.toppbin(j);
-			if (param_position == ParameterizationType::LOG10) {
+			if (param_position.islog10()) {
 				dcc = pow10(dcc);
 			}
 			buf += strprint("%8.2lf", dcc);
@@ -790,7 +766,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		size_t nn = nnuisances();
 		for (size_t j = 0; j < nn; j++) {
-			std::string nstr = Chains[0].modelchain[0].nuisances[j].typestring();
+			std::string nstr = ensemble[0].nuisances[j].typestring();
 			cStats<double> s(nmap.nuisance[j]);
 
 			std::string hs;
@@ -816,26 +792,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		return s;
 	}
 	
-	void write_maps_to_file_old()
-	{
-		if (SaveMaps == false)return;
-		if ((CurrentRecord - HeaderLines - FirstRecord) / SubSample % SaveMapsRate != 0)return;
-
-		std::string fileprefix = prefixstring();
-		std::string fname = MapsDirectory + fileprefix + ".pmap";
-		FILE* fp = fileopen(fname.c_str(), "wb");
-		writeheader(fp);
-		writemodel(fp, HighestLikelihood);
-		writemodel(fp, LowestMisfit);
-		nmap.writedata(fp);
-		pmap.writedata(fp);
-		for (size_t ci = 0; ci < nchains(); ci++) {
-			Chains[ci].writeconvergencedata(ci, fp);
-		}
-
-		fclose(fp);
-	}
-	
 	void write_maps_to_file_netcdf()
 	{
 		if (SaveMaps == false)return;
@@ -858,23 +814,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		a = nc.putAtt("elevation", NcType::nc_DOUBLE, elevation);
 		rjMcMC1DSampler::writemapstofile_netcdf(nc);
 	}
-
-	void write_chains_to_file_old()
-	{
-		if (SaveChains == false)return;
-		if ((CurrentRecord - HeaderLines - FirstRecord) / SubSample % SaveChainsRate != 0)return;
-
-		std::string fileprefix = prefixstring();
-		std::string fname = ChainsDirectory + fileprefix + ".chain";
-		FILE* fp = fileopen(fname.c_str(), "w");
-		bwrite(fp, (uint32_t)nchains());
-		for (size_t ci = 0; ci < nchains(); ci++) {
-			Chains[ci].writemodelchain_binary(ci, fp);
-		}
-		fclose(fp);
-	}
-
-	cTDEmGeometry  getgeometry(const rjMcMC1DModel& m)
+	
+	cTDEmGeometry getgeometry(const rjMcMC1DModel& m)
 	{
 		cTDEmGeometry  OG = IG;
 
@@ -885,30 +826,30 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		for (size_t i = 0; i < m.nuisances.size(); i++) {
 			const rjMcMCNuisance& n = m.nuisances[i];
 			switch (n.type) {
-			case rjMcMCNuisance::NuisanceType::TX_HEIGHT:
+			case rjMcMCNuisance::Type::TX_HEIGHT:
 				OG.tx_height = n.value; break;
-			case rjMcMCNuisance::NuisanceType::TX_ROLL:
+			case rjMcMCNuisance::Type::TX_ROLL:
 				OG.tx_roll = n.value; break;
-			case rjMcMCNuisance::NuisanceType::TX_PITCH:
+			case rjMcMCNuisance::Type::TX_PITCH:
 				OG.tx_pitch = n.value; break;
-			case rjMcMCNuisance::NuisanceType::TX_YAW:
+			case rjMcMCNuisance::Type::TX_YAW:
 				OG.tx_yaw = n.value; break;
-			case rjMcMCNuisance::NuisanceType::TXRX_DX:
+			case rjMcMCNuisance::Type::TXRX_DX:
 				OG.txrx_dx = n.value; break;
-			case rjMcMCNuisance::NuisanceType::TXRX_DY:
+			case rjMcMCNuisance::Type::TXRX_DY:
 				OG.txrx_dy = n.value; break;
-			case rjMcMCNuisance::NuisanceType::TXRX_DZ:
+			case rjMcMCNuisance::Type::TXRX_DZ:
 				OG.txrx_dz = n.value; break;
-			case rjMcMCNuisance::NuisanceType::RX_ROLL:
+			case rjMcMCNuisance::Type::RX_ROLL:
 				OG.rx_roll = n.value; break;
-			case rjMcMCNuisance::NuisanceType::RX_PITCH:
+			case rjMcMCNuisance::Type::RX_PITCH:
 				OG.rx_pitch = n.value; break;
-			case rjMcMCNuisance::NuisanceType::RX_YAW:
+			case rjMcMCNuisance::Type::RX_YAW:
 				OG.rx_yaw = n.value; break;
-			case rjMcMCNuisance::NuisanceType::TXRX_DISTANCE:
+			case rjMcMCNuisance::Type::TXRX_DISTANCE:
 				angledistance = true;
 				distance = n.value; break;
-			case rjMcMCNuisance::NuisanceType::TXRX_ANGLE:
+			case rjMcMCNuisance::Type::TXRX_ANGLE:
 				angledistance = true;
 				angle = n.value; break;
 			default:
@@ -951,10 +892,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	{
 		size_t nl = m.nlayers();
 		std::vector<double> c = m.getvalues();
-		if (param_value == ParameterizationType::LOG10) {
-			for (size_t i = 0; i < nl; i++) {
-				c[i] = pow10(c[i]);
-			}
+		if (param_value.islog10()){
+			pow10_apply(c);
 		}
 
 		std::vector<double> t = m.getthicknesses();

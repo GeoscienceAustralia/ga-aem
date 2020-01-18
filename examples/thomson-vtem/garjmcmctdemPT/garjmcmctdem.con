@@ -12,7 +12,7 @@ Control Begin
 		ReconstructPrimaryFieldFromInputGeometry = no
 
 		EstimateNoiseFromModel = yes
-		ZMultiplicativeNoise   = 1.5
+		ZMultiplicativeNoise   = 10.0
 		ZAdditiveNoise         = 0.161167  0.124984  0.094229  0.073026  0.058675  0.045173  0.038207  0.026160  0.019157  0.014366  0.011281  0.009552  0.008378  0.007234  0.006111  0.005186  0.004356  0.003580  0.003004  0.002447  0.002047  0.001648  0.001398  0.001154  0.000957  0.000809  0.000687  0.000589  0.000507  0.000444  0.000405  0.000352  0.000328  0.000303  0.000301  0.000319  0.000348  0.000360  0.000344  0.000310  0.000245  0.000196  0.000219  0.000177  0.000159
 		ZComponentSecondary    = -Column 177
 	EMSystem1 End
@@ -24,19 +24,19 @@ Control Begin
 		SaveChainsRate = 1
 
 		NChains  = 4
-		NSamples = 100000
+		NSamples = 1000000
 		NBurnIn  = 10000
 		ThinRate = 100
 
 		NLayersMin  =   1
-		NLayersMax  =  15
+		NLayersMax  =  20
 
 		DepthMin        = 0.0
-		DepthMax        = 400
+		DepthMax        = 600
 		DepthScaling    = LINEAR
-		NDepthCells     = 100
+		NDepthCells     = 200
 
-		ConductivityMin          = 0.001
+		ConductivityMin          = 0.0001
 		ConductivityMax          = 5.0
 		ConductivityScaling      = LOG10
 		NConductivityCells       = 100

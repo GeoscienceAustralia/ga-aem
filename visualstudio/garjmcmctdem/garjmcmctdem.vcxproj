@@ -108,6 +108,7 @@
     <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\random_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\vector_utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
