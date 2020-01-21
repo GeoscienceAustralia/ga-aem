@@ -1,4 +1,4 @@
-function figure_handle = view_rjmcmc_pmap(P)
+function [figure_handle ax] = view_rjmcmc_pmap(P,TM)
 
 %        [ x1   x2   y1   y2 ];
 p(1,:) = [0.05 0.50 0.775 0.980];
@@ -30,7 +30,12 @@ plot(P.mean_model,P.depth,'-w');
 plot(P.p10_model,P.depth,':m');
 plot(P.p50_model,P.depth,'-m');
 plot(P.p90_model,P.depth,':m');
-
+if(nargin>1)
+    TM.c = [1.000000e-02    1.000000e-01    3.000000e-02    1.000000e-01    1.000000e-03];
+    TM.t = [2.000000e+01    1.100000e+01    5.000000e+01    3.000000e+01];
+    [TM.tc,TM.td] = ct2cd(TM.c,TM.t,400);    
+    plot(log10(TM.tc),TM.td,'-g');
+end
 ylabel('Depth (m)');
 xlabel('Conductivity (S/m)');
 set(gca,'xaxislocation','top');

@@ -1,0 +1,26 @@
+1	flight
+2	line
+3	fid
+4	easting
+5	northing
+6	elevation
+7	tx_height
+8	tx_roll
+9	tx_pitch
+10	tx_yaw
+11	txrx_dx
+12	txrx_dy
+13	txrx_dz
+14	rx_roll
+15	rx_pitch
+16	rx_yaw
+17-34	L_SZ
+35-52	L_SZN
+53-70	L_EZ
+71-91	H_SZ
+92-112	H_SZN
+113-133	H.EZ
+134	nlayers
+135-139	conductivity
+140-143	thickness
+
