@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export NCI_GXX_ABI_WARNING=1
+#export NCI_GXX_ABI_WARNING=1
 
 #Set the directory path for dependencies
 export srcdir='../src'
