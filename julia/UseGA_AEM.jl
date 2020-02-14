@@ -100,18 +100,20 @@ mutable struct Geometry
     geometryHM  :: Array{Float64, 1}
 end    
 
-function Geometry(;ztx  =  35.0,
-                   rrx  = -17.0,
-                   dzrxLM =   2.0, 
-                   dzrxHM =   0.2
+function Geometry(;ztxLM  = 35.0,
+                   ztxHM  = 35.0,
+                   rrx  =  -17.0,
+                   dzrxLM =  2.0, 
+                   dzrxHM =  0.2
                  )
-    @assert ztx  > 0.0
+    @assert ztxLM  > 0.0
+    @assert ztxHM  > 0.0   
     @assert rrx  < 0.0
     @assert dzrxLM > 0.0
     @assert dzrxHM > 0.0
     
-    geometryLM   = [ztx,0.0,0.0,0.0,rrx,0.0,dzrxLM,0.0,0.0,0.0]
-    geometryHM   = [ztx,0.0,0.0,0.0,rrx,0.0,dzrxHM,0.0,0.0,0.0]
+    geometryLM   = [ztxLM,0.0,0.0,0.0,rrx,0.0,dzrxLM,0.0,0.0,0.0]
+    geometryHM   = [ztxHM,0.0,0.0,0.0,rrx,0.0,dzrxHM,0.0,0.0,0.0]
 
     Geometry(geometryLM, geometryHM)
 end    
@@ -132,9 +134,9 @@ mutable struct EMoperator
     g  :: Geometry
 end    
 
-function (op::EMoperator)(ztx::Float64, conductivity::Array{Float64, 1}, thickness::Array{Float64,1 })
-    op.g.geometryLM[1] = ztx
-    op.g.geometryHM[1] = ztx
+function (op::EMoperator)(ztxLM::Float64, ztxHM::Float64, conductivity::Array{Float64, 1}, thickness::Array{Float64,1 })
+    op.g.geometryLM[1] = ztxLM
+    op.g.geometryHM[1] = ztxHM
     op.em(op.g, conductivity, thickness)
 end
 
