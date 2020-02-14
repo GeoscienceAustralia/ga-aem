@@ -14,6 +14,8 @@ mutable struct EMforward
     SXHM :: Array{Float64, 1}
     SYHM :: Array{Float64, 1}
     SZHM :: Array{Float64, 1}
+    tLM  :: Array{Float64, 1} # only because I don't know how to get time from TLM C++ class
+    tHM  :: Array{Float64, 1}
 end    
 
 function init_GA_AEM()
@@ -35,10 +37,10 @@ function init_GA_AEM()
     Libdl.dlopen(path_to_lib * "/gatdaem1d_julia.so", Libdl.RTLD_GLOBAL)
     
     # Create the cTDEmSystem class object
-    stmfile = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-LM.stm"
-    TLM = @cxxnew cTDEmSystem(pointer(stmfile));
-    stmfile = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-HM.stm"
-    THM = @cxxnew cTDEmSystem(pointer(stmfile));
+    stmfile_LM = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-LM.stm"
+    TLM = @cxxnew cTDEmSystem(pointer(stmfile_LM));
+    stmfile_HM = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-HM.stm"
+    THM = @cxxnew cTDEmSystem(pointer(stmfile_HM));
     
     # Allocate reusable storage for outputs
     PX = 0.0
@@ -53,6 +55,10 @@ function init_GA_AEM()
     SXHM = Array{Float64, 1}(undef,nwindowsHM)
     SYHM = Array{Float64, 1}(undef,nwindowsHM)
     SZHM = Array{Float64, 1}(undef,nwindowsHM)
+   
+    # get the centres of the window times
+    tLM = getstmtime(stmfile_LM)
+    tHM = getstmtime(stmfile_HM)
     
     # call it once bug
     # Set the input arrays
@@ -69,7 +75,7 @@ function init_GA_AEM()
                            pointer(geometryHM),Ref(PX),Ref(PY),Ref(PZ),
                            pointer(SXHM),pointer(SYHM),pointer(SZHM))
 
-    EMforward(TLM, THM, PX, PY, PZ, SXLM, SYLM, SZLM, SXHM, SYHM, SZHM)
+    EMforward(TLM, THM, PX, PY, PZ, SXLM, SYLM, SZLM, SXHM, SYHM, SZHM, tLM, tHM)
 end
 
 function(em::EMforward)()
@@ -140,6 +146,26 @@ mutable struct Sounding
     x         :: Array{Float64, 1}
     ztx       :: Float64
     thickness :: Array{Float64, 1}
+end
+
+function getstmtime(fname)
+    file = readlines(fname)
+    w = Vector{Array{Float64, 2}}(undef, 0)
+    storeit = false
+    for (i, line) in enumerate(file)
+        if !storeit
+            if occursin("WindowTimes Begin", line)
+                storeit = true
+                continue
+            end
+        elseif occursin("WindowTimes End", line)
+            break
+        else   
+            startfrom = findlast('\t', line) + 1
+            push!(w, permutedims(parse.(Float64, split(line[startfrom:end]," "))))
+        end
+    end 
+   dropdims(10 .^(0.5*sum(log10.(reduce(vcat, w)), dims=2)), dims=2)
 end
 
 end
