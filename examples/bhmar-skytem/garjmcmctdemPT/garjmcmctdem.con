@@ -12,8 +12,8 @@ Control Begin
 		EstimateNoiseFromModel = yes
 		ZMultiplicativeNoise   = 3.6
 		ZAdditiveNoise         = 7.7154e-012 5.7849e-012 3.9164e-012 3.1502e-012 2.5105e-012 2.2912e-012  1.921e-012  1.733e-012  1.529e-012 1.2258e-012 9.6876e-013 9.0323e-013 8.2181e-013 7.4835e-013 6.2648e-013 6.2901e-013 5.7157e-013 5.1475e-013
-		ZComponentSecondary    = -Column 17 //Noise free data
-		//ZComponentSecondary    = -Column 35 //Noise contaminated data
+		//ZComponentSecondary    = -Column 17 //Noise free data
+		ZComponentSecondary    = -Column 35 //Noise contaminated data
 		//ZComponentNoise      = 
 	EMSystem1 End
 
@@ -23,13 +23,12 @@ Control Begin
 		UseYComponent    = no
 		UseZComponent    = yes
 		InvertTotalField = no
-		//ReconstructPrimaryFieldFromInputGeometry = no
 
 		EstimateNoiseFromModel = yes
 		ZMultiplicativeNoise   = 3.6
 		ZAdditiveNoise         = 2.5545e-013 2.0815e-013 1.9144e-013  1.592e-013 1.4598e-013 1.3402e-013 1.2712e-013 1.0844e-013 1.0214e-013 9.7184e-014 9.0881e-014 8.4579e-014 7.7776e-014 6.9864e-014 6.6747e-014 5.9365e-014   5.33e-014  4.843e-014 4.2199e-014 3.7096e-014  3.571e-014
-		ZComponentSecondary    = -Column 71 //Noise free data
-		//ZComponentSecondary    = -Column 92 //Noise contaminated data
+		//ZComponentSecondary    = -Column 71 //Noise free data
+		ZComponentSecondary    = -Column 92 //Noise contaminated data
 		//ZComponentNoise      = 
 	EMSystem2 End
 

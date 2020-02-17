@@ -631,9 +631,11 @@ public:
 	size_t mpiRank;
 	size_t mpiSize;
 
-	const double DEFAULTLOGSTDDECADES   = 0.05;
-	const double DEFAULTMOVESTDFRACTION = 0.05;
-	
+	//const double DEFAULTLOGSTDDECADES   = 0.05;
+	//const double DEFAULTMOVESTDFRACTION = 0.05;
+	const double DEFAULTLOGSTDDECADES   = 1.0;
+	const double DEFAULTMOVESTDFRACTION = 0.25;
+
 	std::string starttime;
 	std::string endtime;
 	double samplingtime;
@@ -850,7 +852,7 @@ public:
 			pqratio = 1.0 / ((vmax - vmin) * vcpdf);
 		}
 		//Jefferies?
-		//pqratio *= (double)(n) / double(n + 1);
+		pqratio *= (double)(n) / double(n + 1);
 
 		bool isvalid = mpro.insert_interface(pos, vnew);
 		if (isvalid == false)return false;
@@ -899,7 +901,7 @@ public:
 			pqratio = (vmax - vmin) * vcpdf;
 		}
 		//Jefferies?
-		//pqratio *= (double)(n) / double(n - 1);
+		pqratio *= (double)(n) / double(n - 1);
 
 		double logpqr = std::log(pqratio);
 		double loglr  = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;

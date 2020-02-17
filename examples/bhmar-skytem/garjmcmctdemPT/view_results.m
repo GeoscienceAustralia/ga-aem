@@ -3,8 +3,10 @@ clear all;
 close all;
 addpath("..\..\..\matlab\rjmcmctdem_functions");
 
-%ncdir = 'output\pmaps\';
-ncdir = 'output_100k_noise_free\pmaps\';
+ncdir = 'output\pmaps\';
+%ncdir = 'output_0.10\pmaps\';
+%ncdir = 'output_0.20\pmaps\';
+%ncdir = 'output_100k_noise_free\pmaps\';
 %ncdir = 'output_100k_noise_contaminated\pmaps\';
 
 f = dir([ncdir '*.nc']);
@@ -27,11 +29,14 @@ plot(-P.observations);
 hold on;
 errorbar(-P.observations,P.errors);
 set(gca,'yscale','log');
-return
+
 %%
 ind = P.temperature == 1;
 nmf = (P.misfit(ind)/P.ndata);
 dark_figure()
-semilogy(nmf)
-mean(nmf(200:end))
-
+%semilogy(nmf)
+%mean(nmf(200:end))
+plot(P.ar_valuechange(ind));
+hold on;
+plot(P.ar_move(ind));
+ylim([0 100]);
