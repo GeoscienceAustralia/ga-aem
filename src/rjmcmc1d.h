@@ -75,6 +75,7 @@ class cParameterization {
 				return Type::LINEAR;
 			}
 			glog.errormsg(_SRC_, "Invalid ParameterizationType %s\n",s.c_str());
+			return Type::LINEAR;
 		};
 
 };
@@ -682,7 +683,7 @@ public:
 		return m.get_misfit()/(double)ndata;
 	};
 
-	const size_t nchains() const { return chains.size(); };
+	size_t nchains() const { return chains.size(); };
 
 	void addmodel(const rjMcMC1DModel& m)
 	{
@@ -1150,20 +1151,20 @@ public:
 	void writemapstofile_netcdf(NcFile& nc) {
 
 		NcGroupAtt a;
-		a = nc.putAtt("ndata", NcType::nc_UINT, ndata);
+		a = nc.putAtt("ndata", NcType::nc_UINT, (unsigned int) ndata);
 		a = nc.putAtt("value_parameterization", param_value.get_typestring());
 		a = nc.putAtt("vmin", NcType::nc_DOUBLE, vmin);
 		a = nc.putAtt("vmax", NcType::nc_DOUBLE, vmax);
 		a = nc.putAtt("position_parameterization", param_position.get_typestring());
 		a = nc.putAtt("pmin", NcType::nc_DOUBLE, 0.0);
 		a = nc.putAtt("pmax", NcType::nc_DOUBLE, pmax);
-		a = nc.putAtt("nlayers_min", NcType::nc_UINT, nl_min);
-		a = nc.putAtt("nlayers_max", NcType::nc_UINT, nl_max);
+		a = nc.putAtt("nlayers_min", NcType::nc_UINT, (unsigned int) nl_min);
+		a = nc.putAtt("nlayers_max", NcType::nc_UINT, (unsigned int) nl_max);
 
-		a = nc.putAtt("nsamples", NcType::nc_UINT, nsamples);
-		a = nc.putAtt("nchains", NcType::nc_UINT, nchains());
-		a = nc.putAtt("nburnin", NcType::nc_UINT, nburnin);
-		a = nc.putAtt("thinrate", NcType::nc_UINT, thinrate);
+		a = nc.putAtt("nsamples", NcType::nc_UINT, (unsigned int) nsamples);
+		a = nc.putAtt("nchains", NcType::nc_UINT, (unsigned int) nchains());
+		a = nc.putAtt("nburnin", NcType::nc_UINT, (unsigned int) nburnin);
+		a = nc.putAtt("thinrate", NcType::nc_UINT, (unsigned int) thinrate);
 				
 		a = nc.putAtt("starttime", starttime);
 		a = nc.putAtt("endtime", endtime);

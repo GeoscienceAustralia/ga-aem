@@ -803,12 +803,12 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		NcFile nc(ncfilepath, NcFile::FileMode::replace);
 		NcGroupAtt a;
-		a = nc.putAtt("survey", NcType::nc_DOUBLE, surveynumber);
-		a = nc.putAtt("date", NcType::nc_DOUBLE, datenumber);
-		a = nc.putAtt("flight", NcType::nc_DOUBLE, flightnumber);
-		a = nc.putAtt("line", NcType::nc_DOUBLE, linenumber);
-		a = nc.putAtt("fiducial", NcType::nc_DOUBLE, fidnumber);
-		a = nc.putAtt("time", NcType::nc_DOUBLE, timenumber);
+		a = nc.putAtt("survey", NcType::nc_DOUBLE, (double) surveynumber);
+		a = nc.putAtt("date", NcType::nc_DOUBLE, (double) datenumber);
+		a = nc.putAtt("flight", NcType::nc_DOUBLE, (double) flightnumber);
+		a = nc.putAtt("line", NcType::nc_DOUBLE, (double) linenumber);
+		a = nc.putAtt("fiducial", NcType::nc_DOUBLE, (double) fidnumber);
+		a = nc.putAtt("time", NcType::nc_DOUBLE, (double) timenumber);
 		a = nc.putAtt("x", NcType::nc_DOUBLE, xord);
 		a = nc.putAtt("y", NcType::nc_DOUBLE, yord);
 		a = nc.putAtt("elevation", NcType::nc_DOUBLE, elevation);
