@@ -284,9 +284,14 @@ public:
 
 		if (iotype() == ASCII) {
 			std::vector<T> vec;
-			cd.getvalue(AF, vec, 1);
-			v = vec[0];
-			return true;
+			bool status = cd.getvalue(AF, vec, 1);
+			if (status) {
+				v = vec[0];
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 		else {	
 			std::vector<T> vec;
@@ -684,12 +689,15 @@ class cSBSInverter{
 			}
 
 			double t1 = gettime();
-			invert();
-
-			double t2 = gettime();
-			double etime = t2 - t1;
-			writeresult();
-			glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM.record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());			
+			if (invert()){
+				double t2 = gettime();
+				double etime = t2 - t1;
+				writeresult();
+				glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM.record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());
+			}
+			else {
+				glog.logmsg("Rec %6zu  skipping due to parse error\n", 1 + IM.record());
+			}
 		}
 		glog.close();
 		return 0;
@@ -979,39 +987,42 @@ class cSBSInverter{
 	{
 		if (IM.parsefieldstrings() == false) return false;
 
+		bool readstatus = true;
+
+		bool status;
 		Id.uniqueid = IM.record();
-		IM.read(sn, Id.surveynumber);
-		IM.read(dn, Id.daynumber);
-		IM.read(fn, Id.flightnumber);
-		IM.read(ln, Id.linenumber);
-		IM.read(fidn, Id.fidnumber);
-		IM.read(xord, Location.x);
-		IM.read(yord, Location.y);
-		IM.read(elevation, Location.groundelevation);
+		status = IM.read(sn, Id.surveynumber); if (status == false) readstatus = false;
+		status = IM.read(dn, Id.daynumber); if (status == false) readstatus = false;
+		status = IM.read(fn, Id.flightnumber); if (status == false) readstatus = false;
+		status = IM.read(ln, Id.linenumber); if (status == false) readstatus = false;
+		status = IM.read(fidn, Id.fidnumber); if (status == false) readstatus = false;
+		status = IM.read(xord, Location.x); if (status == false) readstatus = false;
+		status = IM.read(yord, Location.y); if (status == false) readstatus = false;
+		status = IM.read(elevation, Location.groundelevation); if (status == false) readstatus = false;
+
 		Location.z = ud_double();
-
-		GI = readgeometry(fd_GI);
-		GR = readgeometry(fd_GR);
+		
+		status = readgeometry(fd_GI,GI); if (status == false) readstatus = false;
+		status = readgeometry(fd_GR,GR); 		
 		GR.fillundefined(GI);
-		GTFR = readgeometry(fd_GTFR);
-		GTFR.fillundefined(GI);
+		status = readgeometry(fd_GTFR,GTFR); 
+		GTFR.fillundefined(GI); 
+		status = readgeometry(fd_GS,GS); 
 
-		GS = readgeometry(fd_GS);
-
-		IM.read(fd_ERc, ER.conductivity, nlayers);
-		IM.read(fd_ERt, ER.thickness, nlayers - 1);
+		status = IM.read(fd_ERc, ER.conductivity, nlayers); if (status == false) readstatus = false;
+		status = IM.read(fd_ERt, ER.thickness, nlayers - 1); if (status == false) readstatus = false;
 
 		if (solve_conductivity) {
-			IM.read(fd_ESc, ES.conductivity, nlayers);
+			status = IM.read(fd_ESc, ES.conductivity, nlayers); if (status == false) readstatus = false;
 		}
 		if (solve_thickness) {
-			IM.read(fd_ESt, ES.thickness, nlayers - 1);
+			status = IM.read(fd_ESt, ES.thickness, nlayers - 1); if (status == false) readstatus = false;
 		}
 
 		for (size_t si = 0; si < nsystems; si++) {
 			readsystemdata(si);
 		}
-		return true;
+		return readstatus;
 	}
 
 	void readsystemdata(size_t sysindex)
@@ -1759,11 +1770,14 @@ class cSBSInverter{
 		return s;
 	}
 
-	void invert()
+	bool invert()
 	{
-		parserecord();
-		initialise_sample();
-		iterate();
+		if (parserecord()) {
+			initialise_sample();
+			iterate();
+			return true;
+		}
+		return false;
 	}
 
 	void iterate()
@@ -2514,13 +2528,16 @@ class cSBSInverter{
 		}
 	}
 
-	cTDEmGeometry readgeometry(const std::vector<cFieldDefinition>& gfd)
-	{
-		cTDEmGeometry g;
+	bool readgeometry(const std::vector<cFieldDefinition>& gfd, cTDEmGeometry& g)
+	{		
+		bool status = true;
 		for (size_t i = 0; i < g.size(); i++) {
-			IM.read(gfd[i], g[i]);
+			bool istatus = IM.read(gfd[i], g[i]);
+			if (istatus == false) {
+				status = false;
+			}
 		}
-		return g;
+		return status;
 	}
 	
 	void write(const VectorDouble& v, std::string path) const 
