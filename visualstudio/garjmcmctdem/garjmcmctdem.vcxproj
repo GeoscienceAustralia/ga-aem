@@ -39,12 +39,18 @@
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\eigen.props" />
+    <Import Project="..\propertysheets\netcdf4.props" />
+    <Import Project="..\propertysheets\netcdf4-cxx.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\eigen.props" />
+    <Import Project="..\propertysheets\netcdf4.props" />
+    <Import Project="..\propertysheets\netcdf4-cxx.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -60,6 +66,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_MPI_ENABLED;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -75,7 +82,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_MPI_ENABLED;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -86,21 +93,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\garjmcmctdem.cpp" />
-    <ClCompile Include="..\..\src\rjmcmc1d.cpp" />
-    <ClCompile Include="..\..\src\rjmcmc1dtdeminverter.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\random.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\rjmcmc1d.h" />
+    <ClInclude Include="..\..\src\rjmcmc1dtdeminverter.h" />
+    <ClInclude Include="..\..\src\tdemsystem.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\eigen_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\random.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\random_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\vector_utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

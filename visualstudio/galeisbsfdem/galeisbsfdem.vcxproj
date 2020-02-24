@@ -37,11 +37,13 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\eigen.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\eigen.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -80,13 +82,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\fdemsystem.cpp" />
     <ClCompile Include="..\..\src\galeisbsfdem.cpp" />
-    <ClCompile Include="..\..\src\layeredearthmodeller.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\matrix_ops.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\rollpitchyaw.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\fdemsystem.h" />
@@ -94,6 +92,7 @@
     <ClInclude Include="..\..\src\layeredearthmodeller.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\asciicolumnfile.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\eigen_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />

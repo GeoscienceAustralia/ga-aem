@@ -821,8 +821,7 @@ public:
 		if (sequence_number == 0) s += strprint("@echo off\n\n");
 		
 		s += strprint("call ribbon.bat");
-		s += strprint(" -tilesize %d",tilesize);
-		//s += strprint(" -copySource");
+		s += strprint(" -tilesize %d",tilesize);		
 		s += strprint(" -noLayerDef");
 		s += strprint(" -source %s", jpegfile_nod().c_str());
 		s += strprint(" -output %s", tilesetdir_nod().c_str());
@@ -917,9 +916,7 @@ int main(int argc, char** argv)
 		for (size_t i = 0; i < filelist.size(); i++){
 			std::printf("Processing file %s %3zu of %3zu\n", filelist[i].c_str(), i + 1, filelist.size());
 
-			std::string datafile = filelist[i];
-			//std::string dfnfile = extractfiledirectory(datafile);
-			//dfnfile += "inversion.output.dfn";
+			std::string datafile = filelist[i];			
 
 			cCTLineData dummy(ib, dfnfile);
 			cRange<int> lcol = dummy.getcolumns("line");

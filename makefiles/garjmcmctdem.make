@@ -4,20 +4,38 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
+executable  = $(exedir)/garjmcmctdem.exe
+includes    = -I$(srcdir)
+includes   += -I$(cpputilssrc)
+libs        = -L$(FFTW_DIR) -lfftw3
 cxxflags   += -D_MPI_ENABLED
-includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
-libs       = -L$(FFTW_DIR) -lfftw3
-executable = $(exedir)/garjmcmctdem.exe
+#cxxflags   += -DUSEGLOBALSTACKTRACE
+
+ifeq ($(HAVE_NETCDF),1)
+    cxxflags += -DHAVE_NETCDF
+    includes +=  -I$(geophysics_netcdf_root)/src
+    includes += -I$(geophysics_netcdf_root)/submodules/marray/include/andres
+    libs     +=  -lnetcdf -lnetcdf_c++4
+endif
+
+ifeq ($(HAVE_GDAL),1)
+    cxxflags += -DHAVE_GDAL
+    libs     += -lgdal
+    objects  += $(cpputilssrc)/gdal_utils.o
+endif
+
+ifeq ($(HAVE_CGAL),1)
+    cxxflags += -DHAVE_CGAL
+    libs     += -lCGAL_Core
+    objects  += $(cpputilssrc)/cgal_utils.o
+endif
+
 
 all: compile link
 allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/matrix_ops.o
-objects += $(cpputilssrc)/random.o
-objects += $(srcdir)/rjmcmc1d.o
-objects += $(srcdir)/rjmcmc1dtdeminverter.o
 objects += $(srcdir)/garjmcmctdem.o
 
 %.o : %.cpp

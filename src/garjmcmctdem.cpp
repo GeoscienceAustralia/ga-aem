@@ -12,9 +12,6 @@ using namespace std;
 #include "gaaem_version.h"
 #include "general_utils.h"
 #include "file_utils.h"
-#include "random.h"
-#include "tdemsystem.h"
-#include "rjmcmc1d.h"
 #include "rjmcmc1dtdeminverter.h"
 
 #if defined _MPI_ENABLED
@@ -25,7 +22,7 @@ class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
 int main(int argc, char* argv[])
-{	
+{		
 	int exitstatus;
 	int mpisize = 1;
 	int mpirank = 0;
@@ -64,7 +61,7 @@ int main(int argc, char* argv[])
 			I.parsecurrentrecord();
 			I.sample();
 			double stime = I.samplingtime;
-			double norm_mfit = I.mLowestMisfit.misfit() / double(I.ndata);
+			double norm_mfit = I.LowestMisfit.get_misfit() / double(I.ndata);
 			glog.logmsg("Rec %6lu\t %3lu\t %5lu\t %10lf nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
 		}
 		glog.logmsg("This process finishing at %s\n", timestamp().c_str());

@@ -14,15 +14,16 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cstring>
 #include <algorithm>
 
+#include <Eigen/Dense>
 #include "asciicolumnfile.h"
 #include "blocklanguage.h"
 #include "fielddefinition.h"
-#include "matrix_ops.h"
 #include "airborne_types.h"
 #include "tdemsystem.h"
+#include "eigen_utils.h"
 #include "gaaem_version.h"
 
-#if defined _NETCDF_ENABLED
+#if defined HAVE_NETCDF
 	#include "geophysics_netcdf.h"
 #endif
 
@@ -153,7 +154,7 @@ private:
 	std::string DataFileName;
 	std::string HeaderFileName;
 	IOType IoType = ASCII;
-	#if defined _NETCDF_ENABLED
+	#if defined HAVE_NETCDF
 	cGeophysicsNcFile NC;	
 	#endif
 	cAsciiColumnFile AF;	
@@ -175,7 +176,7 @@ public:
 		glog.logmsg(0,"Opening Input DataFile %s\n", DataFileName.c_str());
 		if (strcasecmp(ext, ".nc") == 0){			
 			IoType = NETCDF;
-			#if defined _NETCDF_ENABLED
+			#if defined HAVE_NETCDF
 			NC.open(DataFileName, netCDF::NcFile::FileMode::read);			
 			#else
 			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
@@ -212,7 +213,7 @@ public:
 			}
 			else {				
 				Record += Subsample;
-				#if defined _NETCDF_ENABLED
+				#if defined HAVE_NETCDF
 					if (Record > NC.ntotalsamples()) return false;
 				#endif
 			}
@@ -252,7 +253,7 @@ public:
 
 	const std::string& datafilename() { return DataFileName; }
 
-	const size_t& record() { return Record;	}
+	const size_t& record() const { return Record;	}
 	
 	const std::string& recordstring() const { return AF.currentrecord_string(); }
 
@@ -262,7 +263,7 @@ public:
 		template<typename T>
 		bool netcdf_read(const std::string varname, std::vector<T>& v)
 		{
-			#if defined _NETCDF_ENABLED
+			#if defined HAVE_NETCDF
 				NC.getDataByPointIndex(varname, Record, v);
 			#endif 
 			return true;
@@ -283,9 +284,14 @@ public:
 
 		if (iotype() == ASCII) {
 			std::vector<T> vec;
-			cd.getvalue(AF, vec, 1);
-			v = vec[0];
-			return true;
+			bool status = cd.getvalue(AF, vec, 1);
+			if (status) {
+				v = vec[0];
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 		else {	
 			std::vector<T> vec;
@@ -344,7 +350,8 @@ public:
 	bool PredictedData = false;
 	bool Dump = false;
 
-	std::string DumpPath(const size_t datafilerecord, const size_t iteration){
+	std::string DumpPath(const size_t datafilerecord, const size_t iteration) const
+	{
 		return DumpBasePath + pathseparatorstring() + 
 			strprint("si%07d", (int)datafilerecord) + pathseparatorstring() +
 			strprint("it%03d", (int)iteration) + pathseparatorstring();
@@ -585,16 +592,17 @@ class cSBSInverter{
 	size_t nparam;
 	size_t ngeomparam;	
 
-	std::vector<double> Obs;
-	std::vector<double> Err;	
-	std::vector<double> Pred;			
+	//std::vector<double> Obs;
+	VectorDouble Obs;
+	VectorDouble Err;
+	VectorDouble Pred;
 
-	std::vector<double> Param;
-	std::vector<double> RefParam;
-	std::vector<double> RefParamStd;
+	VectorDouble Param;
+	VectorDouble RefParam;
+	VectorDouble RefParamStd;
 
-	std::vector<double> ParameterSensitivity;
-	std::vector<double> ParameterUncertainty;
+	VectorDouble ParameterSensitivity;
+	VectorDouble ParameterUncertainty;
 	
 	MatrixDouble J;		
 	MatrixDouble Wd;
@@ -681,12 +689,15 @@ class cSBSInverter{
 			}
 
 			double t1 = gettime();
-			invert();
-
-			double t2 = gettime();
-			double etime = t2 - t1;
-			writeresult();
-			glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM.record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());			
+			if (invert()){
+				double t2 = gettime();
+				double etime = t2 - t1;
+				writeresult();
+				glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM.record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());
+			}
+			else {
+				glog.logmsg("Rec %6zu  skipping due to parse error\n", 1 + IM.record());
+			}
 		}
 		glog.close();
 		return 0;
@@ -976,39 +987,42 @@ class cSBSInverter{
 	{
 		if (IM.parsefieldstrings() == false) return false;
 
+		bool readstatus = true;
+
+		bool status;
 		Id.uniqueid = IM.record();
-		IM.read(sn, Id.surveynumber);
-		IM.read(dn, Id.daynumber);
-		IM.read(fn, Id.flightnumber);
-		IM.read(ln, Id.linenumber);
-		IM.read(fidn, Id.fidnumber);
-		IM.read(xord, Location.x);
-		IM.read(yord, Location.y);
-		IM.read(elevation, Location.groundelevation);
+		status = IM.read(sn, Id.surveynumber); if (status == false) readstatus = false;
+		status = IM.read(dn, Id.daynumber); if (status == false) readstatus = false;
+		status = IM.read(fn, Id.flightnumber); if (status == false) readstatus = false;
+		status = IM.read(ln, Id.linenumber); if (status == false) readstatus = false;
+		status = IM.read(fidn, Id.fidnumber); if (status == false) readstatus = false;
+		status = IM.read(xord, Location.x); if (status == false) readstatus = false;
+		status = IM.read(yord, Location.y); if (status == false) readstatus = false;
+		status = IM.read(elevation, Location.groundelevation); if (status == false) readstatus = false;
+
 		Location.z = ud_double();
-
-		GI = readgeometry(fd_GI);
-		GR = readgeometry(fd_GR);
+		
+		status = readgeometry(fd_GI,GI); if (status == false) readstatus = false;
+		status = readgeometry(fd_GR,GR); 		
 		GR.fillundefined(GI);
-		GTFR = readgeometry(fd_GTFR);
-		GTFR.fillundefined(GI);
+		status = readgeometry(fd_GTFR,GTFR); 
+		GTFR.fillundefined(GI); 
+		status = readgeometry(fd_GS,GS); 
 
-		GS = readgeometry(fd_GS);
-
-		IM.read(fd_ERc, ER.conductivity, nlayers);
-		IM.read(fd_ERt, ER.thickness, nlayers - 1);
+		status = IM.read(fd_ERc, ER.conductivity, nlayers); if (status == false) readstatus = false;
+		status = IM.read(fd_ERt, ER.thickness, nlayers - 1); if (status == false) readstatus = false;
 
 		if (solve_conductivity) {
-			IM.read(fd_ESc, ES.conductivity, nlayers);
+			status = IM.read(fd_ESc, ES.conductivity, nlayers); if (status == false) readstatus = false;
 		}
 		if (solve_thickness) {
-			IM.read(fd_ESt, ES.thickness, nlayers - 1);
+			status = IM.read(fd_ESt, ES.thickness, nlayers - 1); if (status == false) readstatus = false;
 		}
 
 		for (size_t si = 0; si < nsystems; si++) {
 			readsystemdata(si);
 		}
-		return true;
+		return readstatus;
 	}
 
 	void readsystemdata(size_t sysindex)
@@ -1171,18 +1185,18 @@ class cSBSInverter{
 	}
 
 	void initialise_Wd()
-	{
-		Wd = MatrixDouble(ndata, ndata, 0.0);
+	{		
+		Wd = MatrixDouble::Zero(ndata, ndata);		
 		double s = 1.0 / (double)ndata;
 		for (size_t i = 0; i < ndata; i++) {
-			Wd[i][i] = s / (Err[i] * Err[i]);
-		}
+			Wd(i,i) = s / (Err[i] * Err[i]);
+		}		
 		if (OO.Dump) writetofile(Wd, dumppath() + "Wd.dat");
 	}
 
 	void initialise_Wc()
 	{
-		Wc = MatrixDouble(nparam, nparam, 0.0);
+		Wc = MatrixDouble::Zero(nparam, nparam);		
 		if (solve_conductivity == false)return;
 
 		std::vector<double> t(nlayers);
@@ -1208,38 +1222,38 @@ class cSBSInverter{
 		double s = AlphaC / (double)(nlayers);
 		for (size_t i = 0; i < nlayers; i++) {
 			size_t p = i + cIndex;
-			Wc[p][p] = s * (t[i] / tavg) / (RefParamStd[p] * RefParamStd[p]);
+			Wc(p,p) = s * (t[i] / tavg) / (RefParamStd[p] * RefParamStd[p]);
 		}
 	}
 
 	void initialise_Wt()
 	{
-		Wt = MatrixDouble(nparam, nparam, 0.0);
+		Wt = MatrixDouble::Zero(nparam, nparam);
 		if (solve_thickness == false)return;
 
 		double s = AlphaT / (double)(nlayers - 1);
 		for (size_t i = 0; i < nlayers - 1; i++) {
 			size_t p = i + tIndex;
-			Wt[p][p] = s / (RefParamStd[p] * RefParamStd[p]);
+			Wt(p,p) = s / (RefParamStd[p] * RefParamStd[p]);
 		}
 
 	}
 
 	void initialise_Wg()
 	{
-		Wg = MatrixDouble(nparam, nparam, 0.0);
+		Wg = MatrixDouble::Zero(nparam, nparam);
 		if (ngeomparam <= 0)return;
 
 		double s = AlphaG / (double)ngeomparam;
 		for (size_t i = 0; i < ngeomparam; i++) {
 			size_t p = i + gIndex;
-			Wg[p][p] = s / (RefParamStd[p] * RefParamStd[p]);
+			Wg(p,p) = s / (RefParamStd[p] * RefParamStd[p]);
 		}
 	}
 
 	void initialise_L_Ws_1st_derivative()
 	{
-		Ws = MatrixDouble(nparam, nparam, 0.0);
+		Ws = MatrixDouble::Zero(nparam, nparam);
 		if (AlphaS == 0 || nlayers < 3) return;
 		if (solve_conductivity == false) return;
 
@@ -1254,7 +1268,7 @@ class cSBSInverter{
 		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
 		double tavg = tsum / (double)nlayers;
 
-		MatrixDouble L = MatrixDouble(nlayers - 1, nparam, 0.0);
+		MatrixDouble L = MatrixDouble::Zero(nlayers - 1, nparam);
 		size_t neqn = 0;
 		for (size_t li = 1; li < nlayers; li++) {
 			size_t pindex = cIndex + li;
@@ -1262,17 +1276,17 @@ class cSBSInverter{
 			double t2 = t[li];
 			double d12 = (t1 + t2) / 2.0;
 			double s = sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
-			L[neqn][pindex - 1] = -s / d12;
-			L[neqn][pindex] = s / d12;
+			L(neqn,pindex - 1) = -s / d12;
+			L(neqn,pindex) = s / d12;
 			neqn++;
 		}
-		Ws = transpose_mult(L, L);
+		Ws = L.transpose() * L;
 		Ws *= (AlphaS / (double)(nlayers - 1));
 	}
 
 	void initialise_L_Ws_2nd_derivative()
 	{
-		Ws = MatrixDouble(nparam, nparam, 0.0);
+		Ws = MatrixDouble::Zero(nparam, nparam);
 		if (AlphaS == 0 || nlayers < 3) return;
 		if (solve_conductivity == false) return;
 
@@ -1291,7 +1305,7 @@ class cSBSInverter{
 		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
 		double tavg = tsum / (double)nlayers;
 
-		MatrixDouble L = MatrixDouble(nlayers - 2, nparam, 0.0);
+		MatrixDouble L = MatrixDouble::Zero(nlayers - 2, nparam);
 		size_t neqn = 0;
 		for (size_t li = 1; li < nlayers - 1; li++) {
 			size_t pindex = cIndex + li;
@@ -1301,18 +1315,18 @@ class cSBSInverter{
 			double d12 = (t1 + t2) / 2.0;
 			double d23 = (t2 + t3) / 2.0;
 			double s = sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
-			L[neqn][pindex - 1] = s / d12;
-			L[neqn][pindex] = -s / d12 - s / d23;
-			L[neqn][pindex + 1] = s / d23;
+			L(neqn,pindex - 1) = s / d12;
+			L(neqn,pindex) = -s / d12 - s / d23;
+			L(neqn,pindex + 1) = s / d23;
 			neqn++;
 		}
-		Ws = transpose_mult(L, L);
+		Ws = L.transpose() * L;
 		Ws *= (AlphaS / (double)(nlayers - 2));
 	}
 
 	void initialise_Wr_Wm()
 	{
-		Wr = MatrixDouble(nparam, nparam, 0.0);
+		Wr = MatrixDouble::Zero(nparam, nparam);
 		if (AlphaC > 0.0) Wr += Wc;
 		if (AlphaT > 0.0) Wr += Wt;
 		if (AlphaG > 0.0) Wr += Wg;
@@ -1330,10 +1344,10 @@ class cSBSInverter{
 
 	}
 
-	std::vector<double> parameterchange(const double lambda)
+	VectorDouble parameterchange(const double lambda)
 	{
-		std::vector<double> x = solve(lambda);
-		std::vector<double> dm = x - Param;
+		VectorDouble x  = solve(lambda);
+		VectorDouble dm = x - Param;
 
 		if (solve_conductivity) {
 			for (size_t li = 0; li < nlayers; li++) {
@@ -1384,7 +1398,7 @@ class cSBSInverter{
 		return dm;
 	}
 
-	std::vector<double> solve(const double lambda)
+	VectorDouble solve(const double lambda)
 	{
 		// Phi = (d-g(m)+Jm) Wd (d-g(m)+Jm) + lambda ( (m-m0)' Wr (m-m0) + m' Ws m) )
 		//Ax = b
@@ -1393,11 +1407,11 @@ class cSBSInverter{
 		//b = J'Wd(d - g(m) + Jm) + lambda*Wr*m0
 		//dm = m(n+1) - m = x - m
 
-		const std::vector<double>& m = Param;
-		const std::vector<double>& d = Obs;
-		const std::vector<double>& g = Pred;
-		const std::vector<double>& e = Err;
-		const std::vector<double>& m0 = RefParam;
+		const VectorDouble& m = Param;
+		const VectorDouble& d = Obs;
+		const VectorDouble& g = Pred;
+		const VectorDouble& e = Err;
+		const VectorDouble& m0 = RefParam;
 
 
 		MatrixDouble V = Wd;
@@ -1407,21 +1421,20 @@ class cSBSInverter{
 		else {
 			for (size_t i = 0; i < ndata; i++) {
 				const double r = (d[i] - g[i]) / e[i];
-				V[i][i] *= 1.0 / std::abs(r);
+				V(i,i) *= 1.0 / std::abs(r);
 			}
 		}
 
-		MatrixDouble JtV = transpose_mult(J, V);
+		MatrixDouble JtV = J.transpose() * V;
 		MatrixDouble JtVJ = JtV * J;
 
-		std::vector<double> b = JtV * (d - g + J * m) + lambda * Wr*m0;
-		MatrixDouble        A = JtVJ + lambda * Wm;
-		std::vector<double> x = pseudoinverse_od(A)*b;
-
+		VectorDouble b = JtV * (d - g + J * m) + lambda * (Wr * m0);
+		MatrixDouble A = JtVJ + lambda * Wm;
+		VectorDouble x = pseudoInverse(A)*b;
 		return x;
 	}
 
-	double l1_norm(const std::vector<double>& g)
+	double l1_norm(const VectorDouble& g)
 	{
 		double l1 = 0.0;
 		for (size_t i = 0; i < ndata; i++) {
@@ -1430,14 +1443,15 @@ class cSBSInverter{
 		return l1 / ndata;
 	}
 
-	double l2_norm(const std::vector<double>& g)
+	double l2_norm(const VectorDouble& g)
 	{
-		std::vector<double> v = Obs - g;
+		VectorDouble v = Obs - g;
+		VectorDouble a = Wd * v;
 		double l2 = mtDm(v, Wd);
 		return l2;
 	}
 
-	double phiData(const std::vector<double>& g)
+	double phiData(const VectorDouble& g)
 	{
 		double phid;
 		if (NormType == L1) {
@@ -1454,13 +1468,13 @@ class cSBSInverter{
 		return phid;
 	}
 
-	double phiModel(const std::vector<double>& p)
+	double phiModel(const VectorDouble& p)
 	{
 		double phic, phit, phig, phis;
 		return phiModel(p, phic, phit, phig, phis);
 	}
 
-	double phiModel(const std::vector<double>& p, double& phic, double& phit, double& phig, double& phis)
+	double phiModel(const VectorDouble& p, double& phic, double& phit, double& phig, double& phis)
 	{
 		phic = phiC(p);
 		phit = phiT(p);
@@ -1471,37 +1485,37 @@ class cSBSInverter{
 		return v;
 	}
 
-	double phiC(const std::vector<double>& p)
+	double phiC(const VectorDouble& p)
 	{
 		if (AlphaC == 0.0)return 0.0;
 		if (solve_conductivity == false)return 0.0;
-		std::vector<double> v = p - RefParam;
+		VectorDouble v = p - RefParam;
 		return mtDm(v, Wc);
 	}
 
-	double phiT(const std::vector<double>& p)
+	double phiT(const VectorDouble& p)
 	{
 		if (AlphaT == 0.0)return 0.0;
 		if (solve_thickness == false)return 0.0;
-		std::vector<double> v = p - RefParam;
+		VectorDouble v = p - RefParam;
 		return mtDm(v, Wt);
 	}
 
-	double phiG(const std::vector<double>& p)
+	double phiG(const VectorDouble& p)
 	{
 		if (AlphaG == 0.0)return 0.0;
 		if (ngeomparam == 0)return 0.0;
-		std::vector<double> v = p - RefParam;
+		VectorDouble v = p - RefParam;
 		return mtDm(v, Wg);
 	}
 
-	double phiS(const std::vector<double>& p)
+	double phiS(const VectorDouble& p)
 	{
 		if (AlphaS == 0)return 0.0;
 		else return mtAm(p, Ws);
 	}
 
-	cEarth1D get_earth(const std::vector<double>& parameters)
+	cEarth1D get_earth(const VectorDouble& parameters)
 	{
 		cEarth1D e = ER;
 		if (solve_conductivity) {
@@ -1518,7 +1532,7 @@ class cSBSInverter{
 		return e;
 	}
 
-	cTDEmGeometry get_geometry(const std::vector<double>& parameters)
+	cTDEmGeometry get_geometry(const VectorDouble& parameters)
 	{
 		cTDEmGeometry g = GI;
 		if (solve_tx_height)g.tx_height = parameters[tx_heightIndex];
@@ -1546,7 +1560,7 @@ class cSBSInverter{
 		}
 	}
 
-	void forwardmodel(const std::vector<double>& parameters, std::vector<double>& predicted, bool computederivatives)
+	void forwardmodel(const VectorDouble& parameters, VectorDouble& predicted, bool computederivatives)
 	{
 		cEarth1D      e = get_earth(parameters);
 		cTDEmGeometry g = get_geometry(parameters);
@@ -1708,25 +1722,25 @@ class cSBSInverter{
 		const size_t nw = S.T.NumberOfWindows;
 		if (S.invertXPlusZ) {
 			for (size_t w = 0; w < nw; w++) {
-				J[w + S.xzIndex][pindex] = (xfm[w] * xdrv[w] + zfm[w] * zdrv[w]) / xzfm[w];
-				if (S.Comp[1].Use)J[w + S.Comp[1].dataindex][pindex] = xdrv[w];
+				J(w + S.xzIndex, pindex) = (xfm[w] * xdrv[w] + zfm[w] * zdrv[w]) / xzfm[w];
+				if (S.Comp[1].Use)J(w + S.Comp[1].dataindex,pindex) = xdrv[w];
 			}
 		}
 		else {
 			for (size_t w = 0; w < nw; w++) {				
-				if (S.Comp[0].Use)J[w + S.Comp[0].dataindex][pindex] = xdrv[w];
-				if (S.Comp[1].Use)J[w + S.Comp[1].dataindex][pindex] = ydrv[w];
-				if (S.Comp[2].Use)J[w + S.Comp[2].dataindex][pindex] = zdrv[w];				
+				if (S.Comp[0].Use)J(w + S.Comp[0].dataindex,pindex) = xdrv[w];
+				if (S.Comp[1].Use)J(w + S.Comp[1].dataindex,pindex) = ydrv[w];
+				if (S.Comp[2].Use)J(w + S.Comp[2].dataindex,pindex) = zdrv[w];				
 			}
 		}
 	}
 
-	std::vector<double> compute_parameter_sensitivity()
+	VectorDouble compute_parameter_sensitivity()
 	{
-		std::vector<double> s(nparam, 0.0);
+		VectorDouble s = VectorDouble::Zero(nparam);
 		for (size_t pi = 0; pi < nparam; pi++) {
 			for (size_t di = 0; di < ndata; di++) {
-				s[pi] += (fabs(J[di][pi]) * sqrt((double)ndata*Wd[di][di]));
+				s[pi] += (std::fabs(J(di,pi)) * std::sqrt((double)ndata*Wd(di,di)));
 			}
 		}
 
@@ -1737,28 +1751,33 @@ class cSBSInverter{
 		return s;
 	}
 
-	std::vector<double> compute_parameter_uncertainty()
+	VectorDouble compute_parameter_uncertainty()
 	{
-		MatrixDouble JtWdJ = transpose_mult(J, Wd)*J;
-		MatrixDouble iCm(nparam, nparam, 0.0);
-		for (size_t i = 0; i < nparam; i++) iCm[i][i] = 1.0 / (RefParamStd[i] * RefParamStd[i]);
+		MatrixDouble JtWdJ = J.transpose()*Wd*J;
+		MatrixDouble iCm = MatrixDouble::Zero(nparam, nparam);
+		for (size_t i = 0; i < nparam; i++) {
+			iCm(i,i) = 1.0 / (RefParamStd[i] * RefParamStd[i]);
+		}
 		MatrixDouble X = (double)ndata*JtWdJ + iCm;
 		//MatrixDouble X = (double)ndata*JtWdJ + iCm + Ws;	
 		//MatrixDouble X = (double)ndata*JtWdJ + Ws;
 		//MatrixDouble X = (double)ndata*JtWdJ;
-		MatrixDouble pinvX = pseudoinverse(X);
-		std::vector<double> s(nparam);
+		MatrixDouble pinvX = pseudoInverse(X);
+		VectorDouble s(nparam);
 		for (size_t i = 0; i < nparam; i++) {
-			s[i] = sqrt(pinvX[i][i]);
+			s[i] = std::sqrt(pinvX(i,i));
 		}
 		return s;
 	}
 
-	void invert()
+	bool invert()
 	{
-		parserecord();
-		initialise_sample();
-		iterate();
+		if (parserecord()) {
+			initialise_sample();
+			iterate();
+			return true;
+		}
+		return false;
 	}
 
 	void iterate()
@@ -1796,9 +1815,9 @@ class cSBSInverter{
 			}
 			else {
 				cTrial t = targetsearch(LastLambda, TargetPhiD);
-				std::vector<double> dm = parameterchange(t.lambda);
-				std::vector<double> mtemp = Param + (t.stepfactor*dm);
-				std::vector<double> gtemp(ndata);
+				VectorDouble dm = parameterchange(t.lambda);
+				VectorDouble mtemp = Param + (t.stepfactor*dm);
+				VectorDouble gtemp(ndata);
 				forwardmodel(mtemp, gtemp, false);
 				double phidtemp = phiData(gtemp);
 				percentchange = 100.0*(LastPhiD - phidtemp) / (LastPhiD);
@@ -2066,7 +2085,7 @@ class cSBSInverter{
 		}
 	}
 
-	double goldensearch(double a, double b, double c, double xtol, const double lambda, const std::vector<double>& m, const std::vector<double>& dm, std::vector<double>& g, cTrialCache& cache)
+	double goldensearch(double a, double b, double c, double xtol, const double lambda, const VectorDouble& m, const VectorDouble& dm, VectorDouble& g, cTrialCache& cache)
 	{
 		//adapted from http://en.wikipedia.org/wiki/Golden_section_search	
 		const double resphi = 2 - ((1 + sqrt(5.0)) / 2.0);
@@ -2088,7 +2107,7 @@ class cSBSInverter{
 		double fx = cache.sfsearch(x);
 		if (fx < 0) {
 			cTrial t;
-			std::vector<double> p = m + x * dm;
+			VectorDouble p = m + x * dm;
 			forwardmodel(p, g, false);
 			fx = phiData(g);
 			t.stepfactor = x;
@@ -2103,7 +2122,7 @@ class cSBSInverter{
 		double fb = cache.sfsearch(b);
 		if (fb < 0) {
 			cTrial t;
-			std::vector<double> p = m + b * dm;
+			VectorDouble p = m + b * dm;
 			forwardmodel(p, g, false);
 			fb = phiData(g);
 			t.stepfactor = b;
@@ -2136,9 +2155,9 @@ class cSBSInverter{
 
 	double trialfunction(cTrialCache& T, const double triallambda)
 	{
-		std::vector<double> dm(nparam);
-		std::vector<double> p(nparam);
-		std::vector<double> g(ndata);
+		VectorDouble dm(nparam);
+		VectorDouble p(nparam);
+		VectorDouble g(ndata);
 		dm = parameterchange(triallambda);
 		cTrialCache cache;
 		cTrial t0;
@@ -2509,16 +2528,28 @@ class cSBSInverter{
 		}
 	}
 
-	cTDEmGeometry readgeometry(const std::vector<cFieldDefinition>& gfd)
-	{
-		cTDEmGeometry g;
+	bool readgeometry(const std::vector<cFieldDefinition>& gfd, cTDEmGeometry& g)
+	{		
+		bool status = true;
 		for (size_t i = 0; i < g.size(); i++) {
-			IM.read(gfd[i], g[i]);
+			bool istatus = IM.read(gfd[i], g[i]);
+			if (istatus == false) {
+				status = false;
+			}
 		}
-		return g;
+		return status;
+	}
+	
+	void write(const VectorDouble& v, std::string path) const 
+	{
+		FILE* fp = fileopen(path, "w");
+		for (auto  i = 0; i < v.rows(); i++) {
+			fprintf(fp, "%le\n", v[i]);
+		}
+		fclose(fp);
 	}
 
-	void write(const std::vector<double>& v, std::string path) const 
+	void write(const std::vector<double>& v, std::string path) const
 	{
 		FILE* fp = fileopen(path, "w");
 		for (size_t i = 0; i < v.size(); i++) {
@@ -2527,7 +2558,9 @@ class cSBSInverter{
 		fclose(fp);
 	}
 
-	std::string dumppath(){
+
+	std::string dumppath() const
+	{
 		return OO.DumpPath(IM.record(),LastIteration);
 	};
 	

@@ -18,12 +18,18 @@ Git submodules are used in this project. They contain utility and third party so
 	- Only required if you want to compile the source code.
 	- Not required if you just want to run the precompiled Windows executables.
 
-# tnt 
-	- Template Numerical Toolkit (TNT): Linear Algebra Module
-	- Authors: National Institute of Standards and Technology (NIST) by employees of the Federal Government in the course of their official duties.
+# eigen
+	- Eigen is a C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.
 	- Language: C++
-	- Website: http://math.nist.gov/tnt/
-	- Repository: git@github.com:rcb547/tnt.git
+	- Website: http://eigen.tuxfamily.org/.	
+	- Repository: https://github.com/eigenteam/eigen-git-mirror.git	
 	- Not required if you just want to run the precompiled Windows executables.
 	- Only required if you want to compile the source code.
 
+# tinyxml
+	- TiCPP is short for the official name TinyXML++ and is a simple XML reader/writer.
+	- Language: C++
+	- Website: https://github.com/wxFormBuilder/ticpp
+	- Repository: git@github.com:wxFormBuilder/ticpp.git
+	- Not required if you just want to run the precompiled Windows executables.
+	- Only required if you want to compile the source code for ctlinedatatocurtainimage.

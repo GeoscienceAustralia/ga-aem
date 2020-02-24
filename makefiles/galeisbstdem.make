@@ -4,24 +4,38 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-cxxflags   += -D_MPI_ENABLED -fopenmp
+executable  = $(exedir)/galeisbstdem.exe
+includes    = -I$(srcdir)
+includes   += -I$(cpputilssrc)
+libs        = -fopenmp -L$(FFTW_DIR) -lfftw3
+cxxflags   += -fopenmp
+cxxflags   += -D_MPI_ENABLED
+#cxxflags   += -DUSEGLOBALSTACKTRACE
 
-includes   =  -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
-includes   += -I/usr/include/openmpi-x86_64
-#includes   += -I$(geophysics_netcdf_root)/src -I$(geophysics_netcdf_root)/submodules/marray/include/andres
+ifeq ($(HAVE_NETCDF),1)
+    cxxflags += -DHAVE_NETCDF
+    includes +=  -I$(geophysics_netcdf_root)/src
+    includes += -I$(geophysics_netcdf_root)/submodules/marray/include/andres
+    libs     +=  -lnetcdf -lnetcdf_c++4
+endif
 
-libs       =  -fopenmp -L$(FFTW_DIR) -lfftw3
-#libs       +=  -lnetcdf -lnetcdf_c++4 -lgdal -lCGAL_Core
+ifeq ($(HAVE_GDAL),1)
+    cxxflags += -DHAVE_GDAL
+    libs     += -lgdal
+    objects  += $(cpputilssrc)/gdal_utils.o
+endif
 
-executable = $(exedir)/galeisbstdem.exe
-
+ifeq ($(HAVE_CGAL),1)
+    cxxflags += -DHAVE_CGAL
+    libs     += -lCGAL_Core
+    objects  += $(cpputilssrc)/cgal_utils.o
+endif
 
 all: compile link
 allclean: clean compile link
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(cpputilssrc)/matrix_ops.o
 objects += $(srcdir)/galeisbstdem.o
 
 %.o : %.cpp

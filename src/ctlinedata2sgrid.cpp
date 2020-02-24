@@ -176,7 +176,7 @@ public:
 		
 		FILE* fp = fileopen(filename, "r");
 		std::string str;
-		dmatrix M;
+		std::vector<std::vector<double>> M;
 		int k=0;
 		while (filegetline(fp, str)){			
 			if(k%subsample == 0){
