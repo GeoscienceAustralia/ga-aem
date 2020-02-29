@@ -1,7 +1,7 @@
-function [figure_handle ax] = view_rjmcmc_pmap(P,TM)
+function [figure_handle,ax] = view_rjmcmc_pmap(figure_handle,P,TM)
 
 %        [ x1   x2   y1   y2 ];
-p(1,:) = [0.05 0.50 0.775 0.980];
+p(1,:) = [0.05 0.50 0.775 0.960];
 p(2,:) = [0.05 0.50 0.550 0.755];
 p(3,:) = [0.05 0.50 0.325 0.530];
 p(4,:) = [0.05 0.50 0.100 0.305];
@@ -11,8 +11,6 @@ p(6,:) = [0.55 0.94 0.05 0.70];
 p(7,:) = [0.95 0.99 0.05 0.70];
 
 %%
-figure_handle = dark_figure();
-maximize_figure();
 for i=1:1:size(p,1);
     ap = [p(i,1) p(i,3) p(i,2)-p(i,1) p(i,4)-p(i,3)];
     ax(i) = axes('position',ap);
@@ -23,16 +21,17 @@ colormap(cmap);
 
 %%
 axes(ax(6));
-imagesc(P.value,P.depth,P.lchist)
+
+clim = [0 max(P.lchist(:))];
+imagesc(P.value,P.depth,P.lchist,clim);
+
 hold on;
-plot(P.mean_model,P.depth,'-w');
+plot(P.mean_model,P.depth,':w');
 %plot(P.mode_model,P.depth,'-y');
 plot(P.p10_model,P.depth,':m');
-plot(P.p50_model,P.depth,'-m');
+%plot(P.p50_model,P.depth,'-m');
 plot(P.p90_model,P.depth,':m');
-if(nargin>1)
-    TM.c = [1.000000e-02    1.000000e-01    3.000000e-02    1.000000e-01    1.000000e-03];
-    TM.t = [2.000000e+01    1.100000e+01    5.000000e+01    3.000000e+01];
+if(nargin>2)    
     [TM.tc,TM.td] = ct2cd(TM.c,TM.t,400);    
     plot(log10(TM.tc),TM.td,'-g');
 end
@@ -41,12 +40,17 @@ xlabel('Conductivity (S/m)');
 set(gca,'xaxislocation','top');
 set(gca,'xtick',[-3:1:1]);
 set(gca,'xticklabel',10.^[-3:1:1]);
+ylim([0 P.pmax]);
 
 axes(ax(7));
-imagesc([0 1],P.depth,P.cphist)
+%clim = [0 max(P.cphist(:))];
+%imagesc([0 1],P.depth,P.cphist,clim);
+plot(P.cphist,P.depth,'-w');
+set(gca,'ydir','reverse');
 box on;
 set(gca,'xticklabel',[]);
 set(gca,'yticklabel',[]);
+ylim([0 P.pmax]);
 
 axes(ax(5));;
 bar(P.layer,P.nlhist,'r');
