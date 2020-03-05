@@ -7,14 +7,15 @@ SHELL = /bin/sh
 executable  = $(exedir)/garjmcmctdem.exe
 includes    = -I$(srcdir)
 includes   += -I$(cpputilssrc)
-libs        = -L$(FFTW_DIR) -lfftw3
+libs        = $(if $(FFTW_DIR),-L$(FFTW_DIR) -lfftw3,-lfftw3)
+
 cxxflags   += -D_MPI_ENABLED
 #cxxflags   += -DUSEGLOBALSTACKTRACE
 
 ifeq ($(HAVE_NETCDF),1)
     cxxflags += -DHAVE_NETCDF
-    includes +=  -I$(geophysics_netcdf_root)/src
-    includes += -I$(geophysics_netcdf_root)/submodules/marray/include/andres
+    includes +=  $(if $(geophysics_netcdf_root),-I$(geophysics_netcdf_root)/src,)
+    includes +=  $(if $(geophysics_netcdf_root),-I$(geophysics_netcdf_root)/submodules/marray/include/andres,)
     libs     +=  -lnetcdf -lnetcdf_c++4
 endif
 
