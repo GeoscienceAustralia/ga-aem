@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 echo '========================================================================'
 echo '========================================================================'
 echo '========================================================================'
@@ -8,16 +8,16 @@ export makemode=$2
 export srcdir='../src'
 export cpputilssrc='../submodules/cpp-utils/src'
 
-if [ $compiler == 'intel' ] ; then
+if [ $compiler = 'intel' ] ; then
 	echo 'Building with Intel compiler'
 	export cxx=icpc
 	export cxxflags='-std=c++11 -O3 -Wall'
-	export exedir='../bin/vdi/intel'
-elif [ $compiler == 'gnu' ] ; then
+	export exedir='../bin/ubuntu/intel'
+elif [ $compiler = 'gnu' ] ; then
 	echo 'Building with GCC compiler'
 	export cxx=g++
 	export cxxflags='-std=c++11 -O3 -Wall -Wno-unknown-pragmas'
-	export exedir='../bin/vdi/gnu'
+	export exedir='../bin/ubuntu/gnu'
 else 
 	echo 'Unknown compiler ' $compiler
 	exit
@@ -27,11 +27,11 @@ export mpicxx=mpiCC
 export HAVE_NETCDF=1
 export HAVE_CGAL=0
 
-if [ $HAVE_NETCDF == 1 ] ; then
+if [ $HAVE_NETCDF = 1 ] ; then
 	echo 'Building with NETCDF'
 fi
 
-if [ $HAVE_CGAL == 1 ] ; then
+if [ $HAVE_CGAL = 1 ] ; then
 	echo 'Building with CGAL'
 fi
 
