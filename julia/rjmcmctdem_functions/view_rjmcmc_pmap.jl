@@ -1,6 +1,12 @@
 using PyPlot
 
-function view_rjmcmc_pmap(P)
+function ct2cd(cond,thick,depth)
+    interfaces = cumsum(thickness)
+    layerinds = searchsortedfirst.(Ref(interfaces),depth)
+    cond[layerinds]
+end
+
+function view_rjmcmc_pmap(P, TM=Dict())
 
     p = [
         0.05 0.50 0.775 0.980;
@@ -36,6 +42,11 @@ function view_rjmcmc_pmap(P)
     plot(P["p10_model"],P["depth"],":m")
     plot(P["p50_model"],P["depth"],"-m")
     plot(P["p90_model"],P["depth"],":m")
+    if length(TM) > 0
+        tmcmap = ct2cd(TM["conductivity"],TM["thickness"],P["depth"])
+        plot(log10.(tmcmap),P["depth"],"-g")
+    end
+
     ylabel("Depth (m)")
     xlabel("LOG10(Conductivity (S/m))")
     gca().invert_yaxis()
