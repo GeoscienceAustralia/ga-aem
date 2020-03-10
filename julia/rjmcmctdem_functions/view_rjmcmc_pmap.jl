@@ -37,24 +37,24 @@ function view_rjmcmc_pmap(P, TM=Dict())
     cmap.set_under((0,0,0,1))
 
     sca(ax[6])
-    pcolor(P["value"],P["depth"],P["lchist"],cmap=cmap)
-    plot(P["mean_model"],P["depth"],"-w");
-    plot(P["p10_model"],P["depth"],":m")
-    plot(P["p50_model"],P["depth"],"-m")
-    plot(P["p90_model"],P["depth"],":m")
+    pcolormesh(10 .^ P["value"],P["depth"],P["lchist"],cmap=cmap)
+    plot(10 .^ P["mean_model"],P["depth"],"-w");
+    plot(10 .^ P["p10_model"],P["depth"],":m")
+    plot(10 .^ P["p50_model"],P["depth"],"-m")
+    plot(10 .^ P["p90_model"],P["depth"],":m")
     if length(TM) > 0
         tmcmap = ct2cd(TM["conductivity"],TM["thickness"],P["depth"])
-        plot(log10.(tmcmap),P["depth"],"-g")
+        plot(tmcmap,P["depth"],"-g")
     end
-
+    ax[6].set_xscale("log")
     ylabel("Depth (m)")
-    xlabel("LOG10(Conductivity (S/m))")
+    xlabel("Conductivity (S/m)")
     gca().invert_yaxis()
     #gca().xaxis.tick_top()
     #gca().xaxis.set_label_position("top")
 
     sca(ax[7])
-    pcolor([0 1],P["depth"], reshape(P["cphist"],(size(P["cphist"])...,1)),cmap=cmap)
+    pcolormesh([0 1],P["depth"], reshape(P["cphist"],(size(P["cphist"])...,1)),cmap=cmap)
     gca().invert_yaxis()
 
     sca(ax[5])
