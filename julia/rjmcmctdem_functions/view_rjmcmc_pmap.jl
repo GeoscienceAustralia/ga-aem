@@ -14,9 +14,9 @@ function view_rjmcmc_pmap(P, TM=Dict())
         0.05 0.50 0.325 0.530;
         0.05 0.50 0.100 0.305;
 
-        0.55 0.99 0.82 0.98;
-        0.55 0.94 0.05 0.70;
-        0.95 0.99 0.05 0.70;
+        0.57 0.99 0.82 0.98;
+        0.57 0.94 0.05 0.74;
+        0.95 0.99 0.05 0.74;
 
         ]
 
@@ -66,15 +66,18 @@ function view_rjmcmc_pmap(P, TM=Dict())
     semilogy(P["cvs"],permutedims(P["misfit"]/P["ndata"]));
     ylabel("Normalised misfit");
     ylim([0.09;100]);
+    xticks([])
 
     sca(ax[2]);
     semilogy(P["cvs"],permutedims(P["temperature"]));
     ylim([0.9; maximum(P["temperature"])*1.1]);
     ylabel("Temperature");
+    xticks([])
 
     sca(ax[3]);
     plot(P["cvs"],permutedims(P["nlayers"]))
     ylabel("#Layers");
+    xticks([])
 
     sca(ax[4]);
     plot(P["cvs"],P["ar_valuechange"][1,:],"-m")
