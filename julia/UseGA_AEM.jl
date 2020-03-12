@@ -1,6 +1,6 @@
 module UseGA_AEM
 using Libdl
-using Cxx 
+using Cxx
 
 mutable struct EMforward
     TLM  :: Cxx.CxxCore.CppPtr
@@ -16,32 +16,35 @@ mutable struct EMforward
     SZHM :: Array{Float64, 1}
     tLM  :: Array{Float64, 1} # only because I don't know how to get time from TLM C++ class
     tHM  :: Array{Float64, 1}
-end    
+end
 
 function init_GA_AEM()
     #CXXJL_ROOTDIR should be set at least when first time installing Cxx
     #export CXXJL_ROOTDIR=/apps/gcc/5.2.0
-    
+
     # Importing shared library and header file
     path_to_lib = "./"
     addHeaderDir(path_to_lib, kind=C_System)
 
     ga_aem_path = "../"
-    
+
     # Julia compiler also needs to find headers in these dirs
     addHeaderDir(ga_aem_path*"/src", kind=C_System)
     addHeaderDir(ga_aem_path*"/submodules/cpp-utils/src/", kind=C_System)
-    addHeaderDir("/apps/fftw3/3.3.7-gcc/include", kind=C_System)
-    
+    addHeaderDir("/usr/local/include", kind=C_System)
+
     cxxinclude("gatdaem1d_julia.h")
     Libdl.dlopen(path_to_lib * "/gatdaem1d_julia.so", Libdl.RTLD_GLOBAL)
-    
+
+    # needs fftw3 as well
+    Libdl.dlopen("libfftw3.so", Libdl.RTLD_GLOBAL)
+
     # Create the cTDEmSystem class object
     stmfile_LM = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-LM.stm"
     TLM = @cxxnew cTDEmSystem(pointer(stmfile_LM));
     stmfile_HM = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-HM.stm"
     THM = @cxxnew cTDEmSystem(pointer(stmfile_HM));
-    
+
     # Allocate reusable storage for outputs
     PX = 0.0
     PY = 0.0
@@ -55,11 +58,11 @@ function init_GA_AEM()
     SXHM = Array{Float64, 1}(undef,nwindowsHM)
     SYHM = Array{Float64, 1}(undef,nwindowsHM)
     SZHM = Array{Float64, 1}(undef,nwindowsHM)
-   
+
     # get the centres of the window times
     tLM = getstmtime(stmfile_LM)
     tHM = getstmtime(stmfile_HM)
-    
+
     # call it once bug
     # Set the input arrays
     geometryLM   = [35.0,0.0,0.0,0.0,-17.0,0.0,+2.0,0.0,0.0,0.0]
@@ -79,7 +82,7 @@ function init_GA_AEM()
 end
 
 function(em::EMforward)()
-    
+
     # Set the input arrays
     geometryLM   = [35.0,0.0,0.0,0.0,-17.0,0.0,+2.0,0.0,0.0,0.0]
     geometryHM   = [35.0,0.0,0.0,0.0,-17.0,0.0,+0.2,0.0,0.0,0.0]
@@ -98,25 +101,25 @@ end
 mutable struct Geometry
     geometryLM  :: Array{Float64, 1}
     geometryHM  :: Array{Float64, 1}
-end    
+end
 
 function Geometry(;ztxLM  = 35.0,
                    ztxHM  = 35.0,
                    rrx  =  -17.0,
-                   dzrxLM =  2.0, 
+                   dzrxLM =  2.0,
                    dzrxHM =  0.2
                  )
     @assert ztxLM  > 0.0
-    @assert ztxHM  > 0.0   
+    @assert ztxHM  > 0.0
     @assert rrx  < 0.0
     @assert dzrxLM > 0.0
     @assert dzrxHM > 0.0
-    
+
     geometryLM   = [ztxLM,0.0,0.0,0.0,rrx,0.0,dzrxLM,0.0,0.0,0.0]
     geometryHM   = [ztxHM,0.0,0.0,0.0,rrx,0.0,dzrxHM,0.0,0.0,0.0]
 
     Geometry(geometryLM, geometryHM)
-end    
+end
 
 
 function (em::EMforward)(g::Geometry, conductivity::Array{Float64, 1}, thickness::Array{Float64, 1})
@@ -132,7 +135,7 @@ end
 mutable struct EMoperator
     em :: EMforward
     g  :: Geometry
-end    
+end
 
 function (op::EMoperator)(ztxLM::Float64, ztxHM::Float64, conductivity::Array{Float64, 1}, thickness::Array{Float64,1 })
     op.g.geometryLM[1] = ztxLM
@@ -143,7 +146,7 @@ end
 mutable struct Sounding
     dataLM    :: Array{Float64, 1}
     dataHM    :: Array{Float64, 1}
-    sdLM      :: Array{Float64, 1}   
+    sdLM      :: Array{Float64, 1}
     sdHM      :: Array{Float64, 1}
     x         :: Array{Float64, 1}
     ztx       :: Float64
@@ -162,11 +165,11 @@ function getstmtime(fname)
             end
         elseif occursin("WindowTimes End", line)
             break
-        else   
+        else
             startfrom = findlast('\t', line) + 1
             push!(w, permutedims(parse.(Float64, split(line[startfrom:end]," "))))
         end
-    end 
+    end
    dropdims(10 .^(0.5*sum(log10.(reduce(vcat, w)), dims=2)), dims=2)
 end
 
