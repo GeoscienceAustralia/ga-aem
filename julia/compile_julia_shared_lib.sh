@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export NCI_GXX_ABI_WARNING=1
+#export NCI_GXX_ABI_WARNING=1
 
 #Set the directory path for dependencies
 export srcdir='../src'
@@ -13,11 +13,17 @@ module load fftw3/3.3.7-gcc #Use the same module as Julia just to be sure
 module list
 
 rm gatdaem1d_julia.so
+
+#make work even if fftw is already in ld paths
+if [ $FFTW_DIR ]; then
+  libstr="-L$FFTW_DIR"
+fi
+
 #Compile as shared lib
 g++ -fPIC -shared -O3 $cxxflags \
 -I$srcdir \
 -I$cpputilssrc \
--L$FFTW_DIR -lfftw3 \
+$libstr -lfftw3 \
 $cpputilssrc/general_utils.cpp \
 $cpputilssrc/file_utils.cpp \
 gatdaem1d_julia.cpp \

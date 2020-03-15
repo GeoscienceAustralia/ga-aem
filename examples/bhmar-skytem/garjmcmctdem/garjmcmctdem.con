@@ -55,7 +55,7 @@ Control Begin
 		DataFile = ..\data\bhmar-skytem.dat
 		HeaderLines = 0
 		FirstRecord = 1
-		LastRecord  = Inf
+		LastRecord  = 1
 		Subsample   = 5
 
 		Columns Begin
