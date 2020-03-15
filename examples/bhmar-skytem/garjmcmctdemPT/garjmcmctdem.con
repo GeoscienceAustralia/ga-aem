@@ -38,10 +38,12 @@ Control Begin
 		SaveChains     = Yes
 		SaveChainsRate = 1
 
-		NChains  =  4
-		NSamples =  100000
-		NBurnIn  =  10000
-		ThinRate =  100
+		NChains         =  4
+		NSamples        =  100000
+		NBurnIn         =  10000
+		ThinRate        =  100
+		HighTemperature =  2.5
+
 
 		NLayersMin  =   1
 		NLayersMax  =  20

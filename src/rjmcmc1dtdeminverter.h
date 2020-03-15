@@ -295,23 +295,23 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	
 	void initialise_sampler()
 	{
-		cBlock b = Control.findblock("Sampler");				
+		cBlock b = Control.findblock("Sampler");
 		nl_min = (size_t)b.getintvalue("NLayersMin");
 		nl_max = (size_t)b.getintvalue("NLayersMax");
 
 		pmax = b.getdoublevalue("DepthMax");
 		std::string str = b.getstringvalue("DepthScaling");
 		param_position = cParameterization(str);
-		if(param_position.islog10()) {			
+		if (param_position.islog10()) {
 			pmax = std::log10(pmax);
-		}		
+		}
 		size_t ndepth = (size_t)b.getintvalue("NDepthCells");
 
 		vmin = b.getdoublevalue("ConductivityMin");
 		vmax = b.getdoublevalue("ConductivityMax");
 		str = b.getstringvalue("ConductivityScaling");
 		param_value = cParameterization(str);
-		if (param_value.islog10()) {			
+		if (param_value.islog10()) {
 			vmin = std::log10(vmin);
 			vmax = std::log10(vmax);
 		}
@@ -322,9 +322,13 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		size_t nc = b.getsizetvalue("NChains");
 		chains.resize(nc);
 		nsamples = b.getsizetvalue("NSamples");
-		nburnin  = b.getsizetvalue("NBurnIn");
+		nburnin = b.getsizetvalue("NBurnIn");
 		thinrate = b.getsizetvalue("ThinRate");
-		
+						
+		if(b.getvalue("HighTemperature", temperature_high) == false){
+			temperature_high = 2.5;
+		}
+
 		for (size_t i = 0; i < rjMcMCNuisance::number_of_types(); i++) {
 			std::string str = strprint("Nuisance%lu", i + 1);
 			cBlock c = b.findblock(str);
