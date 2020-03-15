@@ -305,23 +305,23 @@ public:
 		int crcol1, crcol2, tcol1, tcol2;
 		int cp10col1, cp10col2;
 		int cp90col1, cp90col2;
-		sscanf(lstr.c_str(), "Column %d", &lcol); lcol--;
-		sscanf(xstr.c_str(), "Column %d", &xcol); xcol--;
-		sscanf(ystr.c_str(), "Column %d", &ycol); ycol--;
-		sscanf(estr.c_str(), "Column %d", &ecol); ecol--;
+		std::sscanf(lstr.c_str(), "Column %d", &lcol); lcol--;
+		std::sscanf(xstr.c_str(), "Column %d", &xcol); xcol--;
+		std::sscanf(ystr.c_str(), "Column %d", &ycol); ycol--;
+		std::sscanf(estr.c_str(), "Column %d", &ecol); ecol--;
 
-		sscanf(crstr.c_str(), "Column %d-%d", &crcol1, &crcol2); crcol1--; crcol2--;
+		std::sscanf(crstr.c_str(), "Column %d-%d", &crcol1, &crcol2); crcol1--; crcol2--;
 		nlayers = crcol2 - crcol1 + 1;
 
 		if(spreadfade){
-			sscanf(cp10str.c_str(), "Column %d-%d", &cp10col1, &cp10col2); cp10col1--; cp10col2--;
-			sscanf(cp90str.c_str(), "Column %d-%d", &cp90col1, &cp90col2); cp90col1--; cp90col2--;
+			std::sscanf(cp10str.c_str(), "Column %d-%d", &cp10col1, &cp10col2); cp10col1--; cp10col2--;
+			std::sscanf(cp90str.c_str(), "Column %d-%d", &cp90col1, &cp90col2); cp90col1--; cp90col2--;
 		}
 
 		bool isconstantthickness = false;
 		std::vector<double> constantthickness;
 		std::string tstr = input.getstringvalue("Thickness");
-		if(sscanf(tstr.c_str(), "Column %d-%d", &tcol1, &tcol2) == 2){
+		if(std::sscanf(tstr.c_str(), "Column %d-%d", &tcol1, &tcol2) == 2){
 			tcol1--; tcol2--;	
 			isconstantthickness = false;
 		}
@@ -547,6 +547,10 @@ public:
 		Color AirColor(0,255,255,255);
 		Color NullsColor(255,128,128,128);
 
+		//Unit vec in section direction
+		cVec u(dx, dy, 0.0);
+		u.unitise();
+
 		int hp1 = wh2lx(h1);
 		int hp2 = wh2lx(h2);
 		int vp1 = wv2ly(v1);
@@ -556,49 +560,55 @@ public:
 			double yp = y0 + (double)i*dy;
 
 			double mind=DBL_MAX;
-			int mini;
+			int mini=-1;
 			for(int si=0; si<nsamples; si++){
-				double d = distance(0.0,0.0,xp-x[si],yp-y[si]);
+				//double d = distance(0.0,0.0,xp-x[si],yp-y[si]);
+				//Projected distance along section to sample
+				cVec v(xp - x[si], yp - y[si], 0.0);
+				double d = std::abs(u.dot(v));
 				if(d<mind){
 					mini = si;
 					mind = d;
 				}
 			}
-
-
+			
 			for(int j=vp2; j<=vp1; j++){				
-				pBitmap->SetPixel(i,j,BkgColor);
-
+				pBitmap->SetPixel(i,j,BkgColor);				
+				
 				double zp = v2 - (double)j*dv;
 				if(zp>e[mini]){
 					pBitmap->SetPixel(i,j,AirColor);					
 				}
-				else{					
-					for(int li=0; li<nlayers; li++){
-						if(zp < z[mini][li] && zp >= z[mini][li+1]){
-							double conductivity = c[mini][li];							
-							if(conductivity < 0.0){
-								pBitmap->SetPixel(i,j,NullsColor);
+				else{	
+					if (mind > (dh * 2)) {
+						//if more than 2 pixels away then leave it null
+						continue;
+					}
+					for (int li = 0; li < nlayers; li++) {
+						if (zp < z[mini][li] && zp >= z[mini][li + 1]) {
+							double conductivity = c[mini][li];
+							if (conductivity < 0.0) {
+								pBitmap->SetPixel(i, j, NullsColor);
 							}
-							else{							
+							else {
 								int ind;
-								if(Log10Stretch) ind = cStretch::log10stretch(conductivity,LowClip,HighClip);
+								if (Log10Stretch) ind = cStretch::log10stretch(conductivity, LowClip, HighClip);
 								else ind = cStretch::linearstretch(conductivity, LowClip, HighClip);
 
-								Color clr(255,m_cmap.r[ind],m_cmap.g[ind],m_cmap.b[ind]);
+								Color clr(255, m_cmap.r[ind], m_cmap.g[ind], m_cmap.b[ind]);
 
-								if(spreadfade){
+								if (spreadfade) {
 									double conductivity_p10 = cp10[mini][li];
 									double conductivity_p90 = cp90[mini][li];
 									double spread = log10(conductivity_p90) - log10(conductivity_p10);
-									double fade   = fadevalue(spread);
-									fadecolor(clr,fade);
-								}								
-								pBitmap->SetPixel(i,j,clr);
+									double fade = fadevalue(spread);
+									fadecolor(clr, fade);
+								}
+								pBitmap->SetPixel(i, j, clr);
 							}
 							break;
-						}						
-					}										
+						}
+					}					
 				}//layer loop
 			}//v pixel loop
 		}//h pixel loop		
