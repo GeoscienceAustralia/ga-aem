@@ -653,7 +653,8 @@ public:
 	size_t nsamples;
 	size_t nburnin;
 	size_t thinrate;
-		
+	double temperature_high;//lowest is always 1.0
+	
 	bool BirthDeathFromPrior;
 	
 	rjMcMC1DPPDMap pmap;
@@ -980,8 +981,7 @@ public:
 	}
 
 	std::vector<double> get_temperature_ladder() {
-		std::vector<double> t = log10space(1.0, 2.5, nchains());
-		//std::vector<double> t = log10space(1.0, 4.605, nchains());
+		std::vector<double> t = log10space(1.0, temperature_high, nchains());		
 		return t;
 	}
 

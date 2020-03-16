@@ -304,12 +304,13 @@ public:
 		int k = 0;
 		for (int i = 0; i < nhpixels; i++){
 			double hp = h0 + (double)i*dh;
-
-			while (k < D.linedistance.size() - 1 
-				   && std::abs(D.linedistance[k] - hp) > 
-				      std::abs(D.linedistance[k + 1] - hp))
-			{
+			while (k < D.linedistance.size() - 1 && std::abs(D.linedistance[k] - hp) > std::abs(D.linedistance[k + 1] - hp)){
 				k++;
+			}
+
+			bool is_in_gap = false;
+			if (std::abs(D.linedistance[k] - hp) > (2.0 * dh)) {
+				is_in_gap = true;
 			}
 			
 			int a = k;
@@ -335,6 +336,11 @@ public:
 
 			for(int j=vp1; j<=vp0; j++){				
 				bm.SetPixel(i,j,BkgColor);
+
+				if (is_in_gap) {
+					bm.SetPixel(i, j, AirColor);
+					continue;
+				}
 
 				double zp = v1 - (double)j*dv;
 				if(zp>D.e[k]){
@@ -382,12 +388,15 @@ public:
 		for (int i = 0; i <= nhpixels; i++) {
 			double hp = h0 + (double)i*dh;
 
-			while (mini < D.linedistance.size() - 1 && std::abs(D.linedistance[mini] - hp) > std::abs(D.linedistance[mini + 1] - hp)) {
+			while (mini < D.linedistance.size() - 1 && 
+				std::abs(D.linedistance[mini] - hp) > 
+				std::abs(D.linedistance[mini + 1] - hp)) {
 				mini++;
 			}
+			
 
 			for (int j = vp1; j <= vp0; j++) {
-				b.SetPixel(i, j, BkgValue);
+				b.SetPixel(i, j, BkgValue);				
 
 				double zp = v1 - (double)j*dv;
 				if (zp > D.e[mini]) {
@@ -397,7 +406,7 @@ public:
 					for (int li = 0; li < D.nlayers; li++) {
 						if (zp < D.z[mini][li] && zp >= D.z[mini][li + 1]) {
 							double conductivity = D.c[mini][li];
-							if (conductivity < 0.0) {
+							if (conductivity < 0.0){
 								b.SetPixel(i, j, NullsValue);
 							}
 							else {
