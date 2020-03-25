@@ -340,6 +340,8 @@ private:
 public:
 	std::string DataFile;
 	std::string Logfile;
+	bool PositiveLayerTopDepths = false;
+	bool NegativeLayerTopDepths = false;
 	bool PositiveLayerBottomDepths = false;
 	bool NegativeLayerBottomDepths = false;
 	bool InterfaceElevations = false;
@@ -366,6 +368,8 @@ public:
 		Logfile = b.getstringvalue("LogFile");				
 		fixseparator(Logfile);
 
+		PositiveLayerTopDepths = b.getboolvalue("PositiveLayerTopDepths");
+		NegativeLayerTopDepths = b.getboolvalue("NegativeLayerTopDepths");
 		PositiveLayerBottomDepths = b.getboolvalue("PositiveLayerBottomDepths");
 		NegativeLayerBottomDepths = b.getboolvalue("NegativeLayerBottomDepths");
 		InterfaceElevations = b.getboolvalue("InterfaceElevations");
@@ -2277,13 +2281,33 @@ class cSBSInverter{
 			buf += strprint("%9.2lf", thickness[i]);
 		}
 
+		if (OO.PositiveLayerTopDepths) {
+			OI.addfield("depth_top", 'F', 9, 2, nlayers);
+			OI.setunits("m"); OI.setcomment("Depth to top of layer");
+			double tsum = 0.0;
+			for (size_t i = 0; i < nlayers; i++) {
+				buf += strprint("%9.2lf", tsum);
+				tsum += thickness[i];
+			}
+		}
+
+		if (OO.NegativeLayerTopDepths) {
+			OI.addfield("depth_top_negative", 'F', 9, 2, nlayers);
+			OI.setunits("m"); OI.setcomment("Negative of depth to top of layer");
+			double tsum = 0.0;
+			for (size_t i = 0; i < nlayers; i++) {
+				buf += strprint("%9.2lf", -tsum);
+				tsum += thickness[i];
+			}
+		}
+
 		if (OO.PositiveLayerBottomDepths) {
 			OI.addfield("depth_bottom", 'F', 9, 2, nlayers);
 			OI.setunits("m"); OI.setcomment("Depth to bottom of layer");
 			double tsum = 0.0;
 			for (size_t i = 0; i < nlayers; i++) {
-				buf += strprint("%9.2lf", tsum);
 				tsum += thickness[i];
+				buf += strprint("%9.2lf", tsum);				
 			}
 		}
 
