@@ -83,7 +83,7 @@ function runMCMC(nsamples)
 	params = Dict()
 
 	#width of proposal distribution for conductivity and thickness
-	params["rSD"] = [ones(nlayers);50*ones(nlayers-1)];
+	params["rSD"] = [0.1*ones(nlayers);10*ones(nlayers-1)];
 
 	#prior is a uniform dist over some bounds. log for conductivity
 	params["rmin"] = [-3*ones(nlayers);zeros(nlayers-1)];
@@ -101,15 +101,19 @@ function runMCMC(nsamples)
 	misfit = get_misfit(x);
 
 	#store samples and misfits
-	X = zeros(nsamples,length(x));
+	max_depth = 300;
+	ncells = 61;
+	X = zeros(nsamples,ncells);
+	Xct = zeros(nsamples,length(x))
 	chi2by2 = zeros(nsamples,1);
 
 	#run the loop. This obviously must be serial because next sample
 	#depends on current state.
-
 	for i = 1:nsamples
 		x, misfit, accept = MCMCstep(x,misfit,params);
-		X[i,:] = x;
+		#store the model as conductivity-depth for easier analysis
+		X[i,:] = ct2cd(x,max_depth,ncells);
+		Xct[i,:] = x;
 		chi2by2[i] = misfit;
 		if accept
 			accepted += 1;
@@ -119,7 +123,20 @@ function runMCMC(nsamples)
 
 	println(accepted/nsamples)
 
-	X,chi2by2
+	X,Xct,chi2by2
 end
 
+function ct2cd(x,max_depth,ncells)
+	c = x[1:length(x)÷2 + 1];
+	#interface depths
+	st = cumsum(x[length(x)÷2 + 2:end]);
 
+	#fill in each layer
+	cdarr = c[end]*ones(ncells);
+	d = range(0,max_depth,length=ncells);
+	for i = length(st):-1:1
+		cdarr[d .< st[i]] .= c[i]
+	end
+
+	cdarr
+end
