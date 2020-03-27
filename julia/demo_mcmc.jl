@@ -1,6 +1,40 @@
 #simple MCMC to sample a Gaussian in Julia
-using Random
+any(pwd() .== LOAD_PATH) || push!(LOAD_PATH, pwd())
+using UseGA_AEM, Random
 
+#forward
+
+#system geometry constants
+const ztxLM = 35.0;
+const ztxHM = 35.0;
+const rrx = -17.0;
+const dzrxLM = 2.0;
+const dzrxHM = 0.2;
+
+#cpp struct geometry
+g = UseGA_AEM.Geometry(ztxLM = ztxLM,
+						   ztxHM = ztxHM,
+						   rrx = rrx,
+						   dzrxLM = dzrxLM,
+						   dzrxHM = dzrxHM);
+
+#initialise AEM system (other params are hard-wired in the
+#C++ or the julia module for now)
+em = UseGA_AEM.init_GA_AEM();
+
+#forward function
+f = UseGA_AEM.EMoperator(em,g);
+function forward(x)
+	f(ztxLM,ztxHM,x[1:length(x)÷2+1],x[length(x)÷2+1:end])
+	[f.em.SZLM;f.em.SZHM]
+end
+
+#make synth data
+function noisy_forward(x; nmag=3.0)
+	signal = forward(x)
+	noise = 1.0 .+ nmag/100 .* randn(size(signal))
+	signal .* noise
+end
 
 #functions
 function MCMCstep(x,misfit,params)
@@ -14,7 +48,7 @@ function MCMCstep(x,misfit,params)
 	end
 
 	if !priorViolate
-		newmisfit = get_misfit(xNew,params);
+		newmisfit = get_misfit(xNew);
 		logalpha = -1/params["T"] * (newmisfit - misfit);
 		# println(logalpha)
 		if log(rand()) < logalpha
@@ -27,28 +61,34 @@ function MCMCstep(x,misfit,params)
 	x, misfit, accept
 end
 
-function get_misfit(x,params)
-	res = x - params["mu"];
-	m = (res' * params["Ci"] * res)/2;
-	m[1]
+Random.seed!(2);
+true_c = [0.01,1.0,0.01];
+true_t = [50,50];
+noisy_data = noisy_forward([true_c;true_t]);
+σ2 = (0.03*abs.(noisy_data)).^2;
+
+function get_misfit(logc_x,nmag=σ2)
+	x = copy(logc_x);
+	x[1:length(x)÷2+1] = 10 .^ logc_x[1:length(logc_x)÷2+1];
+	response = forward(x);
+	res = response - noisy_data;
+	sum((res.^2)./(2*σ2))
 end
 
-function runMCMC()
-	nsamples = 100000;
+function runMCMC(nsamples)
 
-	#parameters of the distribution to be sampled
+	nlayers = 3;
+
+	#parameters for the proposal and prior
 	params = Dict()
-	params["C"] = [1 0.6;0.6 0.5];
-	params["Ci"] = inv(params["C"]);
-	params["mu"] = [1;1];
 
-	#width of proposal distribution
+	#width of proposal distribution for conductivity and thickness
+	params["rSD"] = [ones(nlayers);50*ones(nlayers-1)];
 
-	params["rSD"] = [1;1];
+	#prior is a uniform dist over some bounds. log for conductivity
+	params["rmin"] = [-3*ones(nlayers);zeros(nlayers-1)];
+	params["rmax"] = [1.5*ones(nlayers);100*ones(nlayers-1)];
 
-	#prior is a uniform dist over some bounds
-	params["rmin"] = [-2;-2];
-	params["rmax"] = [4;4];
 
 	Random.seed!(2);
 
@@ -58,7 +98,7 @@ function runMCMC()
 	params["T"] = 1.0;
 	#track acceptance ratio and aim for 20-ish percent
 	accepted = 0;
-	misfit = get_misfit(x,params);
+	misfit = get_misfit(x);
 
 	#store samples and misfits
 	X = zeros(nsamples,length(x));
@@ -77,7 +117,7 @@ function runMCMC()
 
 	end
 
-	println(accepted)
+	println(accepted/nsamples)
 
 	X,chi2by2
 end
