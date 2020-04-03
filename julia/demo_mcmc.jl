@@ -45,10 +45,9 @@ noisy_data = noisy_forward([true_c;true_t]);
 
 ndata = length(noisy_data);
 
-rms_err = sqrt(sum(((noisy_data-true_response)./true_response).^2)/ndata);
+rms_err = sqrt(sum(((noisy_data-true_response)./noisy_data).^2)/ndata);
 println(rms_err);
 
-#MLE of the multiplicative noise variance
 
 #this is the maximally-costly misfit calculator.
 #it does a full computation of the forward model to compute residuals.
@@ -62,7 +61,7 @@ function get_misfit(logc_x,nmag,d2vec=noisy_data.^2)
 end
 
 #functions
-function MCMCstep(x,nmag,misfit,params;max_depth=max_dept,ndata=ndata)
+function MCMCstep(x,nmag,misfit,params;max_depth=max_depth)
 	priorViolate = false;
 	accept = false;
 	xNew = copy(x);
@@ -117,7 +116,7 @@ function runMCMC(nsamples;max_depth=max_depth)
 	params = Dict()
 
 	#width of proposal distribution for conductivity and thickness
-	params["rSD"] = [0.01*ones(nlayers);1*ones(nlayers-1)];
+	params["rSD"] = [0.1*ones(nlayers);10*ones(nlayers-1)];
 
 	#prior is a uniform dist over some bounds. log for conductivity
 	params["rmin"] = [-3*ones(nlayers);zeros(nlayers-1)];
@@ -126,9 +125,9 @@ function runMCMC(nsamples;max_depth=max_depth)
 	#initialise min and max for noise variance proposal
 	params["nmin"] = 0.01;
 	params["nmax"] = 0.1;
-	params["nSD"] = 0.005;
+	params["nSD"] = 0.01;
 
-	Random.seed!(2);
+	Random.seed!(5);
 
 	#initialise the chain state by sampling from the prior
 	tooDeep = true;
@@ -197,5 +196,5 @@ end
 #adds a normalising term to the ratio of likelihoods, and also doesn't
 #require re-computing the forward
 function noisemove_misfit_ratio(misfit,nmag,nmag_new,ndata)
-	2*ndata*(log(nmag_new)-log(nmag)) + misfit*((nmag/nmag_new)^2 - 1)
+	ndata*(log(nmag_new)-log(nmag)) + misfit*((nmag/nmag_new)^2 - 1)
 end
