@@ -35,8 +35,8 @@ function noisy_forward(x,anmag; nmag=0.03)
 	signal = forward(x);
 	noise = 1.0 .+ nmag .* randn(size(signal));
 
-	#don't want it being negative
-	abs.((signal .* noise) .+ anmag .* randn(size(signal)));
+	#don't want it being positive
+	-1*abs.((signal .* noise) .+ anmag .* randn(size(signal)));
 end
 
 Random.seed!(2);
@@ -47,7 +47,7 @@ true_response = forward([true_c;true_t]);
 ndata = length(true_response);
 
 #additive noise magnitudes
-amag = 1e-13 * ones(ndata);
+amag = 5e-13 * ones(ndata);
 
 noisy_data = noisy_forward([true_c;true_t],amag);
 
@@ -62,11 +62,12 @@ avar = (amag ./ noisy_data).^2;
 #use the noisemove_misfit_ratio function for noise magnitude changes 
 #(or noisemove_with_additive if you want additive noise as well)
 #noise variance is treated as a vector here so this works for additive noise as well
-function get_misfit(logc_x,var,d2vec=noisy_data.^2)
+function get_misfit(logc_x,var,dvec=noisy_data)
 	x = copy(logc_x);
+	d2vec = dvec.^2;
 	x[1:length(x)÷2+1] = 10 .^ logc_x[1:length(logc_x)÷2+1];
 	response = forward(x);
-	res = response - noisy_data;
+	res = response - dvec;
 	sum((res.^2)./(2*var .* d2vec)), (res.^2)./d2vec
 end
 
@@ -107,7 +108,6 @@ function MCMCstep(x,nmag,var,misfit,res,params;max_depth=max_depth)
 			var_new = var .- nmag^2 .+ nmag_new^2;
 			logalpha = -1/params["T"] * noisemove_with_additive(res,var,var_new);
 			if log(rand()) < logalpha
-				#chi^2 scales quite simply - don't need the normalising term for this
 				misfit = sum(res./(2*var_new));
 				nmag = nmag_new;
 				var = var_new;
@@ -156,17 +156,20 @@ function runMCMC(nsamples;max_depth=max_depth)
 	nmag = params["nmin"] + (params["nmax"]-params["nmin"])*rand();
 	var = avar .+ nmag^2;
 
+	println(var)
+
 	#can change the temperature to implement PT if desired
 	params["T"] = 1.0;
-	#track acceptance ratio and aim for 20-ish percent
+	#track acceptance ratio and aim for 20-ish percent (?)
 	accepted = 0;
 	misfit, res = get_misfit(x,var);
+	println(res);
 
 	#store samples and misfits
 	max_depth = 300;
 	ncells = 61;
 	X = zeros(nsamples,ncells);
-	Xct = zeros(nsamples,length(x))
+	Xct = zeros(nsamples,length(x));
 	chi2by2 = zeros(nsamples,1);
 	nmag_vec = zeros(nsamples,1);
 
@@ -205,13 +208,7 @@ function ct2cd(x,max_depth,ncells)
 	cdarr
 end
 
-#this needs to be a separate function because changing noise amplitude
-#adds a normalising term to the ratio of likelihoods, and also doesn't
-#require re-computing the forward
-function noisemove_misfit_ratio(misfit,nmag,nmag_new,ndata)
-	ndata*(log(nmag_new)-log(nmag)) + misfit*((nmag/nmag_new)^2 - 1)
-end
-
 function noisemove_with_additive(residuals,var,var_new)
-	1/2 * sum(log.(var_new) - log.(var) +  (1 ./ var_new - 1 ./ var).*residuals)
+	la = 1/2 * sum(log.(var_new) - log.(var) +  (1 ./ var_new - 1 ./ var).*residuals);
+	la
 end

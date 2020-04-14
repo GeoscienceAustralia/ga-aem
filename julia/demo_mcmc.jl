@@ -26,15 +26,16 @@ em = UseGA_AEM.init_GA_AEM();
 #forward function
 f = UseGA_AEM.EMoperator(em,g);
 function forward(x)
-	f(ztxLM,ztxHM,x[1:length(x)÷2+1],x[length(x)÷2+2:end])
+	f(ztxLM,ztxHM,x[1:length(x)÷2+1],x[length(x)÷2+2:end]);
 	[f.em.SZLM;f.em.SZHM]
 end
 
 #make synth data
 function noisy_forward(x; nmag=3.0)
-	signal = forward(x)
-	noise = 1.0 .+ nmag/100 .* randn(size(signal))
-	signal .* noise
+	signal = forward(x);
+	noise = 1.0 .+ nmag/100 .* randn(size(signal));
+
+	(signal .* noise)
 end
 
 Random.seed!(2);
@@ -52,11 +53,14 @@ println(rms_err);
 #this is the maximally-costly misfit calculator.
 #it does a full computation of the forward model to compute residuals.
 #use the noisemove_misfit_ratio function for noise magnitude changes 
-function get_misfit(logc_x,nmag,d2vec=noisy_data.^2)
+#(or noisemove_with_additive if you want additive noise as well)
+function get_misfit(logc_x,nmag,dvec=noisy_data)
 	x = copy(logc_x);
+	d2vec = dvec.^2;
 	x[1:length(x)÷2+1] = 10 .^ logc_x[1:length(logc_x)÷2+1];
 	response = forward(x);
-	res = response - noisy_data;
+	res = response - dvec;
+	println(res);
 	sum((res.^2)./(2*nmag^2 * d2vec))
 end
 
@@ -116,18 +120,18 @@ function runMCMC(nsamples;max_depth=max_depth)
 	params = Dict()
 
 	#width of proposal distribution for conductivity and thickness
-	params["rSD"] = [0.1*ones(nlayers);10*ones(nlayers-1)];
+	params["rSD"] = [0.5*ones(nlayers);25*ones(nlayers-1)];
 
 	#prior is a uniform dist over some bounds. log for conductivity
-	params["rmin"] = [-3*ones(nlayers);zeros(nlayers-1)];
+	params["rmin"] = [-3*ones(nlayers);25*ones(nlayers-1)];
 	params["rmax"] = [1*ones(nlayers);100*ones(nlayers-1)];
 
 	#initialise min and max for noise variance proposal
 	params["nmin"] = 0.01;
 	params["nmax"] = 0.1;
-	params["nSD"] = 0.01;
+	params["nSD"] = 0.02;
 
-	Random.seed!(5);
+	Random.seed!();
 
 	#initialise the chain state by sampling from the prior
 	tooDeep = true;
@@ -196,5 +200,11 @@ end
 #adds a normalising term to the ratio of likelihoods, and also doesn't
 #require re-computing the forward
 function noisemove_misfit_ratio(misfit,nmag,nmag_new,ndata)
-	ndata*(log(nmag_new)-log(nmag)) + misfit*((nmag/nmag_new)^2 - 1)
+	la = ndata*(log(nmag_new)-log(nmag)) + misfit*((nmag/nmag_new)^2 - 1);
+	println(la);
+	la
+end
+
+function noisemove_with_additive(residuals,nmag,nmag_new,ndata)
+
 end
