@@ -452,7 +452,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				if (S.estimateNoiseFromModel) {
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
 						double an = S.x_additivenoise[wi];
-						double mn = 0.01 * S.x_multiplicativenoise * S.oSX[wi];
+						//do not add mult noise if we are inverting for it
+						double mn;
+						if (S.invertMultiplicativeNoise) {
+							mn = 0.0;
+						}
+						else {
+							mn = 0.01 * S.x_multiplicativenoise * S.oSX[wi];
+						}
 						S.oEX[wi] = sqrt(an * an + mn * mn);
 					}
 				}
@@ -467,7 +474,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				if (S.estimateNoiseFromModel) {
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
 						double an = S.y_additivenoise[wi];
-						double mn = 0.01 * S.y_multiplicativenoise * S.oSY[wi];
+						//do not add mult noise if we are inverting for it
+						double mn;
+						if (S.invertMultiplicativeNoise) {
+							mn = 0.0;
+						}
+						else {
+							mn = 0.01 * S.y_multiplicativenoise * S.oSY[wi];
+						}
 						S.oEY[wi] = sqrt(an * an + mn * mn);
 					}
 				}
@@ -482,7 +496,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				if (S.estimateNoiseFromModel) {
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
 						double an = S.z_additivenoise[wi];
-						double mn = 0.01 * S.z_multiplicativenoise * S.oSZ[wi];
+						//do not add mult noise if we are inverting for it
+						double mn;
+						if (S.invertMultiplicativeNoise) {
+							mn = 0.0;
+						}
+						else {
+							mn = 0.01 * S.z_multiplicativenoise * S.oSZ[wi];
+						}
 						S.oEZ[wi] = sqrt(an * an + mn * mn);
 					}
 				}
