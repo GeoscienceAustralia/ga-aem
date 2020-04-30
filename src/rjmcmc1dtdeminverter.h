@@ -30,6 +30,14 @@ public:
 	bool useTotal;
 	bool reconstructPrimary;
 	bool estimateNoiseFromModel;
+	bool invertMultiplicativeNoise;
+
+	double x_multnoise_min;
+	double x_multnoise_max;
+	double y_multnoise_min;
+	double y_multnoise_max;
+	double z_multnoise_min;
+	double z_multnoise_max;
 
 	double x_multiplicativenoise;
 	double y_multiplicativenoise;
@@ -46,7 +54,9 @@ public:
 };
 
 class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
-	
+	private:
+		const double DEFAULT_NOISE_PROPOSAL_WIDTH = 0.01;
+
 	public:
 		
 	size_t nsystems;
@@ -219,6 +229,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			S.useTotal = b.getboolvalue("InvertTotalField");
 			S.reconstructPrimary = b.getboolvalue("ReconstructPrimaryFieldFromInputGeometry");
 			S.estimateNoiseFromModel = b.getboolvalue("EstimateNoiseFromModel");
+			//flag to sample noise magnitudes using MCMC
+			S.invertMultiplicativeNoise = b.getboolvalue("InvertMultiplicativeNoise");
+			
 			S.ncomps = 0;
 			if (S.useX) {
 				S.ncomps++;
@@ -227,6 +240,11 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					S.x_multiplicativenoise = b.getdoublevalue("XMultiplicativeNoise");
 					S.x_additivenoise = b.getdoublevector("XAdditiveNoise");
 				}
+				if (S.invertMultiplicativeNoise) {
+					S.x_multnoise_min = b.getdoublevalue("XMultiplicativeNoiseMinimum");
+					S.x_multnoise_max = b.getdoublevalue("XMultiplicativeNoiseMaximum");
+				}
+
 				S.oSX.resize(S.nwindows);
 				S.oEX.resize(S.nwindows);
 			}
@@ -237,6 +255,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					S.y_multiplicativenoise = b.getdoublevalue("YMultiplicativeNoise");
 					S.y_additivenoise = b.getdoublevector("YAdditiveNoise");
 				}
+				if (S.invertMultiplicativeNoise) {
+					S.y_multnoise_min = b.getdoublevalue("YMultiplicativeNoiseMinimum");
+					S.y_multnoise_max = b.getdoublevalue("YMultiplicativeNoiseMaximum");
+				}
 				S.oSY.resize(S.nwindows);
 				S.oEY.resize(S.nwindows);
 			}
@@ -246,6 +268,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				if (S.estimateNoiseFromModel) {
 					S.z_multiplicativenoise = b.getdoublevalue("ZMultiplicativeNoise");
 					S.z_additivenoise = b.getdoublevector("ZAdditiveNoise");
+				}
+				if (S.invertMultiplicativeNoise) {
+					S.z_multnoise_min = b.getdoublevalue("ZMultiplicativeNoiseMinimum");
+					S.z_multnoise_max = b.getdoublevalue("ZMultiplicativeNoiseMaximum");
 				}
 				S.oSZ.resize(S.nwindows);
 				S.oEZ.resize(S.nwindows);
@@ -470,6 +496,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	}
 	
 	void set_data()
+	//set data *and* noise.
 	{
 		size_t di = 0;
 		for (size_t i = 0; i < nsystems; i++) {
@@ -494,6 +521,16 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					if (S.useTotal)obs[di] += S.oPX;
 					di++;
 				}
+				if (S.invertMultiplicativeNoise) {
+					//set the noise parameters
+					//hard coded proposal width for now
+					//in the con file mult noises will be expressed in percent,
+					//internally they are dealt with as ratios, so *0.01.
+					noisemag_sd.push_back(DEFAULT_NOISE_PROPOSAL_WIDTH);
+					noisemag_priorbounds.push_back(std::make_pair(0.01*S.x_multnoise_min,0.01*S.x_multnoise_max));
+					//infer data index bounds for this noise from nwindows
+					noisemag_dbounds.push_back(di - S.nwindows, di);
+				}
 			}
 			if (S.useY) {
 				for (size_t wi = 0; wi < S.nwindows; wi++) {
@@ -502,6 +539,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					if (S.useTotal)obs[di] += S.oPY;
 					di++;
 				}
+				if (S.invertMultiplicativeNoise) {
+					//set the noise parameters
+					//hard coded proposal width for now
+					noisemag_sd.push_back(DEFAULT_NOISE_PROPOSAL_WIDTH);
+					noisemag_priorbounds.push_back(std::make_pair(0.01*S.y_multnoise_min, 0.01*S.y_multnoise_max));
+					//infer data index bounds for this noise from nwindows
+					noisemag_dbounds.push_back(di - S.nwindows, di);
+				}
 			}
 			if (S.useZ) {
 				for (size_t wi = 0; wi < S.nwindows; wi++) {
@@ -509,6 +554,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					obs[di] = S.oSZ[wi];
 					if (S.useTotal)obs[di] += S.oPZ;
 					di++;
+				}
+				if (S.invertMultiplicativeNoise) {
+					//set the noise parameters
+					//hard coded proposal width for now
+					noisemag_sd.push_back(DEFAULT_NOISE_PROPOSAL_WIDTH);
+					noisemag_priorbounds.push_back(std::make_pair(0.01*S.z_multnoise_min, 0.01*S.z_multnoise_max));
+					//infer data index bounds for this noise from nwindows
+					noisemag_dbounds.push_back(di - S.nwindows, di);
 				}
 			}
 		}
