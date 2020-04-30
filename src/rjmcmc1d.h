@@ -83,7 +83,7 @@ class cParameterization {
 class cProposal {
 
 	public:
-		enum class Type { VALUECHANGE, BIRTH, DEATH, MOVE, NUISANCE };
+		enum class Type { VALUECHANGE, BIRTH, DEATH, MOVE, NUISANCE, NOISE };
 		Type type;
 		uint32_t np = 0;
 		uint32_t na = 0;
@@ -174,19 +174,41 @@ public:
 	}
 };
 
+class rjMcMCNoise {
+public:
+	double value;
+	double min;
+	double max;
+	double sd_valuechange;
+
+	std::pair<size_t, size_t> data_bounds;
+
+};
+
 class rjMcMC1DModel{
 				
 	double pmax;
 	double vmin;
 	double vmax;	
 	double misfit; 			
+
+	//parameters for noise inversion
+	//residual^2
+	std::vector<double> r2;
 	
 public:		
-	
+	//variance vector (assuming a diagonal
+	//covariance matrix for now).
+	//changes are applied to this vector when one
+	//of the noise magnitudes above changes.
+	std::vector<double> nvar;
+
 	std::vector<rjMcMC1DLayer>  layers;
 	std::vector<rjMcMCNuisance> nuisances;
+	//multiplicative noise magnitudes
+	std::vector<rjMcMCNoise> mnoises;
 	
-	void initialise(const double& maxp, const double& minv, const double& maxv)
+	void initialise(const double& maxp, const double& minv, const double& maxv, )
 	{
 		layers.clear();
 		nuisances.clear();
@@ -202,6 +224,8 @@ public:
 
 	size_t nnuisances() const {return nuisances.size();}
 
+	size_t nnoises() const { return mnoises.size(); }
+
 	size_t nparams() const
 	{
 		size_t np = 2 * nlayers() + nnuisances();
@@ -211,6 +235,17 @@ public:
 	const double& get_misfit() const { return misfit; }
 	
 	void set_misfit(const double mfit) { misfit = mfit; }
+
+	void set_residuals(std::vector<double> resrat2) {
+		r2 = resrat2;
+	}
+
+	std::vector<double> get_residuals() const {
+		std::vector<double> v;
+		v.resize(r2.size());
+		for (size_t i = 0; i<nlayers(); i++)v[i] = r2[i].value;
+		return v;
+	}
 
 	double logppd() const { return -misfit / 2.0 - std::log((double)nparams()); }
 
@@ -605,6 +640,7 @@ public:
 	std::vector<float> ar_birth;
 	std::vector<float> ar_death;
 	std::vector<float> ar_nuisancechange;		
+	std::vector<float> ar_noisechange;
 };
 
 class rjMcMC1DSampler;
@@ -620,6 +656,8 @@ public:
 	cProposal pbirth = cProposal(cProposal::Type::BIRTH);
 	cProposal pdeath = cProposal(cProposal::Type::DEATH);
 	cProposal pnuisancechange = cProposal(cProposal::Type::NUISANCE);
+	cProposal pnoisechange = cProposal(cProposal::Type::NOISE);
+
 	cChainHistory history;
 	std::vector<uint32_t> swap_histogram;	
 	double temperature;
@@ -642,6 +680,12 @@ public:
 	double samplingtime;
 
 	std::vector<rjMcMCNuisance> nuisance_init;
+	
+	//parameters for noise prior
+	std::vector<double> noisemag_sd;
+	std::vector<std::pair<size_t, size_t>> noisemag_dbounds;
+	std::vector<std::pair<double, double>> noisemag_priorbounds;
+
 	size_t  nl_min;
 	size_t  nl_max;	
 	double  pmax;	
@@ -664,8 +708,11 @@ public:
 	rjMcMC1DModel  HighestLikelihood;
 	rjMcMC1DModel  LowestMisfit;
 			
-	size_t ndata;		 	
+	size_t ndata;
 	std::vector<double> obs;
+	//initial noise variance vector.
+	//if sampling multiplicative noises this should contain
+	//the additive noise floor for each data vector element.
 	std::vector<double> err;
 	
 	static double gaussian_pdf(const double mean, const double std, const double x)
@@ -715,27 +762,74 @@ public:
 		return false;
 	}
 	
-	double l2misfit(const std::vector<double>& g)
-	{
-		double sum = 0.0;
-		for (size_t di = 0; di < ndata; di++) {
-			double nr = (obs[di] - g[di]) / err[di];
-			sum += nr * nr;
-		}
-		return sum;
-	}
+	// double l2misfit(const std::vector<double>& g)
+	// {
+	// 	double sum = 0.0;
+	// 	for (size_t di = 0; di < ndata; di++) {
+	// 		double nr = (obs[di] - g[di]) / err[di];
+	// 		sum += nr * nr;
+	// 	}
+	// 	return sum;
+	// }
 	
-	double computemisfit(const rjMcMC1DModel& m)
-	{
+	// double computemisfit(const rjMcMC1DModel& m)
+	// {
+	// 	std::vector<double> pred = forwardmodel(m);
+	// 	return l2misfit(pred);
+	// }
+
+	std::vector<double> computeresiduals(const rjMcMC1DModel& m) {
 		std::vector<double> pred = forwardmodel(m);
-		return l2misfit(pred);
+
+		//squared residuals
+		std::vector<double> res(ndata);
+
+		for (size_t di = 0; di < ndata; di++){
+			double rd = (obs[di]-pred[di])/obs[di];
+			res[di] = rd*rd;
+		}
+		return res;
 	}
 
 	void set_misfit(rjMcMC1DModel& m)
 	{
-		double mfit = computemisfit(m);
+		
+		std::vector<double> res = computeresiduals(m);
+		//double mfit = computemisfit(m);
 		//double mfit = (double)ndata;
-		m.set_misfit(mfit);
+
+		double negloglike = 0.0;
+		for (size_t di = 0; di < ndata; di++) {
+			negloglike += res[di]/(m.nvar[di]);
+			//prefactor term necessary for noise moves to work correctly
+			//see my (RT) notes for noise move with fixed additive floor
+			//to see how this works.
+			negloglike += std::log(nvar[di]);
+		}
+
+		m.set_misfit(negloglike);
+		m.set_residuals(res);
+	}
+
+	void set_misfit_noisechange(rjMcMC1DModel& m, double nv, size_t ni) {
+		//reset the misfit for a noise magnitude change, without
+		//recomputing the forward.
+		double prev_nv = m.mnoises[ni].value;
+		m.nnoises[ni].value = nv;
+		std::pair<size_t, size_t> bounds = m.mnoises[ni].data_bounds;
+
+		double var_old;
+		double negloglike = m.get_misfit();
+		for (size_t di = bounds.first; di < bounds.second; di++) {
+			//reset this variance element
+			var_old = m.nvar[di];
+			m.nvar[di] = m.nvar[di] - prev_nv * prev_nv + nv * nv;
+			//compute new misfit contribution
+
+			negloglike -= m.r2[di] / var_old + std::log(var_old);
+			negloglike += m.r2[di] / m.nvar[di] + std::log(m.nvar[di]);
+		}
+		m.set_misfit(negloglike);
 	}
 	
 	bool should_save_convergence_record(const size_t& si)
@@ -938,6 +1032,37 @@ public:
 		}
 		return false;
 	}
+
+	bool propose_noisechange(cChain& chn, rjMcMC1DModel& mpro)
+	{
+		const rjMcMC1DModel& mcur = chn.model;
+		const double& temperature = chn.temperature;
+
+		chn.pnoisechange.inc_np();
+
+		//propose a change to the multiplicative noise magnitudes.
+		//one multiplicative noise per system.
+		size_t ni = irand((size_t)0, mcur.nnoises() - 1);
+		double delta = nrand<double>() * mcur.mnoises[ni].sd_valuechange;
+		double nv = mcur.mnoises[ni].value + delta;
+		bool isvalid = isinbounds(mcur.mnoises[ni].min, mcur.mnoises[ni].max, nv);
+		if (isvalid == false) return false;
+
+		//this function will change the per-window variance vector,
+		//and recompute the misfit in an intelligent way
+		set_misfit_noisechange(mpro, nv, ni);
+		//loglr needs to take the normalising factor into account
+		//because this changes when we change the variance of the distribution.
+		//see my notes on noise changes for details.
+		double loglr = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
+		double logu = log(urand<double>());
+		if (logu < loglr) {
+			chn.pnoisechange.inc_na();
+			return true;
+		}
+		return false;
+
+	}
 	
 	bool propose_independent(cChain& chn, rjMcMC1DModel& mpro)
 	{
@@ -955,7 +1080,8 @@ public:
 		priorratio = 1.0;
 
 		double logpriorratio = std::log(priorratio);
-		double loglr = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
+		double loglr = -(mpro.get_slogvar() - mcur.get_slogvar() 
+			+ mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
 		double logar = logpriorratio + loglr;
 		double logu = std::log(urand<double>());
 		if (logu < logar) {
@@ -977,6 +1103,29 @@ public:
 			}
 		}
 		m.nuisances = nuisance_init;
+		
+		m.nvar = err;
+
+		//create the noise vector, sample the prior
+		//and set the variance values to include
+		//the sampled multiplicative noise.
+		std::vector<rjMcMCNoise> noisevec(noisemag_sd.size());
+		for (size_t ni = 0; ni < noisemag_sd.size(); ni++) {
+			rjMcMCNoise mnoise;
+			mnoise.min = noisemag_priorbounds[ni].first;
+			mnoise.max = noisemag_priorbounds[ni].second;
+			mnoise.data_bounds = noisemag_dbounds[ni];
+			//sample
+			mnoise.value = urand(mnoise.min, mnoise.max);
+			mnoise.sd_valuechange = noisemag_sd[ni];
+			m.mnoises.push_back(mnoise);
+
+			for (size_t di = mnoise.data_bounds.first; di < mnoise.data_bounds.second; di++) {
+				m.nvar[di] += mnoise.value * mnoise.value;
+			}
+			
+		}
+
 		return m;
 	}
 
@@ -1032,8 +1181,9 @@ public:
 					case 1: accept = propose_move(chn,mpro); break;
 					case 2: accept = propose_birth(chn,mpro); break;
 					case 3: accept = propose_death(chn,mpro); break;
-					case 4: accept = propose_nuisancechange(chn,mpro); break;
-					case 5: accept = propose_independent(chn,mpro); break;
+					case 4: accept = propose_noisechange(chn,mpro); break;
+					case 5: accept = propose_nuisancechange(chn,mpro); break;
+					case 6: accept = propose_independent(chn,mpro); break;
 					default: glog.errormsg(_SRC_, "Proposal option %zu out of range\n", option);
 					}
 					if (accept) mcur = mpro;
