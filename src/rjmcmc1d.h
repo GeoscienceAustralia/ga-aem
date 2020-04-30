@@ -208,7 +208,7 @@ public:
 	//multiplicative noise magnitudes
 	std::vector<rjMcMCNoise> mnoises;
 	
-	void initialise(const double& maxp, const double& minv, const double& maxv)
+	void initialise(const double& maxp, const double& minv, const double& maxv, )
 	{
 		layers.clear();
 		nuisances.clear();
