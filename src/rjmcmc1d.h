@@ -233,6 +233,15 @@ public:
 	}
 
 	const double& get_misfit() const { return misfit; }
+
+	double get_chi2() const {
+		double chi2 = 0.0;
+		for (double di = 0; di < r2.size(); di++) {
+			chi2 += r2[di]/nvar[di];
+		}
+		return chi2;
+
+	}
 	
 	void set_misfit(const double mfit) { misfit = mfit; }
 
@@ -1129,6 +1138,8 @@ public:
 			
 		}
 
+		//m.printmodel();
+
 		return m;
 	}
 
@@ -1153,6 +1164,10 @@ public:
 
 	void sample()
 	{							
+		// for (size_t di = 0; di < ndata; di++) {
+		// 	std::cout << err[di]<<" ";
+		// }
+		// std::cout << std::endl;
 		starttime = timestamp();
 		double t1 = gettime();
 		BirthDeathFromPrior = false;
@@ -1171,11 +1186,19 @@ public:
 					//Initialise chain
 					mcur = choosefromprior();
 					set_misfit(mcur);
+					for(size_t di=0; di < ndata; di++) {
+						std::cout << mcur.nvar[di] << " ";
+					}
+					std::cout << std::endl;
 				}
 				else {
 					rjMcMC1DModel mpro = mcur;
 					size_t nopt = 4;
-					if (mcur.nnuisances() > 0) nopt = 5;
+					//adaptive based on whether noise or nuisance inversion
+					//is enabled.
+					if (mcur.nnoises() > 0) nopt += 1;
+					if (mcur.nnuisances() > 0) nopt += 1;
+
 					size_t option = irand((size_t)0, nopt - 1);
 
 					bool accept = false;
@@ -1184,7 +1207,15 @@ public:
 					case 1: accept = propose_move(chn,mpro); break;
 					case 2: accept = propose_birth(chn,mpro); break;
 					case 3: accept = propose_death(chn,mpro); break;
-					case 4: accept = propose_noisechange(chn,mpro); break;
+					case 4: {
+						if (mcur.nnoises() > 0) {
+							accept = propose_noisechange(chn,mpro);
+						}
+						else {
+							accept = propose_nuisancechange(chn,mpro);
+						}
+						break;
+						}
 					case 5: accept = propose_nuisancechange(chn,mpro); break;
 					case 6: accept = propose_independent(chn,mpro); break;
 					default: glog.errormsg(_SRC_, "Proposal option %zu out of range\n", option);
@@ -1218,13 +1249,16 @@ public:
 					chn.history.temperature.push_back((float)chn.temperature);
 					chn.history.sample.push_back((uint32_t)si);
 					chn.history.nlayers.push_back((uint32_t)mcur.nlayers());
-					chn.history.misfit.push_back((float)mcur.get_misfit());
+					chn.history.misfit.push_back((float)mcur.get_chi2());
 					chn.history.logppd.push_back((float)mcur.logppd());
 					chn.history.ar_valuechange.push_back(chn.pvaluechange.ar());
 					chn.history.ar_move.push_back(chn.pmove.ar());
 					chn.history.ar_birth.push_back(chn.pbirth.ar());
 					chn.history.ar_death.push_back(chn.pdeath.ar());
 					chn.history.ar_nuisancechange.push_back(chn.pnuisancechange.ar());
+					if (mcur.nnoises() > 0) {
+						chn.history.ar_noisechange.push_back(chn.pnoisechange.ar());
+					}
 				}
 				//print_report(si, ci, mcur);
 			}
@@ -1386,6 +1420,9 @@ public:
 			write_chain_variable(ci, chn.history.ar_birth, "ar_birth", NcType::nc_FLOAT, nc, dims);
 			write_chain_variable(ci, chn.history.ar_death, "ar_death", NcType::nc_FLOAT, nc, dims);
 			write_chain_variable(ci, chn.history.ar_nuisancechange, "ar_nuisancechange", NcType::nc_FLOAT, nc, dims);
+			if (chn.model.nnoises() > 0) {
+				write_chain_variable(ci, chn.history.ar_noisechange, "ar_noisechange", NcType::nc_FLOAT, nc, dims);
+			}
 
 			write_chain_variable(ci, chn.swap_histogram, "swap_histogram", NcType::nc_UINT, nc, dchnchn);
 		}		

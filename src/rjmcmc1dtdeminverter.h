@@ -268,6 +268,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				if (S.estimateNoiseFromModel) {
 					S.z_multiplicativenoise = b.getdoublevalue("ZMultiplicativeNoise");
 					S.z_additivenoise = b.getdoublevector("ZAdditiveNoise");
+					for (size_t wi = 0; wi < S.nwindows; wi++) {
+						std::cout << wi << " " << S.z_additivenoise[wi] << std::endl;
+					}
 				}
 				if (S.invertMultiplicativeNoise) {
 					S.z_multnoise_min = b.getdoublevalue("ZMultiplicativeNoiseMinimum");

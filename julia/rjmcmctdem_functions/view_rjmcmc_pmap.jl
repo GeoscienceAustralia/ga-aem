@@ -6,7 +6,7 @@ function ct2cd(cond,thick,depth)
     cond[layerinds]
 end
 
-function view_rjmcmc_pmap(P, TM=Dict())
+function view_rjmcmc_pmap(P, TM=Dict(), noise=true)
 
     p = [
         0.05 0.50 0.775 0.980;
@@ -84,6 +84,9 @@ function view_rjmcmc_pmap(P, TM=Dict())
     plot(P["cvs"],P["ar_move"][1,:],"-b")
     plot(P["cvs"],P["ar_birth"][1,:],"-g")
     plot(P["cvs"],P["ar_death"][1,:],"-r")
+    if noise
+        plot(P["cvs"],P["ar_noisechange"][1,:],"-k")
+    end
 
 
     xlabel("Sample#");

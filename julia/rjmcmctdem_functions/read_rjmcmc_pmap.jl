@@ -1,6 +1,6 @@
 using NetCDF
 
-function read_rjmcmc_pmap(ncfilename)
+function read_rjmcmc_pmap(ncfilename, noise=true)
 
     # ncinfo(ncfilename);
 
@@ -38,6 +38,9 @@ function read_rjmcmc_pmap(ncfilename)
     P["ar_death"]       = permutedims(ncread(ncfilename,"ar_death"));
     P["swap_histogram"] = permutedims(ncread(ncfilename,"swap_histogram"));
 
-    P
+    if noise
+        P["ar_noisechange"] = permutedims(ncread(ncfilename,"ar_noisechange"));
+    end
 
+    P
 end
