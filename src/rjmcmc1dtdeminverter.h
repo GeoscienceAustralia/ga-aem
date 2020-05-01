@@ -550,7 +550,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					noisemag_sd.push_back(DEFAULT_NOISE_PROPOSAL_WIDTH);
 					noisemag_priorbounds.push_back(std::make_pair(0.01*S.x_multnoise_min,0.01*S.x_multnoise_max));
 					//infer data index bounds for this noise from nwindows
-					noisemag_dbounds.push_back(di - S.nwindows, di);
+					noisemag_dbounds.push_back(std::make_pair(di - S.nwindows, di));
 				}
 			}
 			if (S.useY) {
@@ -566,7 +566,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					noisemag_sd.push_back(DEFAULT_NOISE_PROPOSAL_WIDTH);
 					noisemag_priorbounds.push_back(std::make_pair(0.01*S.y_multnoise_min, 0.01*S.y_multnoise_max));
 					//infer data index bounds for this noise from nwindows
-					noisemag_dbounds.push_back(di - S.nwindows, di);
+					noisemag_dbounds.push_back(std::make_pair(di - S.nwindows, di));
 				}
 			}
 			if (S.useZ) {
@@ -582,7 +582,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					noisemag_sd.push_back(DEFAULT_NOISE_PROPOSAL_WIDTH);
 					noisemag_priorbounds.push_back(std::make_pair(0.01*S.z_multnoise_min, 0.01*S.z_multnoise_max));
 					//infer data index bounds for this noise from nwindows
-					noisemag_dbounds.push_back(di - S.nwindows, di);
+					noisemag_dbounds.push_back(std::make_pair(di - S.nwindows, di));
 				}
 			}
 		}

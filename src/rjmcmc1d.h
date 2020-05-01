@@ -243,7 +243,7 @@ public:
 	std::vector<double> get_residuals() const {
 		std::vector<double> v;
 		v.resize(r2.size());
-		for (size_t i = 0; i<nlayers(); i++)v[i] = r2[i].value;
+		for (size_t i = 0; i<nlayers(); i++)v[i] = r2[i];
 		return v;
 	}
 
@@ -804,7 +804,7 @@ public:
 			//prefactor term necessary for noise moves to work correctly
 			//see my (RT) notes for noise move with fixed additive floor
 			//to see how this works.
-			negloglike += std::log(nvar[di]);
+			negloglike += std::log(m.nvar[di]);
 		}
 
 		m.set_misfit(negloglike);
@@ -815,19 +815,20 @@ public:
 		//reset the misfit for a noise magnitude change, without
 		//recomputing the forward.
 		double prev_nv = m.mnoises[ni].value;
-		m.nnoises[ni].value = nv;
+		m.mnoises[ni].value = nv;
 		std::pair<size_t, size_t> bounds = m.mnoises[ni].data_bounds;
 
 		double var_old;
 		double negloglike = m.get_misfit();
+		std::vector<double> res = m.get_residuals();
 		for (size_t di = bounds.first; di < bounds.second; di++) {
 			//reset this variance element
 			var_old = m.nvar[di];
 			m.nvar[di] = m.nvar[di] - prev_nv * prev_nv + nv * nv;
 			//compute new misfit contribution
 
-			negloglike -= m.r2[di] / var_old + std::log(var_old);
-			negloglike += m.r2[di] / m.nvar[di] + std::log(m.nvar[di]);
+			negloglike -= res[di] / var_old + std::log(var_old);
+			negloglike += res[di] / m.nvar[di] + std::log(m.nvar[di]);
 		}
 		m.set_misfit(negloglike);
 	}
@@ -1080,8 +1081,7 @@ public:
 		priorratio = 1.0;
 
 		double logpriorratio = std::log(priorratio);
-		double loglr = -(mpro.get_slogvar() - mcur.get_slogvar() 
-			+ mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
+		double loglr = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
 		double logar = logpriorratio + loglr;
 		double logu = std::log(urand<double>());
 		if (logu < logar) {
@@ -1106,7 +1106,7 @@ public:
 		
 		for (size_t di = 0; di < ndata; di++) {
 			//noises are computed as a ratio against the observations
-			m.nvar.push_back((err[di]*err[di])/(obs[di]*obs[di]))
+			m.nvar.push_back((err[di]*err[di])/(obs[di]*obs[di]));
 		}
 
 		//create the noise vector, sample the prior
