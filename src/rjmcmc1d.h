@@ -1104,7 +1104,10 @@ public:
 		}
 		m.nuisances = nuisance_init;
 		
-		m.nvar = err;
+		for (size_t di = 0; di < ndata; di++) {
+			//noises are computed as a ratio against the observations
+			m.nvar.push_back((err[di]*err[di])/(obs[di]*obs[di]))
+		}
 
 		//create the noise vector, sample the prior
 		//and set the variance values to include
