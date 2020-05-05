@@ -417,6 +417,7 @@ public:
 	void addmodel(const rjMcMC1DModel& m) {
 		if (noises.size() != m.nnoises()) {
 			noises.resize(m.nnoises());
+			datalims.resize(m.nnoises());
 			for (size_t i = 0; i < m.nnoises(); i++) {
 				datalims[i] = m.mnoises[i].data_bounds;
 			}
@@ -1272,6 +1273,7 @@ public:
 		}
 		
 		for (size_t si = 0; si < nsamples; si++) {
+			std::cout<<"Sampling step " << si + 1 << " of " << nsamples << std::endl;
 			for (size_t ci = 0; ci < nchains(); ci++) {
 				cChain& chn = chains[ci];//Current chain
 				rjMcMC1DModel& mcur = chn.model;//Current model on chain
