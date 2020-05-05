@@ -683,6 +683,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		fclose(fp);
 		
 		write_maps_to_file_netcdf();
+
+		write_noise_maps();
 		
 	}
 	
@@ -894,6 +896,20 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		a = nc.putAtt("y", NcType::nc_DOUBLE, yord);
 		a = nc.putAtt("elevation", NcType::nc_DOUBLE, elevation);
 		rjMcMC1DSampler::writemapstofile_netcdf(nc);
+	}
+
+	void write_noise_maps()
+	{
+		if (SaveMaps == false) return;
+		if ((CurrentRecord - HeaderLines - FirstRecord) / SubSample % SaveMapsRate != 0)return;
+
+		std::string fileprefix = prefixstring();
+		std::string fname = MapsDirectory + fileprefix + ".npmap";
+
+		FILE* fp = fileopen(fname, "w");
+		mnmap.writedata(fp);
+		fclose(fp);
+
 	}
 	
 	cTDEmGeometry getgeometry(const rjMcMC1DModel& m)

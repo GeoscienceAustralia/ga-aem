@@ -399,6 +399,83 @@ public:
 	}
 };
 
+class rjMcMC1DNoiseMap {
+private:
+	size_t nentries = 0;
+	std::vector<std::pair<size_t,size_t>> datalims; //bounds for each noise process
+public:
+	size_t get_nentries() const { return nentries; }
+
+	std::vector<std::vector<double>> noises;
+
+	void resettozero() {
+		for (size_t i = 0; i < noises.size(); i++) {
+			noises[i].clear();
+		}
+	}
+
+	void addmodel(const rjMcMC1DModel& m) {
+		if (noises.size() != m.nnoises()) {
+			noises.resize(m.nnoises());
+			for (size_t i = 0; i < m.nnoises(); i++) {
+				datalims[i] = m.mnoises[i].data_bounds;
+			}
+		}
+
+		for (size_t i = 0; i < m.nnoises(); i++) {
+			noises[i].push_back(m.mnoises[i].value);
+		}
+		nentries++;
+	}
+
+	void writedata(FILE* fp) {
+		size_t nn = noises.size();
+		for (size_t i = 0; i < nn; i++) {
+			//do statistics and histogram for each noise process
+			cStats<double> s(noises[i]);
+			cHistogram<double, size_t> hist(noises[i],s.min,s.max,17);
+
+			fprintf(fp, "%zu %zu", datalims[i].first, datalims[i].second);
+			fprintf(fp, " %lf", s.min);
+			fprintf(fp, " %lf", s.max);
+			fprintf(fp, " %lf", s.mean);
+			fprintf(fp, " %lf", s.std);
+			fprintf(fp, " %zu", get_nentries());
+
+			fprintf(fp, " %zu", hist.nbins);
+			for (size_t j = 0; j<hist.nbins; j++){
+				fprintf(fp, " %lf", hist.centre[j]);
+			}
+			for (size_t j = 0; j<hist.nbins; j++){
+				fprintf(fp, " %zu", hist.count[j]);
+			}
+			fprintf(fp, "\n");
+		}
+		for (size_t i = 0; i<nn; i++){
+			for (size_t j = 0; j<nn; j++){
+				double cov = covariance(noises[i], noises[j]);
+				fprintf(fp, " %15.6e", cov);
+			}
+			fprintf(fp, "\n");
+		}
+
+		for (size_t i = 0; i<nn; i++){
+			for (size_t j = 0; j<nn; j++){
+				double cor = correlation(noises[i], noises[j]);
+				fprintf(fp, " %15.6e", cor);
+			}
+			fprintf(fp, "\n");
+		}
+				
+		for (size_t i = 0; i<nn; i++){
+			bwrite(fp, noises[i]);
+		}
+
+
+	}
+
+};
+
 class rjMcMC1DNuisanceMap{
 	
 private:
@@ -489,11 +566,15 @@ private:
 	size_t nlmax;
 	double pmax;
 	double vmin;
-	double vmax;	
+	double vmax;
 	size_t np;//number of positions
 	size_t nv;//number of values
 	double dp;
-	double dv;		
+	double dv;
+
+	// double nmmin;//min, max and number of bins for noise magnitude
+	// double nmmax;
+	// double nnm;
 
 public:
 	
@@ -502,6 +583,8 @@ public:
 	std::vector<uint32_t> counts;//frequency
 	std::vector<uint32_t> cpcounts;//changepoints
 	std::vector<uint32_t> layercounts;//number of layers
+
+	// std::vector<double> nmags;//multiplicative noise magnitudes
 
 	size_t get_nentries() const { return nentries; }
 
@@ -523,7 +606,7 @@ public:
 
 	size_t getvbin(double val){
 		if (val < vmin)return 0;
-		if (val >= vmax)return nv-1;				
+		if (val >= vmax)return nv-1;
 		return (size_t)((val-vmin)/dv);
 	}
 	
@@ -553,6 +636,14 @@ public:
 		for (size_t i = 0; i<nv; i++)vbin[i] = vmin + dv*((double)i+0.5);
 		resettozero();
 	}
+
+	//set up and zero the noise histogram
+	// void initialise_noises(double _nmmin, double _nmmax, size_t _nnm) {
+	// 	nmmin = _nmmin;
+	// 	nmmax = _nmmax;
+	// 	nnm = _nnm;
+	// 	nmags.assign(nnm,0);
+	// }
 	
 	void resettozero()
 	{
@@ -668,7 +759,7 @@ public:
 	cProposal pnoisechange = cProposal(cProposal::Type::NOISE);
 
 	cChainHistory history;
-	std::vector<uint32_t> swap_histogram;	
+	std::vector<uint32_t> swap_histogram;
 	double temperature;
 	rjMcMC1DModel model;
 };
@@ -712,6 +803,7 @@ public:
 	
 	rjMcMC1DPPDMap pmap;
 	rjMcMC1DNuisanceMap nmap;
+	rjMcMC1DNoiseMap mnmap;
 	std::vector<cChain> chains;	
 	std::vector<rjMcMC1DModel> ensemble;
 	rjMcMC1DModel  HighestLikelihood;
@@ -746,6 +838,7 @@ public:
 	{
 		pmap.addmodel(m);
 		nmap.addmodel(m);
+		mnmap.addmodel(m);
 	}
 	
 	virtual std::vector<double> forwardmodel(const rjMcMC1DModel& m) = 0;		
@@ -1155,6 +1248,7 @@ public:
 		samplingtime = 0;
 		pmap.resettozero();
 		nmap.resettozero();		
+		mnmap.resettozero();
 		for (size_t ci = 0; ci < nchains(); ci++) {
 			chains[ci] = cChain();
 			chains[ci].swap_histogram.resize(nchains());			
@@ -1240,6 +1334,7 @@ public:
 					if (should_include_in_maps(si)) {
 						pmap.addmodel(mcur);
 						nmap.addmodel(mcur);
+						mnmap.addmodel(mcur);
 						ensemble.push_back(mcur);
 					}		
 					print_report(si, ci, chn.temperature, mcur);
