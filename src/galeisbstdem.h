@@ -1094,22 +1094,24 @@ class cSBSInverter{
 				S.Comp[2].oP = T.PrimaryZ;
 			}
 
-			if (S.invertXPlusZ) {
+			
+			if (S.invertXPlusZ){
 				for (size_t wi = 0; wi < S.nwindows; wi++) {
 
 					//X+Z Comp
-					size_t di = wi + S.xzIndex;
+					size_t di = wi + S.xzIndex;					
+					double X = S.Comp[0].oS[wi];
+					double Z = S.Comp[2].oS[wi];					
 					if (S.invertPrimaryPlusSecondary) {
-						Obs[di] = std::hypot(S.Comp[0].oS[wi] + S.Comp[0].oP,
-							S.Comp[2].oS[wi] + S.Comp[2].oP);
+						X += S.Comp[0].oP;
+						Z += S.Comp[2].oP;
 					}
-					else {
-						Obs[di] = std::hypot(S.Comp[0].oS[wi],
-							S.Comp[2].oS[wi]);
-					}
-					Err[di] = std::hypot(S.Comp[0].oE[wi],
-						S.Comp[2].oE[wi]);
+					Obs[di] = std::hypot(X,Z);
 
+					const double& Xerr = S.Comp[0].oE[wi];
+					const double& Zerr = S.Comp[2].oE[wi];
+					Err[di] = std::hypot(X*Xerr,Z*Zerr)/Obs[di];
+					
 					//Y Comp
 					if (S.Comp[1].Use) {
 						di = S.Comp[1].dataindex + wi;
