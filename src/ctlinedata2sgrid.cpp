@@ -250,13 +250,13 @@ public:
 		std::string sgridhdrpath  = sgriddir + sgridname + ".sg";
 		FILE* fp_data = fileopen(sgriddatapath, "w");
 		fprintf(fp_data, "*\n");
-		fprintf(fp_data, "*   X   Y   Z  Conductivity  Log10Conductivity I   J   K\n");
+		fprintf(fp_data, "*   X   Y   Z  Conductivity I   J   K\n");
 		fprintf(fp_data, "*\n");
 
 		for (int wi = 0; wi < 2; wi++){
 			for (int li = 0; li <= nlayers; li++){				
 				for (int si = 0; si <= nsamples; si++){
-					double xc, yc, zc, ec, c0, lc0;					
+					double xc, yc, zc, ec, c0;					
 					cVec v;
 					if (si>0 && si<nsamples){
 						ec = (e[si - 1] + e[si]) / 2.0;
@@ -289,35 +289,30 @@ public:
 					xc = xc+vr.x;
 					yc = yc+vr.y;
 
-					c0 = lc0 = NullOutputProperty;
+					c0 = NullOutputProperty;
 					if(wi==0 && li<nlayers && si<nsamples){
 						c0 = c[si][li];
 						if(c0 == NullInputConductivity){
-							c0  = NullOutputProperty;
-							lc0 = NullOutputProperty;
+							c0  = NullOutputProperty;							
 						}
 						else if(c0 <= 0.0){
-							c0  = 1e-6;
-							lc0 = log10(c0);
+							c0  = 1e-6;							
 						}
 						else{
-							c0  = c[si][li];
-							lc0 = log10(c0);
+							c0  = c[si][li];							
 						}
 
 						if(zc<NullBelowElevation){
-							c0  = NullOutputProperty;
-							lc0 = NullOutputProperty;
+							c0  = NullOutputProperty;							
 						}
 
 						double dc=ec-zc;
 						if(dc>NullBelowDepth){
-							c0  = NullOutputProperty;
-							lc0 = NullOutputProperty;
+							c0  = NullOutputProperty;							
 						}
 					}
 
-					fprintf(fp_data, "%8.1f %9.1f %7.1f %10.6f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, lc0, si, li, wi);
+					fprintf(fp_data, "%8.1f %9.1f %7.1f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, si, li, wi);
 				}
 			}		
 		}
@@ -329,7 +324,7 @@ public:
 		fprintf(fp_hdr, "HEADER {\n");
 		fprintf(fp_hdr, "name:%s\n", sgridname.c_str());
 		fprintf(fp_hdr, "painted:true\n");
-		fprintf(fp_hdr, "*painted*variable:Log10Conductivity\n");
+		fprintf(fp_hdr, "*painted*variable:Conductivity\n");
 		fprintf(fp_hdr, "cage:false\n");
 		fprintf(fp_hdr, "volume:true\n");
 		fprintf(fp_hdr, "*volume*grid:false\n");
@@ -353,11 +348,6 @@ public:
 		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 1 -999\n");			
 
 		fprintf(fp_hdr, "\n");
-		fprintf(fp_hdr, "PROPERTY 2 Log10Conductivity\n");			
-		fprintf(fp_hdr, "PROP_UNIT 2 log10S/m\n");
-		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 2 -999\n");			
-
-		fprintf(fp_hdr, "\n");
 		fprintf(fp_hdr, "END\n");
 		fclose(fp_hdr);
 
@@ -371,12 +361,12 @@ public:
 		std::string sgridhdrpath = sgriddir + sgridname + ".sg";
 		FILE* fp_data = fileopen(sgriddatapath, "w");
 		fprintf(fp_data, "*\n");
-		fprintf(fp_data, "*   X   Y   Z  Conductivity  Log10Conductivity I   J   K\n");
+		fprintf(fp_data, "*   X   Y   Z  Conductivity  I   J   K\n");
 		fprintf(fp_data, "*\n");
 
 		for (int li = 0; li < nlayers; li++){
 			for (int si = 0; si < nsamples; si++){
-				double xc, yc, zc, ec, c0, lc0;
+				double xc, yc, zc, ec, c0;
 				cVec v;
 				if (si>=0 && si<=nsamples){
 					ec = e[si];
@@ -388,35 +378,30 @@ public:
 					printf("Error\n");
 				}
 
-				c0 = lc0 = NullOutputProperty;
+				c0 = NullOutputProperty;
 				if (li<nlayers && si<nsamples){
 					c0 = c[si][li];
 					if (c0 == NullInputConductivity){
-						c0 = NullOutputProperty;
-						lc0 = NullOutputProperty;
+						c0 = NullOutputProperty;						
 					}
 					else if (c0 <= 0.0){
-						c0 = 1e-6;
-						lc0 = log10(c0);
+						c0 = 1e-6;						
 					}
 					else{
-						c0 = c[si][li];
-						lc0 = log10(c0);
+						c0 = c[si][li];						
 					}
 
 					if (zc<NullBelowElevation){
-						c0 = NullOutputProperty;
-						lc0 = NullOutputProperty;
+						c0 = NullOutputProperty;						
 					}
 
 					double dc = ec - zc;
 					if (dc>NullBelowDepth){
-						c0 = NullOutputProperty;
-						lc0 = NullOutputProperty;
+						c0 = NullOutputProperty;						
 					}
 				}
 
-				fprintf(fp_data, "%8.1f %9.1f %7.1f %10.6f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, lc0, si, li, 0);
+				fprintf(fp_data, "%8.1f %9.1f %7.1f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, si, li, 0);
 			}
 		}
 		fclose(fp_data);
@@ -427,7 +412,7 @@ public:
 		fprintf(fp_hdr, "HEADER {\n");
 		fprintf(fp_hdr, "name:%s\n", sgridname.c_str());
 		fprintf(fp_hdr, "painted:true\n");
-		fprintf(fp_hdr, "*painted*variable:Log10Conductivity\n");
+		fprintf(fp_hdr, "*painted*variable:Conductivity\n");
 		fprintf(fp_hdr, "ascii:on\n");
 		fprintf(fp_hdr, "double_precision_binary:off\n");
 		fprintf(fp_hdr, "cage:false\n");
@@ -451,11 +436,6 @@ public:
 		fprintf(fp_hdr, "PROPERTY 1 Conductivity\n");
 		fprintf(fp_hdr, "PROP_UNIT 1 S/m\n");
 		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 1 -999\n");
-
-		fprintf(fp_hdr, "\n");
-		fprintf(fp_hdr, "PROPERTY 2 Log10Conductivity\n");
-		fprintf(fp_hdr, "PROP_UNIT 2 log10S/m\n");
-		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 2 -999\n");
 
 		fprintf(fp_hdr, "\n");
 		fprintf(fp_hdr, "END\n");
