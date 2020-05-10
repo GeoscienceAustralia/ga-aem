@@ -934,6 +934,7 @@ public:
 		case CalculationType::DT: return Mat3d::Zero();
 		default:
 			glog.errormsg(_SRC_,"Unknown calculation type %c\n", calculationtype);
+			return Mat3d::Zero();//Never reached anyway, just to placate GNU
 		}
 	}
 
@@ -952,6 +953,7 @@ public:
 		case CalculationType::DT: return dSTdT();
 		default:
 			glog.errormsg(_SRC_,"Unknown calculation type %c\n", calculationtype);
+			return Mat3cd::Zero();//Never reached anyway, just to placate GNU
 		}
 	}
 

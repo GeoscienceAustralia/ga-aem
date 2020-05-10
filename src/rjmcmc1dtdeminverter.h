@@ -894,7 +894,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	
 	std::vector<double> forwardmodel(const rjMcMC1DModel& m)
 	{
-		size_t nl = m.nlayers();
 		std::vector<double> c = m.getvalues();
 		if (param_value.islog10()){
 			pow10_apply(c);
