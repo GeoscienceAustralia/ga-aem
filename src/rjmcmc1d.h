@@ -1316,6 +1316,8 @@ public:
 					case 6: accept = propose_independent(chn,mpro); break;
 					default: glog.errormsg(_SRC_, "Proposal option %zu out of range\n", option);
 					}
+
+					// std::cout << &mcur << " " << &mpro << std::endl;
 					if (accept) mcur = mpro;
 				}
 
