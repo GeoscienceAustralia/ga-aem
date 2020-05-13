@@ -55,7 +55,7 @@ public:
 
 class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	private:
-		const double DEFAULT_NOISE_PROPOSAL_WIDTH = 0.01;
+		const double DEFAULT_NOISE_PROPOSAL_WIDTH = 0.04;
 
 	public:
 		
