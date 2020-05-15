@@ -245,14 +245,14 @@ public:
 	
 	void set_misfit(const double mfit) { misfit = mfit; }
 
-	void set_residuals(std::vector<double> resrat2) {
+	void set_residuals(const std::vector<double>& resrat2) {
 		r2 = resrat2;
 	}
 
 	std::vector<double> get_residuals() const {
 		std::vector<double> v;
 		v.resize(r2.size());
-		for (size_t i = 0; i<nlayers(); i++)v[i] = r2[i];
+		for (size_t i = 0; i<r2.size(); i++)v[i] = r2[i];
 		return v;
 	}
 
