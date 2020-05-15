@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7B2ABFFB-3AD0-4546-A41B-67F78766418F}</ProjectGuid>
+    <ProjectGuid>{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>galeisbs</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>

@@ -340,6 +340,8 @@ private:
 public:
 	std::string DataFile;
 	std::string Logfile;
+	bool PositiveLayerTopDepths = false;
+	bool NegativeLayerTopDepths = false;
 	bool PositiveLayerBottomDepths = false;
 	bool NegativeLayerBottomDepths = false;
 	bool InterfaceElevations = false;
@@ -366,6 +368,8 @@ public:
 		Logfile = b.getstringvalue("LogFile");				
 		fixseparator(Logfile);
 
+		PositiveLayerTopDepths = b.getboolvalue("PositiveLayerTopDepths");
+		NegativeLayerTopDepths = b.getboolvalue("NegativeLayerTopDepths");
 		PositiveLayerBottomDepths = b.getboolvalue("PositiveLayerBottomDepths");
 		NegativeLayerBottomDepths = b.getboolvalue("NegativeLayerBottomDepths");
 		InterfaceElevations = b.getboolvalue("InterfaceElevations");
@@ -1090,22 +1094,24 @@ class cSBSInverter{
 				S.Comp[2].oP = T.PrimaryZ;
 			}
 
-			if (S.invertXPlusZ) {
+			
+			if (S.invertXPlusZ){
 				for (size_t wi = 0; wi < S.nwindows; wi++) {
 
 					//X+Z Comp
-					size_t di = wi + S.xzIndex;
+					size_t di = wi + S.xzIndex;					
+					double X = S.Comp[0].oS[wi];
+					double Z = S.Comp[2].oS[wi];					
 					if (S.invertPrimaryPlusSecondary) {
-						Obs[di] = std::hypot(S.Comp[0].oS[wi] + S.Comp[0].oP,
-							S.Comp[2].oS[wi] + S.Comp[2].oP);
+						X += S.Comp[0].oP;
+						Z += S.Comp[2].oP;
 					}
-					else {
-						Obs[di] = std::hypot(S.Comp[0].oS[wi],
-							S.Comp[2].oS[wi]);
-					}
-					Err[di] = std::hypot(S.Comp[0].oE[wi],
-						S.Comp[2].oE[wi]);
+					Obs[di] = std::hypot(X,Z);
 
+					const double& Xerr = S.Comp[0].oE[wi];
+					const double& Zerr = S.Comp[2].oE[wi];
+					Err[di] = std::hypot(X*Xerr,Z*Zerr)/Obs[di];
+					
 					//Y Comp
 					if (S.Comp[1].Use) {
 						di = S.Comp[1].dataindex + wi;
@@ -2277,13 +2283,33 @@ class cSBSInverter{
 			buf += strprint("%9.2lf", thickness[i]);
 		}
 
+		if (OO.PositiveLayerTopDepths) {
+			OI.addfield("depth_top", 'F', 9, 2, nlayers);
+			OI.setunits("m"); OI.setcomment("Depth to top of layer");
+			double tsum = 0.0;
+			for (size_t i = 0; i < nlayers; i++) {
+				buf += strprint("%9.2lf", tsum);
+				tsum += thickness[i];
+			}
+		}
+
+		if (OO.NegativeLayerTopDepths) {
+			OI.addfield("depth_top_negative", 'F', 9, 2, nlayers);
+			OI.setunits("m"); OI.setcomment("Negative of depth to top of layer");
+			double tsum = 0.0;
+			for (size_t i = 0; i < nlayers; i++) {
+				buf += strprint("%9.2lf", -tsum);
+				tsum += thickness[i];
+			}
+		}
+
 		if (OO.PositiveLayerBottomDepths) {
 			OI.addfield("depth_bottom", 'F', 9, 2, nlayers);
 			OI.setunits("m"); OI.setcomment("Depth to bottom of layer");
 			double tsum = 0.0;
 			for (size_t i = 0; i < nlayers; i++) {
-				buf += strprint("%9.2lf", tsum);
 				tsum += thickness[i];
+				buf += strprint("%9.2lf", tsum);				
 			}
 		}
 

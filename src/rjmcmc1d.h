@@ -1362,21 +1362,14 @@ public:
 				//print_report(si, ci, mcur);
 			}
 			
-			if (true) {
-				//Parallel Tempering								
-				for (size_t i = nchains()-1; i >= 1; i--) {
-					const size_t j = irand<size_t>(0,i);
-					chains[i].swap_histogram[j]++;
-					if (i != j) {												
-						bool swapped = propose_chain_swap(chains[i].temperature, chains[i].model, chains[j].temperature, chains[j].model);
-						//if (swapped) {
-						//	std::cout << si << " swapped " << i << " & " << j << std::endl;
-						//	print_temperatures_misfits(current_models);
-						//}			
-					}
+			//Parallel Tempering								
+			for (size_t i = nchains()-1; i >= 1; i--) {
+				const size_t j = irand<size_t>(0,i);
+				chains[i].swap_histogram[j]++;
+				if (i != j) {												
+					propose_chain_swap(chains[i].temperature, chains[i].model, chains[j].temperature, chains[j].model);						
 				}
-			}
-			
+			}			
 		}
 		double t2 = gettime();
 		endtime = timestamp();
@@ -1396,7 +1389,7 @@ public:
 	}
 
 	void print_temperatures_misfits(const std::vector<double>& tladder, const std::vector<rjMcMC1DModel>& current_models){
-		for (auto i = 0; i < nchains(); i++) {
+		for (size_t i = 0; i < nchains(); i++) {
 			std::cout << "\t" << tladder[i] << "\t" << current_models[i].get_misfit() << std::endl;
 		}
 	}
