@@ -19,6 +19,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 #endif
 
 #include <netcdf>
+
+#define NUM_NOISE_HISTOGRAM_BINS 17
+#define NUM_NUISANCE_HISTOGRAM_BINS 17
+
 using namespace netCDF;
 using namespace netCDF::exceptions;
 
@@ -403,7 +407,10 @@ class rjMcMC1DNoiseMap {
 private:
 	size_t nentries = 0;
 	std::vector<std::pair<size_t,size_t>> datalims; //bounds for each noise process
+	size_t nnoises = 0;
 public:
+	size_t get_nnoises() const { return nnoises; }
+
 	size_t get_nentries() const { return nentries; }
 
 	std::vector<std::vector<double>> noises;
@@ -416,6 +423,7 @@ public:
 
 	void addmodel(const rjMcMC1DModel& m) {
 		if (noises.size() != m.nnoises()) {
+			nnoises = m.nnoises();
 			noises.resize(m.nnoises());
 			datalims.resize(m.nnoises());
 			for (size_t i = 0; i < m.nnoises(); i++) {
@@ -434,7 +442,7 @@ public:
 		for (size_t i = 0; i < nn; i++) {
 			//do statistics and histogram for each noise process
 			cStats<double> s(noises[i]);
-			cHistogram<double, size_t> hist(noises[i],s.min,s.max,17);
+			cHistogram<double, size_t> hist(noises[i],s.min,s.max,NUM_NOISE_HISTOGRAM_BINS);
 
 			fprintf(fp, "%zu %zu", datalims[i].first, datalims[i].second);
 			fprintf(fp, " %lf", s.min);
@@ -517,7 +525,7 @@ public:
 		size_t nn = nuisance.size();
 		for (size_t i = 0; i<nn; i++){
 			cStats<double> s(nuisance[i]);
-			cHistogram<double, size_t> hist(nuisance[i],s.min,s.max,17);
+			cHistogram<double, size_t> hist(nuisance[i],s.min,s.max,NUM_NUISANCE_HISTOGRAM_BINS);
 
 			fprintf(fp, "%s", typestring[i].c_str());
 			fprintf(fp, " %lf", s.min);
@@ -1541,6 +1549,36 @@ public:
 
 		var = nc.addVar("p90_model", NcType::nc_FLOAT, np_dim);
 		var.putVar(s.p90.data());
+
+		// add noises if you got em
+		if (mnmap.get_nnoises() > 0) {
+			//noise hist is stored as 2D,
+			//(histogram bins * number of noises).
+			//histogram bin number is constant between noises to make this easier.
+			NcDim noises_dim = nc.addDim("noise",mnmap.get_nnoises());
+			NcDim noise_bin_dim = nc.addDim("noise_bin",NUM_NOISE_HISTOGRAM_BINS);
+
+			std::vector<NcDim> noise_dims;
+			noise_dims.push_back(noises_dim);
+			noise_dims.push_back(noise_bin_dim);
+
+			NcVar binsvar = nc.addVar("noise_bins",NcType::nc_DOUBLE,noise_dims);
+			NcVar histvar = nc.addVar("noise_histogram",NcType::nc_UINT,noise_dims);
+		
+			std::vector<size_t> startp, countp;
+			startp.push_back(0);
+			startp.push_back(0);
+			countp.push_back(1);
+			countp.push_back(NUM_NOISE_HISTOGRAM_BINS);
+			for (size_t ni = 0; ni < mnmap.get_nnoises(); ni++) {
+				//save a separate histogram for each noise process
+				startp[0] = ni;
+				cStats<double> s(mnmap.noises[ni]);
+				cHistogram<double, size_t> hist(mnmap.noises[ni],s.min,s.max,NUM_NOISE_HISTOGRAM_BINS);
+				binsvar.putVar(startp,countp,hist.centre.data());
+				histvar.putVar(startp,countp,hist.count.data());
+			}
+		}
 	}
 
 	template<typename T>
