@@ -1567,7 +1567,7 @@ public:
 				//save a separate histogram for each noise process
 				startp[0] = ni;
 				cStats<double> s(mnmap.noises[ni]);
-				cHistogram<double, size_t> hist(mnmap.noises[ni],s.min,s.max,NUM_NOISE_HISTOGRAM_BINS);
+				cHistogram<double, uint32_t> hist(mnmap.noises[ni],s.min,s.max,NUM_NOISE_HISTOGRAM_BINS);
 				binsvar.putVar(startp,countp,hist.centre.data());
 				histvar.putVar(startp,countp,hist.count.data());
 			}
