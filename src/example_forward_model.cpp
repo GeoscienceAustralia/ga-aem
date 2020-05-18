@@ -10,7 +10,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <vector>
 #include <cstring>
-#include <iostream>"
+#include <iostream>
 
 #include "general_utils.h"
 #include "file_utils.h"

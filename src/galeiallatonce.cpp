@@ -2378,11 +2378,11 @@ int main(int argc, char** argv)
 		glog.logmsg(0,"%s", msg.c_str());
 		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
-	catch (const std::runtime_error e){
+	catch (const std::runtime_error& e){
 		glog.logmsg(0,"%s", e.what());
 		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
-	catch (const std::exception e){
+	catch (const std::exception& e){
 		glog.logmsg(0,"%s", e.what());
 		ierr = PetscFinalize(); CHKERRQ(ierr);
 	}
