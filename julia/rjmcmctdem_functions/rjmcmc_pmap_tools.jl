@@ -77,7 +77,7 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
         ar_noisechange = permutedims(ncread(ncfilename,"ar_noisechange"));
         noise_bins = ncread(ncfilename,"noise_bins");
         noise_counts = ncread(ncfilename,"noise_histogram");
-        nnoises = size(noise_counts,1);
+        nnoises = size(noise_counts,2);
     catch
         nnoises = 0;
         ar_noisechange=[];
@@ -107,14 +107,15 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
         0.05 0.50 0.100 0.305;
 
         0.57 0.99 0.82 0.98;
-        0.57 0.94 0.05 0.74;
-        0.95 0.99 0.05 0.74;
+        0.57 0.94 0.3 0.74;
+        0.95 0.99 0.3 0.74;
 
+        0.55 0.99 0.10 0.25;
         ]
 
     fig = figure(figsize=(10,8))
 
-    ax = Array{Any}(undef,7)
+    ax = Array{Any}(undef,8)
 
     for i=1:size(p,1)
         ap = [p[i,1];p[i,3];p[i,2]-p[i,1];p[i,4]-p[i,3]]
@@ -185,6 +186,13 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
     ylabel("Accept rate");
     ylim([0;100]);
     legend(["change";"move";"birth";"death"],ncol=4)
+
+    sca(ax[8]);
+    for i=1:P.nnoises
+        plot(P.noise_bins[:,i],P.noise_counts[:,i]);
+    end
+    xlabel("multiplicative noise magnitude");
+    ylabel("counts");
 
     gcf()
 end
