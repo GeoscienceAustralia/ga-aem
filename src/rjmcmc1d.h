@@ -3,21 +3,27 @@ This source code file is licensed under the GNU GPL Version 2.0 Licence by the f
 Crown Copyright Commonwealth of Australia (Geoscience Australia) 2015.
 The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.html. If you require a paper copy of the GNU GPL 2.0 Licence, please write to Free Software Foundation, Inc. 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-Author: Ross C. Brodie, Geoscience Australia.
+Authors:
+Ross C. Brodie, Geoscience Australia,
+Richard L. Taylor, Geoscience Australia.
 */
 
 #ifndef _rjMcMC1D_H_
 #define _rjMcMC1D_H_
 
+//standard library headers
 #include <climits>
 #include <cstdint>
+#include <memory>
+
+//custom headers
 #include "general_utils.h"
 #include "random_utils.h"
 
+//third-party headers
 #if defined(_MPI_ENABLED)
 	#include "mpi.h"
 #endif
-
 #include <netcdf>
 
 #define NUM_NOISE_HISTOGRAM_BINS 17
@@ -185,7 +191,9 @@ public:
 	//about the implementation of rjMcMCNuisance.
 	//this should copy the derived instance and return a pointer to it.
 
-	virtual rjMcMCNuisance* deepcopy() = 0;
+	virtual std::shared_ptr<rjMcMCNuisance> deepcopy() = 0;
+
+	virtual ~rjMcMCNuisance() {};
 
 };
 
@@ -219,17 +227,13 @@ public:
 	std::vector<double> nvar;
 
 	std::vector<rjMcMC1DLayer>  layers;
-	std::vector<rjMcMCNuisance*> nuisances;
+	std::vector<std::shared_ptr<rjMcMCNuisance>> nuisances;
 	//multiplicative noise magnitudes
 	std::vector<rjMcMCNoise> mnoises;
 
 	void initialise(const double& maxp, const double& minv, const double& maxv)
 	{
 		layers.clear();
-		//TODO destroy the actual nuisances, not just the pointers to them.
-		for (size_t ni = 0; ni < nuisances.size();ni++){
-			delete nuisances[ni];
-		}
 		nuisances.clear();
 
 		misfit = DBL_MAX;
@@ -416,6 +420,7 @@ public:
 		}
 		printf("\n");
 	}
+
 };
 
 class rjMcMC1DNoiseMap {
@@ -803,7 +808,7 @@ public:
 	std::string endtime;
 	double samplingtime;
 
-	std::vector<rjMcMCNuisance*> nuisance_init;
+	std::vector<std::shared_ptr<rjMcMCNuisance>> nuisance_init;
 
 	//parameters for noise prior
 	std::vector<double> noisemag_sd;
@@ -1148,8 +1153,6 @@ public:
 		bool isvalid = isinbounds(mcur.nuisances[ni]->min, mcur.nuisances[ni]->max, nv);
 		if (isvalid == false)return false;
 
-		//copy the nuisance
-		mpro.nuisances[ni] = mpro.nuisances[ni]->deepcopy();
 		mpro.nuisances[ni]->value = nv;
 
 		set_misfit(mpro);

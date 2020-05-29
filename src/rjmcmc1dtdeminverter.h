@@ -3,12 +3,18 @@ This source code file is licensed under the GNU GPL Version 2.0 Licence by the f
 Crown Copyright Commonwealth of Australia (Geoscience Australia) 2015.
 The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.html. If you require a paper copy of the GNU GPL 2.0 Licence, please write to Free Software Foundation, Inc. 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-Author: Ross C. Brodie, Geoscience Australia.
+Authors:
+Ross C. Brodie, Geoscience Australia,
+Richard L. Taylor, Geoscience Australia.
 */
 
 #ifndef _rjmcmc1dtdeminverter_H
 #define _rjmcmc1dtdeminverter_H
 
+//standard library headers
+#include <memory>
+
+//custom headers
 #include "gaaem_version.h"
 #include "blocklanguage.h"
 #include "fielddefinition.h"
@@ -69,7 +75,7 @@ class TDEMNuisance : public rjMcMCNuisance {
 			type = str2ntype(s);
 		}
 
-		rjMcMCNuisance* deepcopy() {
+		std::shared_ptr<rjMcMCNuisance> deepcopy() {
 			TDEMNuisance* dup = new TDEMNuisance();
 
 			dup->type = type;
@@ -78,7 +84,7 @@ class TDEMNuisance : public rjMcMCNuisance {
 			dup->max = max;
 			dup->sd_valuechange = sd_valuechange;
 
-			return (rjMcMCNuisance*) dup;
+			return std::shared_ptr<rjMcMCNuisance>(dup);
 		}
 
 	private:
@@ -656,15 +662,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		for (size_t i = 0; i < ntemplate.size(); i++) {
 
-			rjMcMCNuisance* nptr = ntemplate[i].deepcopy();
-			nuisance_init.push_back(nptr);
+			std::shared_ptr<rjMcMCNuisance> nptr = ntemplate[i].deepcopy();
 
-			TDEMNuisance& n = *((TDEMNuisance*)nptr);
+			TDEMNuisance* n = dynamic_cast<TDEMNuisance*>(nptr.get());
 
 			std::string s = ninitial[i];
 
 			if (strcasecmp(s, "DataFile") == 0) {
-				n.value = DBL_MIN;
+				n->value = DBL_MIN;
 			}
 
 			if (strncasecmp(s, "Column", 6) == 0) {
@@ -673,7 +678,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				col = col - 1;//referenced from 1 not 0
 				double v;
 				sscanf(CurrentRecordFields[col].c_str(), "%lf", &v);
-				n.value = v;
+				n->value = v;
 			}
 			else if (strncasecmp(s, "-Column", 7) == 0) {
 				int col;
@@ -681,44 +686,42 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				col = col - 1;//referenced from 1 not 0
 				double v;
 				sscanf(CurrentRecordFields[col].c_str(), "%lf", &v);
-				n.value = -v;
-			}
-			else {
-				//Stay at initial constant
-				n.value = n.value;
+				n->value = -v;
 			}
 
-
-			if (n.value == DBL_MIN) {
-				switch (n.type) {
+			if (n->value == DBL_MIN) {
+				switch (n->type) {
 				case TDEMNuisance::Type::TX_HEIGHT:
-					n.value = IG.tx_height; break;
+					n->value = IG.tx_height; break;
 				case TDEMNuisance::Type::TX_ROLL:
-					n.value = IG.tx_roll; break;
+					n->value = IG.tx_roll; break;
 				case TDEMNuisance::Type::TX_PITCH:
-					n.value = IG.tx_pitch; break;
+					n->value = IG.tx_pitch; break;
 				case TDEMNuisance::Type::TX_YAW:
-					n.value = IG.tx_yaw;	break;
+					n->value = IG.tx_yaw;	break;
 				case TDEMNuisance::Type::TXRX_DX:
-					n.value = IG.txrx_dx; break;
+					n->value = IG.txrx_dx; break;
 				case TDEMNuisance::Type::TXRX_DY:
-					n.value = IG.txrx_dy; break;
+					n->value = IG.txrx_dy; break;
 				case TDEMNuisance::Type::TXRX_DZ:
-					n.value = IG.txrx_dz; break;
+					n->value = IG.txrx_dz; break;
 				case TDEMNuisance::Type::RX_ROLL:
-					n.value = IG.rx_roll; break;
+					n->value = IG.rx_roll; break;
 				case TDEMNuisance::Type::RX_PITCH:
-					n.value = IG.rx_pitch; break;
+					n->value = IG.rx_pitch; break;
 				case TDEMNuisance::Type::RX_YAW:
-					n.value = IG.rx_yaw; break;
+					n->value = IG.rx_yaw; break;
 				case TDEMNuisance::Type::TXRX_DISTANCE:
-					n.value = sqrt(IG.txrx_dx * IG.txrx_dx + IG.txrx_dz * IG.txrx_dz);
+					n->value = sqrt(IG.txrx_dx * IG.txrx_dx + IG.txrx_dz * IG.txrx_dz);
 					break;
 				case TDEMNuisance::Type::TXRX_ANGLE:
-					n.value = R2D * atan2(IG.txrx_dz, IG.txrx_dx);
+					n->value = R2D * atan2(IG.txrx_dz, IG.txrx_dx);
 					break;
 				default:break;
 				}
+				//push back shared_ptr at the end so ownership is
+				//transferred to the model.
+				nuisance_init.push_back(nptr);
 			}
 		}
 	}
@@ -911,7 +914,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		size_t nn = nnuisances();
 		for (size_t j = 0; j < nn; j++) {
-			std::string nstr = ((TDEMNuisance*) ensemble[0].nuisances[j])->typestring();
+			std::string nstr = ensemble[0].nuisances[j]->typestring();
 			cStats<double> s(nmap.nuisance[j]);
 
 			std::string hs;
@@ -983,34 +986,34 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		double distance = 0.0;
 
 		for (size_t i = 0; i < m.nuisances.size(); i++) {
-			const TDEMNuisance& n = *((TDEMNuisance*) m.nuisances[i]);
-			switch (n.type) {
+			TDEMNuisance* n = dynamic_cast<TDEMNuisance*>(m.nuisances[i].get());
+			switch (n->type) {
 			case TDEMNuisance::Type::TX_HEIGHT:
-				OG.tx_height = n.value; break;
+				OG.tx_height = n->value; break;
 			case TDEMNuisance::Type::TX_ROLL:
-				OG.tx_roll = n.value; break;
+				OG.tx_roll = n->value; break;
 			case TDEMNuisance::Type::TX_PITCH:
-				OG.tx_pitch = n.value; break;
+				OG.tx_pitch = n->value; break;
 			case TDEMNuisance::Type::TX_YAW:
-				OG.tx_yaw = n.value; break;
+				OG.tx_yaw = n->value; break;
 			case TDEMNuisance::Type::TXRX_DX:
-				OG.txrx_dx = n.value; break;
+				OG.txrx_dx = n->value; break;
 			case TDEMNuisance::Type::TXRX_DY:
-				OG.txrx_dy = n.value; break;
+				OG.txrx_dy = n->value; break;
 			case TDEMNuisance::Type::TXRX_DZ:
-				OG.txrx_dz = n.value; break;
+				OG.txrx_dz = n->value; break;
 			case TDEMNuisance::Type::RX_ROLL:
-				OG.rx_roll = n.value; break;
+				OG.rx_roll = n->value; break;
 			case TDEMNuisance::Type::RX_PITCH:
-				OG.rx_pitch = n.value; break;
+				OG.rx_pitch = n->value; break;
 			case TDEMNuisance::Type::RX_YAW:
-				OG.rx_yaw = n.value; break;
+				OG.rx_yaw = n->value; break;
 			case TDEMNuisance::Type::TXRX_DISTANCE:
 				angledistance = true;
-				distance = n.value; break;
+				distance = n->value; break;
 			case TDEMNuisance::Type::TXRX_ANGLE:
 				angledistance = true;
-				angle = n.value; break;
+				angle = n->value; break;
 			default:
 				break;
 			}
