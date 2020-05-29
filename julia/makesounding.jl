@@ -22,8 +22,8 @@ em = UseGA_AEM.init_GA_AEM()
 f = UseGA_AEM.EMoperator(em, g)
 
 # Earth model to compute response for using f
-conductivity = [0.01, 0.05, 0.01] # in S/m
-thickness    = [50.0, 50.0] # in m
+conductivity = collect(LinRange(0.01, 1, 100)) # in S/m
+thickness    = ones(99) # in m
 
 # Compute forward for the given system geometry and electronics
 f(ztxLM, ztxHM, conductivity, thickness)

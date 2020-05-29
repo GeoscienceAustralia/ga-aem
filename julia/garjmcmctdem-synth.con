@@ -14,7 +14,7 @@ Control Begin
 		ZMultiplicativeNoise = 6.0
 		ZMultiplicativeNoiseMinimum = 1.0
 		ZMultiplicativeNoiseMaximum = 15.0
-		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 		ZComponentSecondary    = Column 1
 	EMSystem1 End
 
@@ -26,8 +26,11 @@ Control Begin
 		InvertTotalField = no
 		ReconstructPrimaryFieldFromInputGeometry = no
 		EstimateNoiseFromModel = yes
+		InvertMultiplicativeNoise = yes
 		ZMultiplicativeNoise = 6.0
-		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+		ZMultiplicativeNoiseMinimum = 1.0
+		ZMultiplicativeNoiseMaximum = 15.0
+		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 		ZComponentSecondary    = Column 19
 
 	EMSystem2 End
@@ -39,12 +42,12 @@ Control Begin
 		SaveChainsRate = 500
 
 		NChains  =        4
-		NSamples =     50000
-		NBurnIn  =     25000
+		NSamples =     300000
+		NBurnIn  =     150000
 		ThinRate =      10
 
 		NLayersMin  =  1
-		NLayersMax  =  30
+		NLayersMax  =  10
 
 		DepthMin        = 0.0
 		DepthMax        = 300
@@ -58,11 +61,11 @@ Control Begin
 	Sampler End
 
 	Input Begin
-		DataFile = skytem_synthetic_testnoisemove.dat
+		DataFile = synthetic_data_testgradient.dat
 		HeaderLines = 0
 		FirstRecord = 1
-		LastRecord  = 1
-		Subsample   = 5
+		LastRecord  = 2
+		Subsample   = 1
 
 		Columns Begin
 			SurveyNumber    = Column 1
