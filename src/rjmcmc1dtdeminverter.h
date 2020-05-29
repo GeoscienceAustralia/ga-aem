@@ -19,11 +19,11 @@ Author: Ross C. Brodie, Geoscience Australia.
 class cTDEmSystemInfo{
 
 public:
-	cTDEmSystem T;	
+	cTDEmSystem T;
 	size_t ncomps;
 	size_t nwindows;
 	size_t nchans;
-	
+
 	bool useX;
 	bool useY;
 	bool useZ;
@@ -46,8 +46,8 @@ public:
 	std::vector<double> y_additivenoise;
 	std::vector<double> z_additivenoise;
 	double  oPX,oPY,oPZ;
-	std::vector<double> oSX,oSY,oSZ;	
-	std::vector<double> oEX,oEY,oEZ;	
+	std::vector<double> oSX,oSY,oSZ;
+	std::vector<double> oEX,oEY,oEZ;
 	cFieldDefinition fd_oPX,fd_oPY,fd_oPZ;
 	cFieldDefinition fd_oSX,fd_oSY,fd_oSZ;
 	cFieldDefinition fd_oEX,fd_oEY,fd_oEZ;
@@ -58,58 +58,58 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		const double DEFAULT_NOISE_PROPOSAL_WIDTH = 0.04;
 
 	public:
-		
+
 	size_t nsystems;
-	std::vector<cTDEmSystemInfo> SV;		
+	std::vector<cTDEmSystemInfo> SV;
 	std::vector<rjMcMCNuisance> ntemplate;
 	std::vector<std::string> ninitial;
-	cTDEmGeometry  IG;	
+	cTDEmGeometry  IG;
 	cOutputFileInfo OI;
-		
+
 	bool SaveMaps;
 	int  SaveMapsRate;
 	bool SaveChains;
 	int  SaveChainsRate;
-		
+
 	cBlock Control;
-	std::string LogFile;	
+	std::string LogFile;
 	double memoryusedatstart;
 
-	std::string InputDataFile;	
-	FILE*  fp_indata;		
+	std::string InputDataFile;
+	FILE*  fp_indata;
 
 	size_t Outputcolumn; //output column number
 	std::string OutputDirectory;
-	std::string OutputDataFile;	
+	std::string OutputDataFile;
 	std::string MapsDirectory;
 	std::string ChainsDirectory;
-		
-	size_t HeaderLines;		
-	size_t SubSample;	
+
+	size_t HeaderLines;
+	size_t SubSample;
 	size_t FirstRecord;
 	size_t LastRecord;
-	size_t CurrentRecord;	
+	size_t CurrentRecord;
 	std::string CurrentRecordString;
-	std::vector<std::string> CurrentRecordFields;	
-								
+	std::vector<std::string> CurrentRecordFields;
+
 	size_t surveynumber;
 	size_t datenumber;
 	size_t flightnumber;
-	size_t linenumber;	
+	size_t linenumber;
 	double fidnumber;
 	double timenumber;
 	double xord;
 	double yord;
-	double elevation;	
+	double elevation;
 
 	cFieldDefinition fd_surveynumber;
-	cFieldDefinition fd_datenumber;	
-	cFieldDefinition fd_flightnumber;	
+	cFieldDefinition fd_datenumber;
+	cFieldDefinition fd_flightnumber;
 	cFieldDefinition fd_linenumber;
-	cFieldDefinition fd_fidnumber;	
+	cFieldDefinition fd_fidnumber;
 	cFieldDefinition fd_xord;
 	cFieldDefinition fd_yord;
-	cFieldDefinition fd_elevation;	
+	cFieldDefinition fd_elevation;
 	cFieldDefinition fd_geometry[10];
 
 	rjmcmc1dTDEmInverter(const std::string& executable, const std::string& controlfile, size_t size, size_t rank)
@@ -119,7 +119,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		initialise(executable, controlfile);
 		initialise_sampler();
 	}
-	
+
 	~rjmcmc1dTDEmInverter()
 	{
 		fclose(fp_indata);
@@ -198,11 +198,11 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			//}
 		}
 
-		//Load stm file		
+		//Load stm file
 		initialise_systems();
 		getcolumnnumbers();
 	}
-	
+
 	void initialise_systems()
 	{
 		nsystems = (size_t)Control.getintvalue("NumberOfSystems");
@@ -231,7 +231,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			S.estimateNoiseFromModel = b.getboolvalue("EstimateNoiseFromModel");
 			//flag to sample noise magnitudes using MCMC
 			S.invertMultiplicativeNoise = b.getboolvalue("InvertMultiplicativeNoise");
-			
+
 			S.ncomps = 0;
 			if (S.useX) {
 				S.ncomps++;
@@ -284,7 +284,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		obs.resize(ndata);
 		err.resize(ndata);
 	}
-	
+
 	void getcolumnnumbers()
 	{
 		cBlock b = Control.findblock("Input.Columns");
@@ -321,7 +321,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			S.fd_oEZ.initialise(c, "ZComponentNoise");
 		}
 	}
-	
+
 	void initialise_sampler()
 	{
 		cBlock b = Control.findblock("Sampler");
@@ -353,7 +353,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		nsamples = b.getsizetvalue("NSamples");
 		nburnin = b.getsizetvalue("NBurnIn");
 		thinrate = b.getsizetvalue("ThinRate");
-						
+
 		if(b.getvalue("HighTemperature", temperature_high) == false){
 			temperature_high = 2.5;
 		}
@@ -397,7 +397,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		}
 
 	}
-	
+
 	bool readnextrecord()
 	{
 		if (filegetline(fp_indata, CurrentRecordString) == false) {
@@ -413,10 +413,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			}
 		}
 	}
-	
+
 	bool readnextrecord_thisprocess()
 	{
-		//Skip to next record for this process	
+		//Skip to next record for this process
 		while (readnextrecord()) {
 			int  r = ((int)CurrentRecord - (int)HeaderLines - (int)FirstRecord);
 			if (r < 0)continue;
@@ -427,7 +427,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		}
 		return false;
 	}
-	
+
 	void parsecurrentrecord()
 	{
 		CurrentRecordFields = fieldparsestring(CurrentRecordString.c_str(), " ,\t\r\n");
@@ -518,7 +518,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		set_data();
 		set_nuisance();
 	}
-	
+
 	void set_data()
 	//set data *and* noise.
 	{
@@ -590,7 +590,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			}
 		}
 	}
-	
+
 	void set_nuisance()
 	{
 		nuisance_init = ntemplate;
@@ -660,10 +660,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			}
 		}
 	}
-	
+
 	void sample()
-	{		
-		rjMcMC1DSampler::reset();		
+	{
+		rjMcMC1DSampler::reset();
 		rjMcMC1DSampler::sample();
 		std::string dstr = results_string();
 
@@ -677,17 +677,17 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			OI.write_aseggdf_header(aseggdffile);
 		}
 
-		//Output data record	
+		//Output data record
 		FILE* fp = fileopen(OutputDataFile, "a");
 		fprintf(fp, dstr.c_str());
 		fclose(fp);
-		
+
 		write_maps_to_file_netcdf();
 
 		write_noise_maps();
-		
+
 	}
-	
+
 	std::string results_string()
 	{
 		size_t ndepthcells = pmap.npbins();
@@ -708,15 +708,15 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		double misfit_lowest = LowestMisfit.get_misfit() / double(ndata);
 
 		size_t n = 0;
-		double sum = 0.0;		
+		double sum = 0.0;
 		for (size_t mi = 0; mi < ensemble.size(); mi++) {
 			sum += ensemble[mi].get_misfit();
 			n++;
-		}		
+		}
 		double misfit_average = sum / double(n) / double(ndata);
 
 		std::string buf;
-		//Id		
+		//Id
 		OI.addfield("uniqueid", 'I', 12, 0);
 		OI.setcomment("Inversion sequence number");
 		buf += strprint("%12lu", CurrentRecord);
@@ -874,14 +874,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		s += strprint(".%lf", fidnumber);
 		return s;
 	}
-	
+
 	void write_maps_to_file_netcdf()
 	{
 		if (SaveMaps == false)return;
 		if ((CurrentRecord - HeaderLines - FirstRecord) / SubSample % SaveMapsRate != 0)return;
 
 		std::string fileprefix = prefixstring();
-		std::string fname = MapsDirectory + fileprefix + ".pmap";		
+		std::string fname = MapsDirectory + fileprefix + ".pmap";
 		std::string ncfilepath = MapsDirectory + fileprefix + ".nc";
 
 		NcFile nc(ncfilepath, NcFile::FileMode::replace);
@@ -911,7 +911,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		fclose(fp);
 
 	}
-	
+
 	cTDEmGeometry getgeometry(const rjMcMC1DModel& m)
 	{
 		cTDEmGeometry  OG = IG;
@@ -960,7 +960,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		}
 		return OG;
 	}
-	
+
 	std::vector<double> collect(const cTDEmSystemInfo& S, const cTDEmSystem& T)
 	{
 		std::vector<double> v(S.nchans);
@@ -984,7 +984,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		return v;
 	}
-	
+
 	std::vector<double> forwardmodel(const rjMcMC1DModel& m)
 	{
 		std::vector<double> c = m.getvalues();

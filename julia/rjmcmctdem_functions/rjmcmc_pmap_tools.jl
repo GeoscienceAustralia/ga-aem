@@ -80,9 +80,9 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
         nnoises = size(noise_counts,2);
     catch
         nnoises = 0;
-        ar_noisechange=[];
-        noise_bins = [];
-        noise_counts = [];
+        ar_noisechange=Array{Float64,2}(undef,0,0);
+        noise_bins = Array{Float64,2}(undef,0,0);
+        noise_counts = Array{UInt,2}(undef,0,0);
     end
 
     Pmap(depth,value,layer,lchist,cphist,nlhist,observations,errors,ndata,chain,nchains,cvs,
