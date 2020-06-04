@@ -1149,7 +1149,7 @@ public:
 
 		size_t ni = irand((size_t)0, mcur.nnuisances() - 1);
 		double delta = nrand<double>() * mcur.nuisances[ni]->sd_valuechange;
-		double nv = mcur.nuisances[ni]->value + delta;;
+		double nv = mcur.nuisances[ni]->value + delta;
 		bool isvalid = isinbounds(mcur.nuisances[ni]->min, mcur.nuisances[ni]->max, nv);
 		if (isvalid == false)return false;
 

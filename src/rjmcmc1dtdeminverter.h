@@ -461,6 +461,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			ntemplate.push_back(n);
 			ninitial.push_back(sinit);
 		}
+		std::cout << ntemplate.size() << std::endl;
 
 	}
 
@@ -661,7 +662,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	{
 
 		for (size_t i = 0; i < ntemplate.size(); i++) {
-
 			std::shared_ptr<rjMcMCNuisance> nptr = ntemplate[i].deepcopy();
 
 			TDEMNuisance* n = dynamic_cast<TDEMNuisance*>(nptr.get());
@@ -719,11 +719,13 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					break;
 				default:break;
 				}
-				//push back shared_ptr at the end so ownership is
-				//transferred to the model.
-				nuisance_init.push_back(nptr);
 			}
+			//push back shared_ptr at the end so ownership is
+			//transferred to the model.
+			std::cout << "pushing back" <<std::endl;
+			nuisance_init.push_back(nptr);
 		}
+		std::cout << nuisance_init.size() << std::endl;
 	}
 
 	void sample()
@@ -750,6 +752,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		write_maps_to_file_netcdf();
 
 		write_noise_maps();
+		write_nuisance_maps();
 
 	}
 
@@ -975,6 +978,18 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		mnmap.writedata(fp);
 		fclose(fp);
 
+	}
+
+	void write_nuisance_maps()
+	{
+		if (SaveMaps == false) return;
+		if ((CurrentRecord - HeaderLines - FirstRecord) / SubSample % SaveMapsRate != 0)return;
+
+		std::string fileprefix = prefixstring();
+		std::string fname = MapsDirectory + fileprefix + ".numap";
+		FILE* fp = fileopen(fname, "w");
+		nmap.writedata(fp);
+		fclose(fp);
 	}
 
 	cTDEmGeometry getgeometry(const rjMcMC1DModel& m)
