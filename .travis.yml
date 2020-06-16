@@ -5,6 +5,8 @@ addons:
     packages:
     - libfftw3-dev
     - libgtest-dev
+    - openmpi
+    - libopenmpi-dev
 
 script:
 - cd makefiles
