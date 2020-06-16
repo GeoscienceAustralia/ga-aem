@@ -1,0 +1,11 @@
+os: linux
+dist: bionic
+addons:
+  apt:
+    packages:
+    - libfftw3-dev
+    - libgtest-dev
+
+script:
+- cd makefiles
+- ./run_tests_ubuntu.sh
