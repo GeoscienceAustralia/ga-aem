@@ -14,11 +14,14 @@ Richard L. Taylor, Geoscience Australia.
 //standard library headers
 #include <climits>
 #include <cstdint>
+#include <cfloat>
 #include <memory>
+#include <iomanip>
 
 //custom headers
 #include "general_utils.h"
 #include "random_utils.h"
+#include "vector_utils.h"
 
 //third-party headers
 #if defined(_MPI_ENABLED)
