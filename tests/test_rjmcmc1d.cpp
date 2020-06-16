@@ -146,7 +146,7 @@ TEST_F(rjMcMC1DModelTest, test_set_get_residuals_chi2) {
   EXPECT_DOUBLE_EQ(m.get_chi2(),2.0);
 }
 
-TEST_F(rjMcMC1DModelTest, test_insert_layers) {
+TEST_F(rjMcMC1DModelTest, test_insert_interface) {
   // test that interface insertion passes
   // and fails correctly if position/conductivity
   // is out of bounds specified in model init
@@ -166,7 +166,7 @@ TEST_F(rjMcMC1DModelTest, test_insert_layers) {
 
   //sorted order after insertion
   std::vector<double> vals = m.getvalues();
-  ASSERT_THAT(vals,ElementsAre(DoubleEq(cond_max - 1.0),
+  EXPECT_THAT(vals,ElementsAre(DoubleEq(cond_max - 1.0),
                                DoubleEq(cond_min + 1.0),
                                DoubleEq(cond_max),
                                DoubleEq(cond_min)));
@@ -176,4 +176,54 @@ TEST_F(rjMcMC1DModelTest, test_insert_layers) {
                                 DoubleEq(10.0),
                                 DoubleEq(10.0)));
 
+}
+
+TEST_F(rjMcMC1DModelTest, test_delete_interface) {
+  // can't delete interface from an empty model
+  EXPECT_FALSE(m.delete_interface(0));
+  m.insert_interface(0.0,cond_max - 1.0);
+  m.insert_interface(20.0,cond_max - 1.5);
+  m.insert_interface(10.0,cond_max - 2.0);
+
+  ASSERT_TRUE(m.delete_interface(1));
+  ASSERT_TRUE(m.nlayers() == 2);
+  //did we delete the middle interface?
+  std::vector<double> vals = m.getvalues();
+  EXPECT_THAT(vals, ElementsAre(DoubleEq(cond_max - 1.0),
+                                DoubleEq(cond_max - 1.5)));
+  std::vector<double> thicc = m.getthicknesses();
+  ASSERT_THAT(thicc, ElementsAre(DoubleEq(20.0)));
+}
+
+TEST_F(rjMcMC1DModelTest, test_which_layer) {
+  m.insert_interface(0.0,cond_max - 1.0);
+  m.insert_interface(10.0,cond_max - 1.5);
+  m.insert_interface(20.0,cond_max - 2.0);
+
+  EXPECT_TRUE(m.which_layer(0.0)==0);
+  EXPECT_TRUE(m.which_layer(15.0)==1);
+  EXPECT_TRUE(m.which_layer(25.0)==2);
+
+  //test layer edge behaviour
+  EXPECT_TRUE(m.which_layer(10.0)==1);
+  EXPECT_TRUE(m.which_layer(20.0)==2);
+}
+
+TEST_F(rjMcMC1DModelTest, test_move_interface) {
+  m.insert_interface(0.0,cond_max - 1.0);
+  m.insert_interface(10.0,cond_max - 1.5);
+  m.insert_interface(20.0,cond_max - 2.0);
+
+  //can't make pos negative or move top layer
+  ASSERT_FALSE(m.move_interface(1,-10.0));
+  ASSERT_FALSE(m.move_interface(0,5.0));
+
+  EXPECT_TRUE(m.move_interface(1,15.0));
+
+  //move middle layer to bottom then sanity check
+  ASSERT_TRUE(m.move_interface(1,25.0));
+  std::vector<double> vals = m.getvalues();
+  EXPECT_TRUE(vals[2] == cond_max-1.5);
+  std::vector<double> thicc = m.getthicknesses();
+  ASSERT_THAT(thicc, ElementsAre(DoubleEq(20.0),DoubleEq(5.0)));
 }
