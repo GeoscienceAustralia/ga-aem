@@ -7,6 +7,7 @@ addons:
     - libgtest-dev
     - openmpi-bin
     - libopenmpi-dev
+    - libnetcdf-c++4-dev
 
 script:
 - cd makefiles
