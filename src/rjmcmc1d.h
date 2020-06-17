@@ -238,6 +238,7 @@ public:
 	{
 		layers.clear();
 		nuisances.clear();
+		mnoises.clear();
 
 		misfit = DBL_MAX;
 		pmax = maxp;
@@ -442,6 +443,10 @@ public:
 		for (size_t i = 0; i < noises.size(); i++) {
 			noises[i].clear();
 		}
+		noises.clear();
+		datalims.clear();
+		nentries = 0;
+		nnoises = 0;
 	}
 
 	void addmodel(const rjMcMC1DModel& m) {
@@ -524,6 +529,8 @@ public:
 		for (size_t i = 0; i < nuisance.size(); i++){
 			nuisance[i].clear();
 		}
+		nuisance.clear();
+		nentries = 0;
 	}
 
 	void addmodel(const rjMcMC1DModel& m)
