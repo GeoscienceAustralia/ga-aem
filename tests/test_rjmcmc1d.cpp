@@ -20,6 +20,7 @@ class cLogger glog;
 
 using ::testing::ElementsAre;
 using ::testing::DoubleEq;
+using ::testing::FloatEq;
 using ::testing::Each;
 
 //dummy forward,
@@ -500,8 +501,59 @@ TEST_F(rjMcMC1DPPDMapTest, test_multi_model_histogram) {
   EXPECT_DOUBLE_EQ(hs[1].p50, -0.25);
   EXPECT_DOUBLE_EQ(hs[1].p90, 0.25);
 
+  //every model has the same bottom layer
+  EXPECT_DOUBLE_EQ(hs[4].min, -0.25);
+  EXPECT_DOUBLE_EQ(hs[4].max, -0.25);
+  EXPECT_DOUBLE_EQ(hs[4].mean, -0.25);
+  EXPECT_DOUBLE_EQ(hs[4].std, 0);
+  EXPECT_DOUBLE_EQ(hs[4].var, 0);
+  EXPECT_DOUBLE_EQ(hs[4].mode, -0.25);
+  EXPECT_DOUBLE_EQ(hs[4].p10, -0.25);
+  EXPECT_DOUBLE_EQ(hs[4].p50, -0.25);
+  EXPECT_DOUBLE_EQ(hs[4].p90, -0.25);
+
 }
 
 TEST_F(rjMcMC1DPPDMapTest, test_multi_model_summary) {
+  //this is basically the same as the histogram
+  //returned in a different format
+  ppdmap.addmodel(m);
+  m.layers[0].value = 1.0;
+  m.layers[1].value = 0.25;
+  ppdmap.addmodel(m);
+  m.layers[0].value = -1.1;
+  m.layers[1].value = -0.25;
+  ppdmap.addmodel(m);
+  m.layers[0].value = -1.5;
+  m.layers[1].value = -2.0;
+  ppdmap.addmodel(m);
+
+  rjMcMC1DPPDMap::cSummaryModels s = ppdmap.get_summary_models();
+
+  EXPECT_THAT(s.mean, ElementsAre(FloatEq(-0.625),
+                                  FloatEq(-0.375),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25)));
+  EXPECT_THAT(s.mode, ElementsAre(FloatEq(-1.25),
+                                  FloatEq(0.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25)));
+  EXPECT_THAT(s.p10, ElementsAre(FloatEq(-1.25),
+                                  FloatEq(-1.75),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25)));
+  EXPECT_THAT(s.p50, ElementsAre(FloatEq(-1.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25)));
+  EXPECT_THAT(s.p90, ElementsAre(FloatEq(0.75),
+                                  FloatEq(0.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25),
+                                  FloatEq(-0.25)));
 
 }
