@@ -20,6 +20,7 @@ class cLogger glog;
 
 using ::testing::ElementsAre;
 using ::testing::DoubleEq;
+using ::testing::Each;
 
 //dummy forward,
 //just returns the same output regardless of model
@@ -232,7 +233,7 @@ TEST_F(rjMcMC1DModelTest, test_move_interface) {
   //move middle layer to bottom then sanity check
   ASSERT_TRUE(m.move_interface(1,25.0));
   std::vector<double> vals = m.getvalues();
-  EXPECT_TRUE(vals[2] == cond_max-1.5);
+  EXPECT_DOUBLE_EQ(vals[2], cond_max-1.5);
   std::vector<double> thicc = m.getthicknesses();
   ASSERT_THAT(thicc, ElementsAre(DoubleEq(20.0),DoubleEq(5.0)));
 }
@@ -370,5 +371,137 @@ TEST_F(rjMcMC1DNuisanceMapTest, test_reset) {
   numap.resettozero();
   EXPECT_TRUE(numap.get_nentries()==0);
   EXPECT_TRUE(numap.nuisance.size()==0);
+
+}
+
+class rjMcMC1DPPDMapTest : public ::testing::Test {
+protected:
+  void SetUp() override {
+    m.initialise(100.0,-2.0,1.0);
+
+    m.insert_interface(0.0,-1.0);
+    m.insert_interface(20.0,0.0);
+    m.insert_interface(40.0,-0.5);
+
+    ppdmap.initialise(1,4,100.0,5,-2.0,1.0,6);
+  }
+  rjMcMC1DPPDMap ppdmap;
+  rjMcMC1DModel m;
+};
+
+TEST_F(rjMcMC1DPPDMapTest, test_init) {
+  EXPECT_TRUE(ppdmap.get_nentries()==0);
+  EXPECT_TRUE(ppdmap.npbins()==5);
+  EXPECT_TRUE(ppdmap.nvbins()==6);
+
+  EXPECT_THAT(ppdmap.pbin, ElementsAre(DoubleEq(10.0),
+                                       DoubleEq(30.0),
+                                       DoubleEq(50.0),
+                                       DoubleEq(70.0),
+                                       DoubleEq(90.0)));
+  EXPECT_THAT(ppdmap.vbin, ElementsAre(DoubleEq(-1.75),
+                                       DoubleEq(-1.25),
+                                       DoubleEq(-0.75),
+                                       DoubleEq(-0.25),
+                                       DoubleEq(0.25),
+                                       DoubleEq(0.75)));
+}
+
+TEST_F(rjMcMC1DPPDMapTest, test_get_pbin) {
+  EXPECT_TRUE(ppdmap.getpbin(0.0) == 0);
+  EXPECT_TRUE(ppdmap.getpbin(10.0) == 0);
+  EXPECT_TRUE(ppdmap.getpbin(30.0) == 1);
+  EXPECT_TRUE(ppdmap.getpbin(50.0) == 2);
+  //edge
+  EXPECT_TRUE(ppdmap.getpbin(40.0) == 2);
+}
+
+TEST_F(rjMcMC1DPPDMapTest, test_get_vbin) {
+  EXPECT_TRUE(ppdmap.getvbin(-2.0) == 0);
+  EXPECT_TRUE(ppdmap.getvbin(-1.75) == 0);
+  EXPECT_TRUE(ppdmap.getvbin(-1.25) == 1);
+  EXPECT_TRUE(ppdmap.getvbin(-0.25) == 3);
+  //edge
+  EXPECT_TRUE(ppdmap.getvbin(-1.0) == 2);
+}
+
+TEST_F(rjMcMC1DPPDMapTest, test_add_model) {
+  ppdmap.addmodel(m);
+  EXPECT_TRUE(ppdmap.get_nentries()==1);
+  //we added a 3-layer model. Minimum # layers in map is 1.
+  EXPECT_TRUE(ppdmap.layercounts[2]==1);
+  size_t test_idx1 = ppdmap.index(ppdmap.getpbin(10.0),ppdmap.getvbin(-1.0));
+  size_t test_idx2 = ppdmap.index(ppdmap.getpbin(30.0),ppdmap.getvbin(0.0));
+  size_t test_idx3 = ppdmap.index(ppdmap.getpbin(40.0),ppdmap.getvbin(-0.5));
+  size_t test_idx4 = ppdmap.index(ppdmap.getpbin(50.0),ppdmap.getvbin(-0.5));
+
+  EXPECT_TRUE(ppdmap.counts[test_idx1]==1);
+  EXPECT_TRUE(ppdmap.counts[test_idx2]==1);
+  EXPECT_TRUE(ppdmap.counts[test_idx3]==1);
+  EXPECT_TRUE(ppdmap.counts[test_idx4]==1);
+}
+
+TEST_F(rjMcMC1DPPDMapTest, test_reset) {
+  ppdmap.addmodel(m);
+  EXPECT_TRUE(ppdmap.get_nentries()==1);
+  ppdmap.resettozero();
+  EXPECT_TRUE(ppdmap.get_nentries()==0);
+  EXPECT_THAT(ppdmap.layercounts, Each(0));
+  EXPECT_THAT(ppdmap.cpcounts, Each(0));
+  EXPECT_THAT(ppdmap.counts, Each(0));
+}
+
+TEST_F(rjMcMC1DPPDMapTest, test_model_map) {
+  //converts model from cond-thickness to cond-pbin
+  std::vector<double> mmap = ppdmap.modelmap(m);
+  EXPECT_THAT(mmap, ElementsAre(DoubleEq(-1.0),
+                                DoubleEq(0.0),
+                                DoubleEq(-0.5),
+                                DoubleEq(-0.5),
+                                DoubleEq(-0.5)));
+}
+
+//more complicated tests to check that model statistics are computed
+//correctly
+TEST_F(rjMcMC1DPPDMapTest, test_multi_model_histogram) {
+  ppdmap.addmodel(m);
+  m.layers[0].value = 1.0;
+  m.layers[1].value = 0.25;
+  ppdmap.addmodel(m);
+  m.layers[0].value = -1.1;
+  m.layers[1].value = -0.25;
+  ppdmap.addmodel(m);
+  m.layers[0].value = -1.5;
+  m.layers[1].value = -2.0;
+  ppdmap.addmodel(m);
+
+  std::vector<cHistogramStats<double>> hs = ppdmap.hstats();
+  EXPECT_DOUBLE_EQ(hs[0].min, -1.25);
+  EXPECT_DOUBLE_EQ(hs[0].max, 0.75);
+  EXPECT_DOUBLE_EQ(hs[0].mean, -0.625);
+  EXPECT_DOUBLE_EQ(hs[0].std, 0.81967981553775);
+  EXPECT_DOUBLE_EQ(hs[0].var, 0.671875);
+  EXPECT_DOUBLE_EQ(hs[0].mode, -1.25);
+  //percentiles use nearest-rank method,
+  //though hopefully in realistic use cases there
+  //will be enough models in the pmap to make the method
+  //used for percentiles irrelevant
+  EXPECT_DOUBLE_EQ(hs[0].p10, -1.25);
+  EXPECT_DOUBLE_EQ(hs[0].p50, -1.25);
+  EXPECT_DOUBLE_EQ(hs[0].p90, 0.75);
+
+  EXPECT_DOUBLE_EQ(hs[1].min, -1.75);
+  EXPECT_DOUBLE_EQ(hs[1].max, 0.25);
+  EXPECT_DOUBLE_EQ(hs[1].mean, -0.375);
+  EXPECT_DOUBLE_EQ(hs[1].std, 0.81967981553775);
+  EXPECT_DOUBLE_EQ(hs[1].var, 0.671875);
+  EXPECT_DOUBLE_EQ(hs[1].mode, 0.25);
+  EXPECT_DOUBLE_EQ(hs[1].p10, -1.75);
+  EXPECT_DOUBLE_EQ(hs[1].p50, -0.25);
+  EXPECT_DOUBLE_EQ(hs[1].p90, 0.25);
+
+}
+
+TEST_F(rjMcMC1DPPDMapTest, test_multi_model_summary) {
 
 }
