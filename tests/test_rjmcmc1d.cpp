@@ -13,6 +13,7 @@ Richard L. Taylor, Geoscience Australia.
 #include <gmock/gmock.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <iostream>
 
 #include "logger.h"
 
@@ -22,60 +23,8 @@ using ::testing::ElementsAre;
 using ::testing::DoubleEq;
 using ::testing::FloatEq;
 using ::testing::Each;
-
-//dummy forward,
-//just returns the same output regardless of model
-class FakeSampler : public rjMcMC1DSampler {
-  public:
-    FakeSampler(std::vector<double> forwardret, std::vector<double> fakedata) {
-      fret = forwardret;
-      obs = fakedata;
-      ndata = fakedata.size();
-    }
-
-    FakeSampler() {}
-
-    std::vector<double> forwardmodel(const rjMcMC1DModel& m) {
-      return fret;
-    }
-  private:
-    std::vector<double> fret;
-};
-
-//tests the calculation of residuals given observed data
-//and forward output.
-TEST(rjMcMC1DSamplerTest, test_residuals) {
-  FakeSampler s = FakeSampler({1.0,2.0,3.0}, {2.0,4.0,5.0});
-  rjMcMC1DModel m = rjMcMC1DModel();
-
-  std::vector<double> output = s.computeresiduals(m);
-
-  ASSERT_THAT(output, ElementsAre(DoubleEq(0.25),DoubleEq(0.25),DoubleEq(0.16)));
-}
-
-//check Gaussian works correctly
-TEST(rjMcMC1DSamplerTest, test_gaussian_pdf_value) {
-  FakeSampler s;
-  double val = s.gaussian_pdf(1.0, 2.0, 3.0);
-  ASSERT_DOUBLE_EQ(val, 1.0/(2.0*std::sqrt(2.0*M_PI))*exp(-1.0/2.0));
-}
-
-//check that the misfit is calculated correctly
-TEST(rjMcMC1DSamplerTest,test_misfit) {
-  FakeSampler s = FakeSampler({2.0,3.0,4.0}, {4.0,4.0,5.0});
-  rjMcMC1DModel m = rjMcMC1DModel();
-  m.nvar = {0.5, 1.0, 2.0};
-
-  s.set_misfit(m);
-
-  ASSERT_DOUBLE_EQ(m.get_misfit(),
-  0.5+std::log(0.5)+
-  0.0625+std::log(1.0)+
-  0.02+std::log(2.0));
-
-  ASSERT_DOUBLE_EQ(s.get_normalised_misfit(m), m.get_misfit()/3.0);
-
-}
+using ::testing::Return;
+using ::testing::_;
 
 //layer operators
 
@@ -556,4 +505,100 @@ TEST_F(rjMcMC1DPPDMapTest, test_multi_model_summary) {
                                   FloatEq(-0.25),
                                   FloatEq(-0.25)));
 
+}
+
+//mock sampler so we can catch forward calls and
+//individually control their behaviour.
+class MockSampler : public rjMcMC1DSampler {
+public:
+  MOCK_METHOD1(forwardmodel, std::vector<double>(const rjMcMC1DModel&));
+};
+
+class rjMcMC1DSamplerTest : public ::testing::Test {
+protected:
+  void SetUp() override {
+    cChain chn;
+
+    m.initialise(100.0,-2.0,1.0);
+
+    m.insert_interface(0.0,-1.0);
+    m.insert_interface(20.0,0.0);
+    m.insert_interface(40.0,-0.5);
+    chn.model = m;
+    chn.temperature = 1.0;
+    s.chains.push_back(chn);
+
+    s.obs = {1.0, 2.0, 3.0};
+    s.err = {0.1, 0.4, 0.9};
+    s.ndata = s.obs.size();
+
+    m.nvar = s.err;
+  }
+  MockSampler s;
+  rjMcMC1DModel m;
+};
+
+//tests the calculation of residuals given observed data
+//and forward output.
+TEST_F(rjMcMC1DSamplerTest, test_residuals) {
+  EXPECT_CALL(s, forwardmodel(_))
+    .WillOnce(Return(std::vector<double>({3.0,4.0,5.0})));
+  std::vector<double> res = s.computeresiduals(m);
+  //computeresiduals actually returns squared residual ratio
+  EXPECT_THAT(res, ElementsAre(DoubleEq(4.0),DoubleEq(1.0),DoubleEq(4./9.)));
+}
+
+//check Gaussian works correctly
+TEST_F(rjMcMC1DSamplerTest, test_gaussian_pdf_value) {
+  double val = s.gaussian_pdf(1.0, 2.0, 3.0);
+  ASSERT_DOUBLE_EQ(val, 1.0/(2.0*std::sqrt(2.0*M_PI))*exp(-1.0/2.0));
+}
+
+//check that the misfit is calculated correctly
+TEST_F(rjMcMC1DSamplerTest, test_misfit) {
+  EXPECT_CALL(s, forwardmodel(_))
+    .WillOnce(Return(std::vector<double>({5.0,4.0,3.0})));
+  s.set_misfit(m);
+  EXPECT_DOUBLE_EQ(m.get_misfit(), 160.0+std::log(0.1) +
+                                 + 2.5 + std::log(0.4)
+                                 + std::log(0.9));
+
+}
+
+TEST_F(rjMcMC1DSamplerTest, test_normalised_misfit) {
+  EXPECT_CALL(s, forwardmodel(_))
+    .WillOnce(Return(std::vector<double>({5.0,4.0,3.0})));
+  s.set_misfit(m);
+  EXPECT_DOUBLE_EQ(s.get_normalised_misfit(m), (160.0+std::log(0.1) +
+                                 + 2.5 + std::log(0.4)
+                                 + std::log(0.9))/3.);
+}
+
+TEST_F(rjMcMC1DSamplerTest, test_set_misfit_noisechange) {
+  //exactly one forwardcall - should not call again when changing
+  //noise to avoid unnecessary computations.
+  EXPECT_CALL(s, forwardmodel(_)).Times(1)
+    .WillOnce(Return(std::vector<double>({5.0,4.0,3.0})));
+
+  //put a multiplicative noise in the model
+  rjMcMCNoise mn;
+  mn.value = 0;
+  mn.data_bounds = std::pair<size_t, size_t>({0,1});
+  mn.min = 0;
+  mn.max = 0.5;
+  mn.sd_valuechange = 0.1;
+  m.mnoises.push_back(mn);
+
+  s.set_misfit(m);
+
+  s.set_misfit_noisechange(m,0.5,0);
+
+  EXPECT_DOUBLE_EQ(m.get_misfit(), 16./0.35 + std::log(0.35)
+                                 + 1.0/0.4 + std::log(0.4)
+                                 + std::log(0.9));
+
+}
+
+TEST_F(rjMcMC1DSamplerTest, test_propose_valuechange) {
+  
 }
