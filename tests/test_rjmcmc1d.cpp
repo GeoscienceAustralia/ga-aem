@@ -598,7 +598,3 @@ TEST_F(rjMcMC1DSamplerTest, test_set_misfit_noisechange) {
                                  + std::log(0.9));
 
 }
-
-TEST_F(rjMcMC1DSamplerTest, test_propose_valuechange) {
-  
-}
