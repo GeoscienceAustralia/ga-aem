@@ -10,7 +10,7 @@ testexe     = $(exedir)/runtests_garjmcmc.exe
 includes    = -I$(srcdir)
 includes   += -I$(cpputilssrc)
 libs        = $(if $(FFTW_DIR),-L$(FFTW_DIR) -lfftw3,-lfftw3)
-testlibs    = $(libs) -lgtest -lgtest_main -lpthread
+testlibs    = $(libs) -lgtest -lgmock -lgtest_main -lpthread
 
 cxxflags   += -D_MPI_ENABLED
 #cxxflags   += -DUSEGLOBALSTACKTRACE
