@@ -46,6 +46,7 @@ objects += $(cpputilssrc)/file_utils.o
 objects += $(srcdir)/garjmcmctdem.o
 
 testobjects += $(tstdir)/test_rjmcmc1d.o
+testobjects += $(tstdir)/test_rjmcmc1dtdeminverter.o
 testobjects += $(cpputilssrc)/general_utils.o
 testobjects += $(cpputilssrc)/file_utils.o
 
