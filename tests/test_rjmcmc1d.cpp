@@ -13,7 +13,6 @@ Richard L. Taylor, Geoscience Australia.
 #include <gmock/gmock.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include <iostream>
 
 #include "logger.h"
 
