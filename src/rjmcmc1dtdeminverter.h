@@ -334,9 +334,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				if (S.estimateNoiseFromModel) {
 					S.z_multiplicativenoise = b.getdoublevalue("ZMultiplicativeNoise");
 					S.z_additivenoise = b.getdoublevector("ZAdditiveNoise");
-					for (size_t wi = 0; wi < S.nwindows; wi++) {
-						std::cout << wi << " " << S.z_additivenoise[wi] << std::endl;
-					}
 				}
 				if (S.invertMultiplicativeNoise) {
 					S.z_multnoise_min = b.getdoublevalue("ZMultiplicativeNoiseMinimum");
@@ -461,7 +458,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			ntemplate.push_back(n);
 			ninitial.push_back(sinit);
 		}
-		std::cout << ntemplate.size() << std::endl;
 
 	}
 
@@ -722,10 +718,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			}
 			//push back shared_ptr at the end so ownership is
 			//transferred to the model.
-			std::cout << "pushing back" <<std::endl;
 			nuisance_init.push_back(nptr);
 		}
-		std::cout << nuisance_init.size() << std::endl;
 	}
 
 	void sample()
