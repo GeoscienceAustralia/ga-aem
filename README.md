@@ -1,5 +1,5 @@
 # GA-AEM Source Code Repository
-[![Build Status](https://travis-ci.com/richardt94/ga-aem.svg?branch=gw_develop)](https://travis-ci.com/richardt94/ga-aem)
+[![Build Status](https://travis-ci.com/GeoscienceAustralia/ga-aem.svg?branch=develop)](https://travis-ci.com/GeoscienceAustralia/ga-aem)
 
 ## Geoscience Australia Airborne Electromagnetics Programs
 
