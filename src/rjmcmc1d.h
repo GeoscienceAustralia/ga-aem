@@ -1313,7 +1313,6 @@ public:
 		}
 
 		for (size_t si = 0; si < nsamples; si++) {
-			std::cout<<"Sampling step " << si + 1 << " of " << nsamples << std::endl;
 			for (size_t ci = 0; ci < nchains(); ci++) {
 				cChain& chn = chains[ci];//Current chain
 				rjMcMC1DModel& mcur = chn.model;//Current model on chain
@@ -1322,10 +1321,6 @@ public:
 					//Initialise chain
 					mcur = choosefromprior();
 					set_misfit(mcur);
-					for(size_t di=0; di < ndata; di++) {
-						std::cout << mcur.nvar[di] << " ";
-					}
-					std::cout << std::endl;
 				}
 				else {
 					rjMcMC1DModel mpro = mcur;
