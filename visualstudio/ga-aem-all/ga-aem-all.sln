@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2050
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gaforwardmodeltdem", "..\gaforwardmodeltdem\gaforwardmodeltdem.vcxproj", "{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbstdem", "..\galeisbstdem\galeisbstdem.vcxproj", "{7B2ABFFB-3AD0-4546-A41B-67F78766418F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbstdem", "..\galeisbstdem\galeisbstdem.vcxproj", "{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "garjmcmctdem", "..\garjmcmctdem\garjmcmctdem.vcxproj", "{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}"
 EndProject
@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2curtainimage", "
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbstdem-nompi", "..\galeisbstdem-nompi\galeisbstdem-nompi.vcxproj", "{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "removelog10conductivityfromsgrid", "..\removelog10conductivityfromsgrid\removelog10conductivityfromsgrid.vcxproj", "{63A8B78C-7864-4796-A738-732B9C583736}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -43,12 +45,12 @@ Global
 		{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}.Release|x64.ActiveCfg = Release|x64
 		{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}.Release|x64.Build.0 = Release|x64
 		{3BBA5A94-79CD-4C41-91BC-0BD621FC072B}.Release|x86.ActiveCfg = Release|x64
-		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Debug|x64.ActiveCfg = Debug|x64
-		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Debug|x64.Build.0 = Debug|x64
-		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Debug|x86.ActiveCfg = Debug|x64
-		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Release|x64.ActiveCfg = Release|x64
-		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Release|x64.Build.0 = Release|x64
-		{7B2ABFFB-3AD0-4546-A41B-67F78766418F}.Release|x86.ActiveCfg = Release|x64
+		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Debug|x64.ActiveCfg = Debug|x64
+		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Debug|x64.Build.0 = Debug|x64
+		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Debug|x86.ActiveCfg = Debug|x64
+		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Release|x64.ActiveCfg = Release|x64
+		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Release|x64.Build.0 = Release|x64
+		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Release|x86.ActiveCfg = Release|x64
 		{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}.Debug|x64.ActiveCfg = Debug|x64
 		{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}.Debug|x64.Build.0 = Debug|x64
 		{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}.Debug|x86.ActiveCfg = Debug|x64
@@ -115,6 +117,12 @@ Global
 		{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}.Release|x64.ActiveCfg = Release|x64
 		{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}.Release|x64.Build.0 = Release|x64
 		{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}.Release|x86.ActiveCfg = Release|x64
+		{63A8B78C-7864-4796-A738-732B9C583736}.Debug|x64.ActiveCfg = Debug|x64
+		{63A8B78C-7864-4796-A738-732B9C583736}.Debug|x64.Build.0 = Debug|x64
+		{63A8B78C-7864-4796-A738-732B9C583736}.Debug|x86.ActiveCfg = Debug|x64
+		{63A8B78C-7864-4796-A738-732B9C583736}.Release|x64.ActiveCfg = Release|x64
+		{63A8B78C-7864-4796-A738-732B9C583736}.Release|x64.Build.0 = Release|x64
+		{63A8B78C-7864-4796-A738-732B9C583736}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

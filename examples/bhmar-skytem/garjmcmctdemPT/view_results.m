@@ -7,7 +7,7 @@ ncdir = 'output\pmaps\';
 %ncdir = 'output_0.10\pmaps\';
 %ncdir = 'output_0.20\pmaps\';
 %ncdir = 'output_100k_noise_free\pmaps\';
-%ncdir = 'output_100k_noise_contaminated\pmaps\';
+ncdir = 'output_100k_noise_contaminated\pmaps\';
 
 f = dir([ncdir '*.nc']);
 %ncfile  = 'output\pmaps\seq.00000001.7011.28534.000000.nc';
