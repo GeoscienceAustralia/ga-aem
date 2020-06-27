@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 		//Header file
 		FILE* isgfp = fileopen(isg, "r");
 		FILE* osgfp = fileopen(osg, "w");
-		while (status = filegetline(isgfp, s)) {			
+		while ((status = filegetline(isgfp, s))) {			
 			if(strcmp(s.c_str(),"*painted*variable:Log10Conductivity") == 0){
 				std::fprintf(osgfp,"*painted*variable:Conductivity\n");
 			}
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 		status = filegetline(isdfp, s);
 		std::fprintf(osdfp, "%s\n", s.c_str());
 
-		while (status = filegetline(isdfp, s)) {
+		while ((status = filegetline(isdfp, s))) {
 			t = tokenize(s);
 			std::fprintf(osdfp, "%s %s %s %s %s %s %s\n",t[0].c_str(), t[1].c_str(), t[2].c_str(), t[3].c_str(), t[5].c_str(), t[6].c_str(), t[7].c_str());				
 		}
