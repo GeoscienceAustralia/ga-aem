@@ -33,11 +33,18 @@ function init_GA_AEM()
     addHeaderDir(ga_aem_path*"/submodules/cpp-utils/src/", kind=C_System)
     addHeaderDir("/usr/local/include", kind=C_System)
 
+    
+    # needs fftw3 as well
+    if "FFTW_DIR" in keys(ENV)
+        addHeaderDir(ENV["FFTW_DIR"]*"/include/", kind=C_System)
+        Libdl.dlopen(ENV["FFTW_DIR"]*"/lib/libfftw3.so",Libdl.RTLD_GLOBAL)
+    else
+        Libdl.dlopen("libfftw3.so", Libdl.RTLD_GLOBAL)
+    end
+
     cxxinclude("gatdaem1d_julia.h")
     Libdl.dlopen(path_to_lib * "/gatdaem1d_julia.so", Libdl.RTLD_GLOBAL)
 
-    # needs fftw3 as well
-    Libdl.dlopen("libfftw3.so", Libdl.RTLD_GLOBAL)
 
     # Create the cTDEmSystem class object
     stmfile_LM = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-LM.stm"

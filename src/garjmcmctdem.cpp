@@ -13,6 +13,8 @@ using namespace std;
 #include "general_utils.h"
 #include "file_utils.h"
 #include "rjmcmc1dtdeminverter.h"
+#include "logger.h"
+#include "stacktrace.h"
 
 #if defined _MPI_ENABLED
 	#include "mpi_wrapper.h"
@@ -22,16 +24,16 @@ class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
 int main(int argc, char* argv[])
-{		
+{
 	int exitstatus;
 	int mpisize = 1;
 	int mpirank = 0;
 	std::string mpipname = "Standalone";
-	#if defined _MPI_ENABLED			
+	#if defined _MPI_ENABLED
 		MPI_Init(&argc, &argv);
 		mpirank = cMpiEnv::world_rank();
 		mpisize = cMpiEnv::world_size();
-		mpipname = cMpiEnv::processor_name();				
+		mpipname = cMpiEnv::processor_name();
 		if (mpirank == 0)printf("MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
 	#endif
 
@@ -40,10 +42,10 @@ int main(int argc, char* argv[])
 		printf("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 	}
 
-	if(argc!=2){						
+	if(argc!=2){
 		printf("Usage: %s control_file_name\n",argv[0]);
 		exitstatus = EXIT_FAILURE;
-	}	
+	}
 	else{
 		glog.logmsg(0, "Executing %s %s\n", argv[0], argv[1]);
 		glog.logmsg(0, "Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
@@ -69,11 +71,8 @@ int main(int argc, char* argv[])
 	}
 
 	#if defined _MPI_ENABLED
-		MPI_Finalize();	
-	#endif	
+		MPI_Finalize();
+	#endif
 
 	return exitstatus;
 }
-
-
-
