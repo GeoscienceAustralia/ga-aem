@@ -10,8 +10,8 @@ Control Begin
 		InvertTotalField = no
 		ReconstructPrimaryFieldFromInputGeometry = no
 		EstimateNoiseFromModel = yes
-		InvertMultiplicativeNoise = yes
-		ZMultiplicativeNoise = 6.0
+		InvertMultiplicativeNoise = no
+		ZMultiplicativeNoise = 1.0
 		ZMultiplicativeNoiseMinimum = 1.0
 		ZMultiplicativeNoiseMaximum = 15.0
 		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -26,8 +26,8 @@ Control Begin
 		InvertTotalField = no
 		ReconstructPrimaryFieldFromInputGeometry = no
 		EstimateNoiseFromModel = yes
-		InvertMultiplicativeNoise = yes
-		ZMultiplicativeNoise = 6.0
+		InvertMultiplicativeNoise = no
+		ZMultiplicativeNoise = 1.0
 		ZMultiplicativeNoiseMinimum = 1.0
 		ZMultiplicativeNoiseMaximum = 15.0
 		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -36,6 +36,15 @@ Control Begin
 	EMSystem2 End
 
 	Sampler Begin
+
+		Nuisance1 Begin
+			Type = tx_height
+			Initial = 35.0
+			Min = 10.0
+			Max = 60.0
+			STDValueChange = 5.0
+		Nuisance1 End
+
 		SaveMaps       = Yes
 		SaveMapsRate   = 1
 		SaveChains     = Yes
@@ -61,7 +70,7 @@ Control Begin
 	Sampler End
 
 	Input Begin
-		DataFile = synthetic_data_testgradient.dat
+		DataFile = synthetic_data_testtxheight.dat
 		HeaderLines = 0
 		FirstRecord = 1
 		LastRecord  = 2

@@ -5,9 +5,12 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 
 executable  = $(exedir)/garjmcmctdem.exe
+testexe     = $(exedir)/runtests_garjmcmc.exe
+
 includes    = -I$(srcdir)
 includes   += -I$(cpputilssrc)
 libs        = $(if $(FFTW_DIR),-L$(FFTW_DIR) -lfftw3,-lfftw3)
+testlibs    = $(libs) -lgtest -lgmock -lgtest_main -lpthread
 
 cxxflags   += -D_MPI_ENABLED
 #cxxflags   += -DUSEGLOBALSTACKTRACE
@@ -35,9 +38,17 @@ endif
 all: compile link
 allclean: clean compile link
 
+test: tcompile tlink
+testclean: clean tcompile tlink
+
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
 objects += $(srcdir)/garjmcmctdem.o
+
+testobjects += $(tstdir)/test_rjmcmc1d.o
+testobjects += $(tstdir)/test_rjmcmc1dtdeminverter.o
+testobjects += $(cpputilssrc)/general_utils.o
+testobjects += $(cpputilssrc)/file_utils.o
 
 %.o : %.cpp
 	@echo ' '
@@ -46,15 +57,24 @@ objects += $(srcdir)/garjmcmctdem.o
 
 compile: $(objects)
 
+tcompile: $(testobjects)
+
 link: $(objects)
 	mkdir -p $(exedir)
 	@echo ' '
 	@echo Linking
 	$(mpicxx) $(objects) $(libs) -o $(executable)
 
+tlink: $(testobjects)
+	mkdir -p $(exedir)
+	@echo ' '
+	@echo 'Linking test executable'
+	$(mpicxx) $(testobjects) $(testlibs) -o $(testexe)
+
 clean:
 	@echo ' '
 	@echo Cleaning
 	rm -f $(objects)
+	rm -f $(testobjects)
 	rm -f $(executable)
-
+	rm -f $(testexe)
