@@ -23,23 +23,23 @@ enum eWaveFormType { WT_TX, WT_RX };
 enum eOutputType { OT_BFIELD, OT_DBDT};
 enum eNormalizationType { NT_NONE, NT_PPM, NT_PPM_PEAKTOPEAK};
 
-struct sTDEmNoiseModelComponent{	
+struct sTDEmNoiseModelComponent{
 	double MultiplicativeNoise;
-	std::vector<double> AdditiveNoise;	
+	std::vector<double> AdditiveNoise;
 };
 
-struct sTDEmNoiseModel{	
+struct sTDEmNoiseModel{
 	sTDEmNoiseModelComponent xcomponent;
 	sTDEmNoiseModelComponent ycomponent;
 	sTDEmNoiseModelComponent zcomponent;
 };
 
-struct sTDEmComponent{  
+struct sTDEmComponent{
 	double Primary;
 	std::vector<double> Secondary;
 };
 
-struct sTDEmData{	
+struct sTDEmData{
 	sTDEmComponent xcomponent;
 	sTDEmComponent ycomponent;
 	sTDEmComponent zcomponent;
@@ -56,7 +56,7 @@ public:
 	std::vector<double> SZ;
 };
 
-enum eGeometryElementType { 
+enum eGeometryElementType {
 	GE_TX_HEIGHT,
 	GE_TX_ROLL,
 	GE_TX_PITCH,
@@ -96,7 +96,7 @@ public:
 	cTDEmGeometry(const std::vector<double> gvector){
 		for (size_t i = 0; i < size(); i++){
 			(*this)[i] = gvector[i];
-		}		
+		}
 	}
 
 	cTDEmGeometry(const cBlock& b){
@@ -131,34 +131,34 @@ public:
 		case 8: return rx_pitch; break;
 		case 9: return rx_yaw; break;
 		default:
-			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
+			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);
 		}
 		return tx_height;
 	}
 
-	
-	double operator[](const size_t& index) const 
-	{				
+
+	double operator[](const size_t& index) const
+	{
 		//Remove implied constness using const_cast
-		return (*(const_cast<cTDEmGeometry*>(this)))[index]; // Correctly calls the function above.		
+		return (*(const_cast<cTDEmGeometry*>(this)))[index]; // Correctly calls the function above.
 	};
-	
+
 
 	void set_zero(){
 		for (size_t i = 0; i < size(); i++){
 			(*this)[i] = 0.0;
-		}		
+		}
 	}
 
 	void fillundefined(const cTDEmGeometry& g)
-	{				
-		for (size_t i = 0; i < size(); i++){			
+	{
+		for (size_t i = 0; i < size(); i++){
 			if ((*this)[i] == ud_double()){
-				(*this)[i] = g[i];				
-			}			
-		}		
-	}	
-	
+				(*this)[i] = g[i];
+			}
+		}
+	}
+
 	static std::string fname(const size_t& index){
 
 		switch (index) {
@@ -173,7 +173,7 @@ public:
 		case 8: return "rx_pitch"; break;
 		case 9: return "rx_yaw"; break;
 		default:
-			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
+			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);
 		}
 		return "unknown";
 	};
@@ -182,8 +182,8 @@ public:
 
 		for (size_t i = 0; i < size(); i++){
 			if (strcasecmp(name, fname(i)) == 0) return i;
-		}				
-		glog.errormsg(_SRC_,"Geometry field name %s is bad\n", name.c_str());		
+		}
+		glog.errormsg(_SRC_,"Geometry field name %s is bad\n", name.c_str());
 		return 0;
 	};
 
@@ -201,7 +201,7 @@ public:
 		case 8: return "degrees"; break;
 		case 9: return "degrees"; break;
 		default:
-			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
+			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);
 			break;
 		}
 		return "unknown";
@@ -226,12 +226,12 @@ public:
 		return "Error unknown geometry parameter";
 	};
 
-	static eGeometryElementType elementtype(const size_t& index){		
+	static eGeometryElementType elementtype(const size_t& index){
 		switch (index) {
 		case 0: return GE_TX_HEIGHT; break;
 		case 1: return GE_TX_ROLL;   break;
 		case 2: return GE_TX_PITCH;  break;
-		case 3: return GE_TX_YAW;    break;		
+		case 3: return GE_TX_YAW;    break;
 		case 4: return GE_TXRX_DX;   break;
 		case 5: return GE_TXRX_DY;   break;
 		case 6: return GE_TXRX_DZ;   break;
@@ -239,13 +239,13 @@ public:
 		case 8: return GE_RX_PITCH;  break;
 		case 9: return GE_RX_YAW;    break;
 		default:
-			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
+			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);
 			break;
 		}
 		return GE_TX_HEIGHT;
 	}
 
-	static eCalculationType derivativetype(const size_t& index){		
+	static eCalculationType derivativetype(const size_t& index){
 		switch (index) {
 		case 0: return CT_HDERIVATIVE; break;
 		case 1: return CT_NONE; break;
@@ -254,17 +254,17 @@ public:
 		case 4: return CT_XDERIVATIVE; break;
 		case 5: return CT_YDERIVATIVE; break;
 		case 6: return CT_ZDERIVATIVE; break;
-		case 7: return CT_NONE; break;		
+		case 7: return CT_NONE; break;
 		case 8: return CT_NONE; break;
 		case 9: return CT_NONE; break;
 		default:
-			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
+			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);
 			break;
 		}
 		return CT_NONE;
 	}
 
-	void write(std::string path) const 
+	void write(std::string path) const
 	{
 		FILE* fp = fileopen(path,"w");
 		fprintf(fp, "tx_height\t%lf\n", tx_height);
@@ -286,10 +286,10 @@ struct WindowSpecification{
 	size_t SampleLow;
 	size_t SampleHigh;
 	size_t NumberOfSamples;
-    
+
 	double TimeLow;
 	double TimeHigh;
-	double TimeWidth;	
+	double TimeWidth;
 
 	std::vector<size_t> Sample;
 	std::vector<double> Weight;
@@ -322,29 +322,29 @@ private:
 	std::vector<cdouble> X_splined;
 	std::vector<cdouble> Y_splined;
 	std::vector<cdouble> Z_splined;
- 
+
 public:
 
   std::string SystemName;
-  std::string SystemType;  
+  std::string SystemType;
   cLEM LEM;
   cBlock STM;
   bool SaveDiagnosticFiles;
-      
+
   cVec xaxis;
   cVec yaxis;
   cVec zaxis;
 
   eOutputType OutputType;
   eNormalizationType Normalisation;
-  
+
   size_t NumberOfWindows;
   std::string WindowWeightingScheme;
 
   double BaseFrequency;
   double BasePeriod;
-  double SampleFrequency;  
-  double SampleInterval;  
+  double SampleFrequency;
+  double SampleInterval;
   size_t SamplesPerWaveform;
   size_t NumberOfFFTFrequencies;
   size_t NumberOfSplinedFrequencies;
@@ -358,16 +358,16 @@ public:
   std::vector<cdouble> F_Waveform;
   std::vector<cdouble> Transfer;
   std::vector<cdouble> FFTWork;
-  std::vector<double>  fft_frequency;    
-  fftw_plan fftwplan_backward;  
-	  
+  std::vector<double>  fft_frequency;
+  fftw_plan fftwplan_backward;
+
   size_t FrequenciesPerDecade;
-  size_t NumberOfDiscreteFrequencies;  
+  size_t NumberOfDiscreteFrequencies;
   std::vector<double> DiscreteFrequencies;
-  std::vector<double> DiscreteFrequenciesLog10;  
+  std::vector<double> DiscreteFrequenciesLog10;
   double DiscreteFrequencyLow;
   double DiscreteFrequencyHigh;
-  double FrequencyLog10Spacing;  
+  double FrequencyLog10Spacing;
   std::vector<double> LowPassFilterCutoffFrequency;
   std::vector<double> LowPassFilterOrder;
   std::vector<double> SplinedFrequencieslog10;;
@@ -382,7 +382,7 @@ public:
   cVec TX_orientation;
   double RX_height;
   double RX_pitch;
-  double RX_roll;  
+  double RX_roll;
   cVec TX_RX_separation;
 
   cTDEmGeometry NormalizationGeometry;
@@ -391,13 +391,13 @@ public:
   double ZScale;
 
   std::vector<double> X; //Secondary X field
-  std::vector<double> Y; //Secondary Y field 
-  std::vector<double> Z; //Secondary Z field 
+  std::vector<double> Y; //Secondary Y field
+  std::vector<double> Z; //Secondary Z field
   double PrimaryX;  //Primary X field
   double PrimaryY;  //Primary Y field
   double PrimaryZ;  //Primary Z field
-      
- 
+
+
   std::vector<WindowSpecification> WinSpec;
 
   //void printwindows();
@@ -408,7 +408,7 @@ public:
   //void write_splinedfrequencies(const std::string& path);
   //void write_frequencyseries(const std::string& path);
   //void write_timesseries(const std::string& path);
-      
+
   double primary(const size_t component){
 	  if (component == 0) return PrimaryX;
 	  else if (component == 1) return PrimaryY;
@@ -429,7 +429,8 @@ public:
 	  else if (component == 2) return Z;
 	  else return std::vector<double>(0);
   }
-  
+
+
   cTDEmSystem()
   {
 	  initialise();
@@ -524,20 +525,29 @@ public:
 		  SplinedFrequencieslog10[k] = log10(fabs(fft_frequency[k * 2 + 1]));
 	  }
 
-	  //Setup inverse transform work array	
-	  FFTWork.resize(NR);
-
-#if defined MULTITHREADED
-	  //FFTW_MEASURE does not seem to be thread safe
-	  unsigned int FLAGS = FFTW_ESTIMATE;
-#else
-	  unsigned int FLAGS = FFTW_MEASURE;
-#endif
-
-	  fftw_complex* invin = (fftw_complex*)&(FFTWork[0]);
-	  double* invout = (double*)&(FFTWork[0]);
-	  fftwplan_backward = fftw_plan_dft_c2r_1d((int)N, invin, invout, FLAGS);
   }
+
+	void setup_ifft() {
+		size_t N = SamplesPerWaveform;
+		size_t NR = 2 * (N / 2 + 1);
+
+		//Setup inverse transform work array
+		FFTWork.resize(NR);
+
+// #if defined MULTITHREADED
+		//FFTW_MEASURE does not seem to be thread safe
+		unsigned int FLAGS = FFTW_ESTIMATE;
+// #else
+// 		unsigned int FLAGS = FFTW_MEASURE;
+// #endif
+
+		fftw_complex* invin = (fftw_complex*)&(FFTWork[0]);
+		double* invout = (double*)&(FFTWork[0]);
+#pragma omp critical
+		{
+			fftwplan_backward = fftw_plan_dft_c2r_1d((int)N, invin, invout, FLAGS);
+		}
+	}
 
   double calculate_fft_frequency(size_t index)
   {
@@ -653,7 +663,7 @@ public:
   }
   void spline_interp()
   {
-	  //y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;			
+	  //y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
 	  for (size_t k = 0; k < NumberOfSplinedFrequencies; k++) {
 		  const double& a = a_spline[k];
 		  const double& b = b_spline[k];
@@ -686,7 +696,7 @@ public:
 	  }
   }
   void inversefft(){
-	  fftw_execute(fftwplan_backward); 
+	  fftw_execute(fftwplan_backward);
   }
 
   void setearthproperties(const cEarth1D& E)
@@ -803,7 +813,7 @@ public:
   }
   void setsecondaryfields()
   {
-	  //Computation for discrete frequencies 	
+	  //Computation for discrete frequencies
 	  for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
 		  LEM.dointegrals(fi);
 		  LEM.setsecondaryfields(fi);
@@ -832,7 +842,7 @@ public:
 		  HzI[fi] = vi.z;
 	  }
 
-	  //Spline discreet frequencies		
+	  //Spline discreet frequencies
 	  if (XScale != 0.0) {
 		  spline(DiscreteFrequenciesLog10, HxR, 1e-30, 1e-30, HxR_spline);
 		  spline(DiscreteFrequenciesLog10, HxI, 1e-30, 1e-30, HxI_spline);
@@ -846,7 +856,7 @@ public:
 		  spline(DiscreteFrequenciesLog10, HzI, 1e-30, 1e-30, HzI_spline);
 	  }
 
-	  //Interpolate 	
+	  //Interpolate
 	  spline_interp();
 
 	  if (SaveDiagnosticFiles) {
@@ -855,7 +865,7 @@ public:
 		  write_frequencydomainwaveform("diag_frequencydomainwaveform.txt");
 	  }
 
-	  //Filter - splining only every second value (even index) of the Waveform filter is always zero	
+	  //Filter - splining only every second value (even index) of the Waveform filter is always zero
 	  if (XScale != 0.0) {
 		  size_t n = 0;
 		  FFTWork = Transfer;
@@ -863,7 +873,7 @@ public:
 			  FFTWork[k] *= X_splined[n];
 			  n++;
 		  }
-		  //Inverse FFT		
+		  //Inverse FFT
 		  fftw_execute(fftwplan_backward);
 		  computewindow((double*)FFTWork.data(), X);
 		  if (SaveDiagnosticFiles) {
@@ -879,7 +889,7 @@ public:
 			  FFTWork[k] = Y_splined[n];
 			  n++;
 		  }
-		  //Inverse FFT		
+		  //Inverse FFT
 		  fftw_execute(fftwplan_backward);
 		  computewindow((double*)FFTWork.data(), Y);
 		  if (SaveDiagnosticFiles) {
@@ -895,7 +905,7 @@ public:
 			  FFTWork[k] *= Z_splined[n];
 			  n++;
 		  }
-		  //Inverse FFT				
+		  //Inverse FFT
 		  fftw_execute(fftwplan_backward);
 		  computewindow((double*)FFTWork.data(), Z);
 		  if (SaveDiagnosticFiles) {
@@ -1180,7 +1190,7 @@ public:
 	  //xi = (  xb*cosp  + zb*sinp);Inertial
 	  //zi = ( -xb*sinp  + zb*cosp);
 	  //xb = (  xi*cosp  - zi*sinp);As bird sees it
-	  //zb = (  xi*sinp  + zi*cosp);						
+	  //zb = (  xi*sinp  + zi*cosp);
 
 	  double cosp = cos(D2R*p);
 	  double sinp = sin(D2R*p);
@@ -1197,7 +1207,7 @@ public:
 	  //yi = (  yb*cosr  - zb*sinr);Inertial
 	  //zi = (  yb*sinr  + zb*cosr);
 	  //yb = (  yi*cosr  + zi*sinr);As bird sees it
-	  //zb = ( -yi*sinr  + zi*cosr);						
+	  //zb = ( -yi*sinr  + zi*cosr);
 
 	  double cosr = cos(D2R*r);
 	  double sinr = sin(D2R*r);
@@ -1215,7 +1225,7 @@ public:
 	  //xi = (  xb*cosp  + zb*sinp);Inertial
 	  //zi = ( -xb*sinp  + zb*cosp);
 	  //xb = (  xi*cosp  - zi*sinp);As bird sees it
-	  //zb = (  xi*sinp  + zi*cosp);						
+	  //zb = (  xi*sinp  + zi*cosp);
 
 	  double cosp = cos(D2R*p);
 	  double sinp = sin(D2R*p);
@@ -1233,7 +1243,7 @@ public:
 	  //yi = (  yb*cosr  - zb*sinr);Inertial
 	  //zi = (  yb*sinr  + zb*cosr);
 	  //yb = (  yi*cosr  + zi*sinr);As bird sees it
-	  //zb = ( -yi*sinr  + zi*cosr);						
+	  //zb = ( -yi*sinr  + zi*cosr);
 
 	  double cosr = cos(D2R*r);
 	  double sinr = sin(D2R*r);
@@ -1377,6 +1387,7 @@ public:
   void systeminitialise()
   {
 	  createwaveform();
+		// setup_ifft();
 	  setupdiscretefrequencies();
 	  setup_splines();
 	  setup_scaling();
@@ -1606,4 +1617,3 @@ public:
 
 };
 #endif
-

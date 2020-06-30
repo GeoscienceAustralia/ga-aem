@@ -1350,6 +1350,8 @@ public:
 		}
 
 		for (size_t si = 0; si < nsamples; si++) {
+			// multi-threading parallelism if compiled with it
+			#pragma omp parallel for
 			for (size_t ci = 0; ci < nchains(); ci++) {
 				cChain& chn = chains[ci];//Current chain
 				rjMcMC1DModel& mcur = chn.model;//Current model on chain
@@ -1435,6 +1437,8 @@ public:
 			}
 
 			//Parallel Tempering
+			// this loop cannot be parallelised because it needs to
+			// swap chains
 			for (size_t i = nchains()-1; i >= 1; i--) {
 				const size_t j = irand<size_t>(0,i);
 				chains[i].swap_histogram[j]++;

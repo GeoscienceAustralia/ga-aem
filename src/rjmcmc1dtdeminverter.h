@@ -1116,7 +1116,11 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		size_t di = 0;
 		for (size_t i = 0; i < nsystems; i++) {
 			cTDEmSystemInfo& S = SV[i];
-			cTDEmSystem& T = S.T;
+			//this must be copied in order to make the forward
+			//threadsafe because every chain (thread) will use
+			//the same T
+			cTDEmSystem T = S.T;
+			T.setup_ifft();
 			T.setconductivitythickness(c, t);
 			T.setgeometry(G);
 			T.setupcomputations();
