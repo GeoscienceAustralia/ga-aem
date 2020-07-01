@@ -10,6 +10,9 @@ examples/**/output
 examples/**/*.out
 examples/**/*.log
 
+# Ignore output from julia synthetic tests
+julia/output
+
 # Ignore all binary executables
 *.exe
 *.dll
@@ -20,8 +23,8 @@ examples/**/*.log
 /bin/x64/Debug/*.exe
 /bin/x64/Debug/*.exp
 /bin/x64/Debug/*.lib
-*_debug.dll 
-*_debug.mexw64 
+*_debug.dll
+*_debug.mexw64
 
 # Python
 *.pyc
@@ -140,4 +143,3 @@ Desktop.ini
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
-
