@@ -34,6 +34,12 @@ struct Pmap
     noise_bins::Array{Float64,2}
     noise_counts::Array{UInt,2}
     nnoises::UInt
+
+    ar_nuisancechange::Array{Float64,2}
+
+    nuisance_bins::Array{Float64,2}
+    nuisance_counts::Array{UInt,2}
+    nnuisances::UInt
 end
 
 function read_rjmcmc_pmap(ncfilename::String)::Pmap
@@ -71,7 +77,7 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
     ar_birth       = permutedims(ncread(ncfilename,"ar_birth"));
     ar_death       = permutedims(ncread(ncfilename,"ar_death"));
     swap_histogram = permutedims(ncread(ncfilename,"swap_histogram"));
-
+    #read noise vars
     local ar_noisechange,noise_bins,noise_counts,nnoises;
     try
         ar_noisechange = permutedims(ncread(ncfilename,"ar_noisechange"));
@@ -84,11 +90,25 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
         noise_bins = Array{Float64,2}(undef,0,0);
         noise_counts = Array{UInt,2}(undef,0,0);
     end
+    #read nuisance vars
+    local ar_nuisancechange, nuisance_bins, nuisance_counts, nnuisances;
+    try
+        ar_nuisancechange = permutedims(ncread(ncfilename,"ar_nuisancechange"));
+        nuisance_bins = ncread(ncfilename,"nuisance_bins");
+        nuisance_counts = ncread(ncfilename,"nuisance_histogram");
+        nnuisances = size(nuisance_counts,2);
+    catch
+        nnoises = 0;
+        ar_nuisancechange=Array{Float64,2}(undef,0,0);
+        nuisance_bins = Array{Float64,2}(undef,0,0);
+        nuisance_counts = Array{UInt,2}(undef,0,0);
+    end
 
     Pmap(depth,value,layer,lchist,cphist,nlhist,observations,errors,ndata,chain,nchains,cvs,
         temperature,misfit,nlayers,logppd,mean_model,mode_model,p10_model,p50_model,p90_model,
         ar_valuechange,ar_move,ar_birth,ar_death,swap_histogram,ar_noisechange,
-        noise_bins,noise_counts,nnoises)
+        noise_bins,noise_counts,nnoises, ar_nuisancechange, nuisance_bins,
+        nuisance_counts, nnuisances)
 end
 
 
@@ -98,7 +118,7 @@ function ct2cd(cond,thick,depth)
     cond[layerinds]
 end
 
-function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
+function view_rjmcmc_pmap(P::Pmap, TM=Dict())
 
     p = [
         0.1 0.50 0.775 0.980;
@@ -107,15 +127,24 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
         0.1 0.50 0.100 0.305;
 
         0.57 0.99 0.82 0.98;
-        0.57 0.94 0.32 0.76;
-        0.95 0.99 0.32 0.76;
-
-        0.6 0.99 0.10 0.25;
+        0.57 0.94 0.10 0.76;
+        0.95 0.99 0.10 0.76;
         ]
+
+    if (P.nnoises > 0 && P.nnuisances > 0)
+        p[6,:] = [0.57 0.94 0.42 0.76];
+        p[7,:] = [0.95 0.99 0.42 0.76];
+        p = [p; 0.6 0.99 0.10 0.19; 0.6 0.99 0.26 0.35];
+    elseif (P.nnoises > 0 || P.nnuisances > 0)
+        p[6,:] = [0.57 0.94 0.32 0.76];
+        p[7,:] = [0.95 0.99 0.32 0.76];
+        p = [p; 0.6 0.99 0.10 0.25];
+    end
+
 
     fig = figure(figsize=(10,8))
 
-    ax = Array{Any}(undef,8)
+    ax = Array{Any}(undef,9);
 
     for i=1:size(p,1)
         ap = [p[i,1];p[i,3];p[i,2]-p[i,1];p[i,4]-p[i,3]]
@@ -177,8 +206,11 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
     plot(P.cvs,P.ar_move[1,:],"-b")
     plot(P.cvs,P.ar_birth[1,:],"-g")
     plot(P.cvs,P.ar_death[1,:],"-r")
-    if length(P.ar_noisechange) > 0
+    if P.nnoises > 0
         plot(P.cvs,P.ar_noisechange[1,:],"-k")
+    end
+    if P.nnuisances > 0
+        plot(P.cvs,P.ar_nuisancechange[1,:],"-y")
     end
 
 
@@ -187,12 +219,22 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
     ylim([0;100]);
     legend(["change";"move";"birth";"death"],ncol=4)
 
-    sca(ax[8]);
-    for i=1:P.nnoises
-        plot(P.noise_bins[:,i],P.noise_counts[:,i]);
+    if (P.nnoises > 0)
+        sca(ax[8]);
+        for i=1:P.nnoises
+            plot(P.noise_bins[:,i],P.noise_counts[:,i]);
+        end
+        xlabel("multiplicative noise magnitude");
+        ylabel("counts");
     end
-    xlabel("multiplicative noise magnitude");
-    ylabel("counts");
+    if (P.nnuisances > 0)
+        sca(ax[8+(P.nnoises > 0)]);
+        for i=1:P.nnuisances
+            plot(P.nuisance_bins[:,i],P.nuisance_counts[:,i]);
+        end
+        xlabel("nuisance magnitude");
+        ylabel("counts");
+    end
 
     gcf()
 end
