@@ -46,7 +46,7 @@ public:
 
   ~ptr_vec() = default;
 
-  T* operator[](int idx) {
+  T* operator[](int idx) const {
     return v[idx].get();
   }
 
@@ -58,7 +58,7 @@ public:
     v.clear();
   }
 
-  size_t size() {
+  size_t size() const {
     return v.size();
   }
 

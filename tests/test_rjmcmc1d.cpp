@@ -215,14 +215,14 @@ public:
     return "dummy";
   }
 
-  std::shared_ptr<rjMcMCNuisance> deepcopy() {
-    std::shared_ptr<dummyNuisance> dup = std::make_shared<dummyNuisance>();
+  std::unique_ptr<rjMcMCNuisance> deepcopy() {
+    std::unique_ptr<rjMcMCNuisance> dup = std::unique_ptr<rjMcMCNuisance>(new dummyNuisance());
     dup->value = value;
     dup->min = min;
     dup->max = max;
     dup->sd_valuechange = sd_valuechange;
 
-    return std::shared_ptr<rjMcMCNuisance>(dup);
+    return dup;
   }
 };
 
@@ -636,6 +636,8 @@ protected:
 TEST_F(rjMcMC1DSamplerWithNuisanceTest, test_nuisance_move_leaves_mcur_unchanged_copy_ctor) {
   EXPECT_CALL(s, forwardmodel(_)).Times(1)
     .WillOnce(Return(std::vector<double>({1.0,2.0,3.0})));
+  ASSERT_TRUE(s.chains.size() > 0);
+  ASSERT_TRUE(s.chains[0].model.nuisances.size() > 0);
   double oldval = s.chains[0].model.nuisances[0]->value;
   rjMcMC1DModel mpro = s.chains[0].model;
   s.propose_nuisancechange(s.chains[0],mpro);
@@ -645,6 +647,8 @@ TEST_F(rjMcMC1DSamplerWithNuisanceTest, test_nuisance_move_leaves_mcur_unchanged
 TEST_F(rjMcMC1DSamplerWithNuisanceTest, test_nuisance_move_leaves_mcur_unchanged_assigment_ctor) {
   EXPECT_CALL(s, forwardmodel(_)).Times(1)
     .WillOnce(Return(std::vector<double>({1.0,2.0,3.0})));
+  ASSERT_TRUE(s.chains.size() > 0);
+  ASSERT_TRUE(s.chains[0].model.nuisances.size() > 0);
   rjMcMC1DModel mpro;
   double oldval = s.chains[0].model.nuisances[0]->value;
   mpro = s.chains[0].model;

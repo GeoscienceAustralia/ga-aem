@@ -22,6 +22,7 @@ Richard L. Taylor, Geoscience Australia.
 #include "general_utils.h"
 #include "random_utils.h"
 #include "vector_utils.h"
+#include "ptrvec.h"
 
 //third-party headers
 #if defined(_MPI_ENABLED)
@@ -194,7 +195,7 @@ public:
 	//about the implementation of rjMcMCNuisance.
 	//this should copy the derived instance and return a pointer to it.
 
-	virtual std::shared_ptr<rjMcMCNuisance> deepcopy() = 0;
+	virtual std::unique_ptr<rjMcMCNuisance> deepcopy() = 0;
 
 	virtual ~rjMcMCNuisance() {};
 
@@ -230,9 +231,10 @@ public:
 	std::vector<double> nvar;
 
 	std::vector<rjMcMC1DLayer>  layers;
-	std::vector<std::shared_ptr<rjMcMCNuisance>> nuisances;
+	ptr_vec<rjMcMCNuisance> nuisances;
 	//multiplicative noise magnitudes
 	std::vector<rjMcMCNoise> mnoises;
+
 
 	void initialise(const double& maxp, const double& minv, const double& maxv)
 	{
@@ -824,7 +826,7 @@ public:
 	std::string endtime;
 	double samplingtime;
 
-	std::vector<std::shared_ptr<rjMcMCNuisance>> nuisance_init;
+	ptr_vec<rjMcMCNuisance> nuisance_init;
 
 	//parameters for noise prior
 	std::vector<double> noisemag_sd;
@@ -1249,15 +1251,12 @@ public:
 				status = m.insert_interface(pos, value);
 			}
 		}
-		for (size_t nui = 0; nui < nuisance_init.size(); nui++) {
-			m.nuisances.push_back(nuisance_init[nui]->deepcopy());
-		}
 
+		m.nuisances = nuisance_init;
 		for (size_t di = 0; di < ndata; di++) {
 			//noises are computed as a ratio against the observations
 			m.nvar.push_back((err[di]*err[di])/(obs[di]*obs[di]));
 		}
-
 		//create the noise vector, sample the prior
 		//and set the variance values to include
 		//the sampled multiplicative noise.
