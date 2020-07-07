@@ -37,8 +37,11 @@ public:
   }
 
   ptr_vec& operator=(ptr_vec&& other) noexcept {
-    v.clear();
-    v = move(other.v);
+    if (this != &other){
+      v.clear();
+      v = move(other.v);
+    }
+    return *this;
   }
 
   ~ptr_vec() = default;
@@ -53,6 +56,10 @@ public:
 
   void clear() {
     v.clear();
+  }
+
+  size_t size() {
+    return v.size();
   }
 
 };
