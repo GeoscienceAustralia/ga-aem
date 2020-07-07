@@ -597,3 +597,57 @@ TEST_F(rjMcMC1DSamplerTest, test_set_misfit_noisechange) {
                                  + std::log(0.9));
 
 }
+
+class rjMcMC1DSamplerWithNuisanceTest : public ::testing::Test {
+protected:
+  void SetUp() override {
+    cChain chn;
+
+    m.initialise(100.0,-2.0,1.0);
+
+    m.insert_interface(0.0,-1.0);
+    m.insert_interface(20.0,0.0);
+    m.insert_interface(40.0,-0.5);
+
+    dummyNuisance dn;
+    dn.value = 10.0;
+    dn.min = 5.0;
+    dn.max = 15.0;
+    dn.sd_valuechange = 0.1;
+
+    m.nuisances.push_back(dn.deepcopy());
+
+    s.obs = {1.0, 2.0, 3.0};
+    s.err = {0.1, 0.4, 0.9};
+    s.ndata = s.obs.size();
+
+    m.nvar = s.err;
+    m.set_misfit(99999.);
+
+    chn.model = m;
+    chn.temperature = 1.0;
+    s.chains.push_back(chn);
+
+  }
+  MockSampler s;
+  rjMcMC1DModel m;
+};
+
+TEST_F(rjMcMC1DSamplerWithNuisanceTest, test_nuisance_move_leaves_mcur_unchanged_copy_ctor) {
+  EXPECT_CALL(s, forwardmodel(_)).Times(1)
+    .WillOnce(Return(std::vector<double>({1.0,2.0,3.0})));
+  double oldval = s.chains[0].model.nuisances[0]->value;
+  rjMcMC1DModel mpro = s.chains[0].model;
+  s.propose_nuisancechange(s.chains[0],mpro);
+  EXPECT_DOUBLE_EQ(s.chains[0].model.nuisances[0]->value,oldval);
+}
+
+TEST_F(rjMcMC1DSamplerWithNuisanceTest, test_nuisance_move_leaves_mcur_unchanged_assigment_ctor) {
+  EXPECT_CALL(s, forwardmodel(_)).Times(1)
+    .WillOnce(Return(std::vector<double>({1.0,2.0,3.0})));
+  rjMcMC1DModel mpro;
+  double oldval = s.chains[0].model.nuisances[0]->value;
+  mpro = s.chains[0].model;
+  s.propose_nuisancechange(s.chains[0],mpro);
+  EXPECT_DOUBLE_EQ(s.chains[0].model.nuisances[0]->value,oldval);
+}
