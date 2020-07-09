@@ -165,7 +165,7 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict())
     plot(10 .^ P.p50_model,P.depth,"-m")
     plot(10 .^ P.p90_model,P.depth,":m")
     if length(TM) > 0
-        tmcmap = ct2cd(TM["conductivity"],TM["thickness"],P["depth"])
+        tmcmap = ct2cd(TM["conductivity"],TM["thickness"],P.depth)
         plot(tmcmap,P.depth,"-g")
     end
     ax[6].set_xscale("log")
