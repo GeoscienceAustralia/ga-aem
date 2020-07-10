@@ -98,7 +98,7 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
         nuisance_counts = ncread(ncfilename,"nuisance_histogram");
         nnuisances = size(nuisance_counts,2);
     catch
-        nnoises = 0;
+        nnuisances = 0;
         ar_nuisancechange=Array{Float64,2}(undef,0,0);
         nuisance_bins = Array{Float64,2}(undef,0,0);
         nuisance_counts = Array{UInt,2}(undef,0,0);
