@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd ..
-installpath='/scratch/cr78/apps/ga-aem/2.1.beta'
+installpath='/g/data/qi71/apps/ga-aem/2.2.beta'
 
 mkdir -p $installpath
 mkdir -p $installpath/bin/gadi/intel
