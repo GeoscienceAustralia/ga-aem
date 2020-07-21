@@ -655,7 +655,7 @@ public:
 		FILE* fp = fileopen(xypath,"w");
 		for (size_t i = 0; i < nhpixels; i++) {
 			double hp = dh/2.0 + dh * i;
-			fprintf(fp,"%10d %10d %10.2lf %10.2lf %10.2lf %10.2lf %12.6lf %12.6lf %10.2lf\n",
+			fprintf(fp,"%10d %10zu %10.2lf %10.2lf %10.2lf %10.2lf %12.6lf %12.6lf %10.2lf\n",
 				D.linenumber, i + 1, hp, imagefid[i], imagex[i], imagey[i], imagelon[i], imagelat[i], imageelevation[i]);
 		}
 		fclose(fp);
