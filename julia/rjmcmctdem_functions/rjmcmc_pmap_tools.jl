@@ -151,12 +151,12 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict())
         ax[i] = PyPlot.axes(position=ap)
     end
 
-    cmap = ColorMap("jet")
+    cmap = ColorMap("rainbow")
     #set zero values of the histogram to black
     #matlab lets you just do this with arrays
     #but PyPlot via julia has to make things hard
     cmap._i_under = 0
-    cmap.set_under((0,0,0,1))
+    cmap.set_under((1,1,1,1))
 
     sca(ax[6])
     pcolormesh(10 .^ P.value,P.depth,P.lchist,cmap=cmap)
@@ -178,6 +178,7 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict())
     sca(ax[7])
     pcolormesh([0 1],P.depth, reshape(P.cphist,(size(P.cphist)...,1)),cmap=cmap)
     gca().invert_yaxis()
+    xticks([])
 
     sca(ax[5])
     bar(P.layer,P.nlhist,color="r")
