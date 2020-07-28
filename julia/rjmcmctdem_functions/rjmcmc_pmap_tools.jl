@@ -121,24 +121,24 @@ end
 function view_rjmcmc_pmap(P::Pmap, TM=Dict())
 
     p = [
-        0.1 0.50 0.775 0.980;
-        0.1 0.50 0.550 0.755;
-        0.1 0.50 0.325 0.530;
-        0.1 0.50 0.100 0.305;
+        0.1 0.5 0.775 0.980;
+        0.1 0.43 0.550 0.755;
+        0.1 0.43 0.325 0.530;
+        0.1 0.43 0.100 0.305;
 
         0.57 0.99 0.82 0.98;
-        0.57 0.94 0.10 0.76;
-        0.95 0.99 0.10 0.76;
+        0.5 0.87 0.10 0.76;
+        0.88 0.99 0.10 0.76;
         ]
 
     if (P.nnoises > 0 && P.nnuisances > 0)
-        p[6,:] = [0.57 0.94 0.42 0.76];
-        p[7,:] = [0.95 0.99 0.42 0.76];
-        p = [p; 0.6 0.99 0.10 0.19; 0.6 0.99 0.26 0.35];
+        p[6,:] = [0.5 0.87 0.42 0.76];
+        p[7,:] = [0.88 0.99 0.42 0.76];
+        p = [p; 0.53 0.99 0.10 0.19; 0.53 0.99 0.26 0.35];
     elseif (P.nnoises > 0 || P.nnuisances > 0)
-        p[6,:] = [0.57 0.94 0.32 0.76];
-        p[7,:] = [0.95 0.99 0.32 0.76];
-        p = [p; 0.6 0.99 0.10 0.25];
+        p[6,:] = [0.5 0.87 0.32 0.76];
+        p[7,:] = [0.88 0.99 0.32 0.76];
+        p = [p; 0.53 0.99 0.10 0.25];
     end
 
 
@@ -160,25 +160,29 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict())
 
     sca(ax[6])
     pcolormesh(10 .^ P.value,P.depth,P.lchist,cmap=cmap)
-    plot(10 .^ P.mean_model,P.depth,"-w");
-    plot(10 .^ P.p10_model,P.depth,":m")
-    plot(10 .^ P.p50_model,P.depth,"-m")
-    plot(10 .^ P.p90_model,P.depth,":m")
+    plot(10 .^ P.mean_model,P.depth,"-",color="grey", linewidth = 3, label = "mean");
+    plot(10 .^ P.p10_model,P.depth,":k", linewidth = 3, label = "p10")
+    plot(10 .^ P.p50_model,P.depth,"-k", linewidth = 3, label = "median")
+    plot(10 .^ P.p90_model,P.depth,":k", linewidth = 3, label = "p90")
     if length(TM) > 0
         tmcmap = ct2cd(TM["conductivity"],TM["thickness"],P.depth)
-        plot(tmcmap,P.depth,"-g")
+        plot(tmcmap,P.depth,"-g",linewidth = 3, label = "true model")
     end
     ax[6].set_xscale("log")
     ylabel("Depth (m)")
     xlabel("Conductivity (S/m)")
     gca().invert_yaxis()
+    legend(loc="lower right", framealpha=0.3)
     #gca().xaxis.tick_top()
     #gca().xaxis.set_label_position("top")
 
     sca(ax[7])
-    pcolormesh([0 1],P.depth, reshape(P.cphist,(size(P.cphist)...,1)),cmap=cmap)
+    plot(P.cphist,P.depth)
+    ylim([minimum(P.depth);maximum(P.depth)])
     gca().invert_yaxis()
     xticks([])
+    yticks([])
+    xlabel("Change histogram")
 
     sca(ax[5])
     bar(P.layer,P.nlhist,color="r")
