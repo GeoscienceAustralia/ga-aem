@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd ..
-installpath='/g/data/qi71/apps/ga-aem/2.2.beta'
+installpath='/g/data/qi71/apps/ga-aem/2.3.beta'
 
 mkdir -p $installpath
 mkdir -p $installpath/bin/gadi/intel
