@@ -443,11 +443,20 @@ public:
 
 	void calculateextents()
 	{		
-		bestfitlineendpoints(x,y,x1,y1,x2,y2);
-		double angle = atan2(y2-y1,x2-x1);
-		if(angle > PIONTWO || angle <= -PIONTWO){
-			std::swap(x1,x2);
-			std::swap(y1,y2);			
+		bestfitlineendpoints(x,y,x1,y1,x2,y2);				
+		if (std::abs(x2 - x1) >= std::abs(y2 - y1)) {
+			//if predominantly EW
+			if(x1 > x2){
+				std::swap(x1,x2);
+				std::swap(y1,y2);			
+			}
+		}
+		else {
+			//if predominantly NS
+			if (y1 > y2) {
+				std::swap(x1, x2);
+				std::swap(y1, y2);
+			}
 		}
 
 		double rawlength = distance(x1,y1,x2,y2);
@@ -839,7 +848,7 @@ int main(int argc, char** argv)
 	double t2 = gettime();
 	printf("Done ... Elapsed time = %.2lf seconds\n", t2 - t1);
 	
-	GdiplusShutdown(gdiplusToken);
+	GdiplusShutdown(gdiplusToken);	
 	return 0;
 }
 
