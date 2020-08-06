@@ -34,6 +34,12 @@ struct Pmap
     noise_bins::Array{Float64,2}
     noise_counts::Array{UInt,2}
     nnoises::UInt
+
+    ar_nuisancechange::Array{Float64,2}
+
+    nuisance_bins::Array{Float64,2}
+    nuisance_counts::Array{UInt,2}
+    nnuisances::UInt
 end
 
 function read_rjmcmc_pmap(ncfilename::String)::Pmap
@@ -71,7 +77,7 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
     ar_birth       = permutedims(ncread(ncfilename,"ar_birth"));
     ar_death       = permutedims(ncread(ncfilename,"ar_death"));
     swap_histogram = permutedims(ncread(ncfilename,"swap_histogram"));
-
+    #read noise vars
     local ar_noisechange,noise_bins,noise_counts,nnoises;
     try
         ar_noisechange = permutedims(ncread(ncfilename,"ar_noisechange"));
@@ -84,11 +90,25 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
         noise_bins = Array{Float64,2}(undef,0,0);
         noise_counts = Array{UInt,2}(undef,0,0);
     end
+    #read nuisance vars
+    local ar_nuisancechange, nuisance_bins, nuisance_counts, nnuisances;
+    try
+        ar_nuisancechange = permutedims(ncread(ncfilename,"ar_nuisancechange"));
+        nuisance_bins = ncread(ncfilename,"nuisance_bins");
+        nuisance_counts = ncread(ncfilename,"nuisance_histogram");
+        nnuisances = size(nuisance_counts,2);
+    catch
+        nnuisances = 0;
+        ar_nuisancechange=Array{Float64,2}(undef,0,0);
+        nuisance_bins = Array{Float64,2}(undef,0,0);
+        nuisance_counts = Array{UInt,2}(undef,0,0);
+    end
 
     Pmap(depth,value,layer,lchist,cphist,nlhist,observations,errors,ndata,chain,nchains,cvs,
         temperature,misfit,nlayers,logppd,mean_model,mode_model,p10_model,p50_model,p90_model,
         ar_valuechange,ar_move,ar_birth,ar_death,swap_histogram,ar_noisechange,
-        noise_bins,noise_counts,nnoises)
+        noise_bins,noise_counts,nnoises, ar_nuisancechange, nuisance_bins,
+        nuisance_counts, nnuisances)
 end
 
 
@@ -98,57 +118,71 @@ function ct2cd(cond,thick,depth)
     cond[layerinds]
 end
 
-function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
+function view_rjmcmc_pmap(P::Pmap, TM=Dict())
 
     p = [
-        0.1 0.50 0.775 0.980;
-        0.1 0.50 0.550 0.755;
-        0.1 0.50 0.325 0.530;
-        0.1 0.50 0.100 0.305;
+        0.1 0.5 0.775 0.980;
+        0.1 0.43 0.550 0.755;
+        0.1 0.43 0.325 0.530;
+        0.1 0.43 0.100 0.305;
 
         0.57 0.99 0.82 0.98;
-        0.57 0.94 0.32 0.76;
-        0.95 0.99 0.32 0.76;
-
-        0.6 0.99 0.10 0.25;
+        0.5 0.87 0.10 0.76;
+        0.88 0.99 0.10 0.76;
         ]
+
+    if (P.nnoises > 0 && P.nnuisances > 0)
+        p[6,:] = [0.5 0.87 0.42 0.76];
+        p[7,:] = [0.88 0.99 0.42 0.76];
+        p = [p; 0.53 0.99 0.10 0.19; 0.53 0.99 0.26 0.35];
+    elseif (P.nnoises > 0 || P.nnuisances > 0)
+        p[6,:] = [0.5 0.87 0.32 0.76];
+        p[7,:] = [0.88 0.99 0.32 0.76];
+        p = [p; 0.53 0.99 0.10 0.25];
+    end
+
 
     fig = figure(figsize=(10,8))
 
-    ax = Array{Any}(undef,8)
+    ax = Array{Any}(undef,9);
 
     for i=1:size(p,1)
         ap = [p[i,1];p[i,3];p[i,2]-p[i,1];p[i,4]-p[i,3]]
         ax[i] = PyPlot.axes(position=ap)
     end
 
-    cmap = ColorMap("jet")
+    cmap = ColorMap("rainbow")
     #set zero values of the histogram to black
     #matlab lets you just do this with arrays
     #but PyPlot via julia has to make things hard
     cmap._i_under = 0
-    cmap.set_under((0,0,0,1))
+    cmap.set_under((1,1,1,1))
 
     sca(ax[6])
     pcolormesh(10 .^ P.value,P.depth,P.lchist,cmap=cmap)
-    plot(10 .^ P.mean_model,P.depth,"-w");
-    plot(10 .^ P.p10_model,P.depth,":m")
-    plot(10 .^ P.p50_model,P.depth,"-m")
-    plot(10 .^ P.p90_model,P.depth,":m")
+    plot(10 .^ P.mean_model,P.depth,"-",color="grey", linewidth = 3, label = "mean");
+    plot(10 .^ P.p10_model,P.depth,":k", linewidth = 3, label = "p10")
+    plot(10 .^ P.p50_model,P.depth,"-k", linewidth = 3, label = "median")
+    plot(10 .^ P.p90_model,P.depth,":k", linewidth = 3, label = "p90")
     if length(TM) > 0
-        tmcmap = ct2cd(TM["conductivity"],TM["thickness"],P["depth"])
-        plot(tmcmap,P.depth,"-g")
+        tmcmap = ct2cd(TM["conductivity"],TM["thickness"],P.depth)
+        plot(tmcmap,P.depth,"-g",linewidth = 3, label = "true model")
     end
     ax[6].set_xscale("log")
     ylabel("Depth (m)")
     xlabel("Conductivity (S/m)")
     gca().invert_yaxis()
+    legend(loc="lower right", framealpha=0.3)
     #gca().xaxis.tick_top()
     #gca().xaxis.set_label_position("top")
 
     sca(ax[7])
-    pcolormesh([0 1],P.depth, reshape(P.cphist,(size(P.cphist)...,1)),cmap=cmap)
+    plot(P.cphist,P.depth)
+    ylim([minimum(P.depth);maximum(P.depth)])
     gca().invert_yaxis()
+    xticks([])
+    yticks([])
+    xlabel("Change histogram")
 
     sca(ax[5])
     bar(P.layer,P.nlhist,color="r")
@@ -177,8 +211,11 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
     plot(P.cvs,P.ar_move[1,:],"-b")
     plot(P.cvs,P.ar_birth[1,:],"-g")
     plot(P.cvs,P.ar_death[1,:],"-r")
-    if length(P.ar_noisechange) > 0
+    if P.nnoises > 0
         plot(P.cvs,P.ar_noisechange[1,:],"-k")
+    end
+    if P.nnuisances > 0
+        plot(P.cvs,P.ar_nuisancechange[1,:],"-y")
     end
 
 
@@ -187,12 +224,22 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict(), noise=true)
     ylim([0;100]);
     legend(["change";"move";"birth";"death"],ncol=4)
 
-    sca(ax[8]);
-    for i=1:P.nnoises
-        plot(P.noise_bins[:,i],P.noise_counts[:,i]);
+    if (P.nnoises > 0)
+        sca(ax[8]);
+        for i=1:P.nnoises
+            plot(P.noise_bins[:,i],P.noise_counts[:,i]);
+        end
+        xlabel("multiplicative noise magnitude");
+        ylabel("counts");
     end
-    xlabel("multiplicative noise magnitude");
-    ylabel("counts");
+    if (P.nnuisances > 0)
+        sca(ax[8+(P.nnoises > 0)]);
+        for i=1:P.nnuisances
+            plot(P.nuisance_bins[:,i],P.nuisance_counts[:,i]);
+        end
+        xlabel("nuisance magnitude");
+        ylabel("counts");
+    end
 
     gcf()
 end

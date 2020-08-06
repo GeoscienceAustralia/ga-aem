@@ -22,18 +22,32 @@ em = UseGA_AEM.init_GA_AEM()
 f = UseGA_AEM.EMoperator(em, g)
 
 # Earth model to compute response for using f
-conductivity = collect(LinRange(0.01, 1, 100)) # in S/m
-thickness    = ones(99) # in m
+conductivity = [0.05,1e-3,0.05] #collect(LinRange(0.01, 1, 100)) # in S/m
+thickness    = [50.0,30.0] # in m
 
 # Compute forward for the given system geometry and electronics
 f(ztxLM, ztxHM, conductivity, thickness)
 
 # plot
-fig, ax = plt.subplots(1,2, figsize=(10,5))
-ax[1].step(log10.([conductivity; conductivity[end]]), cumsum([0;thickness;10]))
-ax[2].loglog(f.em.tLM, abs.(f.em.SZLM), ".k")
-ax[2].loglog(f.em.tHM, abs.(f.em.SZHM), ".k")
+fig, ax = plt.subplots(1,2, constrained_layout=true, figsize=(10,5))
+fig.suptitle("Resistor response with SkyTEM system")
+ax[1].step([conductivity; conductivity[end]], cumsum([0;thickness;220]), "-b")
+# ax[2].loglog(f.em.tLM, abs.(f.em.SZLM), ".b")
+ax[2].loglog(f.em.tHM, abs.(f.em.SZHM), ".b")
+
+conductivity[2] = 1e-2;
+f(ztxLM, ztxHM, conductivity, thickness)
+
+ax[1].step([conductivity; conductivity[end]], cumsum([0;thickness;220]),"-r")
+# ax[2].loglog(f.em.tLM, abs.(f.em.SZLM), ".r")
+ax[2].loglog(f.em.tHM, abs.(f.em.SZHM), ".r")
+
 ax[1].invert_yaxis()
+ax[1].set_xlabel(raw"Conductivity ($S/m$)")
+ax[1].set_ylabel(raw"Depth ($m$)")
+ax[2].set_xlabel(raw"Gate time ($s$)")
+ax[2].set_ylabel(raw"Signal ($V A^{-1} m^{-4}$)")
+ax[1].set_xscale("log")
 
 # make 2nd layer more resistive and compute forward
 # conductivity[2] = 0.1
@@ -50,5 +64,5 @@ ax[1].invert_yaxis()
 # ax[2].grid()
 # ax[1].set_title("earth model")
 # ax[2].set_title("earth response")
-fig.tight_layout()
+# fig.tight_layout()
 gcf()

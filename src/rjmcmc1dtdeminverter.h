@@ -75,7 +75,7 @@ class TDEMNuisance : public rjMcMCNuisance {
 			type = str2ntype(s);
 		}
 
-		std::shared_ptr<rjMcMCNuisance> deepcopy() {
+		std::unique_ptr<rjMcMCNuisance> deepcopy() {
 			TDEMNuisance* dup = new TDEMNuisance();
 
 			dup->type = type;
@@ -84,7 +84,7 @@ class TDEMNuisance : public rjMcMCNuisance {
 			dup->max = max;
 			dup->sd_valuechange = sd_valuechange;
 
-			return std::shared_ptr<rjMcMCNuisance>(dup);
+			return std::unique_ptr<rjMcMCNuisance>(dup);
 		}
 
 	private:
@@ -658,7 +658,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	{
 
 		for (size_t i = 0; i < ntemplate.size(); i++) {
-			std::shared_ptr<rjMcMCNuisance> nptr = ntemplate[i].deepcopy();
+			std::unique_ptr<rjMcMCNuisance> nptr = ntemplate[i].deepcopy();
 
 			TDEMNuisance* n = dynamic_cast<TDEMNuisance*>(nptr.get());
 
@@ -716,9 +716,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				default:break;
 				}
 			}
-			//push back shared_ptr at the end so ownership is
+			//move unique_ptr at the end so ownership is
 			//transferred to the model.
-			nuisance_init.push_back(nptr);
+			nuisance_init.push_back(std::move(nptr));
 		}
 	}
 
@@ -995,7 +995,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		double distance = 0.0;
 
 		for (size_t i = 0; i < m.nuisances.size(); i++) {
-			TDEMNuisance* n = dynamic_cast<TDEMNuisance*>(m.nuisances[i].get());
+			TDEMNuisance* n = dynamic_cast<TDEMNuisance*>(m.nuisances[i]);
 			switch (n->type) {
 			case TDEMNuisance::Type::TX_HEIGHT:
 				OG.tx_height = n->value; break;

@@ -11,10 +11,10 @@ Control Begin
 		ReconstructPrimaryFieldFromInputGeometry = no
 		EstimateNoiseFromModel = yes
 		InvertMultiplicativeNoise = no
-		ZMultiplicativeNoise = 1.0
+		ZMultiplicativeNoise = 3.0
 		ZMultiplicativeNoiseMinimum = 1.0
 		ZMultiplicativeNoiseMaximum = 15.0
-		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+		ZAdditiveNoise =  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 		ZComponentSecondary    = Column 1
 	EMSystem1 End
 
@@ -27,10 +27,10 @@ Control Begin
 		ReconstructPrimaryFieldFromInputGeometry = no
 		EstimateNoiseFromModel = yes
 		InvertMultiplicativeNoise = no
-		ZMultiplicativeNoise = 1.0
+		ZMultiplicativeNoise = 3.0
 		ZMultiplicativeNoiseMinimum = 1.0
 		ZMultiplicativeNoiseMaximum = 15.0
-		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+		ZAdditiveNoise =  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 		ZComponentSecondary    = Column 19
 
 	EMSystem2 End
@@ -40,9 +40,9 @@ Control Begin
 		Nuisance1 Begin
 			Type = tx_height
 			Initial = 35.0
-			Min = 10.0
-			Max = 60.0
-			STDValueChange = 5.0
+			Min = 30.0
+			Max = 40.0
+			STDValueChange = 1.0
 		Nuisance1 End
 
 		SaveMaps       = Yes
@@ -51,8 +51,8 @@ Control Begin
 		SaveChainsRate = 500
 
 		NChains  =        4
-		NSamples =     300000
-		NBurnIn  =     150000
+		NSamples =     250000
+		NBurnIn  =     125000
 		ThinRate =      10
 
 		NLayersMin  =  1
@@ -63,29 +63,29 @@ Control Begin
 		DepthScaling    = LINEAR
 		NDepthCells     = 150
 
-		ConductivityMin          = 0.0001
+		ConductivityMin          = 0.001
 		ConductivityMax          = 5.0
 		ConductivityScaling      = LOG10
 		NConductivityCells       = 100
 	Sampler End
 
 	Input Begin
-		DataFile = synthetic_data_testtxheight.dat
+		DataFile = synthetic_txheight.dat
 		HeaderLines = 0
 		FirstRecord = 1
-		LastRecord  = 2
+		LastRecord  = 1
 		Subsample   = 1
 
 		Columns Begin
-			SurveyNumber    = Column 1
-			DateNumber      = Column 2
-			FlightNumber    = Column 3
-			LineNumber      = Column 4
-			FidNumber       = Column 5
-			Easting         = Column 6
-			Northing        = Column 7
-			GroundElevation = Column 8
-			Altimeter       = Column 9
+			SurveyNumber    = 0
+			DateNumber      = 1
+			FlightNumber    = 2
+			LineNumber      = 3
+			FidNumber       = 4
+			Easting         = 5
+			Northing        = 6
+			GroundElevation = 7
+			Altimeter       = 8
 
 			TX_Height       = 35.0
 			TX_Roll         = 0.0

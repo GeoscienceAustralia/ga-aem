@@ -22,6 +22,7 @@ Richard L. Taylor, Geoscience Australia.
 #include "general_utils.h"
 #include "random_utils.h"
 #include "vector_utils.h"
+#include "ptrvec.h"
 
 //third-party headers
 #if defined(_MPI_ENABLED)
@@ -194,7 +195,7 @@ public:
 	//about the implementation of rjMcMCNuisance.
 	//this should copy the derived instance and return a pointer to it.
 
-	virtual std::shared_ptr<rjMcMCNuisance> deepcopy() = 0;
+	virtual std::unique_ptr<rjMcMCNuisance> deepcopy() = 0;
 
 	virtual ~rjMcMCNuisance() {};
 
@@ -230,9 +231,10 @@ public:
 	std::vector<double> nvar;
 
 	std::vector<rjMcMC1DLayer>  layers;
-	std::vector<std::shared_ptr<rjMcMCNuisance>> nuisances;
+	ptr_vec<rjMcMCNuisance> nuisances;
 	//multiplicative noise magnitudes
 	std::vector<rjMcMCNoise> mnoises;
+
 
 	void initialise(const double& maxp, const double& minv, const double& maxv)
 	{
@@ -522,6 +524,12 @@ private:
 public:
 
 	size_t get_nentries() const { return nentries; }
+
+	size_t get_nnuisances() const { return typestring.size(); }
+
+	const std::vector<std::string>& get_types() const {
+		return typestring;
+	}
 
 	std::vector<std::vector<double>> nuisance;
 
@@ -818,7 +826,7 @@ public:
 	std::string endtime;
 	double samplingtime;
 
-	std::vector<std::shared_ptr<rjMcMCNuisance>> nuisance_init;
+	ptr_vec<rjMcMCNuisance> nuisance_init;
 
 	//parameters for noise prior
 	std::vector<double> noisemag_sd;
@@ -1243,15 +1251,12 @@ public:
 				status = m.insert_interface(pos, value);
 			}
 		}
-		for (size_t nui = 0; nui < nuisance_init.size(); nui++) {
-			m.nuisances.push_back(nuisance_init[nui]->deepcopy());
-		}
 
+		m.nuisances = nuisance_init;
 		for (size_t di = 0; di < ndata; di++) {
 			//noises are computed as a ratio against the observations
 			m.nvar.push_back((err[di]*err[di])/(obs[di]*obs[di]));
 		}
-
 		//create the noise vector, sample the prior
 		//and set the variance values to include
 		//the sampled multiplicative noise.
@@ -1546,11 +1551,12 @@ public:
 			write_chain_variable(ci, chn.history.ar_move, "ar_move", NcType::nc_FLOAT, nc, dims);
 			write_chain_variable(ci, chn.history.ar_birth, "ar_birth", NcType::nc_FLOAT, nc, dims);
 			write_chain_variable(ci, chn.history.ar_death, "ar_death", NcType::nc_FLOAT, nc, dims);
-			write_chain_variable(ci, chn.history.ar_nuisancechange, "ar_nuisancechange", NcType::nc_FLOAT, nc, dims);
+			if (chn.model.nnuisances() > 0) {
+				write_chain_variable(ci, chn.history.ar_nuisancechange, "ar_nuisancechange", NcType::nc_FLOAT, nc, dims);
+			}
 			if (chn.model.nnoises() > 0) {
 				write_chain_variable(ci, chn.history.ar_noisechange, "ar_noisechange", NcType::nc_FLOAT, nc, dims);
 			}
-
 			write_chain_variable(ci, chn.swap_histogram, "swap_histogram", NcType::nc_UINT, nc, dchnchn);
 		}
 
@@ -1570,7 +1576,39 @@ public:
 		var = nc.addVar("p90_model", NcType::nc_FLOAT, np_dim);
 		var.putVar(s.p90.data());
 
-		// add noises if you got em
+		// nuisance map write
+		if (nmap.get_nnuisances() > 0) {
+			//noise hist is stored as 2D,
+			//(histogram bins * number of noises).
+			//histogram bin number is constant between noises to make this easier.
+			NcDim nuisance_dim = nc.addDim("nuisance",nmap.get_nnuisances());
+			NcDim nuisance_bin_dim = nc.addDim("nuisance_bin",NUM_NUISANCE_HISTOGRAM_BINS);
+
+			std::vector<NcDim> nuisance_dims;
+			nuisance_dims.push_back(nuisance_dim);
+			nuisance_dims.push_back(nuisance_bin_dim);
+
+			NcVar binsvar = nc.addVar("nuisance_bins",NcType::nc_DOUBLE,nuisance_dims);
+			NcVar histvar = nc.addVar("nuisance_histogram",NcType::nc_UINT,nuisance_dims);
+
+			NcVar typevar = nc.addVar("nuisance_types",NcType::nc_STRING,nuisance_dim);
+			typevar.putVar(nmap.get_types().data());
+
+			std::vector<size_t> startp, countp;
+			startp.push_back(0);
+			startp.push_back(0);
+			countp.push_back(1);
+			countp.push_back(NUM_NUISANCE_HISTOGRAM_BINS);
+			for (size_t ni = 0; ni < nmap.get_nnuisances(); ni++) {
+				//save a separate histogram for each noise process
+				startp[0] = ni;
+				cStats<double> s(nmap.nuisance[ni]);
+				cHistogram<double, uint32_t> hist(nmap.nuisance[ni],s.min,s.max,NUM_NUISANCE_HISTOGRAM_BINS);
+				binsvar.putVar(startp,countp,hist.centre.data());
+				histvar.putVar(startp,countp,hist.count.data());
+			}
+		}
+
 		if (mnmap.get_nnoises() > 0) {
 			//noise hist is stored as 2D,
 			//(histogram bins * number of noises).
@@ -1599,6 +1637,7 @@ public:
 				histvar.putVar(startp,countp,hist.count.data());
 			}
 		}
+
 	}
 
 	template<typename T>
