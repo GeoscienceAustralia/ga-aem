@@ -585,6 +585,12 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	void set_data()
 	//set data *and* noise.
 	{
+		//need to clear these in case this isn't our first
+		//sounding on this process
+		noisemag_dbounds.clear();
+		noisemag_sd.clear();
+		noisemag_priorbounds.clear();
+
 		size_t di = 0;
 		for (size_t i = 0; i < nsystems; i++) {
 			cTDEmSystemInfo& S = SV[i];
@@ -656,6 +662,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 	void set_nuisance()
 	{
+		//need to clear nuisances before setting new ones
+		nuisance_init.clear();
 
 		for (size_t i = 0; i < ntemplate.size(); i++) {
 			std::unique_ptr<rjMcMCNuisance> nptr = ntemplate[i].deepcopy();
@@ -776,7 +784,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			n++;
 		}
 		double misfit_average = sum / double(n) / double(ndata);
-
+		
 		std::string buf;
 		//Id
 		OI.addfield("uniqueid", 'I', 12, 0);
