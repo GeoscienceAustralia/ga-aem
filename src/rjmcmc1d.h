@@ -894,6 +894,11 @@ public:
 	{
 		return nuisance_init.size();
 	}
+	
+	size_t nnoises()
+	{
+		return noisemag_sd.size();
+	}
 
 	bool isinbounds(const double& bmin, const double& bmax, const double& b)
 	{
