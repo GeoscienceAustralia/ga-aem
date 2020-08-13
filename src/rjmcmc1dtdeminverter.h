@@ -622,7 +622,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					//hard coded proposal width for now
 					//in the con file mult noises will be expressed in percent,
 					//internally they are dealt with as ratios, so *0.01.
-					noisemag_sd.push_back(S.x_multnoise_sd);
+					noisemag_sd.push_back(0.01*S.x_multnoise_sd);
 					noisemag_priorbounds.push_back(std::make_pair(0.01*S.x_multnoise_min,0.01*S.x_multnoise_max));
 					//infer data index bounds for this noise from nwindows
 					noisemag_dbounds.push_back(std::make_pair(di - S.nwindows, di));
@@ -638,7 +638,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				if (S.invertMultiplicativeNoise) {
 					//set the noise parameters
 					//hard coded proposal width for now
-					noisemag_sd.push_back(S.y_multnoise_sd);
+					noisemag_sd.push_back(0.01*S.y_multnoise_sd);
 					noisemag_priorbounds.push_back(std::make_pair(0.01*S.y_multnoise_min, 0.01*S.y_multnoise_max));
 					//infer data index bounds for this noise from nwindows
 					noisemag_dbounds.push_back(std::make_pair(di - S.nwindows, di));
@@ -654,7 +654,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				if (S.invertMultiplicativeNoise) {
 					//set the noise parameters
 					//hard coded proposal width for now
-					noisemag_sd.push_back(S.z_multnoise_sd);
+					noisemag_sd.push_back(0.01*S.z_multnoise_sd);
 					noisemag_priorbounds.push_back(std::make_pair(0.01*S.z_multnoise_min, 0.01*S.z_multnoise_max));
 					//infer data index bounds for this noise from nwindows
 					noisemag_dbounds.push_back(std::make_pair(di - S.nwindows, di));
