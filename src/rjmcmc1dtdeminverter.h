@@ -448,8 +448,15 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				n.value = c.getdoublevalue("Initial");
 			}
 
-			n.min = c.getdoublevalue("Min");
-			n.max = c.getdoublevalue("Max");
+			bool offset = b.getboolvalue("PriorOffset");
+			if (offset) {
+				n.min = n.value - c.getdoublevalue("OffsetLow");
+				n.min = n.value + c.getdoublevalue("OffsetUpper");
+			} else {
+				n.min = c.getdoublevalue("Min");
+				n.max = c.getdoublevalue("Max");
+			}
+
 			if (n.min >= n.max) {
 				printf("Error: Min >= Max for nuisance");
 				exit(1);
