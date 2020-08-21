@@ -68,6 +68,7 @@ function init_GA_AEM(; stmfile_LM = "../examples/bhmar-skytem/stmfiles/Skytem-LM
     # get the centres of the window times
     cxx"""
     #include <vector>
+    #include <cmath>
     #ifndef WINDOW_CENTRES_H
     #define WINDOW_CENTRES_H
     using namespace std;
@@ -75,7 +76,7 @@ function init_GA_AEM(; stmfile_LM = "../examples/bhmar-skytem/stmfiles/Skytem-LM
     vector<double> window_centres(const cTDEmSystem* sys) {
         vector<double> centre;
         for (size_t i = 0; i < sys->NumberOfWindows; i++) {
-            centre.push_back((sys->WinSpec[i].TimeHigh + sys->WinSpec[i].TimeLow)/2.0);
+            centre.push_back(sqrt(sys->WinSpec[i].TimeHigh * sys->WinSpec[i].TimeLow));
         }
         return centre;
     }
