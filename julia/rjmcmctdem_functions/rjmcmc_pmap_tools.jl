@@ -118,6 +118,14 @@ function ct2cd(cond,thick,depth)
     cond[layerinds]
 end
 
+function d2t(depth::Array{Float64,1})::Array{Float64,1}
+    depth[2:end] - depth[1:end-1]
+end
+
+function mean_ct(P::Pmap)::Tuple{Array{Float64,1},Array{Float64,1}}
+    P.mean_model, d2t(P.depth)
+end
+
 function view_rjmcmc_pmap(P::Pmap, TM=Dict())
 
     p = [
