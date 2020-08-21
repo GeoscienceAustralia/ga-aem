@@ -18,7 +18,8 @@ mutable struct EMforward
     tHM  :: Array{Float64, 1}
 end
 
-function init_GA_AEM()
+
+function init_GA_AEM(; stmfile_LM = "../examples/bhmar-skytem/stmfiles/Skytem-LM.stm", stmfile_HM = "../examples/bhmar-skytem/stmfiles/Skytem-HM.stm")
     #CXXJL_ROOTDIR should be set at least when first time installing Cxx
     #export CXXJL_ROOTDIR=/apps/gcc/5.2.0
 
@@ -33,7 +34,7 @@ function init_GA_AEM()
     addHeaderDir(ga_aem_path*"/submodules/cpp-utils/src/", kind=C_System)
     addHeaderDir("/usr/local/include", kind=C_System)
 
-    
+
     # needs fftw3 as well
     if "FFTW_DIR" in keys(ENV)
         addHeaderDir(ENV["FFTW_DIR"]*"/include/", kind=C_System)
@@ -47,9 +48,7 @@ function init_GA_AEM()
 
 
     # Create the cTDEmSystem class object
-    stmfile_LM = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-LM.stm"
     TLM = @cxxnew cTDEmSystem(pointer(stmfile_LM));
-    stmfile_HM = ga_aem_path*"/examples/bhmar-skytem/stmfiles/Skytem-HM.stm"
     THM = @cxxnew cTDEmSystem(pointer(stmfile_HM));
 
     # Allocate reusable storage for outputs
@@ -67,8 +66,24 @@ function init_GA_AEM()
     SZHM = Array{Float64, 1}(undef,nwindowsHM)
 
     # get the centres of the window times
-    tLM = getstmtime(stmfile_LM)
-    tHM = getstmtime(stmfile_HM)
+    cxx"""
+    #include <vector>
+    #ifndef WINDOW_CENTRES_H
+    #define WINDOW_CENTRES_H
+    using namespace std;
+
+    vector<double> window_centres(const cTDEmSystem* sys) {
+        vector<double> centre;
+        for (size_t i = 0; i < sys->NumberOfWindows; i++) {
+            centre.push_back((sys->WinSpec[i].TimeHigh + sys->WinSpec[i].TimeLow)/2.0);
+        }
+        return centre;
+    }
+    #endif
+    """
+
+    tLM = collect(@cxx window_centres(TLM));
+    tHM = collect(@cxx window_centres(THM));
 
     # call it once bug
     # Set the input arrays
@@ -158,26 +173,6 @@ mutable struct Sounding
     x         :: Array{Float64, 1}
     ztx       :: Float64
     thickness :: Array{Float64, 1}
-end
-
-function getstmtime(fname)
-    file = readlines(fname)
-    w = Vector{Array{Float64, 2}}(undef, 0)
-    storeit = false
-    for (i, line) in enumerate(file)
-        if !storeit
-            if occursin("WindowTimes Begin", line)
-                storeit = true
-                continue
-            end
-        elseif occursin("WindowTimes End", line)
-            break
-        else
-            startfrom = findlast('\t', line) + 1
-            push!(w, permutedims(parse.(Float64, split(line[startfrom:end]," "))))
-        end
-    end
-   dropdims(10 .^(0.5*sum(log10.(reduce(vcat, w)), dims=2)), dims=2)
 end
 
 end
