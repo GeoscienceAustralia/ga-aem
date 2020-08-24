@@ -1,0 +1,80 @@
+System Begin
+	Name = SkyTem-High-Moment-Yancowinna/Menindee-2015
+	Type = Time Domain
+
+	Transmitter Begin
+		NumberOfTurns = 1
+		PeakCurrent   = 1
+		LoopArea      = 1
+		BaseFrequency = 25
+		WaveformDigitisingFrequency = 819200
+		WaveFormCurrent Begin
+			-0.0050000000 	0.0000000000
+			-0.0048681000 	0.4938000000
+			-0.0047076000 	0.9273700000
+			-0.0046904000 	0.9594900000
+			 0.0000000000 	1.0000000000
+			 0.0000072018 	0.9792000000
+			 0.0000999710 	0.6906700000
+			 0.0002874800 	0.0657340000
+			 0.0003022900 	0.0156610000
+			 0.0003050400 	0.0070146000
+			 0.0003070500 	0.0028248000
+			 0.0003119700 	0.0000000000
+			 0.0150000000 	0.0000000000
+		WaveFormCurrent End
+	Transmitter End
+
+	Receiver Begin
+		NumberOfWindows = 25
+		WindowWeightingScheme = AreaUnderCurve
+
+		WindowTimes Begin
+			0.0003976300	0.0004102000
+			0.0004106300	0.0004262000
+			0.0004266300	0.0004462000
+			0.0004466300	0.0004712000
+			0.0004716300	0.0005022000
+			0.0005026300	0.0005422000
+			0.0005426300	0.0005932000
+			0.0005936300	0.0006562000
+			0.0006566300	0.0007372000
+			0.0007376300	0.0008382000
+			0.0008386300	0.0009652000
+			0.0009656300	0.0011262000
+			0.0011266300	0.0013282000
+			0.0013286300	0.0015832000
+			0.0015836300	0.0019052000
+			0.0019056300	0.0023112000
+			0.0023116300	0.0028222000
+			0.0028226300	0.0034672000
+			0.0034676300	0.0042802000
+			0.0042806300	0.0053052000
+			0.0053056300	0.0065972000
+			0.0065976300	0.0082252000
+			0.0082256300	0.0102792000
+			0.0102796300	0.0125052000
+			0.0125056300	0.0148152000
+		WindowTimes End
+
+		LowPassFilter Begin
+			CutOffFrequency = 300000 450000
+			Order           = 1       1
+		LowPassFilter End
+
+	Receiver End
+
+	ForwardModelling Begin
+		//TX loop area 340m^2 -> r = 10.4
+		ModellingLoopRadius = 10.4
+		OutputType = dB/dt
+		SaveDiagnosticFiles = no
+		XOutputScaling = 1e12
+		YOutputScaling = 1e12
+		ZOutputScaling = 1e12
+		SecondaryFieldNormalisation  =  none
+		FrequenciesPerDecade = 6
+		NumberOfAbsiccaInHankelTransformEvaluation = 21
+	ForwardModelling End
+
+System End
