@@ -126,6 +126,10 @@ function mean_ct(P::Pmap)::Tuple{Array{Float64,1},Array{Float64,1}}
     P.mean_model, d2t(P.depth)
 end
 
+function median_ct(P::Pmap)::Tuple{Array{Float64,1},Array{Float64,1}}
+    P.p50_model, d2t(P.depth)
+end
+
 function view_rjmcmc_pmap(P::Pmap, TM=Dict())
 
     p = [
