@@ -30,33 +30,24 @@ Control Begin
 		ZMultiplicativeNoise = 3.0
 		ZMultiplicativeNoiseMinimum = 1.0
 		ZMultiplicativeNoiseMaximum = 15.0
-		ZAdditiveNoise =  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+		ZAdditiveNoise = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 		ZComponentSecondary    = Column 19
 
 	EMSystem2 End
 
 	Sampler Begin
-
-		Nuisance1 Begin
-			Type = tx_height
-			Initial = 35.0
-			Min = 30.0
-			Max = 40.0
-			STDValueChange = 1.0
-		Nuisance1 End
-
 		SaveMaps       = Yes
 		SaveMapsRate   = 1
 		SaveChains     = Yes
 		SaveChainsRate = 500
 
 		NChains  =        4
-		NSamples =     250000
-		NBurnIn  =     125000
+		NSamples =     300000
+		NBurnIn  =     150000
 		ThinRate =      10
 
 		NLayersMin  =  1
-		NLayersMax  =  10
+		NLayersMax  =  15
 
 		DepthMin        = 0.0
 		DepthMax        = 300
@@ -64,7 +55,7 @@ Control Begin
 		NDepthCells     = 150
 
 		ConductivityMin          = 0.001
-		ConductivityMax          = 5.0
+		ConductivityMax          = 3.0
 		ConductivityScaling      = LOG10
 		NConductivityCells       = 100
 	Sampler End
@@ -81,7 +72,7 @@ Control Begin
 			DateNumber      = 1
 			FlightNumber    = 2
 			LineNumber      = 3
-			FidNumber       = 4
+			FidNumber       = 35
 			Easting         = 5
 			Northing        = 6
 			GroundElevation = 7

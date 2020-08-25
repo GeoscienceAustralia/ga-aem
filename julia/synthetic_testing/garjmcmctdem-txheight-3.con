@@ -1,0 +1,105 @@
+Control Begin
+
+	NumberOfSystems = 2
+
+	EMSystem1 Begin
+		SystemFile      = ../examples/bhmar-skytem/stmfiles/Skytem-LM.stm
+		UseXComponent   = no
+		UseYComponent   = no
+		UseZComponent   = yes
+		InvertTotalField = no
+		ReconstructPrimaryFieldFromInputGeometry = no
+		EstimateNoiseFromModel = yes
+		InvertMultiplicativeNoise = no
+		ZMultiplicativeNoise = 3.0
+		ZMultiplicativeNoiseMinimum = 1.0
+		ZMultiplicativeNoiseMaximum = 15.0
+		ZAdditiveNoise =  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+		ZComponentSecondary    = Column 1
+	EMSystem1 End
+
+	EMSystem2 Begin
+		SystemFile      = ../examples/bhmar-skytem/stmfiles/Skytem-HM.stm
+		UseXComponent   = no
+		UseYComponent   = no
+		UseZComponent   = yes
+		InvertTotalField = no
+		ReconstructPrimaryFieldFromInputGeometry = no
+		EstimateNoiseFromModel = yes
+		InvertMultiplicativeNoise = no
+		ZMultiplicativeNoise = 3.0
+		ZMultiplicativeNoiseMinimum = 1.0
+		ZMultiplicativeNoiseMaximum = 15.0
+		ZAdditiveNoise =  0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+		ZComponentSecondary    = Column 19
+
+	EMSystem2 End
+
+	Sampler Begin
+
+
+		SaveMaps       = Yes
+		SaveMapsRate   = 1
+		SaveChains     = Yes
+		SaveChainsRate = 500
+
+		NChains  =        4
+		NSamples =     300000
+		NBurnIn  =     150000
+		ThinRate =      10
+
+		NLayersMin  =  1
+		NLayersMax  =  15
+
+		DepthMin        = 0.0
+		DepthMax        = 300
+		DepthScaling    = LINEAR
+		NDepthCells     = 150
+
+		ConductivityMin          = 0.001
+		ConductivityMax          = 3.0
+		ConductivityScaling      = LOG10
+		NConductivityCells       = 100
+	Sampler End
+
+	Input Begin
+		DataFile = synthetic_txheight.dat
+		HeaderLines = 0
+		FirstRecord = 1
+		LastRecord  = 1
+		Subsample   = 1
+
+		Columns Begin
+			SurveyNumber    = 0
+			DateNumber      = 1
+			FlightNumber    = 2
+			LineNumber      = 3
+			FidNumber       = 30
+			Easting         = 5
+			Northing        = 6
+			GroundElevation = 7
+			Altimeter       = 8
+
+			TX_Height       = 30.0
+			TX_Roll         = 0.0
+			TX_Pitch        = 0.0
+			TX_Yaw          = 0.0
+			TXRX_DX         = -17.0
+			TXRX_DY         = 0.0
+			TXRX_DZ         = 2.0
+			RX_Roll         = 0.0
+			RX_Pitch        = 0.0
+			RX_Yaw          = 0.0
+		Columns End
+	Input End
+
+	Output Begin
+		LogFile    = rjmcmc.log
+		DataFile   = rjmcmc.asc
+
+		Directory  = output\
+		MapsDirectory    = output\pmaps\
+		ChainsDirectory  = output\chains\
+	Output End
+
+Control End
