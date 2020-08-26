@@ -68,6 +68,8 @@ class TDEMNuisance : public rjMcMCNuisance {
 
 		Type type;
 
+		bool offset;
+
 		static size_t number_of_types() { return 13; }
 
 		std::string typestring() const {
@@ -82,6 +84,7 @@ class TDEMNuisance : public rjMcMCNuisance {
 			TDEMNuisance* dup = new TDEMNuisance();
 
 			dup->type = type;
+			dup->offset = offset;
 			dup->value = value;
 			dup->min = min;
 			dup->max = max;
@@ -448,10 +451,11 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				n.value = c.getdoublevalue("Initial");
 			}
 
-			bool offset = b.getboolvalue("PriorOffset");
+			bool offset = c.getboolvalue("PriorOffset");
+			n.offset = offset;
 			if (offset) {
-				n.min = n.value - c.getdoublevalue("OffsetLow");
-				n.min = n.value + c.getdoublevalue("OffsetUpper");
+				n.min = -c.getdoublevalue("OffsetLower");
+				n.max = c.getdoublevalue("OffsetUpper");
 			} else {
 				n.min = c.getdoublevalue("Min");
 				n.max = c.getdoublevalue("Max");
@@ -734,6 +738,13 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				default:break;
 				}
 			}
+
+			// offset prior
+			if (n->offset) {
+				n->min += n->value;
+				n->max += n->value;
+			}
+
 			//move unique_ptr at the end so ownership is
 			//transferred to the model.
 			nuisance_init.push_back(std::move(nptr));
@@ -794,7 +805,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			n++;
 		}
 		double misfit_average = sum / double(n) / double(ndata);
-		
+
 		std::string buf;
 		//Id
 		OI.addfield("uniqueid", 'I', 12, 0);

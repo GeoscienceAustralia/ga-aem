@@ -894,7 +894,7 @@ public:
 	{
 		return nuisance_init.size();
 	}
-	
+
 	size_t nnoises()
 	{
 		return noisemag_sd.size();
@@ -1174,7 +1174,7 @@ public:
 		double delta = nrand<double>() * mcur.nuisances[ni]->sd_valuechange;
 		double nv = mcur.nuisances[ni]->value + delta;
 		bool isvalid = isinbounds(mcur.nuisances[ni]->min, mcur.nuisances[ni]->max, nv);
-		if (isvalid == false)return false;
+		if (isvalid == false) return false;
 
 		mpro.nuisances[ni]->value = nv;
 
