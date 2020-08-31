@@ -52,3 +52,24 @@ for idx in 1:nsoundings
     sig_d_lm[idx,:] = noise_lm
     sig_d_hm[idx,:] = noise_hm
 end
+
+## plot
+qranks = [0.05,0.25,0.5,0.75,0.95]
+quants_lm = transpose(mapslices(x->quantile(x,qranks),sig_d_lm;dims=1))
+quants_hm = transpose(mapslices(x->quantile(x,qranks),sig_d_hm;dims=1))
+
+fig, ax = subplots(1,2, figsize=(20,10))
+sca(ax[1])
+yscale("log")
+ylabel("relative uncertainty")
+xlabel("LM gate")
+xticks(1:nw_lm)
+plot(quants_lm,"o--")
+legend("Quantile ".*string.(qranks))
+sca(ax[2])
+yscale("log")
+ylabel("relative uncertainty")
+xlabel("HM gate")
+xticks(1:nw_hm)
+plot(quants_hm,"o--")
+gcf()
