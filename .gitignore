@@ -15,6 +15,7 @@ julia/output
 
 # Ignore misc matlab scripts
 octave_matlab_utils/
+menindee_aem_calibration_range/
 
 # Ignore all binary executables
 *.exe
