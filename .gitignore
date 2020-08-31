@@ -13,6 +13,9 @@ examples/**/*.log
 # Ignore output from julia synthetic tests
 julia/output
 
+# Ignore misc matlab scripts
+octave_matlab_utils/
+
 # Ignore all binary executables
 *.exe
 *.dll
