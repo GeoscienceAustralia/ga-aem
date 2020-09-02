@@ -133,28 +133,30 @@ end
 function view_rjmcmc_pmap(P::Pmap, TM=Dict())
 
     p = [
-        0.1 0.5 0.775 0.980;
-        0.1 0.43 0.550 0.755;
-        0.1 0.43 0.325 0.530;
-        0.1 0.43 0.100 0.305;
+        0.066 0.33  0.775 0.980;
+        0.066 0.284 0.550 0.755;
+        0.066 0.284 0.325 0.530;
+        0.066 0.284 0.100 0.305;
 
-        0.57 0.99 0.82 0.98;
-        0.5 0.87 0.10 0.76;
-        0.88 0.99 0.10 0.76;
+        0.376 0.65 0.82 0.98;
+        #0.33  0.57 0.10 0.76;
+	0.69 0.92 0.10 0.98 ;
+        #0.581 0.65 0.10 0.76;
+	0.93 0.99 0.10 0.98;
         ]
 
     if (P.nnoises > 0 && P.nnuisances > 0)
-        p[6,:] = [0.5 0.87 0.42 0.76];
-        p[7,:] = [0.88 0.99 0.42 0.76];
-        p = [p; 0.53 0.99 0.10 0.19; 0.53 0.99 0.26 0.35];
+        #p[6,:] = [0.5 0.87 0.42 0.76];
+        #p[7,:] = [0.88 0.99 0.42 0.76];
+        p = [p; 0.33 0.65 0.10 0.41; 0.33 0.65 0.45 0.76];
     elseif (P.nnoises > 0 || P.nnuisances > 0)
-        p[6,:] = [0.5 0.87 0.32 0.76];
-        p[7,:] = [0.88 0.99 0.32 0.76];
-        p = [p; 0.53 0.99 0.10 0.25];
+        #p[6,:] = [0.5 0.87 0.32 0.76];
+        #p[7,:] = [0.88 0.99 0.32 0.76];
+        p = [p; 0.33 0.65 0.10 0.76];
     end
 
 
-    fig = figure(figsize=(10,8))
+    fig = figure(figsize=(15,8))
 
     ax = Array{Any}(undef,9);
 
@@ -163,19 +165,19 @@ function view_rjmcmc_pmap(P::Pmap, TM=Dict())
         ax[i] = PyPlot.axes(position=ap)
     end
 
-    cmap = ColorMap("rainbow")
+    cmap = ColorMap("inferno")
     #set zero values of the histogram to black
     #matlab lets you just do this with arrays
     #but PyPlot via julia has to make things hard
-    cmap._i_under = 0
-    cmap.set_under((1,1,1,1))
+    #cmap._i_under = 0
+    #cmap.set_under((1,1,1,1))
 
     sca(ax[6])
     pcolormesh(10 .^ P.value,P.depth,P.lchist,cmap=cmap)
-    plot(10 .^ P.mean_model,P.depth,"-",color="grey", linewidth = 3, label = "mean");
-    plot(10 .^ P.p10_model,P.depth,":k", linewidth = 3, label = "p10")
-    plot(10 .^ P.p50_model,P.depth,"-k", linewidth = 3, label = "median")
-    plot(10 .^ P.p90_model,P.depth,":k", linewidth = 3, label = "p90")
+    #plot(10 .^ P.mean_model,P.depth,"-",color="grey", linewidth = 3, label = "mean");
+    plot(10 .^ P.p10_model,P.depth,":w", linewidth = 3, label = "p10")
+    #plot(10 .^ P.p50_model,P.depth,"-w", linewidth = 3, label = "median")
+    plot(10 .^ P.p90_model,P.depth,":w", linewidth = 3, label = "p90")
     if length(TM) > 0
         tmcmap = ct2cd(TM["conductivity"],TM["thickness"],P.depth)
         plot(tmcmap,P.depth,"-g",linewidth = 3, label = "true model")
