@@ -2,6 +2,9 @@
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets">
   </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <GEOPHYSICS_NETCDF_ROOT>C:\W10Dev\code\repos\geophysics-netcdf</GEOPHYSICS_NETCDF_ROOT>
+  </PropertyGroup>
   <PropertyGroup>
     <LibraryPath>$(GEOPHYSICS_NETCDF_ROOT)\visualstudio\libnetcdfcxx\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
     <IncludePath>$(GEOPHYSICS_NETCDF_ROOT)\submodules\netcdf-cxx4\cxx4;$(IncludePath)</IncludePath>

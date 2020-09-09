@@ -3,6 +3,7 @@
   <ImportGroup Label="PropertySheets">
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
+    <FFTW_ROOT>C:\W10Dev\code\third_party\fftw3.2.2.dlls</FFTW_ROOT>
   </PropertyGroup>
   <PropertyGroup>
     <LibraryPath>$(FFTW_ROOT)\64bit;$(LibraryPath)</LibraryPath>

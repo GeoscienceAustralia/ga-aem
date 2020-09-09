@@ -1,8 +1,10 @@
 function P = read_rjmcmc_pmap(ncfilename)
 
     I = ncinfo(ncfilename);    
-    for i=1:1:length(I.Attributes)        
-        P.(I.Attributes(i).Name) = I.Attributes(i).Value;  
+    for i=1:1:length(I.Attributes)
+        if(strcmpi(I.Attributes(i).Name,'_NCProperties')==0)
+           P.(I.Attributes(i).Name) = I.Attributes(i).Value;  
+        end
     end        
     
 
@@ -39,91 +41,7 @@ function P = read_rjmcmc_pmap(ncfilename)
     P.ar_death       = ncread(ncfilename,'ar_death')';
     P.swap_histogram = ncread(ncfilename,'swap_histogram')';
 
-    return
-    %%
-    dark_figure();
-    maximize_figure();
-    for i=1:1:size(p,1);
-        ap = [p(i,1) p(i,3) p(i,2)-p(i,1) p(i,4)-p(i,3)];
-        ax(i) = axes('position',ap);
-        box on;
-    end
-    cmap = jet(256); cmap(1,:)=[0 0 0];
-    colormap(cmap);
-
-    %%
-    axes(ax(6));
-    imagesc(value,depth,lchist)
-    hold on;
-    plot(mean_model,depth,'-w');
-    %plot(mode_model,depth,'-y');
-    plot(p10_model,depth,':m');
-    plot(p50_model,depth,'-m');
-    plot(p90_model,depth,':m');
-
-    ylabel('Depth (m)');
-    xlabel('Conductivity (S/m)');
-    set(gca,'xaxislocation','top');
-    set(gca,'xtick',[-3:1:1]);
-    set(gca,'xticklabel',10.^[-3:1:1]);
-
-    axes(ax(7));
-    imagesc([0 1],depth,cphist)
-    box on;
-    set(gca,'xticklabel',[]);
-    set(gca,'yticklabel',[]);
-
-    axes(ax(5));;
-    bar(layer,nlhist,'r');
-    xlabel('Number of layers');
-    ylim([0 max(nlhist)]);
-    %set(gca,'xticklabel',[]);
-    set(gca,'yticklabel',[]);
-
-
-    %%%
-    axes(ax(1));
-    semilogy(cvs,misfit/ndata);
-    %ylim([0 10]);
-    ylabel('Misfit');
-    set(gca,'xticklabel',[]);
-    set(gca,'layer','top');
-    ylim([0.09 100]);
-
-    axes(ax(2));
-    semilogy(cvs,temperature);
-    ylim([0.9 max(temperature(:))*1.1]);
-    ylabel('Temperature');
-    set(gca,'xticklabel',[]);
-    set(gca,'layer','top');
-
-
-    axes(ax(3));
-    plot(cvs,nlayers)
-    ylabel('#Layers');
-    set(gca,'xticklabel',[]);
-    set(gca,'layer','top');
-
-    axes(ax(4));
-    h(1)=plot(cvs,ar_valuechange(1,:),'-m');lab{1}='value';
-    hold on;
-    h(2)=plot(cvs,ar_move(1,:),'-b');lab{2}='move';
-    h(3)=plot(cvs,ar_birth(1,:),'-g');lab{3}='birth';
-    h(4)=plot(cvs,ar_death(1,:),'-r');lab{4}='death';
-
-    %plot(cvs,ar_valuechange,'-m');
-    %plot(cvs,ar_move,'-b');
-    %plot(cvs,ar_birth,'-g');
-    %plot(cvs,ar_death,'-r');
-
-    xlabel('Sample#');
-    set(gca,'layer','top');
-    ylabel('Accept rate');
-    ylim([0 100]);
-    set(get(gca,'xaxis'),'ExponentMode','manual');
-    set(get(gca,'xaxis'),'Exponent',0);
-    lh=legend(h,lab);
-    set(lh,'orientation','horizontal');
+    
 end
 
 

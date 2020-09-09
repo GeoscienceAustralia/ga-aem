@@ -7,6 +7,9 @@
     <Import Project="netcdf4.props" />
     <Import Project="gdal.props" />
   </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <GEOPHYSICS_NETCDF_ROOT>C:\W10Dev\code\repos\geophysics-netcdf</GEOPHYSICS_NETCDF_ROOT>
+  </PropertyGroup>
   <PropertyGroup>
     <IncludePath>$(GEOPHYSICS_NETCDF_ROOT)\src;$(GEOPHYSICS_NETCDF_ROOT)\submodules\marray\include\andres;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
