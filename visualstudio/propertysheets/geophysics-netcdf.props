@@ -7,20 +7,13 @@
     <Import Project="netcdf4.props" />
     <Import Project="gdal.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros">
-    <GEOPHYSICS_NETCDF_ROOT>C:\W10Dev\code\repos\geophysics-netcdf</GEOPHYSICS_NETCDF_ROOT>
-  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IncludePath>$(GEOPHYSICS_NETCDF_ROOT)\src;$(GEOPHYSICS_NETCDF_ROOT)\submodules\marray\include\andres;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
     <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
-  <ItemGroup>
-    <BuildMacro Include="GEOPHYSICS_NETCDF_ROOT">
-      <Value>$(GEOPHYSICS_NETCDF_ROOT)</Value>
-      <EnvironmentVariable>true</EnvironmentVariable>
-    </BuildMacro>
-  </ItemGroup>
+  <ItemGroup />
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
