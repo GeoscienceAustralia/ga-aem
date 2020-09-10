@@ -40,6 +40,12 @@ struct Pmap
     nuisance_bins::Array{Float64,2}
     nuisance_counts::Array{UInt,2}
     nnuisances::UInt
+
+	#metadata
+	fiducial::Float64
+	x::Float64
+	y::Float64
+	elevation::Float64
 end
 
 function read_rjmcmc_pmap(ncfilename::String)::Pmap
@@ -104,11 +110,16 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
         nuisance_counts = Array{UInt,2}(undef,0,0);
     end
 
+	fid = ncgetatt(ncfilename, "Global", "fiducial");
+	x = ncgetatt(ncfilename, "Global", "x");
+	y = ncgetatt(ncfilename, "Global", "y");
+	elevation = ncgetatt(ncfilename, "Global", "elevation");
+
     Pmap(depth,value,layer,lchist,cphist,nlhist,observations,errors,ndata,chain,nchains,cvs,
         temperature,misfit,nlayers,logppd,mean_model,mode_model,p10_model,p50_model,p90_model,
         ar_valuechange,ar_move,ar_birth,ar_death,swap_histogram,ar_noisechange,
         noise_bins,noise_counts,nnoises, ar_nuisancechange, nuisance_bins,
-        nuisance_counts, nnuisances)
+        nuisance_counts, nnuisances, fid, x, y, elevation)
 end
 
 
