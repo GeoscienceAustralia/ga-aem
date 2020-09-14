@@ -12,14 +12,16 @@ function section_arrays(line_nc_dir::String)
     with the garjmcmc outputs from soundings on a single line.
 
     ## Returns:
-    All arrays are of dimension (number of soundings x number of depth
-    cells) and are sorted along the first axis according to the easting in
-    ascending order
 
-    plotting_dist: spatial coordinate corresponding to each sounding
-    in the directory. Repeated for each depth cell for compatibility with
-    matplotlib routines that need (x,y,z) values for all cells. calculated
+    The first array is 1D, of size (number of soundings).
+
+    line_dist: spatial coordinate corresponding to each sounding
+    in the directory. Calculated
     according to distance from the last (maximum) fiducial in the line.
+
+    The next set of arrays are of dimension (number of soundings x number of depth
+    cells) and are sorted along the first axis according to line_dist in
+    ascending order.
 
     plotting_elevation: map between depth cells and altitude, so that the
     section can accurately represent topography.
@@ -28,6 +30,14 @@ function section_arrays(line_nc_dir::String)
 
     spread: difference between 10th and 90th percentile conductivity in each
     depth cell
+
+    The last array is of dimension (2 x number of soundings x number of
+    tx height histogram cells) and enables plotting of inverted tx height
+    posterior histograms along the line.
+
+    nuisances: tx_height histogram for each sounding. nuisances[1,:,:] are the
+    bin centres and nuisances[2,:,:] are the counts.
+
     """
     #make the list of netCDFs
     files = readdir(line_nc_dir);
@@ -52,6 +62,9 @@ function section_arrays(line_nc_dir::String)
     median_models = zeros(nsoundings,ndepthcells);
     spread = zeros(nsoundings, ndepthcells);
 
+    nbins = length(P0.nuisance_bins);
+    nuisances = zeros(2,nsoundings, nbins);
+
     maxfid = P0.fiducial;
     maxsdg = 1;
 
@@ -62,60 +75,68 @@ function section_arrays(line_nc_dir::String)
         eastings[sounding] = P.x;
         northings[sounding] = P.y;
 
-        if P.fiducial > maxsdg
+        if P.fiducial > maxfid
             maxfid = P.fiducial;
             maxsdg = sounding;
         end
 
         median_models[sounding,:] = P.p50_model;
         spread[sounding,:] = P.p90_model - P.p10_model;
+
+        nuisances[2,sounding,:] = P.nuisance_counts;
+        nuisances[1,sounding,:] = P.nuisance_bins;
     end
 
-    lineDist = sqrt.((eastings .- eastings[maxsdg]).^2 .+ (northings .- northings[maxsdg]).^2)
+    line_dist = sqrt.((eastings .- eastings[maxsdg]).^2 .+ (northings .- northings[maxsdg]).^2)
 
     #reorder so plotting proceeds smoothly
-    idxs = sortperm(lineDist);
+    idxs = sortperm(line_dist);
+    line_dist = line_dist[idxs];
     elevations = elevations[idxs];
-    eastings = eastings[idxs];
-    northings = northings[idxs];
     median_models = median_models[idxs,:];
     spread = spread[idxs,:];
+    nuisances = nuisances[:,idxs,:];
 
     #model cell elevations rel sea level
     plotting_elevation = transpose(depth) .- elevations;
-    plotting_dist = repeat(lineDist[idxs],1,ndepthcells);
 
-    plotting_dist, plotting_elevation, median_models, spread
+    line_dist, plotting_elevation, median_models, spread, nuisances
 end
 
-function nuisance_sections(line_nc_dir::String)
+function nuisance_section(x::Array{Float64,1}, yz::Array{Float64,3}; ax=nothing)
     """
-        nuisance_sections(line_nc_dir)
+    nuisance_section(x,yz)
 
-        given a directory with netCDF files for an AEM line,
-        returns a tuple of arrays with all the data needed
-        to plot a "section" of the inverted transmitter height
-        for that line.
+    Plot a section of the inverted transmitter height using pcolormesh.
 
-        Parameters:
-        line_nc_dir: string location of directory containing pmap netcdfs
-        for the line you want a section plotted for.
+    Parameters:
+    x: spatial plotting coordinate for each sounding, in sorted order.
+    yz: yz[1,:,:] are the histogram bins for the inverted tx height.
+        yz[2,:,:] are the histogram counts for the inverted tx height.
 
-        Returns:
-        All arrays of shape (number of soundings x number of tx_height bins)
-        nuisance_counts: histogram counts for tx height, returned per sounding.
-        nuisance_bins: histogram bins for tx height, per sounding.
-        line_dist: distance along line per sounding (x axis for plotting
-        results).
+    ax: axes object for the plot. if none, new axes are created.
+
+    Returns:
+
+    fig: handle to the resultant plot. is nothing if axes are passed.
 
     """
+    #compatible shapes for pcolormesh
+    x = repeat(x,1,size(yz,3));
 
+    fig=nothing
+    if isnothing(ax)
+        fig, ax = subplots(1,1,figsize=(30,5));
+    end
+    ax.pcolormesh(x,yz[1,:,:],yz[2,:,:],cmap="viridis");
+    fig
 end
 
-function plot_section(x::Array{Float64,2}, y::Array{Float64,2},
+function plot_section(x::Array{Float64,1}, y::Array{Float64,2},
                       z::Array{Float64,2}, dz::Array{Float64,2};
                       lb_dz::Real = 1.0,
-                      ub_dz::Real = 3.0)
+                      ub_dz::Real = 3.0,
+                      ax=nothing)
     """
     plot_section(x,y,z,dz)
 
@@ -129,18 +150,32 @@ function plot_section(x::Array{Float64,2}, y::Array{Float64,2},
     z - inverted conductivity
     dz - uncertainty in inverted conductivity
 
+    Optional:
+    lb_dz: lower bound for alpha blending of section according to posterior
+           spread.
+    ub_dz: upper bound for same.
+    ax: axes object for the plot. If none, new axes are created.
+
     Returns:
     fig - handle to a PyPlot figure containing the resultant plot. Colours map
-          to conductivity and alpha values to uncertainty.
+          to conductivity and alpha values to uncertainty. Is nothing if axes
+          are passed.
     """
-    #long
-    fig, ax = plt.subplots(1,1,figsize=(30,5));
+    fig=nothing
+    #long figure
+    if isnothing(ax)
+        fig, ax = plt.subplots(1,1,figsize=(30,5));
+    end
     alpha = (dz .- lb_dz)./(ub_dz - lb_dz);
     alpha = min.(1,max.(0,alpha));
     alphacmap = ColorMap("alphacmap",[(0.0,1.0,1.0),(1.0,1.0,1.0)],
                             [(0.0,1.0,1.0),(1.0,1.0,1.0)],
                             [(0.0,1.0,1.0),(1.0,1.0,1.0)],
                             [(0.0,0.0,0.0),(1.0,1.0,1.0)]);
+
+    # repeat x coord along second dimension of
+    # y coord so their shapes match
+    x = repeat(x, 1, size(y,2));
 
     # second pcolormesh masks the first with white.
     # pcolormesh does not accept non-scalar alpha
@@ -154,6 +189,31 @@ function plot_section(x::Array{Float64,2}, y::Array{Float64,2},
     plot(x,y[:,1],"-k");
     ylim(minimum(y),minimum(maximum(y,dims=2)));
     ax.invert_yaxis();
+
+    fig
+
+end
+
+function plot_section_with_nuisance(x,y,cond,spread,nuisance)
+    """
+    plot_section_with_nuisance(x,y,cond,spread,nuisance)
+
+    Plot a section with the inverted transmitter height on top.
+    Parameters:
+    x: plotting spatial coordinate for each sounding
+    y: plotting elevation
+    cond: conductivity model
+    spread: 80% credible interval size (10-90 %ile) fot each sounding
+    nuisance: nuisance histogram per sounding
+
+    Returns:
+    fig: the resulting figure with nuisances plotted above the section
+    """
+
+    fig, ax = plt.subplots(2,1,figsize=(30,10));
+
+    plot_section(x,y,cond,spread,ax=ax[2]);
+    nuisance_section(x,nuisance,ax=ax[1]);
 
     fig
 
