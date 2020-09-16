@@ -1,5 +1,53 @@
 using PyPlot
 
+function sorted_pmaps(line_nc_dir::String)::Array{Pmap,1}
+    """
+    sorted_pmaps(line_nc_dir)
+
+    read all Pmap netCDF files in the given directory and return an array of Pmap
+    objects, sorted according to distance along the line. Directory is assumed to
+    contain only one line of Pmap netCDFs.
+
+    ## Parameters:
+    line_nc_dir: string, location of directory containing pmaps.
+
+    ## Returns:
+    pmaps: sorted array of Pmap objects.
+
+    """
+
+    #make the list of netCDFs
+    files = readdir(line_nc_dir);
+    ncs = filter(x -> endswith(x,".nc"), files);
+
+    ncs = joinpath.(line_nc_dir,ncs);
+
+    if length(ncs) < 2
+        error("need at least 2 soundings to plot a section.")
+    end
+
+    #read everything
+    pmaps = map(ncfile -> read_rjmcmc_pmap(ncfile), ncs);
+
+    #sorting by "distance along line" is a little confusing.
+    #first we see whether the data is spread more along a north-south
+    #or east-west axis. Then we choose the most northerly or most westerly
+    #sounding (on the most spread-out coordinate), and sort according to
+    #distance from this sounding
+
+    north = map(pmap -> pmap.y, pmaps);
+    east = map(pmap -> pmap.x, pmaps);
+
+    minsdg = maximum(north) - minimum(north) > maximum(east) - minimum(east) ? argmax(north) : argmin(east);
+
+    fcoords = [pmaps[minsdg].y, pmaps[minsdg].x];
+    sortfunc = pmap -> (pmap.y - fcoords[1])^2 + (pmap.x - fcoords[2])^2;
+
+    sort!(pmaps, by=sortfunc);
+
+    return pmaps
+end
+
 function section_arrays(line_nc_dir::String)
     """
     section_arrays(line_nc_dir)
@@ -42,7 +90,9 @@ function section_arrays(line_nc_dir::String)
     #make the list of netCDFs
     files = readdir(line_nc_dir);
     ncs = filter(x -> endswith(x,".nc"), files);
+
     ncs = joinpath.(line_nc_dir,ncs);
+
 
     #read each nc and set data arrays for plotting
     nsoundings = length(ncs);
@@ -101,6 +151,10 @@ function section_arrays(line_nc_dir::String)
     plotting_elevation = transpose(depth) .- elevations;
 
     line_dist, plotting_elevation, median_models, spread, nuisances
+end
+
+function noise_hists()
+
 end
 
 function nuisance_section(x::Array{Float64,1}, yz::Array{Float64,3}; ax=nothing)
@@ -182,7 +236,7 @@ function plot_section(x::Array{Float64,1}, y::Array{Float64,2},
     # channels or multivariate colour mapping,
     # so this is the easiest way to achieve the
     # masking effect
-    ax.pcolormesh(x,y,z,cmap="jet");
+    ax.pcolormesh(x,y,z,cmap="jet",vmin=log10(0.002),vmax=log10(5.0),shading="gouraud");
     ax.pcolormesh(x,y,alpha,cmap=alphacmap);
 
     #ground line
@@ -214,6 +268,10 @@ function plot_section_with_nuisance(x,y,cond,spread,nuisance)
 
     plot_section(x,y,cond,spread,ax=ax[2]);
     nuisance_section(x,nuisance,ax=ax[1]);
+
+    ax[1].set_ylabel("Transmitter height");
+    ax[2].set_ylabel("Depth (mAHD)");
+    ax[2].set_xlabel("Distance along line (m)");
 
     fig
 
