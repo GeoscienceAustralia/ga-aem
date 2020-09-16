@@ -17,6 +17,7 @@ Richard L. Taylor, Geoscience Australia.
 #include <cfloat>
 #include <memory>
 #include <iomanip>
+#include <algorithm>
 
 //custom headers
 #include "general_utils.h"
@@ -36,6 +37,9 @@ Richard L. Taylor, Geoscience Australia.
 using namespace netCDF;
 using namespace netCDF::exceptions;
 
+inline size_t nearest_percentile(size_t n, size_t p) {
+	return (n * p) / 100 + ((n * p) % 100 ? 1 : 0);
+}
 
 class cParameterization {
 
@@ -1627,6 +1631,9 @@ public:
 
 			NcVar binsvar = nc.addVar("noise_bins",NcType::nc_DOUBLE,noise_dims);
 			NcVar histvar = nc.addVar("noise_histogram",NcType::nc_UINT,noise_dims);
+			NcVar p10var  = nc.addVar("noise_p10", NcType::nc_DOUBLE, noises_dim);
+			NcVar p50var  = nc.addVar("noise_p50", NcType::nc_DOUBLE, noises_dim);
+			NcVar p90var  = nc.addVar("noise_p90", NcType::nc_DOUBLE, noises_dim);
 
 			std::vector<size_t> startp, countp;
 			startp.push_back(0);
@@ -1635,11 +1642,27 @@ public:
 			countp.push_back(NUM_NOISE_HISTOGRAM_BINS);
 			for (size_t ni = 0; ni < mnmap.get_nnoises(); ni++) {
 				//save a separate histogram for each noise process
+
+				//copy
+				std::vector<double> thisnoise(mnmap.noises[ni]);
 				startp[0] = ni;
-				cStats<double> s(mnmap.noises[ni]);
-				cHistogram<double, uint32_t> hist(mnmap.noises[ni],s.min,s.max,NUM_NOISE_HISTOGRAM_BINS);
+				cStats<double> s(thisnoise);
+				cHistogram<double, uint32_t> hist(thisnoise,s.min,s.max,NUM_NOISE_HISTOGRAM_BINS);
 				binsvar.putVar(startp,countp,hist.centre.data());
 				histvar.putVar(startp,countp,hist.count.data());
+
+				//use builtin selection algorithm for percentiles
+				size_t rank = nearest_percentile(thisnoise.size(),10);
+				std::vector<size_t> ncind = {ni};
+				std::nth_element(thisnoise.begin(), thisnoise.begin() + rank, thisnoise.end());
+				p10var.putVar(ncind, thisnoise[rank]);
+				rank = nearest_percentile(thisnoise.size(), 50);
+				std::nth_element(thisnoise.begin(), thisnoise.begin() + rank, thisnoise.end());
+				p50var.putVar(ncind, thisnoise[rank]);
+				rank = nearest_percentile(thisnoise.size(), 90);
+				std::nth_element(thisnoise.begin(), thisnoise.begin() + rank, thisnoise.end());
+				p90var.putVar(ncind, thisnoise[rank]);
+
 			}
 		}
 

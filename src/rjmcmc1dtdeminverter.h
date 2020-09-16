@@ -774,8 +774,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		write_maps_to_file_netcdf();
 
-		write_noise_maps();
-		write_nuisance_maps();
+		// write_noise_maps();
+		// write_nuisance_maps();
 
 	}
 
