@@ -1601,20 +1601,33 @@ public:
 			NcVar histvar = nc.addVar("nuisance_histogram",NcType::nc_UINT,nuisance_dims);
 
 			NcVar typevar = nc.addVar("nuisance_types",NcType::nc_STRING,nuisance_dim);
+			NcVar p10var = nc.addVar("nuisance_p10", NcType::nc_DOUBLE, nuisance_dim);
+			NcVar p50var = nc.addVar("nuisance_p50", NcType::nc_DOUBLE, nuisance_dim);
+			NcVar p90var = nc.addVar("nuisance_p90", NcType::nc_DOUBLE, nuisance_dim);
+
 			typevar.putVar(nmap.get_types().data());
 
-			std::vector<size_t> startp, countp;
-			startp.push_back(0);
-			startp.push_back(0);
-			countp.push_back(1);
-			countp.push_back(NUM_NUISANCE_HISTOGRAM_BINS);
+			std::vector<size_t> startp = {0,0};
+			std::vector<size_t> countp = {1,NUM_NUISANCE_HISTOGRAM_BINS};
 			for (size_t ni = 0; ni < nmap.get_nnuisances(); ni++) {
-				//save a separate histogram for each noise process
+				//save a separate histogram for each nuisance
+				std::vector<double> thisnuisance = nmap.nuisance[ni];
 				startp[0] = ni;
-				cStats<double> s(nmap.nuisance[ni]);
-				cHistogram<double, uint32_t> hist(nmap.nuisance[ni],s.min,s.max,NUM_NUISANCE_HISTOGRAM_BINS);
+				cStats<double> s(thisnuisance);
+				cHistogram<double, uint32_t> hist(thisnuisance,s.min,s.max,NUM_NUISANCE_HISTOGRAM_BINS);
 				binsvar.putVar(startp,countp,hist.centre.data());
 				histvar.putVar(startp,countp,hist.count.data());
+
+				std::vector<size_t> ncind = {ni};
+				size_t rank = nearest_percentile(thisnuisance.size(),10);
+				std::nth_element(thisnuisance.begin(), thisnuisance.begin() + rank, thisnuisance.end());
+				p10var.putVar(ncind, thisnuisance[rank]);
+				rank = nearest_percentile(thisnuisance.size(),50);
+				std::nth_element(thisnuisance.begin(), thisnuisance.begin() + rank, thisnuisance.end());
+				p50var.putVar(ncind, thisnuisance[rank]);
+				rank = nearest_percentile(thisnuisance.size(),90);
+				std::nth_element(thisnuisance.begin(), thisnuisance.begin() + rank, thisnuisance.end());
+				p90var.putVar(ncind, thisnuisance[rank]);
 			}
 		}
 
