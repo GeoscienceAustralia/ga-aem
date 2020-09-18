@@ -968,6 +968,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 	void write_maps_to_file_netcdf()
 	{
+		using netCDF::NcFile;
+		using netCDF::NcType;
+		using netCDF::NcGroupAtt;
+
 		if (SaveMaps == false)return;
 		if ((CurrentRecord - HeaderLines - FirstRecord) / SubSample % SaveMapsRate != 0)return;
 

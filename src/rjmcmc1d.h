@@ -34,9 +34,6 @@ Richard L. Taylor, Geoscience Australia.
 #define NUM_NOISE_HISTOGRAM_BINS 17
 #define NUM_NUISANCE_HISTOGRAM_BINS 17
 
-using namespace netCDF;
-using namespace netCDF::exceptions;
-
 inline size_t nearest_percentile(size_t n, size_t p) {
 	return (n * p) / 100 + ((n * p) % 100 ? 1 : 0);
 }
@@ -816,7 +813,6 @@ public:
 };
 
 class rjMcMC1DSampler{
-
 public:
 	size_t mpiRank;
 	size_t mpiSize;
@@ -1476,7 +1472,12 @@ public:
 			" n="   << std::setprecision(2) << chains[ci].pnuisancechange.ar() << std::endl;
 	}
 
-	void writemapstofile_netcdf(NcFile& nc) {
+	void writemapstofile_netcdf(netCDF::NcFile& nc) {
+		using netCDF::NcGroupAtt;
+		using netCDF::NcType;
+		using netCDF::NcVar;
+		using netCDF::NcDim;		
+
 
 		NcGroupAtt a;
 		a = nc.putAtt("ndata", NcType::nc_UINT, (unsigned int) ndata);
@@ -1682,11 +1683,11 @@ public:
 	}
 
 	template<typename T>
-	void write_chain_variable(const size_t& ci, std::vector<T>& data, const std::string& name, const NcType& nctype, NcFile& nc, const std::vector<NcDim>& dims)
+	void write_chain_variable(const size_t& ci, std::vector<T>& data, const std::string& name, const netCDF::NcType& nctype, netCDF::NcFile& nc, const std::vector<netCDF::NcDim>& dims)
 	{
 		std::vector<size_t> startp = { ci, 0 };
 		std::vector<size_t> countp = { 1, data.size() };
-		NcVar var;
+		netCDF::NcVar var;
 		if (ci == 0) {
 			var = nc.addVar(name, nctype, dims);
 		}
