@@ -1330,6 +1330,7 @@ public:
 			chains[ci] = cChain();
 			chains[ci].swap_histogram.resize(nchains());
 		}
+		ensemble.clear();
 
 	}
 
