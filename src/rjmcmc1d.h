@@ -396,6 +396,28 @@ public:
 		return t;
 	}
 
+	std::vector<double> getnoises() const
+	{ //return a vector of the inverted noise values
+		std::vector<double> v;
+		v.reserve(mnoises.size());
+		for (const rjMcMCNoise& noise : mnoises) {
+			v.push_back(noise.value);
+		}
+		return v;
+	}
+
+	std::vector<double> getnuisances() const
+	{ //return a vector of the values of each nuisance in this model
+		std::vector<double> v(nuisances.size());
+		//the dodgy ptrvec class doesn't define an iterable interface so we
+		//must iterate through it manually. consider using boost vectors of
+		//abstract types in future?
+		for (size_t i = 0; i < nuisances.size(); i++) {
+			v[i] = nuisances[i]->value;
+		}
+		return v;
+	}
+
 	void printmodel() const
 	{
 		printf("nl=%zu\tnn=%zu\tlppd=%lf\tmisfit=%lf\n", nlayers(), nnuisances(), logppd(), get_misfit());
@@ -855,6 +877,10 @@ public:
 	std::vector<rjMcMC1DModel> ensemble;
 	rjMcMC1DModel  HighestLikelihood;
 	rjMcMC1DModel  LowestMisfit;
+
+	//initialise this from a con file parameter
+	//in the frontend.
+	bool saveEnsemble;
 
 	size_t ndata;
 	std::vector<double> obs;
@@ -1476,7 +1502,7 @@ public:
 		using netCDF::NcGroupAtt;
 		using netCDF::NcType;
 		using netCDF::NcVar;
-		using netCDF::NcDim;		
+		using netCDF::NcDim;
 
 
 		NcGroupAtt a;
@@ -1678,6 +1704,68 @@ public:
 				p90var.putVar(ncind, thisnoise[rank]);
 
 			}
+		}
+
+		if (saveEnsemble) {
+			//must construct vectors of:
+			//thickness
+			//conductivity
+			//residuals
+			//(if present) inverted noise/nuisance vals
+			//for every model stored in the ensemble vector.
+			std::vector<std::vector<double>> cond;
+			std::vector<std::vector<double>> thick;
+			std::vector<std::vector<double>> sigma;
+			std::vector<std::vector<double>> nuvals;
+			std::vector<std::vector<double>> residuals;
+
+			for (const rjMcMC1DModel& mod : ensemble) {
+				cond.push_back(mod.getvalues());
+				thick.push_back(mod.getthicknesses());
+				sigma.push_back(mod.getnoises());
+				nuvals.push_back(mod.getnuisances());
+				//actually squared residuals - need to save
+				//sign of errors as well to test for correlated
+				//residuals if we want to do that
+				residuals.push_back(mod.get_residuals());
+			}
+
+			netCDF::NcVlenType vdub = nc.addVlenType("vlen_double_array", netCDF::ncDouble);
+			NcDim ensemble_dim = nc.addDim("ensemble_sample", ensemble.size());
+			NcDim noise_dim = nc.getDim("noise");
+			NcDim nuisance_dim = nc.getDim("nuisance");
+			NcVar cond_var = nc.addVar("ensemble_cond", vdub, ensemble_dim);
+			NcVar thick_var = nc.addVar("ensemble_thick", vdub, ensemble_dim);
+			NcVar residuals_var = nc.addVar("ensemble_residuals", NcType::nc_DOUBLE, {ensemble_dim, data_dim});
+			NcVar noise_var;
+			NcVar nuisance_var;
+			if (!noise_dim.isNull()) {
+				noise_var = nc.addVar("ensemble_noises", NcType::nc_DOUBLE, {ensemble_dim, noise_dim});
+			}
+			if (!nuisance_dim.isNull()) {
+				nuisance_var = nc.addVar("ensemble_nuisances", NcType::nc_DOUBLE, {ensemble_dim, nuisance_dim});
+			}
+
+			//doing this in a loop probably isn't the best but old mate netCDF
+			//demands C-style arrays and I demand simple memory management,
+			//so I build 2D vectors of all the data to manage the memory and then
+			//pass pointers to elements of those vectors for netCDF to write. there's
+			//no trivial way to convert vectors-of-vectors to void** so we do this in
+			//a loop like a chump.
+			for (size_t i = 0; i < ensemble.size(); i++) {
+				nc_vlen_t mod_cond = {cond[i].size(), cond[i].data()};
+				nc_vlen_t mod_thick = {thick[i].size(), cond[i].data()};
+				cond_var.putVar({i}, {1}, &mod_cond);
+				thick_var.putVar({i}, {1}, &mod_thick);
+				residuals_var.putVar({i,0}, {1,residuals[i].size()}, residuals[i].data());
+				if (!noise_dim.isNull()) {
+					noise_var.putVar({i,0}, {1,sigma[i].size()}, sigma[i].data());
+				}
+				if (!nuisance_dim.isNull()) {
+					nuisance_var.putVar({i,0}, {1,nuvals[i].size()}, nuvals[i].data());
+				}
+			}
+
 		}
 
 	}

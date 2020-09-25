@@ -427,6 +427,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			temperature_high = 2.5;
 		}
 
+		//save all models used for pmap computation (mainly debug)
+		saveEnsemble = b.getboolvalue("SaveModels");
+
 		for (size_t i = 0; i < TDEMNuisance::number_of_types(); i++) {
 			std::string str = strprint("Nuisance%lu", i + 1);
 			cBlock c = b.findblock(str);
