@@ -36,7 +36,7 @@ module load petsc/3.12.2
 
 if [ $HAVE_NETCDF == 1 ] ; then
 	echo 'Building with NETCDF'
-	export geophysics_netcdf_root='/home/547/rcb547/code/repos/geophysics-netcdf'
+	export geophysics_netcdf_root='/g/data/r78/rlt118/netCDF'
 	module load netcdf/4.7.1
 fi
 
@@ -60,19 +60,19 @@ $mpicxx -showme
 echo ---------------------------------------
 
 #Compiled as shared libs
-make -f gatdaem1d_python.make $makemode
-make -f gatdaem1d_matlab.make $makemode
-make -f gatdaem1d_julia.make $makemode
+#make -f gatdaem1d_python.make $makemode
+#make -f gatdaem1d_matlab.make $makemode
+#make -f gatdaem1d_julia.make $makemode
 
 #Compile without MPI
-make -f ctlinedata2sgrid.make $makemode
-make -f ctlinedata2slicegrids.make $makemode
-make -f example_forward_model.make $makemode
-make -f gaforwardmodeltdem.make $makemode
+#make -f ctlinedata2sgrid.make $makemode
+#make -f ctlinedata2slicegrids.make $makemode
+#make -f example_forward_model.make $makemode
+#make -f gaforwardmodeltdem.make $makemode
 
 #Compile with MPI
-make -f galeisbstdem.make $makemode
+#make -f galeisbstdem.make $makemode
 make -f garjmcmctdem.make $makemode
-make -f galeiallatonce.make $makemode
-make -f galeisbsfdem.make $makemode
+#make -f galeiallatonce.make $makemode
+#make -f galeisbsfdem.make $makemode
 
