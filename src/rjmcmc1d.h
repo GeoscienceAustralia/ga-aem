@@ -1755,7 +1755,7 @@ public:
 			//a loop like a chump.
 			for (size_t i = 0; i < ensemble.size(); i++) {
 				nc_vlen_t mod_cond = {cond[i].size(), cond[i].data()};
-				nc_vlen_t mod_thick = {thick[i].size(), cond[i].data()};
+				nc_vlen_t mod_thick = {thick[i].size(), thick[i].data()};
 				cond_var.putVar({i}, {1}, &mod_cond);
 				thick_var.putVar({i}, {1}, &mod_thick);
 				residuals_var.putVar({i,0}, {1,residuals[i].size()}, residuals[i].data());
