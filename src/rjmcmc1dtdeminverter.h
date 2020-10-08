@@ -993,6 +993,13 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		a = nc.putAtt("x", NcType::nc_DOUBLE, xord);
 		a = nc.putAtt("y", NcType::nc_DOUBLE, yord);
 		a = nc.putAtt("elevation", NcType::nc_DOUBLE, elevation);
+
+		//important geometry parameters
+		a = nc.putAtt("tx_height", NcType::nc_DOUBLE, IG.tx_height);
+		a = nc.putAtt("txrx_dx", NcType::nc_DOUBLE, IG.txrx_dx);
+		a = nc.putAtt("txrx_dy", NcType::nc_DOUBLE, IG.txrx_dy);
+		a = nc.putAtt("txrx_dz", NcType::nc_DOUBLE, IG.txrx_dz);
+
 		rjMcMC1DSampler::writemapstofile_netcdf(nc);
 	}
 
