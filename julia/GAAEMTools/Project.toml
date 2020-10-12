@@ -1,0 +1,12 @@
+name = "GAAEMTools"
+uuid = "60e678a5-7d11-493e-be85-56e508f6d75f"
+authors = ["Richard Taylor", "Anandaroop Ray"]
+version = "0.1.0"
+
+[deps]
+Cxx = "a0b5b9ef-44b7-5148-a2d1-f6db19f3c3d2"
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"

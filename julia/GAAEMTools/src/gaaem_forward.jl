@@ -1,4 +1,3 @@
-module UseGA_AEM
 using Libdl
 using Cxx
 
@@ -19,16 +18,17 @@ mutable struct EMforward
 end
 
 
-function init_GA_AEM(; stmfile_LM = (@__DIR__)*"/../examples/bhmar-skytem/stmfiles/Skytem-LM.stm",
-                       stmfile_HM = (@__DIR__)*"/../examples/bhmar-skytem/stmfiles/Skytem-HM.stm")
+function init_GA_AEM(; stmfile_LM = (@__DIR__)*"/../../../examples/bhmar-skytem/stmfiles/Skytem-LM.stm",
+                       stmfile_HM = (@__DIR__)*"/../../../examples/bhmar-skytem/stmfiles/Skytem-HM.stm")
     #CXXJL_ROOTDIR should be set at least when first time installing Cxx
     #export CXXJL_ROOTDIR=/apps/gcc/5.2.0
 
     # Importing shared library and header file
-    path_to_lib = (@__DIR__)*"/"
-    addHeaderDir(path_to_lib, kind=C_System)
+    path_to_header = (@__DIR__)*"/"
+    path_to_lib = (@__DIR__)*"/../lib"
+    addHeaderDir(path_to_header, kind=C_System)
 
-    ga_aem_path = abspath(path_to_lib*"../")
+    ga_aem_path = abspath((@__DIR__)*"/../../../")
 
     # Julia compiler also needs to find headers in these dirs
     addHeaderDir(ga_aem_path*"/src", kind=C_System)
@@ -177,4 +177,4 @@ mutable struct Sounding
     thickness :: Array{Float64, 1}
 end
 
-end
+

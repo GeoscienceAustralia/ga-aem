@@ -1,0 +1,1 @@
+run(`./compile_julia_shared_lib.sh`)

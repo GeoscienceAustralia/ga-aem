@@ -153,9 +153,9 @@ function section_arrays(line_nc_dir::String)
     line_dist, plotting_elevation, median_models, spread, nuisances
 end
 
-function noise_hists()
+# function noise_hists()
 
-end
+# end
 
 function nuisance_section(x::Array{Float64,1}, yz::Array{Float64,3}; ax=nothing)
     """

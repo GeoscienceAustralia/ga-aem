@@ -1,7 +1,6 @@
-any((@__DIR__) .== LOAD_PATH) || push!(LOAD_PATH, @__DIR__)
-using UseGA_AEM
 
-function forward_model(g::UseGA_AEM.Geometry,
+
+function forward_model(g::Geometry,
     conductivity::Array{Float64,1},
     thickness::Array{Float64,1};
     stmfile_LM = "",
@@ -15,16 +14,16 @@ function forward_model(g::UseGA_AEM.Geometry,
     if (length(stmfile_HM)>0)
         stmdict[:stmfile_HM] = stmfile_HM
     end
-    em = UseGA_AEM.init_GA_AEM(;stmdict...);
+    em = init_GA_AEM(;stmdict...);
     # Initialize a forward operator with the given geometry
-    f = UseGA_AEM.EMoperator(em, g);
+    f = EMoperator(em, g);
     # Compute forward for the given system geometry and electronics
     f(g.geometryLM[1], g.geometryHM[1], conductivity, thickness);
 
     [f.em.SZLM f.em.tLM; f.em.SZHM f.em.tHM]
 end
 
-function write_noisy_forward(g::UseGA_AEM.Geometry,
+function write_noisy_forward(g::Geometry,
     conductivity::Array{Float64,1},
     thickness::Array{Float64,1},
     mnoise::Float64,
