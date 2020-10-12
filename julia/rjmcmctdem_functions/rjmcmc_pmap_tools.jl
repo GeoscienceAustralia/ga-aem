@@ -1,4 +1,4 @@
-using NetCDF, PyPlot
+using NCDatasets, PyPlot
 
 #Data structure to hold everything in the pmap.
 struct Pmap
@@ -50,45 +50,45 @@ end
 
 function read_rjmcmc_pmap(ncfilename::String)::Pmap
 
-    # ncinfo(ncfilename);
+    nc_pmap = Dataset(ncfilename);
 
-    depth = ncread(ncfilename,"depth");
-    value = ncread(ncfilename,"value");
-    layer = ncread(ncfilename,"layer");
+    depth = nc_pmap["depth"][:];
+    value = nc_pmap["value"][:];
+    layer = nc_pmap["layer"][:];
 
-    lchist = permutedims(ncread(ncfilename,"log10conductivity_histogram"));
-    cphist = ncread(ncfilename,"interface_depth_histogram");
-    nlhist = ncread(ncfilename,"nlayers_histogram");
+    lchist = permutedims(nc_pmap["log10conductivity_histogram"][:]);
+    cphist = nc_pmap["interface_depth_histogram"][:];
+    nlhist = nc_pmap["nlayers_histogram"][:];
 
-    observations = ncread(ncfilename,"observations");
-    errors       = ncread(ncfilename,"errors");
+    observations = nc_pmap["observations"][:];
+    errors       = nc_pmap["errors"][:];
     ndata  = length(observations);
 
-    chain = ncread(ncfilename,"chain");
+    chain = nc_pmap["chain"][:];
     nchains = size(chain,1);
-    cvs = ncread(ncfilename,"convergence_sample");
-    temperature = permutedims(ncread(ncfilename,"temperature"));
-    misfit = permutedims(ncread(ncfilename,"misfit"));
-    nlayers = permutedims(ncread(ncfilename,"nlayers"));
-    logppd = permutedims(ncread(ncfilename,"logppd"));
+    cvs = nc_pmap["convergence_sample"][:];
+    temperature = permutedims(nc_pmap["temperature"][:]);
+    misfit = permutedims(nc_pmap["misfit"][:]);
+    nlayers = permutedims(nc_pmap["nlayers"][:]);
+    logppd = permutedims(nc_pmap["logppd"][:]);
 
-    mean_model = ncread(ncfilename,"mean_model");
-    mode_model = ncread(ncfilename,"mode_model");
-    p10_model  = ncread(ncfilename,"p10_model");
-    p50_model  = ncread(ncfilename,"p50_model");
-    p90_model  = ncread(ncfilename,"p90_model");
+    mean_model = nc_pmap["mean_model"][:];
+    mode_model = nc_pmap["mode_model"][:];
+    p10_model  = nc_pmap["p10_model"][:];
+    p50_model  = nc_pmap["p50_model"][:];
+    p90_model  = nc_pmap["p90_model"][:];
 
-    ar_valuechange = permutedims(ncread(ncfilename,"ar_valuechange"));
-    ar_move        = permutedims(ncread(ncfilename,"ar_move"));
-    ar_birth       = permutedims(ncread(ncfilename,"ar_birth"));
-    ar_death       = permutedims(ncread(ncfilename,"ar_death"));
-    swap_histogram = permutedims(ncread(ncfilename,"swap_histogram"));
+    ar_valuechange = permutedims(nc_pmap["ar_valuechange"][:]);
+    ar_move        = permutedims(nc_pmap["ar_move"][:]);
+    ar_birth       = permutedims(nc_pmap["ar_birth"][:]);
+    ar_death       = permutedims(nc_pmap["ar_death"][:]);
+    swap_histogram = permutedims(nc_pmap["swap_histogram"][:]);
     #read noise vars
     local ar_noisechange,noise_bins,noise_counts,nnoises;
     try
-        ar_noisechange = permutedims(ncread(ncfilename,"ar_noisechange"));
-        noise_bins = ncread(ncfilename,"noise_bins");
-        noise_counts = ncread(ncfilename,"noise_histogram");
+        ar_noisechange = permutedims(nc_pmap["ar_noisechange"][:]);
+        noise_bins = nc_pmap["noise_bins"][:];
+        noise_counts = nc_pmap["noise_histogram"][:];
         nnoises = size(noise_counts,2);
     catch
         nnoises = 0;
@@ -99,9 +99,9 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
     #read nuisance vars
     local ar_nuisancechange, nuisance_bins, nuisance_counts, nnuisances;
     try
-        ar_nuisancechange = permutedims(ncread(ncfilename,"ar_nuisancechange"));
-        nuisance_bins = ncread(ncfilename,"nuisance_bins");
-        nuisance_counts = ncread(ncfilename,"nuisance_histogram");
+        ar_nuisancechange = permutedims(nc_pmap["ar_nuisancechange"][:]);
+        nuisance_bins = nc_pmap["nuisance_bins"][:];
+        nuisance_counts = nc_pmap["nuisance_histogram"][:];
         nnuisances = size(nuisance_counts,2);
     catch
         nnuisances = 0;
@@ -110,10 +110,10 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
         nuisance_counts = Array{UInt,2}(undef,0,0);
     end
 
-	fid = ncgetatt(ncfilename, "Global", "fiducial");
-	x = ncgetatt(ncfilename, "Global", "x");
-	y = ncgetatt(ncfilename, "Global", "y");
-	elevation = ncgetatt(ncfilename, "Global", "elevation");
+	fid = nc_pmap.attrib["fiducial"];
+	x = nc_pmap.attrib["x"];
+	y = nc_pmap.attrib["y"];
+	elevation = nc_pmap.attrib["elevation"];
 
     Pmap(depth,value,layer,lchist,cphist,nlhist,observations,errors,ndata,chain,nchains,cvs,
         temperature,misfit,nlayers,logppd,mean_model,mode_model,p10_model,p50_model,p90_model,
