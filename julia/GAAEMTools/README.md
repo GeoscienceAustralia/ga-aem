@@ -33,4 +33,25 @@ using GAAEMTools
 ```
 
 #### Forward modelling
-Forward modelling in GAAEMTools requires you to create a "geometry" object, which stores key parameters of the AEM system you are trying to model.
+Forward modelling in GAAEMTools requires you to create a "geometry" object, which stores key parameters of the AEM system you are trying to model. This object is instantiated as:
+```julia
+GAAEMTools.Geometry(;ztxLM = 35.0, ztxHM = 35.0, rrx = -17.0, dztxLM = 2.0, dztxHM = 0.2)
+```
+All arguments are optional keyword arguments, with defaults as specified. `ztxLM` and `ztxHM` are the heights above ground for low and high-moment transmitters respectively, `rrx` is the horizontal distance between transmitter and receiver, and `dztxLM` and `dztxHM` are vertical transmitter-receiver distances for low and high moment systems respectively. Note that `ztxLM > 0 && ztxHM > 0 && rrx < 0 && dztxLM < 0 && dztxHM < 0`.
+
+Once you have created a `Geometry`, you can pass it, along with conductivity and thickness of a layered-earth model and STM files describing other parameters of your AEM system, to the `forward_model` function. For example, if I am modelling a SkyTEM system described by STM files `SkyTEM-LM.stm` and `SkyTEM-HM.stm`:
+
+```julia
+g = GAAEMTools.Geometry(ztxLM = 30.0, ztxHM = 30.0, rrx = -15.0, dztxLM = 2.0, dztxHM = 0.2);
+lmstm = "Skytem-LM.stm";
+hmstm = "Skytem-HM.stm";
+cond = [0.01, 1.0, 0.01];
+thick = [50.0, 50.0];
+forward_data = GAAEMTools.forward_model(g, c, t; lmstm = lmstm, hmstm = hmstm)
+```
+The returned array `forward_data` is a (number of gates * 2) array. The first column is the forward modelled response and the second column is the geometric centre of each gate time window. The units of response and time are specified by the STM file.
+Note that the conductivity and thickness arrays must contain `Float64` numbers because the underlying C++ code expects `double` arguments - an array of integers will throw an error.
+
+
+#### Plotting
+This section to be updated with pictures and stuff of the kinds of plots you can do.
