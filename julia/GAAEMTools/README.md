@@ -47,7 +47,7 @@ lmstm = "Skytem-LM.stm";
 hmstm = "Skytem-HM.stm";
 cond = [0.01, 1.0, 0.01];
 thick = [50.0, 50.0];
-forward_data = GAAEMTools.forward_model(g, c, t; lmstm = lmstm, hmstm = hmstm)
+forward_data = GAAEMTools.forward_model(g, cond, thick; lmstm = lmstm, hmstm = hmstm)
 ```
 The returned array `forward_data` is a (number of gates * 2) array. The first column is the forward modelled response and the second column is the geometric centre of each gate time window. The units of response and time are specified by the STM file.
 Note that the conductivity and thickness arrays must contain `Float64` numbers because the underlying C++ code expects `double` arguments - an array of integers will throw an error.
