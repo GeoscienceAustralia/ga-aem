@@ -17,10 +17,10 @@ Ensure submodules are pulled first. Assuming you have cloned the ga-aem git repo
 ```
 
 Then enter the `julia` subdirectory of the git repository and start julia. To install the package, enter the `pkg` REPL using `]` and type:
-```julia
+```
 (v1.3) pkg> dev GAAEMTools/
 ```
-The installation will compile a shared library that exposes the forward modelling functionality from GA-AEM to Julia. Because this compilation step depends on C++ source files from the parent repository, currently this Julia package can only be installed in development mode from its subdirectory within the GA-AEM repository.
+The installation will compile a shared library that exposes the forward modelling functionality from GA-AEM to Julia. Because this compilation step depends on C++ source files from GA-AEM, currently this Julia package can only be installed in development mode from its subdirectory within the GA-AEM repository, and cannot be distributed independently of GA-AEM itself.
 
 #### For NCI VDI users
 Before running for the first time ensure to set the environment variable CXXJL_ROOTDIR=/path/to/gcc/version
@@ -63,6 +63,16 @@ GAAEMTools.view_rjmcmc_pmap(P)
 ```
 `read_rjmcmc_pmap` reads relevant variables into a `GAAEMTools.Pmap` data structure, so you can do your own analysis if you wish or incorporate the pmap into other types of plots. `view_rjmcmc_pmap` produces a pre-cooked visualisation of the pmap, including histograms of nuisance parameters and multiplicative noise magnitude if they were inverted for, as well as various convergence/sampling statistics:
 ![pmap_example](images/pmap_example.png)
+
+GAAEMTools also provides rudimentary section plotting functionality. If you have a directory of netCDFs `ncdir` corresponding to soundings along an AEM flight line, you can plot the median conductivity of this section:
+```julia
+x,y,z,dz,nuisance_histogram = GAAEMTools.section_arrays(ncdir);
+GAAEMTools.plot_section(x,y,z,dz)
+```
+![section_example](images/section_example.png)
+The colour of the section scales from blue to red as median conductivity increases (the `jet` colourmap). The colours are alpha-blended with white (made paler) as the spread between the 10th and 90th percentile of the posterior conductivity increases, as a way of visually communicating uncertainty in the section. The bounds of the alpha blending can be adjusted with the keyword arguments `lb_dz` and `ub_dz`.
+
+`section_arrays` also returns histograms of nuisances along the line which can be plotted separately, and `plot_section` can be passed an `ax` argument if the section should be plotted on an existing set of PyPlot axes.
 
 Lastly, you can create a _swarm plot_, which draws a small number of individual conductivity-thickness models from the posterior ensemble and plots these models, as well as their forward response compared with the actual data given to the inversion. Note that this kind of plotting requires `SaveModels = Yes` to be set in the Sampler section of the .con file used for the inversion.
 
