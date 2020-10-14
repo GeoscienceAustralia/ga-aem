@@ -53,5 +53,24 @@ The returned array `forward_data` is a (number of gates * 2) array. The first co
 Note that the conductivity and thickness arrays must contain `Float64` numbers because the underlying C++ code expects `double` arguments - an array of integers will throw an error.
 
 
-#### Plotting
-This section to be updated with pictures and stuff of the kinds of plots you can do.
+#### Plotting inversion outputs
+GAAEMTools supports a few kinds of plots for visualising the output of Bayesian inversions from GA-AEM.
+
+Firstly, you can read and plot pmaps (conductivity-depth histograms) of inversion posteriors for individual soundings. This is done for a netCDF inversion output `ncfile` using:
+```julia
+P = GAAEMTools.read_rjmcmc_pmap(ncfile);
+GAAEMTools.view_rjmcmc_pmap(P)
+```
+`read_rjmcmc_pmap` reads relevant variables into a `GAAEMTools.Pmap` data structure, so you can do your own analysis if you wish or incorporate the pmap into other types of plots. `view_rjmcmc_pmap` produces a pre-cooked visualisation of the pmap, including histograms of nuisance parameters and multiplicative noise magnitude if they were inverted for, as well as various convergence/sampling statistics:
+![pmap_example](images/pmap_example.png)
+
+Lastly, you can create a _swarm plot_, which draws a small number of individual conductivity-thickness models from the posterior ensemble and plots these models, as well as their forward response compared with the actual data given to the inversion. Note that this kind of plotting requires `SaveModels = Yes` to be set in the Sampler section of the .con file used for the inversion.
+
+You can produce a swarm plot using the function
+```julia
+GAAEMTools.plot_swarm(ncfile::String, lmstm::String, hmstm::String)
+```
+Because the swarm plot models the forward response of the ensemble samples, you must provide this function with low-moment and high-moment STM files to define parameters of the AEM system being modelled.
+
+The swarm plot looks like this:
+![swarm_image](images/swarm_example.png)
