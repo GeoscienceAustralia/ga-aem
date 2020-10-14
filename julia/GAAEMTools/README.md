@@ -6,7 +6,7 @@ Package to enable integration of forward modelling functionality in GA-AEM with 
 
 This package requires Julia 1.3.x or earlier due to its dependence on [Cxx.jl](https://github.com/JuliaInterop/Cxx.jl/) which does not yet support Julia 1.4+.
 
-Only Linux is supported currently. Installation was tested on CentOS 6.10 using Julia 1.3.1 and gcc 4.4.7. 
+Only Linux is supported currently. Installation was tested on CentOS 6.10 using Julia 1.3.1 and gcc 4.4.7, as well as Ubuntu 20.04 using Julia 1.3.1 and gcc 9.3.0.
 
 Ensure submodules are pulled first. Assuming you have cloned the ga-aem git repository to your home directory:
 ```bash script
