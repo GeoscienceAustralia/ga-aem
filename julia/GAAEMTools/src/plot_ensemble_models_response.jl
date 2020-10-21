@@ -14,10 +14,15 @@ function plot_swarm(ncfile::String, lmstm::String, hmstm::String)
     nc_pmap = Dataset(ncfile);
     nsamples = length(nc_pmap["ensemble_cond"]);
 
+    #figure out number of low and high moment gates in the system
+    em = init_GA_AEM(; stmfile_LM = lmstm, stmfile_HM = hmstm);
+    ndata_LM = length(em.tLM);
+    ndata_HM = length(em.tHM);
+
     #read measured geometry params from file
-    dztxrx = -nc_pmap.attrib["txrx_dz"];
+    dztxrx = nc_pmap.attrib["txrx_dz"];
     rRx = sqrt(nc_pmap.attrib["txrx_dx"]^2 + nc_pmap.attrib["txrx_dy"]^2);
-    zTx = -nc_pmap.attrib["tx_height"];
+    zTx = nc_pmap.attrib["tx_height"];
 
     @assert(nsamples >= 50);
     sample_idxs = sample(1:nsamples, 50, replace = false);
@@ -58,8 +63,8 @@ function plot_swarm(ncfile::String, lmstm::String, hmstm::String)
     end
 
 
-    #do the forward modelling and plot 
-    g = Geometry(ztxLM = -zTx, ztxHM = -zTx, rrx = -rRx,
+    #do the forward modelling and plot
+    g = Geometry(ztxLM = zTx, ztxHM = zTx, rrx = -rRx,
         dzrxLM = dztxrx, dzrxHM = dztxrx);
 
     ax[2].set_xscale("log");
@@ -71,8 +76,8 @@ function plot_swarm(ncfile::String, lmstm::String, hmstm::String)
         end
         forward_data = forward_model(g, cvec[i][:], tvec[i][:],
             stmfile_LM = lmstm, stmfile_HM = hmstm);
-        ax[2].plot(forward_data[1:18,2],-forward_data[1:18,1],"-k", alpha=α);
-        ax[2].plot(forward_data[19:41,2],-forward_data[19:41,1],"-k", alpha=α);
+        ax[2].plot(forward_data[1:ndata_LM,2],-forward_data[1:ndata_LM,1],"-k", alpha=α);
+        ax[2].plot(forward_data[end-ndata_HM+1:end,2],-forward_data[end-ndata_HM+1:end,1],"-k", alpha=α);
     end
 
     if !isnothing(mzTx)
@@ -82,8 +87,8 @@ function plot_swarm(ncfile::String, lmstm::String, hmstm::String)
 
     forward_data = forward_model(g, Float64(10) .^ mc, d[2:end] - d[1:end-1],
         stmfile_LM = lmstm, stmfile_HM = hmstm);
-    ax[2].plot(forward_data[1:18,2],-forward_data[1:18,1],"--b");
-    ax[2].plot(forward_data[19:41,2],-forward_data[19:41,1],"--b");
+    ax[2].plot(forward_data[1:ndata_LM,2],-forward_data[1:ndata_LM,1],"--b");
+    ax[2].plot(forward_data[end-ndata_HM+1:end,2],-forward_data[end-ndata_HM+1:end,1],"--b");
 
 
     ax[2].set_xlabel("Time (s)");
