@@ -16,7 +16,7 @@ if [ $compiler == 'intel' ] ; then
 	export exedir='../bin/vdi/intel'
 elif [ $compiler == 'gnu' ] ; then
 	echo 'Building with GCC compiler'
-	module load gcc/9.1.0
+	#module load gcc/9.1.0
 	export cxx=g++
 	export cxxflags='-std=c++11 -O3 -Wall -Wno-unknown-pragmas'
 	export exedir='../bin/vdi/gnu'
@@ -28,18 +28,19 @@ fi
 export mpicxx=mpiCC
 export HAVE_NETCDF=1
 export HAVE_CGAL=0
-module load openmpi/4.0.1
+module load openmpi/4.0.2
 module load fftw3/3.3.8
-module load eigen/3.3.4
-module load petsc/3.9.4
+#module load eigen/3.3.4
+#module load petsc/3.9.4
 
 if [ $HAVE_NETCDF == 1 ] ; then
 	echo 'Building with NETCDF'
+	module load netcdf/4.7.4
 	#replace with your netCDF installation root.
 	#not necessary if netCDF is already in your paths
-	export CPATH=/g/data/r78/rlt118/netCDF/include/:$CPATH
-	export LIBRARY_PATH=/g/data/r78/rlt118/netCDF/lib/:$LIBRARY_PATH
-	export LD_LIBRARY_PATH=/g/data/r78/rlt118/netCDF/lib/:$LD_LIBRARY_PATH
+	#export CPATH=/g/data/r78/rlt118/netCDF/include/:$CPATH
+	#export LIBRARY_PATH=/g/data/r78/rlt118/netCDF/lib/:$LIBRARY_PATH
+	#export LD_LIBRARY_PATH=/g/data/r78/rlt118/netCDF/lib/:$LD_LIBRARY_PATH
 fi
 
 if [ $HAVE_CGAL == 1 ] ; then
