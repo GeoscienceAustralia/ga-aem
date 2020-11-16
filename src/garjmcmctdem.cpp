@@ -7,6 +7,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #include <vector>
+#include <exception>
 using namespace std;
 
 #include "gaaem_version.h"
@@ -56,18 +57,25 @@ int main(int argc, char* argv[])
 		std::string controlfile = string(argv[1]);
 
 		glog.logmsg(0, "Reading control file %s\n", controlfile.c_str());
-		rjmcmc1dTDEmInverter I(executable, controlfile, (size_t)mpisize, (size_t)mpirank);
+		try {
+			rjmcmc1dTDEmInverter I(executable, controlfile, (size_t)mpisize, (size_t)mpirank);
 
-		glog.logmsg(0,"Starting Inversion\n");
-		while (I.readnextrecord_thisprocess()){
-			I.parsecurrentrecord();
-			I.sample();
-			double stime = I.samplingtime;
-			double norm_mfit = I.LowestMisfit.get_chi2() / double(I.ndata);
-			glog.logmsg("Rec %6lu\t %3lu\t %5lu\t %10lf nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
+			glog.logmsg(0,"Starting Inversion\n");
+			while (I.readnextrecord_thisprocess()){
+				I.parsecurrentrecord();
+				I.sample();
+				double stime = I.samplingtime;
+				double norm_mfit = I.LowestMisfit.get_chi2() / double(I.ndata);
+				glog.logmsg("Rec %6lu\t %3lu\t %5lu\t %10lf nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
+			}
+			glog.logmsg("This process finishing at %s\n", timestamp().c_str());
+			exitstatus = EXIT_SUCCESS;
 		}
-		glog.logmsg("This process finishing at %s\n", timestamp().c_str());
-		exitstatus = EXIT_SUCCESS;
+		catch (std::exception& e) {
+			std::cerr << e.what() << std::endl;
+			std::cerr << "Unable to complete inversion. Exiting..." << std::endl;
+			exitstatus = EXIT_FAILURE;
+		}
 	}
 
 	#if defined _MPI_ENABLED
