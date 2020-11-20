@@ -430,7 +430,6 @@ public:
 	  else return std::vector<double>(0);
   }
 
-
   cTDEmSystem()
   {
 	  initialise();
@@ -445,7 +444,10 @@ public:
   ~cTDEmSystem()
   {
 	  if (fftwplan_backward) {
+			#pragma omp critical (fftwplan)
+			{
 		  fftw_destroy_plan(fftwplan_backward);
+			}
 	  }
   };
 
@@ -472,12 +474,19 @@ public:
 	  F_Waveform.resize(NC);
 	  double* in = (double*)&(T_Waveform[0]);
 	  fftw_complex* out = (fftw_complex*)&(F_Waveform[0]);
-	  fftw_plan fftwplan_forward = fftw_plan_dft_r2c_1d((int)N, in, out, FFTW_ESTIMATE);
+	  fftw_plan fftwplan_forward;
+		#pragma omp critical (fftwplan)
+		{
+		fftwplan_forward = fftw_plan_dft_r2c_1d((int)N, in, out, FFTW_ESTIMATE);
+		}
 	  for (size_t k = 0; k < SamplesPerWaveform; k++) {
 		  T_Waveform[k] /= (double)SamplesPerWaveform;
 	  }
 	  fftw_execute(fftwplan_forward);
+		#pragma omp critical (fftwplan)
+		{
 	  fftw_destroy_plan(fftwplan_forward);
+		}
 
 	  for (size_t k = 0; k < NumberOfFFTFrequencies; k++) {
 		  fft_frequency[k] = calculate_fft_frequency(k);
@@ -525,27 +534,33 @@ public:
 		  SplinedFrequencieslog10[k] = log10(fabs(fft_frequency[k * 2 + 1]));
 	  }
 
-  }
+	  //Setup inverse transform work array
+	  FFTWork.resize(NR);
+		setup_inverse_fft();
 
-	void setup_ifft() {
-		size_t N = SamplesPerWaveform;
-		size_t NR = 2 * (N / 2 + 1);
+	}
 
-		//Setup inverse transform work array
-		FFTWork.resize(NR);
+	//this work needs to be redone after
+	//copying the system object so that copies
+	//do not share the same fftw plan
+	//(and end up trying to do an FFT in the same
+	//memory or attempt to destroy the same plan
+	//multiple times)
+	void setup_inverse_fft() {
+		int N = SamplesPerWaveform;
+#if defined MULTITHREADED
+	  //FFTW_MEASURE does not seem to be thread safe
+	  unsigned int FLAGS = FFTW_ESTIMATE;
+#else
+	  unsigned int FLAGS = FFTW_MEASURE;
+#endif
 
-// #if defined MULTITHREADED
-		//FFTW_MEASURE does not seem to be thread safe
-		unsigned int FLAGS = FFTW_ESTIMATE;
-// #else
-// 		unsigned int FLAGS = FFTW_MEASURE;
-// #endif
-
-		fftw_complex* invin = (fftw_complex*)&(FFTWork[0]);
-		double* invout = (double*)&(FFTWork[0]);
-#pragma omp critical
+	  fftw_complex* invin = (fftw_complex*)&(FFTWork[0]);
+	  double* invout = (double*)&(FFTWork[0]);
+		//FFTW planning is not threadsafe
+		#pragma omp critical (fftwplan)
 		{
-			fftwplan_backward = fftw_plan_dft_c2r_1d((int)N, invin, invout, FLAGS);
+	  fftwplan_backward = fftw_plan_dft_c2r_1d((int)N, invin, invout, FLAGS);
 		}
 	}
 
@@ -695,6 +710,9 @@ public:
 		  }
 	  }
   }
+	//use new-array execute functions
+	//so that we can use copied cTDEmSystem objects
+	//without re-planning the FFT
   void inversefft(){
 	  fftw_execute(fftwplan_backward);
   }
@@ -874,7 +892,7 @@ public:
 			  n++;
 		  }
 		  //Inverse FFT
-		  fftw_execute(fftwplan_backward);
+			inversefft();
 		  computewindow((double*)FFTWork.data(), X);
 		  if (SaveDiagnosticFiles) {
 			  write_timesseries("diag_xtimeseries.txt");
@@ -890,7 +908,7 @@ public:
 			  n++;
 		  }
 		  //Inverse FFT
-		  fftw_execute(fftwplan_backward);
+			inversefft();
 		  computewindow((double*)FFTWork.data(), Y);
 		  if (SaveDiagnosticFiles) {
 			  write_timesseries("diag_ytimeseries.txt");
@@ -906,7 +924,7 @@ public:
 			  n++;
 		  }
 		  //Inverse FFT
-		  fftw_execute(fftwplan_backward);
+			inversefft();
 		  computewindow((double*)FFTWork.data(), Z);
 		  if (SaveDiagnosticFiles) {
 			  write_timesseries("diag_ztimeseries.txt");
@@ -1387,7 +1405,6 @@ public:
   void systeminitialise()
   {
 	  createwaveform();
-		// setup_ifft();
 	  setupdiscretefrequencies();
 	  setup_splines();
 	  setup_scaling();

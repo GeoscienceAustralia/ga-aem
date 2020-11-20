@@ -19,6 +19,10 @@ Richard L. Taylor, Geoscience Australia.
 #include <iomanip>
 #include <algorithm>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 //custom headers
 #include "general_utils.h"
 #include "random_utils.h"
@@ -1351,7 +1355,7 @@ public:
 
 		for (size_t si = 0; si < nsamples; si++) {
 			// multi-threading parallelism if compiled with it
-			#pragma omp parallel for
+			#pragma omp parallel for num_threads(nchains())
 			for (size_t ci = 0; ci < nchains(); ci++) {
 				cChain& chn = chains[ci];//Current chain
 				rjMcMC1DModel& mcur = chn.model;//Current model on chain

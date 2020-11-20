@@ -30,7 +30,7 @@ elif [ $compiler = 'gnu' ] ; then
 		export ldflags="-fopenmp"
 	fi
 elif [ $compiler = 'gnu-debug' ] ; then
-	echo 'Building with GCC compiler'
+	echo 'Building with GCC compiler with debug symbols'
 	export cxx=g++
 	export cxxflags='-std=c++11 -Og -Wall -Wno-unknown-pragmas -g'
 	export exedir='../bin/ubuntu/gnu'

@@ -14,6 +14,10 @@ Richard L. Taylor, Geoscience Australia.
 //standard library headers
 #include <memory>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 //custom headers
 #include "gaaem_version.h"
 #include "blocklanguage.h"
@@ -130,6 +134,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 	size_t nsystems;
 	std::vector<cTDEmSystemInfo> SV;
+	// thread-private copies of the system vector if we're using openMP
+	#ifdef _OPENMP
+	std::vector<std::vector<cTDEmSystemInfo>> SVt;
+	#endif
 	std::vector<TDEMNuisance> ntemplate;
 	std::vector<std::string> ninitial;
 	cTDEmGeometry  IG;
@@ -350,6 +358,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			}
 			S.nchans = S.nwindows * S.ncomps;
 		}
+
 		obs.resize(ndata);
 		err.resize(ndata);
 	}
@@ -389,6 +398,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			S.fd_oEY.initialise(c, "YComponentNoise");
 			S.fd_oEZ.initialise(c, "ZComponentNoise");
 		}
+
 	}
 
 	void initialise_sampler()
@@ -525,7 +535,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		for (size_t gi = 0; gi < IG.size(); gi++) {
 			fd_geometry[gi].getvalue(f, IG[gi]);
 		}
-
 		for (size_t i = 0; i < nsystems; i++) {
 			cTDEmSystemInfo& S = SV[i];
 
@@ -595,8 +604,28 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				}
 			}
 		}
+
 		set_data();
 		set_nuisance();
+
+		//we are now done initialising the systems for this record.
+		//if we're using openmp we need a separate copy of the systems
+		//for each thread to avoid problems with FFTW and the collect()
+		//function not being threadsafe
+		#ifdef _OPENMP
+		//there should never be more than nchains() threads
+		SVt.resize(nchains());
+		#pragma omp parallel num_threads(nchains())
+		// for (int ci = 0; ci < nchains(); ci++)
+		{
+			int ci = omp_get_thread_num();
+			SVt[ci] = SV;
+			for (int i = 0; i < nsystems; i++) {
+				//set up the FFTs again so they're not all pointing to the same memory
+				SVt[ci][i].T.setup_inverse_fft();
+			}
+		}
+		#endif
 	}
 
 	void set_data()
@@ -1115,12 +1144,15 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		size_t di = 0;
 		for (size_t i = 0; i < nsystems; i++) {
+			//use thread-private system vector if
+			//running multithreaded
+			#ifdef _OPENMP
+			int ci = omp_get_thread_num();
+			cTDEmSystemInfo& S = SVt[ci][i];
+			#else
 			cTDEmSystemInfo& S = SV[i];
-			//this must be copied in order to make the forward
-			//threadsafe because every chain (thread) will use
-			//the same T
-			cTDEmSystem T = S.T;
-			T.setup_ifft();
+			#endif
+			cTDEmSystem& T = S.T;
 			T.setconductivitythickness(c, t);
 			T.setgeometry(G);
 			T.setupcomputations();

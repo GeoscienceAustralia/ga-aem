@@ -3,7 +3,7 @@ Control Begin
 	NumberOfSystems = 2
 
 	EMSystem1 Begin
-		SystemFile      = ../examples/bhmar-skytem/stmfiles/Skytem-LM.stm
+		SystemFile      = ../../examples/bhmar-skytem/stmfiles/Skytem-LM.stm
 		UseXComponent   = no
 		UseYComponent   = no
 		UseZComponent   = yes
@@ -19,7 +19,7 @@ Control Begin
 	EMSystem1 End
 
 	EMSystem2 Begin
-		SystemFile      = ../examples/bhmar-skytem/stmfiles/Skytem-HM.stm
+		SystemFile      = ../../examples/bhmar-skytem/stmfiles/Skytem-HM.stm
 		UseXComponent   = no
 		UseYComponent   = no
 		UseZComponent   = yes
@@ -41,9 +41,9 @@ Control Begin
 		SaveChains     = Yes
 		SaveChainsRate = 500
 
-		NChains  =        4
-		NSamples =     300000
-		NBurnIn  =     150000
+		NChains  =        6
+		NSamples =     30000
+		NBurnIn  =     15000
 		ThinRate =      10
 
 		NLayersMin  =  1
