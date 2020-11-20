@@ -115,6 +115,8 @@ function read_rjmcmc_pmap(ncfilename::String)::Pmap
 	y = nc_pmap.attrib["y"];
 	elevation = nc_pmap.attrib["elevation"];
 
+	close(nc_pmap)
+
     Pmap(depth,value,layer,lchist,cphist,nlhist,observations,errors,ndata,chain,nchains,cvs,
         temperature,misfit,nlayers,logppd,mean_model,mode_model,p10_model,p50_model,p90_model,
         ar_valuechange,ar_move,ar_birth,ar_death,swap_histogram,ar_noisechange,
