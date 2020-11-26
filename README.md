@@ -3,7 +3,7 @@
 
 ## Geoscience Australia Airborne Electromagnetics Programs
 
-- Author:	Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au)
+- Author:	Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au) and Richard Taylor, Geoscience Australia
 - Language:	mostly C++, some matlab, some python
 
 ## Releases
@@ -26,15 +26,28 @@
 - [Theoretical details for GALEISBSTDEM](docs/GALEISBSTDEM_Inversion_Algorithm_Theoretical_Details.pdf)
 
 ## Building on Linux
-- cd makefiles
-- edit the file run_make.sh to setup for your compiler
-	- set the C++ compiler (e.g., cxx=g++)
-	- set the MPI C++ compiler (e.g., mpicxx=mpiCC)
-	- set the C++ compiler flags (e.g. cxxflags='-std=c++11 -O3 -Wall')
-	- set the executable directory (e.g., exedir='../bin/raijin/gnu')
-- run_make.sh
-- Matlab shared library should go into ga-aem/matlab/bin/linux (.dll on Windows or .so on linux)
-- Python shared library should go into ga-aem/python/gatdaem1d (.dll on Windows or .so on linux)
+Building GA-AEM on Linux requires that you install the following software:
+- [CMake](https://cmake.org/) >= 3.12
+- [netCDF-4](https://www.unidata.ucar.edu/software/netcdf/) with C++ bindings and headers
+- [fftw3](http://www.fftw.org/) with headers
+
+For production-scale inversions, you will also need a working MPI installation on your system, and the MPI headers must be on your compiler's search path.
+
+There are also legacy shell scripts and makefiles in the makefiles subdirectory for use with make. These will require you to manually specify which compiler you would like to use (GCC or Intel compiler) and are not actively maintained, so the CMake build system is recommended.
+
+To run an out-of-source build, avoiding polluting the source tree, run the following commands from the root of the repository:
+```
+mkdir build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make
+sudo make install
+```
+This will configure and compile the package and install the binaries into `/usr/local/bin`. If you'd like to install somewhere else or you aren't a `sudo`er you can specify a custom install prefix using `-DCMAKE_INSTALL_PREFIX`. The `-DCMAKE_BUILD_TYPE=Release` flag sets your compiler to optimise the compiled binaries for speed (e.g. `-O3` with gcc). If you would like to include debugging symbols in the binaries, you can set `-DCMAKE_BUILD_TYPE=Debug` instead.
+
+Finally, when invoking `cmake`, you can configure the build manually to not use MPI by setting `-DWITH_MPI=OFF`, and to use OpenMP multi-threading with the GARJMCMC parallel tempering program by setting `-DWITH_OMP_GARJMCMC=ON`. These options can be useful if you're building GA_AEM to do synthetic inversions or single soundings on a desktop machine instead of production inversions on a cluster.
+
+The CMake build system should also be capable of generating cross-platform recipes to compile GA-AEM on Windows or MacOS, but this is not tested.
 
 ## Building on Windows
 - You can build the programs with the free Microsoft Visual Studion 2013 Express.
@@ -95,4 +108,3 @@ The programs required additional code or libraries as described below.
 	- Windows users can obtain the header files and precompiled libraries from the GitHub, here
 		- https://github.com/rcb547/petsc-3.4.3-vs2013, or
 		- git clone git@github.com:rcb547/petsc-3.4.3-vs2013.git.
-

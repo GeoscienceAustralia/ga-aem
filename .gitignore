@@ -29,6 +29,10 @@ menindee_aem_calibration_range/
 /bin/x64/Debug/*.lib
 *_debug.dll
 *_debug.mexw64
+*/a.out
+
+# CMake build artifacts
+build/*
 
 # Python
 *.pyc
