@@ -1,5 +1,6 @@
 function [figure_handle,ax] = view_rjmcmc_pmap(figure_handle,P,TM)
 
+oldvis = get(figure_handle,'visible');
 %        [ x1   x2   y1   y2 ];
 p(1,:) = [0.05 0.50 0.775 0.960];
 p(2,:) = [0.05 0.50 0.550 0.755];
@@ -104,6 +105,7 @@ set(get(gca,'xaxis'),'Exponent',0);
 lh=legend(h,lab);
 set(lh,'orientation','horizontal');
 
+set(figure_handle,'visible',oldvis);
 
 
 

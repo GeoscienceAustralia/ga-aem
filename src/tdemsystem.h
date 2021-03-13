@@ -377,12 +377,14 @@ public:
   double TX_PeakCurrent;
   double TX_PeakdIdT;
   double TX_height;
-  double TX_pitch;
   double TX_roll;
+  double TX_pitch;  
+  double TX_yaw;
   cVec TX_orientation;
   double RX_height;
+  double RX_roll;
   double RX_pitch;
-  double RX_roll;  
+  double RX_yaw;  
   cVec TX_RX_separation;
 
   cTDEmGeometry NormalizationGeometry;
@@ -716,9 +718,11 @@ public:
 	  //Nose down is positive pitch	 Z->X axis
 
 	  TX_height = G.tx_height;
-	  TX_pitch = G.tx_pitch;
 	  TX_roll = G.tx_roll;
+	  TX_pitch = G.tx_pitch;
+	  TX_yaw = G.tx_yaw;
 	  TX_orientation = cVec(0.0, 0.0, 1.0);
+	  if (TX_yaw != 0.0) TX_orientation = TX_orientation.rotate(TX_yaw, zaxis);
 	  if (TX_pitch != 0.0) TX_orientation = TX_orientation.rotate(TX_pitch, yaxis);
 	  if (TX_roll != 0.0) TX_orientation = TX_orientation.rotate(TX_roll, xaxis);
 
@@ -727,8 +731,9 @@ public:
 	  LEM.setgeometry(LEM.pitchrolldipole(TX_pitch, TX_roll), TX_height, TX_RX_separation.x, TX_RX_separation.y, TX_height + TX_RX_separation.z);
 
 	  RX_height = TX_height + G.txrx_dz;
-	  RX_pitch = G.rx_pitch;
 	  RX_roll = G.rx_roll;
+	  RX_pitch = G.rx_pitch;	  
+	  RX_yaw = G.rx_yaw;
   };
 
   void setgeometry(const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
@@ -780,7 +785,7 @@ public:
 		  PrimaryZ *= TX_PeakdIdT;
 	  }
 
-	  if (RX_pitch != 0.0 || RX_roll != 0.0) {
+	  if (RX_pitch != 0.0 || RX_roll != 0.0 || RX_yaw != 0.0) {
 		  cVec field = cVec(PrimaryX, PrimaryY, PrimaryZ);
 		  cVec rotatedfield = rotatetoreceiverorientation(field);
 		  PrimaryX = rotatedfield.x;
@@ -796,9 +801,10 @@ public:
 
   cVec rotatetoreceiverorientation(cVec v)
   {
-	  //Rotating in opposite sense because we are rotating the axes
+	  //Rotating in opposite sense because we are rotating the axes and doing it in the reverse order	  
 	  if (RX_roll != 0.0) v = v.rotate(-RX_roll, xaxis);
 	  if (RX_pitch != 0.0) v = v.rotate(-RX_pitch, yaxis);
+	  if (RX_yaw != 0.0) v = v.rotate(-RX_yaw, zaxis);
 	  return v;
   }
   void setsecondaryfields()
