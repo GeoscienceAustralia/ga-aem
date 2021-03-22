@@ -25,6 +25,7 @@ class cSGridCreator{
 
 private:	
 	cBlock mControl;
+	bool   binary = true;
 	std::string sgriddir;
 	std::string sgridprefix;
 	std::string sgridsuffix;
@@ -75,7 +76,8 @@ public:
 
 	void getsgridoptions(){
 
-		cBlock b = mControl.findblock("SGrid");		
+		cBlock b = mControl.findblock("SGrid");	
+		binary      = b.getboolvalue("Binary");
 		sgriddir    = b.getstringvalue("OutDir");
 		sgridprefix = b.getstringvalue("Prefix");
 		sgridsuffix = b.getstringvalue("Suffix");
