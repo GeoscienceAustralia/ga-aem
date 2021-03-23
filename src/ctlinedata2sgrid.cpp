@@ -17,6 +17,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "file_utils.h"
 #include "blocklanguage.h"
 #include "geometry3d.h"
+#include "stopwatch.h"
 
 #include "ticpp.h"
 using namespace ticpp;
@@ -531,23 +532,14 @@ public:
 	}
 
 	void savexml()
-	{
-		/*
-		< ? xml version = "1.0" encoding = "UTF-8" ? >
-		<Layer layerType = "ModelLayer" version = "1">
-		<DisplayName>BASE_Cenozoic_TOP_Mesozoic < / DisplayName>
-		<URL>BASE_Cenozoic_TOP_Mesozoic.pl< / URL>
-		<DataFormat>GOCAD< / DataFormat>
-		< LineWidth>1 < / LineWidth >
-		<DataCacheName>GA / EFTF / AEM / NT / BASE_Cenozoic_TOP_Mesozoic.pl< / DataCacheName>
-		<CoordinateSystem>EPSG:28354 < / CoordinateSystem >
-		< / Layer>
-		*/
-		cBlock b = mControl.findblock("1XML");
+	{		
+		cBlock b = mControl.findblock("XML");
 		if (b.Entries.size() == 0) return;
-		std::string cs = b.getstringvalue("CorodinateSystem");
+		std::string crs = b.getstringvalue("CorodinateSystem");
+		std::string cp  = b.getstringvalue("DataCachePrefix");
+		if (cp[cp.size() - 1] != '/') cp += '/';
+		std::string datacachename = cp + sgridhdrname();
 
-		
 		Document doc(xmlpath());
 		std::string ver = "1.0";
 		std::string enc = "UTF-8";
@@ -561,19 +553,15 @@ public:
 		l.InsertEndChild(Element("DisplayName", sgridname()));
 		l.InsertEndChild(Element("URL", sgridhdrname()));
 		l.InsertEndChild(Element("DataFormat", "GOCAD"));
-		l.InsertEndChild(Element("DataCacheName", "CACHE_NAME"));
-		l.InsertEndChild(Element("CoordinateSystem", cs));				
+		l.InsertEndChild(Element("DataCacheName", datacachename));
+		l.InsertEndChild(Element("CoordinateSystem", crs));
 		doc.InsertEndChild(l);
 		doc.SaveFile();
 	}	
 
 };
 
-void save_dataset_xml(const std::string xmlpath,
-	const std::string datasetname,
-	const std::vector<std::string> names,
-	const std::vector<std::string> urls
-)
+void save_dataset_xml(const std::string xmlpath, const std::string datasetname, const std::vector<std::string> names, const std::vector<std::string> urls)
 {
 	makedirectorydeep(extractfiledirectory(xmlpath));
 	try
@@ -584,14 +572,12 @@ void save_dataset_xml(const std::string xmlpath,
 		Element dl("DatasetList");
 
 		Element d("Dataset");
-		d.SetAttribute("name", datasetname);
-		//d.SetAttribute("info", "http://www.ga.gov.au/eftf");
+		d.SetAttribute("name", datasetname);		
 
 		for (size_t i = 0; i < names.size(); i++) {
 			Element l("Layer");
 			l.SetAttribute("name", names[i]);
-			l.SetAttribute("url", urls[i]);
-			//l.SetAttribute("icon", "icon.png");
+			l.SetAttribute("url", urls[i]);			
 			d.InsertEndChild(l);
 		}
 		dl.InsertEndChild(d);
@@ -619,37 +605,32 @@ int main(int argc, char** argv)
 		glog.logmsg("Usage: %s controlfilename\n",argv[0]);
 		return 0;
 	}
-
-	std::vector<std::string> names;
-	std::vector<std::string> urls;
 	
+	std::vector<std::string> names;
+	std::vector<std::string> urls; 
+	std::string xmldir;
 
 	cBlock control(argv[1]);	
 	std::string infiles = control.getstringvalue("Input.DataFiles");
-
 	cBlock xmlopt = control.findblock("XML");
-	
-
-	std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
-	double t1 = gettime();	
+	std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);	
+	cStopWatch stopwatch;
 	for (size_t i = 0; i < filelist.size(); i++){
 		printf("Processing file %s   %3zu of %3zu\n", filelist[i].c_str(),i+1,filelist.size());
 		cSGridCreator S(control);
-		S.process(filelist[i]);
-
-		names.push_back(S.sgridname());
-		urls.push_back(S.xmlname());
-		datasetxml  = S.datasetxmlpath();
-		datasetname = S.getdatasetname();
+		S.process(filelist[i]);		
+		if (xmlopt.Entries.size() > 0) {
+			names.push_back(S.sgridname());
+			urls.push_back(S.xmlname());
+			xmldir = extractfiledirectory(S.xmlpath());
+		}		
 	}
-	std::string datasetxml;
-	std::string datasetname;
+	
 	if (xmlopt.Entries.size() > 0) {
+		std::string datasetname = xmlopt.getstringvalue("DatasetName");
+		std::string datasetxml  = xmldir + datasetname + ".xml";
 		save_dataset_xml(datasetxml, datasetname, names, urls);
 	}
-	printf("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
-
-	double t2 = gettime();
-	printf("Done ... Elapsed time = %.2lf seconds\n", t2 - t1);
+	printf("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());	
 	return 0;
 }
