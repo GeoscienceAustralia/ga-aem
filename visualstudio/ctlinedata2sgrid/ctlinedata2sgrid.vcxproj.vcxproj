@@ -37,10 +37,12 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\ticpp.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\ticpp.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -88,6 +90,11 @@
     <ClCompile Include="..\..\src\ctlinedata2sgrid.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
+    <ClCompile Include="..\..\submodules\ticpp\ticpp.cpp" />
+    <ClCompile Include="..\..\submodules\ticpp\tinystr.cpp" />
+    <ClCompile Include="..\..\submodules\ticpp\tinyxml.cpp" />
+    <ClCompile Include="..\..\submodules\ticpp\tinyxmlerror.cpp" />
+    <ClCompile Include="..\..\submodules\ticpp\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />

@@ -18,6 +18,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "blocklanguage.h"
 #include "geometry3d.h"
 
+#include "ticpp.h"
+using namespace ticpp;
+
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
@@ -245,11 +248,10 @@ public:
 	}
 	
 	void create_sgrid_prop_alignment_cells(){	
-
-		std::string sgridname = sgridprefix + strprint("%d", linenumber) + sgridsuffix;
-		std::string sgriddatafile = sgridname + ".sg.data";
-		std::string sgriddatapath = sgriddir + sgridname + ".sg.data";
-		std::string sgridhdrpath  = sgriddir + sgridname + ".sg";
+		
+		std::string sgriddatafile = sgridname() + ".sg.data";
+		std::string sgriddatapath = sgriddir + sgridname() + ".sg.data";
+		std::string sgridhdrpath  = sgriddir + sgridname() + ".sg";
 		FILE* fp_data = fileopen(sgriddatapath, "w");
 		fprintf(fp_data, "*\n");
 		fprintf(fp_data, "*   X   Y   Z  Conductivity I   J   K\n");
@@ -324,7 +326,7 @@ public:
 
 		fprintf(fp_hdr, "GOCAD SGrid 1\n");
 		fprintf(fp_hdr, "HEADER {\n");
-		fprintf(fp_hdr, "name:%s\n", sgridname.c_str());
+		fprintf(fp_hdr, "name:%s\n", sgridname().c_str());
 		fprintf(fp_hdr, "painted:true\n");
 		fprintf(fp_hdr, "*painted*variable:Conductivity\n");
 		fprintf(fp_hdr, "cage:false\n");
@@ -357,14 +359,29 @@ public:
 
 	void create_sgrid_prop_alignment_points(){
 
-		std::string sgridname = sgridprefix + strprint("%d", linenumber) + sgridsuffix;
-		std::string sgriddatafile = sgridname + ".sg.data";
-		std::string sgriddatapath = sgriddir + sgridname + ".sg.data";
-		std::string sgridhdrpath = sgriddir + sgridname + ".sg";
-		FILE* fp_data = fileopen(sgriddatapath, "w");
-		fprintf(fp_data, "*\n");
-		fprintf(fp_data, "*   X   Y   Z  Conductivity  I   J   K\n");
-		fprintf(fp_data, "*\n");
+		static bool flipendian = ~isbigendian();
+		//must flip binary bytes to bigendian if not natively bigendian (MSBFIRST)
+				
+		std::string sgridhdrpath = sgriddir + sgridname() + ".sg";
+		
+		FILE* fp_asciidata = (FILE*)NULL;
+		FILE* fp_points    = (FILE*)NULL;
+		FILE* fp_property  = (FILE*)NULL;
+				
+		std::string asciidatapath = sgriddir + sgridname() + ".sg.data";
+		std::string pointspath    = sgriddir + sgridname() + "_points@@";
+		std::string proppath      = sgriddir + sgridname() + "_Conductivity@@";
+
+		if (binary) {			
+			fp_points = fileopen(pointspath, "w+b");
+			fp_property = fileopen(proppath, "w+b");
+		}
+		else{						
+			fp_asciidata = fileopen(asciidatapath, "w");
+			fprintf(fp_asciidata, "*\n");
+			fprintf(fp_asciidata, "*   X   Y   Z  Conductivity  I   J   K\n");
+			fprintf(fp_asciidata, "*\n");			
+		};
 
 		for (int li = 0; li < nlayers; li++){
 			for (int si = 0; si < nsamples; si++){
@@ -403,16 +420,41 @@ public:
 					}
 				}
 
-				fprintf(fp_data, "%8.1f %9.1f %7.1f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, si, li, 0);
+				if (binary) {
+					float fxc = xc;
+					float fyc = yc;
+					float fzc = zc;
+					float fc0 = c0;
+					if (flipendian) {
+						swap_endian(&fxc, 1);
+						swap_endian(&fyc, 1);
+						swap_endian(&fzc, 1);
+						swap_endian(&fc0, 1);
+					}
+
+					fwrite(&fxc, sizeof(float), 1, fp_points);
+					fwrite(&fyc, sizeof(float), 1, fp_points);
+					fwrite(&fzc, sizeof(float), 1, fp_points);
+					fwrite(&fc0, sizeof(float), 1, fp_property);
+				}
+				else{
+					fprintf(fp_asciidata, "%8.1f %9.1f %7.1f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, si, li, 0);
+				}
 			}
 		}
-		fclose(fp_data);
+		if (binary) {
+			fclose(fp_points);
+			fclose(fp_property);
+		}
+		else {
+			fclose(fp_asciidata);
+		}
+
 
 		FILE* fp_hdr = fileopen(sgridhdrpath, "w");
-
 		fprintf(fp_hdr, "GOCAD SGrid 1\n");
 		fprintf(fp_hdr, "HEADER {\n");
-		fprintf(fp_hdr, "name:%s\n", sgridname.c_str());
+		fprintf(fp_hdr, "name:%s\n", sgridname().c_str());
 		fprintf(fp_hdr, "painted:true\n");
 		fprintf(fp_hdr, "*painted*variable:Conductivity\n");
 		fprintf(fp_hdr, "ascii:on\n");
@@ -432,19 +474,135 @@ public:
 		fprintf(fp_hdr, "\n");
 		fprintf(fp_hdr, "AXIS_N %d %d %d\n", nsamples, nlayers, 1);
 		fprintf(fp_hdr, "PROP_ALIGNMENT POINTS\n");
-		fprintf(fp_hdr, "ASCII_DATA_FILE %s\n", sgriddatafile.c_str());
+
+		if (binary) {
+			fprintf(fp_hdr, "POINTS_FILE %s\n", extractfilename(pointspath).c_str());
+		}
+		else {
+			fprintf(fp_hdr, "ASCII_DATA_FILE %s\n", extractfilename(asciidatapath).c_str());
+		}
 
 		fprintf(fp_hdr, "\n");
 		fprintf(fp_hdr, "PROPERTY 1 Conductivity\n");
 		fprintf(fp_hdr, "PROP_UNIT 1 S/m\n");
 		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 1 -999\n");
+		if (binary) {			
+			fprintf(fp_hdr, "PROP_FILE 1 %s\n", extractfilename(proppath).c_str());
+			fprintf(fp_hdr, "PROP_ESIZE 1 4\n");
+			fprintf(fp_hdr, "PROP_ETYPE 1 IEEE\n");			
+			fprintf(fp_hdr, "PROP_ALIGNMENT 1 POINTS\n");
+			fprintf(fp_hdr, "PROP_FORMAT 1 RAW\n");
+			fprintf(fp_hdr, "PROP_OFFSET 1 0\n");			
+		}
+
 
 		fprintf(fp_hdr, "\n");
 		fprintf(fp_hdr, "END\n");
 		fclose(fp_hdr);
 
+		savexml();
+
 	}
+
+	std::string sgridname() {
+		std::string name = sgridprefix + strprint("%d", linenumber) + sgridsuffix;
+		return name;
+	}
+
+	std::string sgridhdrname() {
+		std::string s = sgridname() + ".sg";
+		return s;
+	}
+
+	std::string sgridhdrpath() {
+		std::string s = sgriddir + sgridhdrname();
+		return s;
+	}
+
+	std::string xmlname() {
+		std::string s = sgridname() + ".xml";
+		return s;
+	}
+
+	std::string xmlpath() {
+		std::string s = sgriddir + xmlname();
+		fixseparator(s);
+		return s;
+	}
+
+	void savexml()
+	{
+		/*
+		< ? xml version = "1.0" encoding = "UTF-8" ? >
+		<Layer layerType = "ModelLayer" version = "1">
+		<DisplayName>BASE_Cenozoic_TOP_Mesozoic < / DisplayName>
+		<URL>BASE_Cenozoic_TOP_Mesozoic.pl< / URL>
+		<DataFormat>GOCAD< / DataFormat>
+		< LineWidth>1 < / LineWidth >
+		<DataCacheName>GA / EFTF / AEM / NT / BASE_Cenozoic_TOP_Mesozoic.pl< / DataCacheName>
+		<CoordinateSystem>EPSG:28354 < / CoordinateSystem >
+		< / Layer>
+		*/
+		cBlock b = mControl.findblock("1XML");
+		if (b.Entries.size() == 0) return;
+		std::string cs = b.getstringvalue("CorodinateSystem");
+
+		
+		Document doc(xmlpath());
+		std::string ver = "1.0";
+		std::string enc = "UTF-8";
+		std::string std = "yes";
+		Declaration dec(ver, enc, std);
+		doc.InsertEndChild(dec);
+
+		Element l("Layer");		
+		l.SetAttribute("layerType", "ModelLayer");
+		l.SetAttribute("version", "1");
+		l.InsertEndChild(Element("DisplayName", sgridname()));
+		l.InsertEndChild(Element("URL", sgridhdrname()));
+		l.InsertEndChild(Element("DataFormat", "GOCAD"));
+		l.InsertEndChild(Element("DataCacheName", "CACHE_NAME"));
+		l.InsertEndChild(Element("CoordinateSystem", cs));				
+		doc.InsertEndChild(l);
+		doc.SaveFile();
+	}	
+
 };
+
+void save_dataset_xml(const std::string xmlpath,
+	const std::string datasetname,
+	const std::vector<std::string> names,
+	const std::vector<std::string> urls
+)
+{
+	makedirectorydeep(extractfiledirectory(xmlpath));
+	try
+	{
+		Element a, b;
+		Document doc(xmlpath);
+
+		Element dl("DatasetList");
+
+		Element d("Dataset");
+		d.SetAttribute("name", datasetname);
+		//d.SetAttribute("info", "http://www.ga.gov.au/eftf");
+
+		for (size_t i = 0; i < names.size(); i++) {
+			Element l("Layer");
+			l.SetAttribute("name", names[i]);
+			l.SetAttribute("url", urls[i]);
+			//l.SetAttribute("icon", "icon.png");
+			d.InsertEndChild(l);
+		}
+		dl.InsertEndChild(d);
+		doc.InsertEndChild(dl);
+		doc.SaveFile();
+	}
+	catch (ticpp::Exception& ex)
+	{
+		std::cout << ex.what();
+	}
+}
 
 int main(int argc, char** argv)
 {
@@ -462,8 +620,15 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
+	std::vector<std::string> names;
+	std::vector<std::string> urls;
+	
+
 	cBlock control(argv[1]);	
 	std::string infiles = control.getstringvalue("Input.DataFiles");
+
+	cBlock xmlopt = control.findblock("XML");
+	
 
 	std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
 	double t1 = gettime();	
@@ -471,7 +636,19 @@ int main(int argc, char** argv)
 		printf("Processing file %s   %3zu of %3zu\n", filelist[i].c_str(),i+1,filelist.size());
 		cSGridCreator S(control);
 		S.process(filelist[i]);
+
+		names.push_back(S.sgridname());
+		urls.push_back(S.xmlname());
+		datasetxml  = S.datasetxmlpath();
+		datasetname = S.getdatasetname();
 	}
+	std::string datasetxml;
+	std::string datasetname;
+	if (xmlopt.Entries.size() > 0) {
+		save_dataset_xml(datasetxml, datasetname, names, urls);
+	}
+	printf("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
+
 	double t2 = gettime();
 	printf("Done ... Elapsed time = %.2lf seconds\n", t2 - t1);
 	return 0;
