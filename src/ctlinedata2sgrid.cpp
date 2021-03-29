@@ -548,11 +548,11 @@ public:
 		doc.InsertEndChild(dec);
 
 		Element l("Layer");		
-		l.SetAttribute("layerType", "ModelLayer");
+		l.SetAttribute("layerType", "VolumeLayer");
 		l.SetAttribute("version", "1");
 		l.InsertEndChild(Element("DisplayName", sgridname()));
 		l.InsertEndChild(Element("URL", sgridhdrname()));
-		l.InsertEndChild(Element("DataFormat", "GOCAD"));
+		l.InsertEndChild(Element("DataFormat", "GOCAD SGrid"));
 		l.InsertEndChild(Element("DataCacheName", datacachename));
 		l.InsertEndChild(Element("CoordinateSystem", crs));
 		doc.InsertEndChild(l);

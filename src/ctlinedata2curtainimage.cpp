@@ -32,7 +32,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "asciicolumnfile.h"
 #include "ctlinedata.h"
 
-
+#include "ticpp.h"
+using namespace ticpp;
 
 #include "RamerDouglasPeucker.h"
 using namespace RDP;
