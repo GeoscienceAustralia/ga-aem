@@ -44,7 +44,7 @@
 ## Third party software dependencies
 1. Template Numerical Toolkit (TNT)
 	- see http://math.nist.gov/tnt/index.html
-	- TNT is included in this repositiry, there is no need to download it.
+	- TNT is included in this repository, there is no need to download it.
 
 2. The Fastest Fourier Transform in the West (FFTW)
 	- see http://www.fftw.org
