@@ -3,9 +3,9 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="cgal.props" />
     <Import Project="boost.props" />
+    <Import Project="gdal.props" />
     <Import Project="netcdf4-cxx.props" />
     <Import Project="netcdf4.props" />
-    <Import Project="gdal.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

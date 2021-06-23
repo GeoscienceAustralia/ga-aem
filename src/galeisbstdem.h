@@ -15,17 +15,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <algorithm>
 
 #include <Eigen/Dense>
-#include "asciicolumnfile.h"
+#include "inputmanager.h"
+#include "outputmanager.h"
 #include "blocklanguage.h"
-#include "fielddefinition.h"
 #include "airborne_types.h"
 #include "tdemsystem.h"
 #include "eigen_utils.h"
 #include "gaaem_version.h"
-
-#if defined HAVE_NETCDF
-	#include "geophysics_netcdf.h"
-#endif
 
 #if defined _OPENMP
 	#include <omp.h>
@@ -144,202 +140,14 @@ class cTrialCache{
 	}
 };
 
-enum IOType { ASCII, NETCDF };
-
-class cInputManager {
-
-private:		
-
-	bool AtStart = true;
-	std::string DataFileName;
-	std::string HeaderFileName;
-	IOType IoType = ASCII;
-	#if defined HAVE_NETCDF
-	cGeophysicsNcFile NC;	
-	#endif
-	cAsciiColumnFile AF;	
-	size_t Subsample=1;
-	size_t Record=0;
-
-public:
-
-	cInputManager() {};
-
-	void initialise(const cBlock& b)
-	{		
-		DataFileName   = b.getstringvalue("DataFile");
-		fixseparator(DataFileName);
-		HeaderFileName = b.getstringvalue("DfnFile");		
-		fixseparator(HeaderFileName);
-
-		std::string ext = extractfileextension(DataFileName);
-		glog.logmsg(0,"Opening Input DataFile %s\n", DataFileName.c_str());
-		if (strcasecmp(ext, ".nc") == 0){			
-			IoType = NETCDF;
-			#if defined HAVE_NETCDF
-			NC.open(DataFileName, netCDF::NcFile::FileMode::read);			
-			#else
-			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
-			#endif
-		}
-		else {
-			IoType = ASCII;
-			AF.openfile(DataFileName);
-			if (isdefined(HeaderFileName)){
-				glog.logmsg(0,"Parsing Input DfnFile %s\n", HeaderFileName.c_str());
-				AF.parse_aseggdf2_header(HeaderFileName);
-			}
-
-			size_t headerlines = b.getsizetvalue("Headerlines");
-			if (!isdefined(headerlines)) { headerlines = 0; }
-			for (size_t k = 0; k < headerlines; k++) {
-				AF.readnextrecord();
-			}
-		}
-
-		Subsample = b.getsizetvalue("Subsample");
-		if (!isdefined(Subsample)) { Subsample = 1; }		
-	}
-
-	IOType iotype() const { return IoType; }
-
-	bool readnextrecord()
-	{		
-		bool status = true;
-		if (iotype() == NETCDF) {
-			if (AtStart == true) {
-				AtStart = false;
-				Record = 0;
-			}
-			else {				
-				Record += Subsample;
-				#if defined HAVE_NETCDF
-					if (Record > NC.ntotalsamples()) return false;
-				#endif
-			}
-		}
-		else {
-			if (AtStart==true){				
-				status = AF.readnextrecord();
-				if (status == false)return false;
-				AtStart = false;				
-				Record = 0;
-			}			
-			else {
-				AF.skiprecords(Subsample - 1);
-				status = AF.readnextrecord();
-				if (status == false)return false;
-				Record += Subsample;
-			}
-		}				
-		return true;
-	}
-
-	bool parsefieldstrings() {
-		if (iotype() == ASCII) {
-			size_t n = AF.parserecord();			
-			if (n <= 1) return false;
-			return true;
-		}	
-		return true;
-	}
-
-	static bool contains_non_numeric_characters(const std::string& str)
-	{
-		size_t pos = str.find_first_not_of("0123456789.+-eE ,\t\r\n");
-		if (pos == std::string::npos) return false;
-		else return true;
-	}
-
-	const std::string& datafilename() { return DataFileName; }
-
-	const size_t& record() const { return Record;	}
-	
-	const std::string& recordstring() const { return AF.currentrecord_string(); }
-
-	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
-
-	
-		template<typename T>
-		bool netcdf_read(const std::string varname, std::vector<T>& v)
-		{
-			#if defined HAVE_NETCDF
-				NC.getDataByPointIndex(varname, Record, v);
-			#endif 
-			return true;
-		}
-
-
-	template<typename T>
-	bool read(const cFieldDefinition& cd, T& v) 
-	{		
-		if (cd.definitiontype() == UNAVAILABLE) {
-			v = undefinedvalue(v);
-			return false;
-		}
-		else if (cd.definitiontype() == NUMERIC){
-			v = (T) cd.numericvalue[0];
-			return true;
-		}
-
-		if (iotype() == ASCII) {
-			std::vector<T> vec;
-			bool status = cd.getvalue(AF, vec, 1);
-			if (status) {
-				v = vec[0];
-				return true;
-			}
-			else {
-				return false;
-			}
-		}
-		else {	
-			std::vector<T> vec;
-			netcdf_read(cd.varname, vec);
-			v = vec[0];
-			if (cd.flip) { v = -1*v; }
-			cd.applyoperator(v);
-			return true;
-		}	
-	}
-
-	template<typename T>
-	bool read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
-	{
-		vec.resize(n);
-		if (cd.definitiontype() == NUMERIC){
-			size_t deflen = cd.numericvalue.size();
-			for (size_t i = 0; i < n; i++) {
-				if(deflen == 1)vec[i] = (T) cd.numericvalue[0];
-				else           vec[i] = (T) cd.numericvalue[i];
-			}
-			return true;
-		}
-
-		if (iotype() == ASCII) {			
-			cd.getvalue(AF, vec, n);			
-			return true;			
-		}
-		else {
-			netcdf_read(cd.varname, vec);
-			for (size_t i = 0; i < vec.size(); i++) {
-				if (cd.flip) { vec[i] = -vec[i]; }
-				cd.applyoperator(vec[i]);
-			}
-			return true;
-		}
-		return false;
-	}
-};
-
 class cOutputOptions {
 
 private:
 	std::string DumpBasePath;
 
 public:
-	std::string DataFile;
-	std::string Logfile;
+	//std::string DataFile;
+	std::string LogFile;
 	bool PositiveLayerTopDepths = false;
 	bool NegativeLayerTopDepths = false;
 	bool PositiveLayerBottomDepths = false;
@@ -362,11 +170,11 @@ public:
 	cOutputOptions(){};
 
 	cOutputOptions(const cBlock& b) {
-		DataFile = b.getstringvalue("DataFile");
-		fixseparator(DataFile);
+		//DataFile = b.getstringvalue("DataFile");
+		//fixseparator(DataFile);
 
-		Logfile = b.getstringvalue("LogFile");				
-		fixseparator(Logfile);
+		LogFile = b.getstringvalue("LogFile");				
+		fixseparator(LogFile);
 
 		PositiveLayerTopDepths = b.getboolvalue("PositiveLayerTopDepths");
 		NegativeLayerTopDepths = b.getboolvalue("NegativeLayerTopDepths");
@@ -453,11 +261,11 @@ public:
 		return oS.size();
 	}
 
-	void readdata(cInputManager& IM)
+	void readdata(const std::unique_ptr<cInputManager>& IM)
 	{
 		if (Use == false) return;
-		IM.read(fd_oP, oP);
-		IM.read(fd_oS, oS, nw());
+		IM->read(fd_oP, oP);
+		IM->read(fd_oS, oS, nw());
 		oE.resize(nw());
 		if (EstimateNoiseFromModel) {
 			for (size_t w = 0; w < nw(); w++) {
@@ -466,7 +274,7 @@ public:
 			}
 		}
 		else {
-			IM.read(fd_oE, oE, nw());
+			IM->read(fd_oE, oE, nw());
 		}
 	}
 };
@@ -537,11 +345,13 @@ class cSBSInverter{
 	std::vector<cTDEmSystemInfo> SV;
 		
 	size_t nsystems;	
+	
+	std::unique_ptr<cInputManager> IM;
+	std::unique_ptr<cOutputManager> OM;
 
-	cInputManager IM;
-	cOutputOptions OO;	
-	FILE* ofp = (FILE*)NULL;
-	size_t Outputrecord; //output record number
+	cOutputOptions OO;
+	//FILE* ofp = (FILE*)NULL;
+	//size_t Outputrecord; //output record number
 	
 	//Column definitions
 	cFieldDefinition sn, dn, fn, ln, fidn;
@@ -595,8 +405,7 @@ class cSBSInverter{
 	size_t ndata;
 	size_t nparam;
 	size_t ngeomparam;	
-
-	//std::vector<double> Obs;
+	
 	VectorDouble Obs;
 	VectorDouble Err;
 	VectorDouble Pred;
@@ -665,8 +474,7 @@ class cSBSInverter{
 	};
 
 	~cSBSInverter()
-	{
-		if (ofp)fclose(ofp);
+	{				
 		glog.close();
 	};
 
@@ -674,33 +482,27 @@ class cSBSInverter{
 	{
 		_GSTITEM_
 		int job = 0;
-		while (IM.readnextrecord()){
-			   job++;
-			if (((job-1) % Size) != Rank) continue;
-			if (IM.iotype() == IOType::ASCII) {
-				bool nonnumeric = IM.contains_non_numeric_characters(IM.recordstring());
-				if (nonnumeric) {
-					glog.logmsg("Skipping non-numeric record at line %zu of Input DataFile %s\n", IM.record(), IM.datafilename().c_str());
-					glog.logmsg("\n%s\n\n", IM.recordstring().c_str());
-					continue;
-				}
-			}
+		while (IM->readnextrecord()) {
+			job++;
+			if (((job - 1) % Size) != Rank) continue;
+			bool valid = IM->is_record_valid();
+			if (valid == false) continue;
 
-			if (OO.Dump){
+			if (OO.Dump) {
 				FILE* fp = fileopen(dumppath() + "record.dat", "w");
-				fprintf(fp, "Record\t%zu", IM.record());
+				fprintf(fp, "Record\t%zu", IM->record());
 				fclose(fp);
 			}
-
+			
 			double t1 = gettime();
-			if (invert()){
+			if (invert()) {
 				double t2 = gettime();
 				double etime = t2 - t1;
-				writeresult();
-				glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM.record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());
+				writeresult(job-1);
+				glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());
 			}
 			else {
-				glog.logmsg("Rec %6zu  skipping due to parse error\n", 1 + IM.record());
+				glog.logmsg("Rec %6zu  skipping due to parse error\n", 1 + IM->record());
 			}
 		}
 		glog.close();
@@ -715,7 +517,7 @@ class cSBSInverter{
 		setup_data();
 		setup_parameters();
 		resize_matrices();
-		go();		
+		go();	
 	}
 
 	void loadcontrolfile(const std::string& filename)
@@ -724,25 +526,46 @@ class cSBSInverter{
 		Control = cBlock(filename);
 		OO = cOutputOptions(Control.findblock("Output"));
 		std::string suffix = stringvalue(Rank, ".%04d");
-		OO.Logfile = insert_after_filename(OO.Logfile, suffix);
-		OO.DataFile = insert_after_filename(OO.DataFile, suffix);
-		openlogfile(); //load this first to get outputlogfile opened	
+		//OM->Logfile  = insert_after_filename(OO->Logfile, suffix);
+		//OM->DataFile = insert_after_filename(OO->DataFile, suffix);
+		openlogfile(); //load this first to get outputlogfile opened
 
 		//Load control file
 		parseoptions();
 		initialisesystems();
 
-		IM.initialise(Control.findblock("Input"));
+		cBlock ib = Control.findblock("Input");
+		if (cInputManager::isnetcdf(ib)){
+			#if !defined HAVE_NETCDF
+			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
+			#endif			
+			IM = std::make_unique<cNetCDFInputManager>(ib);			
+			std::string s  = IM->datafilename();
+		}
+		else {			
+			IM = std::make_unique<cASCIIInputManager>(ib);
+		}
 
-		glog.logmsg(0, "Opening Output DataFile %s\n", OO.DataFile.c_str());
-		ofp = fileopen(OO.DataFile, "w");
-		Outputrecord = 1;
+		cBlock ob = Control.findblock("Output");
+		if (cOutputManager::isnetcdf(ob)){
+			#if !defined HAVE_NETCDF
+			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
+			#endif			
+			OM = std::make_unique<cNetCDFOutputManager>(ob);			
+		}
+		else {
+			OM = std::make_unique<cASCIIOutputManager>(ob);
+		}
+		
+		std::string s = OM->datafilename();
+		OM->opendatafile(IM->datafilename(), IM->subsamplerate());
+		
 	}
 
 	void openlogfile()
 	{
-		glog.logmsg(0, "Opening log file %s\n", OO.Logfile.c_str());
-		glog.open(OO.Logfile);
+		glog.logmsg(0, "Opening log file %s\n", OO.LogFile.c_str());
+		glog.open(OO.LogFile);
 		glog.logmsg(0, "Control file %s\n", Control.Filename.c_str());
 		glog.logmsg(0, "Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
@@ -989,20 +812,19 @@ class cSBSInverter{
 
 	bool parserecord()
 	{
-		if (IM.parsefieldstrings() == false) return false;
-
+		if (IM->parserecord() == false) return false;
+		//std::cout << "Record " << IM->record() << std::endl;
 		bool readstatus = true;
-
 		bool status;
-		Id.uniqueid = IM.record();
-		status = IM.read(sn, Id.surveynumber); if (status == false) readstatus = false;
-		status = IM.read(dn, Id.daynumber); if (status == false) readstatus = false;
-		status = IM.read(fn, Id.flightnumber); if (status == false) readstatus = false;
-		status = IM.read(ln, Id.linenumber); if (status == false) readstatus = false;
-		status = IM.read(fidn, Id.fidnumber); if (status == false) readstatus = false;
-		status = IM.read(xord, Location.x); if (status == false) readstatus = false;
-		status = IM.read(yord, Location.y); if (status == false) readstatus = false;
-		status = IM.read(elevation, Location.groundelevation); if (status == false) readstatus = false;
+		Id.uniqueid = IM->record();
+		status = IM->read(sn, Id.surveynumber); if (status == false) readstatus = false;
+		status = IM->read(dn, Id.daynumber); if (status == false) readstatus = false;
+		status = IM->read(fn, Id.flightnumber); if (status == false) readstatus = false;
+		status = IM->read(ln, Id.linenumber); if (status == false) readstatus = false;
+		status = IM->read(fidn, Id.fidnumber); if (status == false) readstatus = false;
+		status = IM->read(xord, Location.x); if (status == false) readstatus = false;
+		status = IM->read(yord, Location.y); if (status == false) readstatus = false;
+		status = IM->read(elevation, Location.groundelevation); if (status == false) readstatus = false;
 
 		Location.z = ud_double();
 		
@@ -1013,14 +835,14 @@ class cSBSInverter{
 		GTFR.fillundefined(GI); 
 		status = readgeometry(fd_GS,GS); 
 
-		status = IM.read(fd_ERc, ER.conductivity, nlayers); if (status == false) readstatus = false;
-		status = IM.read(fd_ERt, ER.thickness, nlayers - 1); if (status == false) readstatus = false;
+		status = IM->read(fd_ERc, ER.conductivity, nlayers); if (status == false) readstatus = false;
+		status = IM->read(fd_ERt, ER.thickness, nlayers - 1); if (status == false) readstatus = false;
 
 		if (solve_conductivity) {
-			status = IM.read(fd_ESc, ES.conductivity, nlayers); if (status == false) readstatus = false;
+			status = IM->read(fd_ESc, ES.conductivity, nlayers); if (status == false) readstatus = false;
 		}
 		if (solve_thickness) {
-			status = IM.read(fd_ESt, ES.thickness, nlayers - 1); if (status == false) readstatus = false;
+			status = IM->read(fd_ESt, ES.thickness, nlayers - 1); if (status == false) readstatus = false;
 		}
 
 		for (size_t si = 0; si < nsystems; si++) {
@@ -1764,10 +1586,7 @@ class cSBSInverter{
 		for (size_t i = 0; i < nparam; i++) {
 			iCm(i,i) = 1.0 / (RefParamStd[i] * RefParamStd[i]);
 		}
-		MatrixDouble X = (double)ndata*JtWdJ + iCm;
-		//MatrixDouble X = (double)ndata*JtWdJ + iCm + Ws;	
-		//MatrixDouble X = (double)ndata*JtWdJ + Ws;
-		//MatrixDouble X = (double)ndata*JtWdJ;
+		MatrixDouble X = (double)ndata*JtWdJ + iCm;		
 		MatrixDouble pinvX = pseudoInverse(X);
 		VectorDouble s(nparam);
 		for (size_t i = 0; i < nparam; i++) {
@@ -1780,7 +1599,7 @@ class cSBSInverter{
 	{
 		if (parserecord()) {
 			initialise_sample();
-			iterate();
+			//iterate();
 			return true;
 		}
 		return false;
@@ -2212,53 +2031,66 @@ class cSBSInverter{
 		return t.phid;
 	}
 
-	void writeresult()
-	{
-		cOutputFileInfo OI;
-		std::string buf;
+	void writeresult(const size_t& pointindex)
+	{		
+		const size_t& pi = pointindex;
+		OM->begin_point_output();
+				
+		static const std::string DN_NONE;
+		static const std::string DN_LAYER = "layer";
+		static const std::string NONE;
+		
+		//EM.conductivity.resize(30);
+		//EM.conductivity = increment(30, 0.0, 1.0);
+		//EM.conductivity += pi+0.2;
 
-		//Id		
-		OI.addfield("uniqueid", 'I', 12, 0);
-		OI.setcomment("Inversion sequence number");
-		buf += strprint("%12lu", Id.uniqueid);
+		//static cOutputField f3 = OM->addfield("conductivity","Layer conductivity","S/m", EM.conductivity.size(), NC_FLOAT, DN_LAYER,'E',15,6);		
+		//OM->write(EM.conductivity, f3, pi);
 
-		OI.addfield("survey", 'I', 12, 0);
-		OI.setcomment("Survey number");
-		buf += strprint("%12lu", Id.surveynumber);
+		//Id
+		auto f1 = OM->addfield("uniqueid", "Inversion sequence number", NONE, 1, NC_INT, DN_NONE, 'I', 12, 0);		
+		OM->write(Id.uniqueid,f1,pi);
 
-		OI.addfield("date", 'I', 12, 0);
-		OI.setcomment("Date number");
-		buf += strprint("%12lu", Id.daynumber);
+		//static cOutputField f2 = OM->addfield("survey", "Survey number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		//OM->write(Id.surveynumber, f2, pi);
+				
 
-		OI.addfield("flight", 'I', 12, 0);
-		OI.setcomment("Flight number, IntrepidFlightNumber");
-		buf += strprint("%12lu", Id.flightnumber);
+		//static cOutputField f3 = OM->addfield("date", "Date number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		//OM->write(Id.daynumber, f3, pi);
 
-		OI.addfield("line", 'I', 12, 0);
-		OI.setcomment("Line number, IntrepidLineNumber");
-		buf += strprint("%12lu", Id.linenumber);
-
-		OI.addfield("fiducial", 'F', 12, 2);
-		OI.setcomment("Fiducial number, IntrepidFiducial");
-		buf += strprint("%12.2lf", Id.fidnumber);
+		//static cOutputField f4 = OM->addfield("flight", "Flight number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		//OM->write(Id.flightnumber, f4, pi);
+			
+		//static cOutputField f5 = OM->addfield("line", "Line number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		//OM->write(Id.linenumber, f5, pi);
+		
+		//static cOutputField f6 = OM->addfield("fiducial", "Fiducial number", NONE, 1, NC_DOUBLE, DN_NONE, 'F', 12, 2);
+		//OM->write(Id.fidnumber, f6, pi);
 
 		//Location
-		OI.addfield("easting", 'F', 10, 1);
-		OI.setunits("m"); OI.setcomment("IntrepidX");
-		buf += strprint("%10.1lf", Location.x);
+		//static cOutputField f7 = OM->addfield("easting", "UTM Easting", "m", 1, NC_DOUBLE, DN_NONE, 'F', 10, 1);
+		//OM->write(Location.x, f7, pi);
 
-		OI.addfield("northing", 'F', 10, 1);
-		OI.setunits("m"); OI.setcomment("IntrepidY");
-		buf += strprint("%10.1lf", Location.y);
-
-		OI.addfield("elevation", 'F', 10, 2);
-		OI.setunits("m"); OI.setcomment("Ground elevation relative to sea-level");
-		buf += strprint("%10.2lf", Location.groundelevation);
-
+		//static cOutputField f8 = OM->addfield("northing", "UTM Northing", "m", 1, NC_DOUBLE, DN_NONE, 'F', 10, 1);
+		//OM->write(Location.y, f8, pi);
+		
+		//static cOutputField f9 = OM->addfield("elevation", "Ground elevation relative to sea-level", "m", 1, NC_FLOAT, DN_NONE, 'F', 10, 2);
+		//OM->write(Location.groundelevation, f9, pi);
+		
 		//Geometry	
-		writeresult_geometry(buf, OI, GI, "", "Input ", false);
-		writeresult_geometry(buf, OI, GM, "inverted_", "Inverted ", true);
 
+		//bool invertedfieldsonly = false;
+		//static std::vector<cOutputField> f(GI.size());
+		//for (size_t i = 0; i < GI.size(); i++) {
+		//	if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
+		//	f[i] = OM->addfield(GI.fname(i),"Input " + GI.description(i), GI.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
+		//	OM->write(GI[i],f[i],pi);
+		//}
+
+		//writeresult_geometry(GI, "", "Input ", false);
+		//writeresult_geometry(buf, OI, GM, "inverted_", "Inverted ", true);
+
+		/*
 		//Earth	
 		OI.addfield("nlayers", 'I', 4, 0);
 		OI.setcomment("Number of layers");
@@ -2482,8 +2314,8 @@ class cSBSInverter{
 
 		//Carriage return		
 		buf += strprint("\n");
-		fprintf(ofp, buf.c_str());
-		fflush(ofp);
+		//fprintf(ofp, buf.c_str());
+		//fflush(ofp);
 
 		OI.lockfields();
 		if (Outputrecord == 1) {
@@ -2496,17 +2328,21 @@ class cSBSInverter{
 			OI.write_aseggdf_header(aseggdffile);
 		}
 		Outputrecord++;
+		*/
+		OM->end_point_output();
+		static int dummy = OM->end_first_record();//only do this once
 	};
 
-	void writeresult_geometry(std::string& buf, cOutputFileInfo& OI, const cTDEmGeometry& g, const std::string& fieldnameprefix, const std::string& commentprefix, const bool invertedfieldsonly)
+	void writeresult_geometry(const cTDEmGeometry& g, const std::string& fieldnameprefix, const std::string& commentprefix, const bool invertedfieldsonly)
 	{
-		for (size_t i = 0; i < g.size(); i++) {
-			if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
-			OI.addfield(fieldnameprefix + g.fname(i), 'F', 9, 2);
-			OI.setunits(g.units(i));
-			OI.setcomment(commentprefix + g.description(i));
-			buf += strprint("%9.2lf", g[i]);
-		}
+		//static std::vector<cOutputField> f(g.size());
+		//for (size_t i = 0; i < g.size(); i++) {
+			//if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
+			//OI.addfield(fieldnameprefix + g.fname(i), 'F', 9, 2);
+			//OI.setunits(g.units(i));
+			//OI.setdescription(commentprefix + g.description(i));
+			//buf += strprint("%9.2lf", g[i]);
+		//}
 	}
 
 	void writeresult_component(std::string& buf, cOutputFileInfo& OI, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& commprefix, const char& form, const size_t& width, const size_t& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
@@ -2523,11 +2359,11 @@ class cSBSInverter{
 
 		if (includeprimary) {
 			OI.addfield(sysfield + comp + "P", form, width, decimals);
-			OI.setcomment(syscomm + comp + "-component primary field");
+			OI.setdescription(syscomm + comp + "-component primary field");
 			buf += strprint(fmt.c_str(), p);
 		}
 		OI.addfield(sysfield + comp + "S", form, width, decimals, s.size());
-		OI.setcomment(syscomm + comp + "-component secondary field windows");
+		OI.setdescription(syscomm + comp + "-component secondary field windows");
 		for (size_t w = 0; w < s.size(); w++) {
 			buf += strprint(fmt.c_str(), s[w]);
 		}
@@ -2558,7 +2394,7 @@ class cSBSInverter{
 	{		
 		bool status = true;
 		for (size_t i = 0; i < g.size(); i++) {
-			bool istatus = IM.read(gfd[i], g[i]);
+			bool istatus = IM->read(gfd[i], g[i]);
 			if (istatus == false) {
 				status = false;
 			}
@@ -2587,7 +2423,7 @@ class cSBSInverter{
 
 	std::string dumppath() const
 	{
-		return OO.DumpPath(IM.record(),LastIteration);
+		return OO.DumpPath(IM->record(),LastIteration);
 	};
 	
 
