@@ -360,7 +360,7 @@ public:
 
 	void create_sgrid_prop_alignment_points(){
 
-		static bool flipendian = ~isbigendian();
+		static bool flipendian = !isbigendian();
 		//must flip binary bytes to bigendian if not natively bigendian (MSBFIRST)
 				
 		std::string sgridhdrpath = sgriddir + sgridname() + ".sg";
@@ -422,10 +422,10 @@ public:
 				}
 
 				if (binary) {
-					float fxc = xc;
-					float fyc = yc;
-					float fzc = zc;
-					float fc0 = c0;
+					float fxc = (float)xc;
+					float fyc = (float)yc;
+					float fzc = (float)zc;
+					float fc0 = (float)c0;
 					if (flipendian) {
 						swap_endian(&fxc, 1);
 						swap_endian(&fyc, 1);
