@@ -15,6 +15,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <random>
 
+#include "gaaem_version.h"
 #include "file_utils.h"
 #include "file_formats.h"
 #include "lem.h"
