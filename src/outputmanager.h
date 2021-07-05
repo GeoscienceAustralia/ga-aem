@@ -38,9 +38,7 @@ class cOutputField {
 		char notation = 0;//ascii notation form I, F, E
 		size_t width = 0 ;//ascii width
 		size_t precision = 0;//ascii numver of decimals places
-		
-		//cOutputField() {};
-
+				
 		cOutputField(			
 			const std::string& _name,//name
 			const std::string& _description,//description
@@ -127,6 +125,29 @@ public:
 		const size_t& _precision//ascii numver of decimals places			
 	) = 0;
 
+	template <typename T> 
+	bool writefield(
+		const int& pointindex,//point index of sample in the file
+		const T& vals,//values to be written
+		const std::string& _name,//name
+		const std::string& _description,//description
+		const std::string& _units,//units	
+		const size_t& _bands,//number of bands
+		const nc_type& _ncstoragetype,//binary storage tyrpe
+		const std::string& _ncdimname,//dimension names		
+		const char& _notation,//ascii form I, F, E
+		const size_t& _width,//ascii width
+		const size_t& _precision//ascii numver of decimals places					
+	) 
+	{
+		std::shared_ptr<cOutputField> f = getfield(_name);
+		if (!f) {
+			f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
+		}
+		write(vals, f, pointindex);
+		return true;
+	}
+
 	virtual void begin_point_output() = 0;
 	virtual void end_point_output() = 0;
 	virtual bool end_first_record() {
@@ -176,8 +197,7 @@ public:
 	
 	bool opendatafile(const std::string& srcfile, const size_t& subsample) {	
 		glog.logmsg(0,"Opening Output ASCII DataFile %s\n", DataFileName.c_str());				
-		fstrm.open(DataFileName, std::ofstream::out);		
-		//Outputrecord = 1;		
+		fstrm.open(DataFileName, std::ofstream::out);				
 		return fstrm.is_open();
 	};
 	
@@ -190,7 +210,7 @@ public:
 		const std::string& _ncdimname,//dimension names		
 		const char& _notation,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii numver of decimals places			
+		const size_t& _precision//ascii number of decimals places			
 	) {
 		std::shared_ptr<cOutputField> f = std::make_shared<cOutputField>(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
 		OI.addfield(_name, _notation, _width, _precision, _bands);
@@ -207,12 +227,6 @@ public:
 
 		buf << std::endl; //Carriage return		
 		fstrm << buf.str() << std::flush; // Write to file
-
-		//OI.lockfields();
-		//if (Outputrecord == 1) {
-		//	write_headers();
-		//}
-		//Outputrecord++;
 	};
 
 	bool end_first_record(){
@@ -303,14 +317,22 @@ public:
 		std::vector<std::string> include_varnames;
 		std::vector<std::string> exclude_varnames;
 
-		if (cMpiEnv::world_rank() == 0) {
+		
+		int rank = 0;
+#if defined _MPI_ENABLED
+		rank = cMpiEnv::world_rank();
+#endif
+		if (rank == 0){
 			glog.logmsg(0, "Creating Output NetCDF DataFile %s\n", DataFileName.c_str());
 			cGeophysicsNcFile inncfile(srcfile, NcFile::FileMode::read);			
 			cGeophysicsNcFile outncfile(datafilename(),NcFile::FileMode::replace);
 			outncfile.subsample(srcfile, subsample, include_varnames, exclude_varnames);
-		}				
+		}	
+
+#if defined _MPI_ENABLED
 		cMpiEnv::world_barrier();
-		
+#endif
+
 		glog.logmsg(0, "Opening Output NetCDF DataFile %s\n", DataFileName.c_str());
 		NC.open(datafilename(), NcFile::FileMode::write);
 		return true;
@@ -327,16 +349,34 @@ public:
 		const size_t& _width,//ascii width
 		const size_t& _precision//ascii numver of decimals places			
 	) {	
-		std::shared_ptr<cOutputField> f = getfield(_name);
-		if (!f) {
+		std::shared_ptr<cOutputField> of = getfield(_name);
+		if (!of) {
 			flist.push_back(cOutputField(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision));
-			//f = std::make_shared<cOutputField>(flist.back());
-			f = &flist.back();
-			addvar(flist.back());			
+			addvar(flist.back());
+			of = std::make_shared<cOutputField>(flist.back());			
+		}		
+		return of;
+	}
+
+	bool writefield(
+		const std::string& _name,//name
+		const std::string& _description,//description
+		const std::string& _units,//units	
+		const size_t& _bands,//number of bands
+		const nc_type& _ncstoragetype,//binary storage tyrpe
+		const std::string& _ncdimname,//dimension names		
+		const char& _notation,//ascii form I, F, E
+		const size_t& _width,//ascii width
+		const size_t& _precision,//ascii numver of decimals places			
+		const int& pointindex,//
+		const size_t& vals//ascii numver of decimals places			
+	) {
+		std::shared_ptr<cOutputField> of = getfield(_name);		
+		if (!of) {
+			of = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
 		}
-		//auto f = std::make_shared<cOutputField>(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);		
-		int i = f.use_count();
-		return f;
+		write(of, pointindex, vals);
+		return true;
 	}
 	
 	void set_manager(cOutputManager* m) {
@@ -372,6 +412,11 @@ public:
 		return true;
 	}
 	
+	template <typename T>
+	bool write(std::shared_ptr<cOutputField> of, const int& pointindex, const T& val) {
+		return of->var->putRecord(pointindex, val);
+	}
+
 	virtual bool write(const int& val, std::shared_ptr<cOutputField> of, const int& pointindex) {
 		return of->var->putRecord(pointindex, val);		
 	}

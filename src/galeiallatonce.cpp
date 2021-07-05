@@ -2121,71 +2121,71 @@ public:
 
 
 			OI.addfield("survey", 'I', 12, 0);
-			OI.setcomment("Survey number");
+			OI.setdescription("Survey number");
 			buf += strprint("%12d", (int)fdsurvey(lsi));
 
 			OI.addfield("date", 'I', 12, 0);
-			OI.setcomment("Date number");
+			OI.setdescription("Date number");
 			buf += strprint("%12d", (int)fddate(lsi));
 
 			OI.addfield("flight", 'I', 12, 0);
-			OI.setcomment("Flight number, IntrepidFlightNumber");
+			OI.setdescription("Flight number, IntrepidFlightNumber");
 			buf += strprint("%12d", (int)fdflight(lsi));
 
 			OI.addfield("line", 'I', 12, 0);
-			OI.setcomment("Line number, IntrepidLineNumber");
+			OI.setdescription("Line number, IntrepidLineNumber");
 			buf += strprint("%12d", (int)fdline(lsi));
 
 			OI.addfield("fiducial", 'F', 12, 2);
-			OI.setcomment("Fiducial number, IntrepidFiducial");
+			OI.setdescription("Fiducial number, IntrepidFiducial");
 			buf += strprint("%12.2lf", fdfiducial(lsi));
 
 			//Location
 			OI.addfield("easting", 'F', 10, 1);
-			OI.setunits("m"); OI.setcomment("IntrepidX");
+			OI.setunits("m"); OI.setdescription("IntrepidX");
 			buf += strprint("%10.1lf", fdx(lsi));
 
 			OI.addfield("northing", 'F', 10, 1);
-			OI.setunits("m"); OI.setcomment("IntrepidY");
+			OI.setunits("m"); OI.setdescription("IntrepidY");
 			buf += strprint("%10.1lf", fdy(lsi));
 
 			OI.addfield("elevation", 'F', 10, 2);
-			OI.setunits("m"); OI.setcomment("Ground elevation relative to sea-level");
+			OI.setunits("m"); OI.setdescription("Ground elevation relative to sea-level");
 			buf += strprint("%10.2lf", fdelevation(lsi));
 					
 			for (size_t gi = 0; gi < G.size(); gi++){
 				OI.addfield(gref.fname(gi), 'F', 9, 2);
 				OI.setunits(gref.units(gi));
-				OI.setcomment(gref.description(gi));
+				OI.setdescription(gref.description(gi));
 				buf += strprint("%9.2lf", gref[gi]);
 			}
 			
 			for (size_t gi = 0; gi < UGI.size(); gi++){
 				OI.addfield("inverted_"+ginv.fname(UGI[gi]), 'F', 9, 2);
 				OI.setunits(ginv.units(UGI[gi]));
-				OI.setcomment("Inverted " + ginv.description(UGI[gi]));
+				OI.setdescription("Inverted " + ginv.description(UGI[gi]));
 				buf += strprint("%9.2lf", ginv[UGI[gi]]);
 			}
 
 			OI.addfield("nlayers", 'I', 4, 0);
-			OI.setcomment("Number of layers");
+			OI.setdescription("Number of layers");
 			buf += strprint("%4lu", nlayers);
 
 			OI.addfield("conductivity", 'E', 15, 6, nlayers);
-			OI.setunits("S/m"); OI.setcomment("Layer conductivity");
+			OI.setunits("S/m"); OI.setdescription("Layer conductivity");
 			for (size_t li = 0; li < nlayers; li++){
 				buf += strprint("%15.6le", conductivity[li]);
 			}
 
 			OI.addfield("thickness", 'F', 9, 2, nlayers);
-			OI.setunits("m"); OI.setcomment("Layer thickness");
+			OI.setunits("m"); OI.setdescription("Layer thickness");
 			for (size_t li = 0; li < nlayers; li++){
 				buf += strprint("%9.2lf", thickness[li]);
 			}
 
 			if (OutputOp.PositiveLayerBottomDepths){
 				OI.addfield("depth_bottom", 'F', 9, 2, nlayers);
-				OI.setunits("m"); OI.setcomment("Depth to bottom of layer");
+				OI.setunits("m"); OI.setdescription("Depth to bottom of layer");
 				double tsum = 0.0;
 				for (size_t i = 0; i < nlayers; i++){
 					buf += strprint("%9.2lf", tsum);
@@ -2195,7 +2195,7 @@ public:
 
 			if (OutputOp.NegativeLayerBottomDepths){
 				OI.addfield("depth_bottom_negative", 'F', 9, 2, nlayers);
-				OI.setunits("m"); OI.setcomment("Negative of depth to bottom of layer");
+				OI.setunits("m"); OI.setdescription("Negative of depth to bottom of layer");
 				double tsum = 0.0;
 				for (size_t i = 0; i < nlayers; i++){
 					tsum += thickness[i];
@@ -2205,7 +2205,7 @@ public:
 
 			if (OutputOp.InterfaceElevations){
 				OI.addfield("elevation_interfaces", 'F', 9, 2, nlayers);
-				OI.setunits("m"); OI.setcomment("Elevation of interfaces");
+				OI.setunits("m"); OI.setdescription("Elevation of interfaces");
 				double etop = fdelevation(lsi);
 				for (size_t i = 0; i < nlayers; i++){
 					buf += strprint("%9.2lf", etop);
@@ -2223,11 +2223,11 @@ public:
 						if (C.Use == false)continue;
 						if (S.InvertTotalField){
 							OI.addfield("observed_" + sys + cid[ci] + "P", 'E', 15, 6);
-							OI.setcomment("Observed " + sys + cid[ci] + "-component primary field");
+							OI.setdescription("Observed " + sys + cid[ci] + "-component primary field");
 							buf += strprint("%15.6le", C.fdp(lsi, 0));
 						}							
 						OI.addfield("observed_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-						OI.setcomment("Observed " + sys + cid[ci] + "-component secondary field windows");
+						OI.setdescription("Observed " + sys + cid[ci] + "-component secondary field windows");
 						for (size_t w = 0; w < C.nw; w++){
 							buf += strprint("%15.6le", C.fds(lsi,w));
 						}						
@@ -2243,7 +2243,7 @@ public:
 						cComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;						
 						OI.addfield("noise_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-						OI.setcomment("Estimated noise " + sys + cid[ci] + "-component secondary field windows");
+						OI.setdescription("Estimated noise " + sys + cid[ci] + "-component secondary field windows");
 						for (size_t w = 0; w < C.nw; w++){
 							buf += strprint("%15.6le", C.fdn(lsi, w));
 						}
@@ -2262,13 +2262,13 @@ public:
 						if (C.Use == false)continue;
 						if (S.InvertTotalField){
 							OI.addfield("predicted_" +  sys + cid[ci] + "P", 'E', 15, 6);
-							OI.setcomment("Predicted " + sys + cid[ci] + "-component primary field");
+							OI.setdescription("Predicted " + sys + cid[ci] + "-component primary field");
 							if (ci == 0) buf += strprint("%15.6le", S.T.PrimaryX);
 							else if (ci == 1) buf += strprint("%15.6le", S.T.PrimaryY);
 							else              buf += strprint("%15.6le", S.T.PrimaryZ);
 
 							OI.addfield("predicted_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-							OI.setcomment("Predicted " + sys + cid[ci] + "-component secondary field windows");
+							OI.setdescription("Predicted " + sys + cid[ci] + "-component secondary field windows");
 							for (size_t w = 0; w < C.nw; w++){
 								if      (ci == 0) buf += strprint("%15.6le", S.T.X[w]);
 								else if (ci == 1) buf += strprint("%15.6le", S.T.Y[w]);
@@ -2277,7 +2277,7 @@ public:
 						}
 						else{
 							OI.addfield("predicted_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
-							OI.setcomment("Predicted " + sys + cid[ci] + "-component secondary field windows");
+							OI.setdescription("Predicted " + sys + cid[ci] + "-component secondary field windows");
 							for (size_t w = 0; w < C.nw; w++){
 								buf += strprint("%15.6le", glocal[ldi]);
 								ldi++;
@@ -2290,19 +2290,19 @@ public:
 
 			//Inversion parameters
 			OI.addfield("SamplePhiD", 'E', 15, 6);
-			OI.setcomment("Normalised data misfit for this sample");
+			OI.setdescription("Normalised data misfit for this sample");
 			buf += strprint("%15.6le", samplephid[lsi]);
 
 			OI.addfield("PhiD", 'E', 15, 6);
-			OI.setcomment("Normalised data misfit");
+			OI.setdescription("Normalised data misfit");
 			buf += strprint("%15.6le", mLastPhiD);
 
 			OI.addfield("Lambda", 'E', 15, 6);
-			OI.setcomment("Lambda regularization parameter");
+			OI.setdescription("Lambda regularization parameter");
 			buf += strprint("%15.6le", mLastLambda);
 
 			OI.addfield("Iterations", 'I', 4, 0);
-			OI.setcomment("Number of iterations");
+			OI.setdescription("Number of iterations");
 			buf += strprint("%4lu", mLastIteration);
 
 			//Carriage return

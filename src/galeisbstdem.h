@@ -288,13 +288,13 @@ public:
 	size_t nwindows;
 	size_t ncomps;
 	size_t nchans;
-	cComponentInfo Comp[3];	
+	cComponentInfo CompInfo[3];
 	int xzIndex;//Start index of XZ in data array
 
 	bool invertXPlusZ;
 	bool invertPrimaryPlusSecondary;
 	bool reconstructPrimary;		
-	sTDEmData predicted;
+	cTDEmData predicted;
 
 	void initialise(const cBlock& b) {
 		std::string dummy;
@@ -316,18 +316,18 @@ public:
 		invertPrimaryPlusSecondary = b.getboolvalue("InvertPrimaryPlusSecondary");
 		reconstructPrimary = b.getboolvalue("ReconstructPrimaryFieldFromInputGeometry");
 
-		Comp[0] = cComponentInfo(b.findblock("XComponent"), "X", nwindows, invertPrimaryPlusSecondary);
-		Comp[1] = cComponentInfo(b.findblock("YComponent"), "Y", nwindows, invertPrimaryPlusSecondary);
-		Comp[2] = cComponentInfo(b.findblock("ZComponent"), "Z", nwindows, invertPrimaryPlusSecondary);
+		CompInfo[0] = cComponentInfo(b.findblock("XComponent"), "X", nwindows, invertPrimaryPlusSecondary);
+		CompInfo[1] = cComponentInfo(b.findblock("YComponent"), "Y", nwindows, invertPrimaryPlusSecondary);
+		CompInfo[2] = cComponentInfo(b.findblock("ZComponent"), "Z", nwindows, invertPrimaryPlusSecondary);
 
 		ncomps = 0;
-		if (Comp[0].Use) ncomps++;
-		if (Comp[1].Use) ncomps++;
-		if (Comp[2].Use) ncomps++;
+		if (CompInfo[0].Use) ncomps++;
+		if (CompInfo[1].Use) ncomps++;
+		if (CompInfo[2].Use) ncomps++;
 
 		if (invertXPlusZ) {
-			Comp[0].Use = true;
-			Comp[2].Use = true;
+			CompInfo[0].Use = true;
+			CompInfo[2].Use = true;
 		}
 		nchans = nwindows * ncomps;
 	}
@@ -443,9 +443,9 @@ class cSBSInverter{
 	size_t LastIteration;
 	
 	
-	size_t cIndex;
-    size_t tIndex;
-	size_t gIndex;	
+	size_t cIndex;//Conductivty parameters start index
+    size_t tIndex;//Thickness parameters start index
+	size_t gIndex;//Geometery parameters start index
 	size_t tx_heightIndex;
 	size_t txrx_dxIndex;
 	size_t txrx_dyIndex;
@@ -713,19 +713,19 @@ class cSBSInverter{
 			cTDEmSystemInfo& S = SV[si];
 			if (S.invertXPlusZ) {
 				S.xzIndex = (int) ndata;
-				S.Comp[0].dataindex = -1;
-				S.Comp[2].dataindex = -1;
+				S.CompInfo[0].dataindex = -1;
+				S.CompInfo[2].dataindex = -1;
 				ndata += S.nwindows;
 
-				if (S.Comp[1].Use) {
-					S.Comp[1].dataindex = (int) ndata;
+				if (S.CompInfo[1].Use) {
+					S.CompInfo[1].dataindex = (int) ndata;
 					ndata += S.nwindows;
 				}
 			}
 			else {
 				for (size_t i = 0; i < 3; i++) {
-					if (S.Comp[i].Use) {
-						S.Comp[i].dataindex = (int) ndata;
+					if (S.CompInfo[i].Use) {
+						S.CompInfo[i].dataindex = (int) ndata;
 						ndata += S.nwindows;
 					}
 				}
@@ -854,9 +854,9 @@ class cSBSInverter{
 	void readsystemdata(size_t sysindex)
 	{
 		cTDEmSystemInfo& S = SV[sysindex];
-		S.Comp[0].readdata(IM);
-		S.Comp[1].readdata(IM);
-		S.Comp[2].readdata(IM);
+		S.CompInfo[0].readdata(IM);
+		S.CompInfo[1].readdata(IM);
+		S.CompInfo[2].readdata(IM);
 	}
 
 	void initialise_sample()
@@ -910,10 +910,10 @@ class cSBSInverter{
 				T.setgeometry(GTFR);
 				T.LEM.calculation_type = CT_FORWARDMODEL;
 				T.LEM.derivative_layer = INT_MAX;
-				T.setprimaryfields();
-				S.Comp[0].oP = T.PrimaryX;
-				S.Comp[1].oP = T.PrimaryY;
-				S.Comp[2].oP = T.PrimaryZ;
+				T.setprimaryfields();				
+				S.CompInfo[0].oP = T.PrimaryX;
+				S.CompInfo[1].oP = T.PrimaryY;
+				S.CompInfo[2].oP = T.PrimaryZ;
 			}
 
 			
@@ -922,39 +922,39 @@ class cSBSInverter{
 
 					//X+Z Comp
 					size_t di = wi + S.xzIndex;					
-					double X = S.Comp[0].oS[wi];
-					double Z = S.Comp[2].oS[wi];					
+					double X = S.CompInfo[0].oS[wi];
+					double Z = S.CompInfo[2].oS[wi];					
 					if (S.invertPrimaryPlusSecondary) {
-						X += S.Comp[0].oP;
-						Z += S.Comp[2].oP;
+						X += S.CompInfo[0].oP;
+						Z += S.CompInfo[2].oP;
 					}
 					Obs[di] = std::hypot(X,Z);
 
-					const double& Xerr = S.Comp[0].oE[wi];
-					const double& Zerr = S.Comp[2].oE[wi];
+					const double& Xerr = S.CompInfo[0].oE[wi];
+					const double& Zerr = S.CompInfo[2].oE[wi];
 					Err[di] = std::hypot(X*Xerr,Z*Zerr)/Obs[di];
 					
 					//Y Comp
-					if (S.Comp[1].Use) {
-						di = S.Comp[1].dataindex + wi;
-						Obs[di] = S.Comp[1].oS[wi];
+					if (S.CompInfo[1].Use) {
+						di = S.CompInfo[1].dataindex + wi;
+						Obs[di] = S.CompInfo[1].oS[wi];
 						if (S.invertPrimaryPlusSecondary) {
-							Obs[di] += S.Comp[1].oP;
+							Obs[di] += S.CompInfo[1].oP;
 						}
-						Err[di] = S.Comp[1].oE[wi];
+						Err[di] = S.CompInfo[1].oE[wi];
 					}
 				}
 			}
 			else {
 				for (size_t ci = 0; ci < 3; ci++) {
-					if (S.Comp[ci].Use == false) continue;
+					if (S.CompInfo[ci].Use == false) continue;
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
-						size_t di = S.Comp[ci].dataindex + wi;
-						Obs[di] = S.Comp[ci].oS[wi];
+						size_t di = S.CompInfo[ci].dataindex + wi;
+						Obs[di] = S.CompInfo[ci].oS[wi];
 						if (S.invertPrimaryPlusSecondary) {
-							Obs[di] += S.Comp[ci].oP;
+							Obs[di] += S.CompInfo[ci].oP;
 						}
-						Err[di] = S.Comp[ci].oE[wi];
+						Err[di] = S.CompInfo[ci].oE[wi];
 					}
 				}
 			}
@@ -1378,13 +1378,13 @@ class cSBSInverter{
 			cTDEmSystemInfo& S = SV[si];
 			cTDEmSystem& T = S.T;
 
-			sTDEmData& d = S.predicted;
-			d.xcomponent.Primary = T.PrimaryX;
-			d.ycomponent.Primary = T.PrimaryY;
-			d.zcomponent.Primary = T.PrimaryZ;
-			d.xcomponent.Secondary = T.X;
-			d.ycomponent.Secondary = T.Y;
-			d.zcomponent.Secondary = T.Z;
+			cTDEmData& d = S.predicted;
+			d.xcomponent().Primary = T.PrimaryX;
+			d.ycomponent().Primary = T.PrimaryY;
+			d.zcomponent().Primary = T.PrimaryZ;
+			d.xcomponent().Secondary = T.X;
+			d.ycomponent().Secondary = T.Y;
+			d.zcomponent().Secondary = T.Z;
 		}
 	}
 
@@ -1426,14 +1426,14 @@ class cSBSInverter{
 			if (S.invertXPlusZ) {
 				for (size_t wi = 0; wi < nw; wi++) {
 					predicted[wi + S.xzIndex] = xzfm[wi];
-					if (S.Comp[1].Use) predicted[wi + S.Comp[1].dataindex] = yfm[wi];
+					if (S.CompInfo[1].Use) predicted[wi + S.CompInfo[1].dataindex] = yfm[wi];
 				}
 			}
 			else {
 				for (size_t wi = 0; wi < nw; wi++) {
-					if (S.Comp[0].Use) predicted[wi + S.Comp[0].dataindex] = xfm[wi];
-					if (S.Comp[1].Use) predicted[wi + S.Comp[1].dataindex] = yfm[wi];
-					if (S.Comp[2].Use) predicted[wi + S.Comp[2].dataindex] = zfm[wi];
+					if (S.CompInfo[0].Use) predicted[wi + S.CompInfo[0].dataindex] = xfm[wi];
+					if (S.CompInfo[1].Use) predicted[wi + S.CompInfo[1].dataindex] = yfm[wi];
+					if (S.CompInfo[2].Use) predicted[wi + S.CompInfo[2].dataindex] = zfm[wi];
 				}
 			}
 
@@ -1551,14 +1551,14 @@ class cSBSInverter{
 		if (S.invertXPlusZ) {
 			for (size_t w = 0; w < nw; w++) {
 				J(w + S.xzIndex, pindex) = (xfm[w] * xdrv[w] + zfm[w] * zdrv[w]) / xzfm[w];
-				if (S.Comp[1].Use)J(w + S.Comp[1].dataindex,pindex) = xdrv[w];
+				if (S.CompInfo[1].Use)J(w + S.CompInfo[1].dataindex,pindex) = xdrv[w];
 			}
 		}
 		else {
 			for (size_t w = 0; w < nw; w++) {				
-				if (S.Comp[0].Use)J(w + S.Comp[0].dataindex,pindex) = xdrv[w];
-				if (S.Comp[1].Use)J(w + S.Comp[1].dataindex,pindex) = ydrv[w];
-				if (S.Comp[2].Use)J(w + S.Comp[2].dataindex,pindex) = zdrv[w];				
+				if (S.CompInfo[0].Use)J(w + S.CompInfo[0].dataindex,pindex) = xdrv[w];
+				if (S.CompInfo[1].Use)J(w + S.CompInfo[1].dataindex,pindex) = ydrv[w];
+				if (S.CompInfo[2].Use)J(w + S.CompInfo[2].dataindex,pindex) = zdrv[w];				
 			}
 		}
 	}
@@ -1570,12 +1570,7 @@ class cSBSInverter{
 			for (size_t di = 0; di < ndata; di++) {
 				s[pi] += (std::fabs(J(di,pi)) * std::sqrt((double)ndata*Wd(di,di)));
 			}
-		}
-
-		//if (OO.Dump){
-		//	dumptofile(s, "layer_sensitivity.dat");
-		//	writetofile(JtWdJ, dumppath() + "JtWdJ.dat");
-		//}
+		}		
 		return s;
 	}
 
@@ -1599,7 +1594,7 @@ class cSBSInverter{
 	{
 		if (parserecord()) {
 			initialise_sample();
-			//iterate();
+			iterate();
 			return true;
 		}
 		return false;
@@ -2031,77 +2026,47 @@ class cSBSInverter{
 		return t.phid;
 	}
 
-	void writeresult(const size_t& pointindex)
+	void writeresult(const int& pointindex)
 	{		
-		const size_t& pi = pointindex;
+		const int& pi = pointindex;
 		OM->begin_point_output();
-				
-		static const std::string DN_NONE;
-		static const std::string DN_LAYER = "layer";
-		static const std::string NONE;
 		
-		//EM.conductivity.resize(30);
-		//EM.conductivity = increment(30, 0.0, 1.0);
-		//EM.conductivity += pi+0.2;
-
-		//static cOutputField f3 = OM->addfield("conductivity","Layer conductivity","S/m", EM.conductivity.size(), NC_FLOAT, DN_LAYER,'E',15,6);		
-		//OM->write(EM.conductivity, f3, pi);
-
-		//Id
-		auto f1 = OM->addfield("uniqueid", "Inversion sequence number", NONE, 1, NC_INT, DN_NONE, 'I', 12, 0);		
-		OM->write(Id.uniqueid,f1,pi);
-
-		//static cOutputField f2 = OM->addfield("survey", "Survey number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
-		//OM->write(Id.surveynumber, f2, pi);
-				
-
-		//static cOutputField f3 = OM->addfield("date", "Date number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
-		//OM->write(Id.daynumber, f3, pi);
-
-		//static cOutputField f4 = OM->addfield("flight", "Flight number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
-		//OM->write(Id.flightnumber, f4, pi);
-			
-		//static cOutputField f5 = OM->addfield("line", "Line number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
-		//OM->write(Id.linenumber, f5, pi);
-		
-		//static cOutputField f6 = OM->addfield("fiducial", "Fiducial number", NONE, 1, NC_DOUBLE, DN_NONE, 'F', 12, 2);
-		//OM->write(Id.fidnumber, f6, pi);
+		//Id		
+		OM->writefield(pi, Id.uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		OM->writefield(pi, Id.surveynumber, "survey", "Survey number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		OM->writefield(pi, Id.daynumber, "date", "Date number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		//OM->writefield(pi, Id.flightnumber, "flight", "Flight number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		OM->writefield(pi, Id.linenumber, "line", "Line number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		OM->writefield(pi, Id.fidnumber, "fiducial", "Fiducial number", UNITLESS, 1, NC_DOUBLE, DN_NONE, 'F', 12, 2);
 
 		//Location
-		//static cOutputField f7 = OM->addfield("easting", "UTM Easting", "m", 1, NC_DOUBLE, DN_NONE, 'F', 10, 1);
-		//OM->write(Location.x, f7, pi);
-
-		//static cOutputField f8 = OM->addfield("northing", "UTM Northing", "m", 1, NC_DOUBLE, DN_NONE, 'F', 10, 1);
-		//OM->write(Location.y, f8, pi);
+		OM->writefield(pi, Location.x, "easting", "UTM Easting", "m", 1, NC_DOUBLE, DN_NONE, 'F', 10, 1);
+		OM->writefield(pi, Location.y, "northing", "UTM Northing", "m", 1, NC_DOUBLE, DN_NONE, 'F', 10, 1);			
+		OM->writefield(pi, Location.groundelevation, "elevation", "Ground elevation relative to sea-level", "m", 1, NC_FLOAT, DN_NONE, 'F', 10, 2);
 		
-		//static cOutputField f9 = OM->addfield("elevation", "Ground elevation relative to sea-level", "m", 1, NC_FLOAT, DN_NONE, 'F', 10, 2);
-		//OM->write(Location.groundelevation, f9, pi);
-		
-		//Geometry	
-
-		//bool invertedfieldsonly = false;
-		//static std::vector<cOutputField> f(GI.size());
-		//for (size_t i = 0; i < GI.size(); i++) {
-		//	if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
-		//	f[i] = OM->addfield(GI.fname(i),"Input " + GI.description(i), GI.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
-		//	OM->write(GI[i],f[i],pi);
-		//}
-
-		//writeresult_geometry(GI, "", "Input ", false);
-		//writeresult_geometry(buf, OI, GM, "inverted_", "Inverted ", true);
-
-		/*
-		//Earth	
-		OI.addfield("nlayers", 'I', 4, 0);
-		OI.setcomment("Number of layers");
-		buf += strprint("%4lu", nlayers);
-
-		OI.addfield("conductivity", 'E', 15, 6, nlayers);
-		OI.setunits("S/m"); OI.setcomment("Layer conductivity");
-		for (size_t i = 0; i < nlayers; i++) {
-			buf += strprint("%15.6le", EM.conductivity[i]);
+		//Geometry Input
+		bool invertedfieldsonly = false;
+		for (size_t i = 0; i < GI.size(); i++) {
+			if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
+			OM->writefield(pi, GI[i], "input_" + GI.fname(i), "Input " + GI.description(i), GI.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
 		}
 
+		//Geometry Modelled		
+		invertedfieldsonly = true;
+		for (size_t i = 0; i < GM.size(); i++) {
+			if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
+			OM->writefield(pi, GM[i], "inverted_" + GM.fname(i), "Inverted " + GI.description(i), GI.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
+		}
+				
+		//Earth	
+		OM->writefield(pi,
+			nlayers,"nlayers","Number of layers ", UNITLESS,
+			1, NC_UINT, DN_NONE, 'I', 4, 0);
+		
+		OM->writefield(pi,
+			EM.conductivity, "conductivity", "Layer conductivity", "S/m",
+			EM.conductivity.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
+		
 		double bottomlayerthickness = 100.0;
 		if (solve_thickness == false && nlayers > 1) {
 			bottomlayerthickness = EM.thickness[nlayers - 2];
@@ -2109,230 +2074,172 @@ class cSBSInverter{
 		std::vector<double> thickness = EM.thickness;
 		thickness.push_back(bottomlayerthickness);
 
-		OI.addfield("thickness", 'F', 9, 2, nlayers);
-		OI.setunits("m"); OI.setcomment("Layer thickness");
-		for (size_t i = 0; i < nlayers; i++) {
-			buf += strprint("%9.2lf", thickness[i]);
-		}
-
-		if (OO.PositiveLayerTopDepths) {
-			OI.addfield("depth_top", 'F', 9, 2, nlayers);
-			OI.setunits("m"); OI.setcomment("Depth to top of layer");
-			double tsum = 0.0;
-			for (size_t i = 0; i < nlayers; i++) {
-				buf += strprint("%9.2lf", tsum);
-				tsum += thickness[i];
-			}
+		OM->writefield(pi,
+			thickness, "thickness", "Layer thickness", "m",
+			thickness.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
+					
+				
+		if (OO.PositiveLayerTopDepths) {			
+			std::vector<double> dtop = EM.layer_top_depth();
+			OM->writefield(pi,
+				dtop, "depth_top", "Depth to top of layer", "m",
+				dtop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.NegativeLayerTopDepths) {
-			OI.addfield("depth_top_negative", 'F', 9, 2, nlayers);
-			OI.setunits("m"); OI.setcomment("Negative of depth to top of layer");
-			double tsum = 0.0;
-			for (size_t i = 0; i < nlayers; i++) {
-				buf += strprint("%9.2lf", -tsum);
-				tsum += thickness[i];
-			}
+			std::vector<double> ndtop = -1.0*EM.layer_top_depth();
+			OM->writefield(pi,
+				ndtop, "depth_top_negative", "Negative of depth to top of layer", "m",
+				ndtop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
-
+		
 		if (OO.PositiveLayerBottomDepths) {
-			OI.addfield("depth_bottom", 'F', 9, 2, nlayers);
-			OI.setunits("m"); OI.setcomment("Depth to bottom of layer");
-			double tsum = 0.0;
-			for (size_t i = 0; i < nlayers; i++) {
-				tsum += thickness[i];
-				buf += strprint("%9.2lf", tsum);				
-			}
+			std::vector<double> dbot = EM.layer_bottom_depth();
+			OM->writefield(pi,
+				dbot, "depth_bottom", "Depth to bottom of layer", "m",
+				dbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.NegativeLayerBottomDepths) {
-			OI.addfield("depth_bottom_negative", 'F', 9, 2, nlayers);
-			OI.setunits("m"); OI.setcomment("Negative of depth to bottom of layer");
-			double tsum = 0.0;
-			for (size_t i = 0; i < nlayers; i++) {
-				tsum += thickness[i];
-				buf += strprint("%9.2lf", -tsum);
-			}
+			std::vector<double> ndbot = -1.0 * EM.layer_bottom_depth();
+			OM->writefield(pi,
+				ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
+				ndbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);			
 		}
 
-		if (OO.InterfaceElevations) {
-			OI.addfield("elevation_interfaces", 'F', 9, 2, nlayers + 1);
-			OI.setunits("m"); OI.setcomment("Elevation of interfaces");
-			double etop = Location.groundelevation;
-			for (size_t i = 0; i < nlayers; i++) {
-				buf += strprint("%9.2lf", etop);
-				etop -= thickness[i];
-			}
-			buf += strprint("%9.2lf", etop);
+		if (OO.InterfaceElevations) {			
+			std::vector<double> etop = EM.layer_top_depth();
+			etop += Location.groundelevation;
+			OM->writefield(pi,
+				etop, "elevation_interface", "Elevation of interface", "m",
+				etop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);						
 		}
-
+				
 		if (OO.ParameterSensitivity) {
+			std::vector<double> ps = copy(ParameterSensitivity);
 			if (solve_conductivity) {
-				OI.addfield("conductivity_sensitivity", 'E', 15, 6, nlayers);
-				for (size_t i = 0; i < nlayers; i++) {
-					buf += strprint("%15.6le", ParameterSensitivity[cIndex + i]);
-				}
+				std::vector<double> v(ps.begin() + cIndex, ps.begin() + cIndex + nlayers);
+				OM->writefield(pi,
+					v, "conductivity_sensitivity", "Conductivity parameter sensitivity", UNITLESS,
+					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
+			
 			if (solve_thickness) {
-				OI.addfield("thickness_sensitivity", 'E', 15, 6, nlayers - 1);
-				for (size_t i = 0; i < nlayers - 1; i++) {
-					buf += strprint("%15.6le", ParameterSensitivity[tIndex + i]);
-				}
+				std::vector<double> v(ps.begin() + tIndex, ps.begin() + tIndex + nlayers-1);
+				v.push_back(0.0);//halfspace layer not a parameter
+				OM->writefield(pi,
+					v, "thickness_sensitivity", "Thickness parameter sensitivity", UNITLESS,
+					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);				
 			}
-			if (solve_tx_height) {
-				OI.addfield("tx_height_sensitivity", 'E', 15, 6);
-				buf += strprint("%15.6le", ParameterSensitivity[tx_heightIndex]);
-			}
-			if (solve_txrx_dx) {
-				OI.addfield("txrx_dx_sensitivity", 'E', 15, 6);
-				buf += strprint("%15.6le", ParameterSensitivity[txrx_dxIndex]);
-			}
-			if (solve_txrx_dz) {
-				OI.addfield("txrx_dz_sensitivity", 'E', 15, 6);
-				buf += strprint("%15.6le", ParameterSensitivity[txrx_dzIndex]);
-			}
-			if (solve_rx_pitch) {
-				OI.addfield("rx_pitch_sensitivity", 'E', 15, 6);
-				buf += strprint("%15.6le", ParameterSensitivity[rx_pitchIndex]);
+
+			size_t k = 0;
+			for (size_t gi = 0; gi < GI.size(); gi++) {				
+				if (solvegeometryindex(gi) == false)continue;
+				std::string name = "inverted_" + GI.fname(gi) + "_sensitivity";
+				std::string desc = GI.description(gi) + " parameter sensitivity";
+				OM->writefield(pi, 
+					ps[gIndex+k], name, desc, UNITLESS,
+					1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+				k++;
 			}
 		}
 
 		if (OO.ParameterUncertainty) {
+			std::vector<double> pu = copy(ParameterUncertainty);
 			if (solve_conductivity) {
-				OI.addfield("conductivity_uncertainty", 'E', 15, 6, nlayers);
-				OI.setunits("log10(S/m)");
-				for (size_t i = 0; i < nlayers; i++) {
-					buf += strprint("%15.6le", ParameterUncertainty[cIndex + i]);
-				}
+				std::vector<double> v(pu.begin() + cIndex, pu.begin() + cIndex + nlayers);
+				OM->writefield(pi,
+					v, "conductivity_uncertainty", "Conductivity parameter uncertainty", "log10(S/m)",
+					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
+
 			if (solve_thickness) {
-				OI.addfield("thickness_uncertainty", 'E', 15, 6, nlayers - 1);
-				OI.setunits("log10(m)");
-				for (size_t i = 0; i < nlayers - 1; i++) {
-					buf += strprint("%15.6le", ParameterUncertainty[tIndex + i]);
-				}
+				std::vector<double> v(pu.begin() + tIndex, pu.begin() + tIndex + nlayers - 1);
+				v.push_back(0.0);//halfspace layer not a parameter
+				OM->writefield(pi,
+					v, "thickness_uncertainty", "Thickness parameter uncertainty", "log10(m)",
+					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
-			if (solve_tx_height) {
-				OI.addfield("tx_height_uncertainty", 'E', 15, 6);
-				OI.setunits("m");
-				buf += strprint("%15.6le", ParameterUncertainty[tx_heightIndex]);
-			}
-			if (solve_txrx_dx) {
-				OI.addfield("txrx_dx_uncertainty", 'E', 15, 6);
-				OI.setunits("m");
-				buf += strprint("%15.6le", ParameterUncertainty[txrx_dxIndex]);
-			}
-			if (solve_txrx_dz) {
-				OI.addfield("txrx_dz_uncertainty", 'E', 15, 6);
-				OI.setunits("m");
-				buf += strprint("%15.6le", ParameterUncertainty[txrx_dzIndex]);
-			}
-			if (solve_rx_pitch) {
-				OI.addfield("rx_pitch_uncertainty", 'E', 15, 6);
-				OI.setunits("degrees");
-				buf += strprint("%15.6le", ParameterUncertainty[rx_pitchIndex]);
+
+			size_t k = 0;
+			for (size_t gi = 0; gi < GI.size(); gi++) {
+				if (solvegeometryindex(gi) == false)continue;
+				std::string name = "inverted_" + GI.fname(gi) + "_uncertainty";
+				std::string desc = GI.description(gi) + " parameter uncertainty";
+				OM->writefield(pi,
+					pu[gIndex + k], name, desc, GI.units(gi),
+					1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+				k++;
 			}
 		}
 
+				
 		//ObservedData
-		if (OO.ObservedData) {
+		if (OO.ObservedData) {			
 			for (size_t si = 0; si < nsystems; si++) {
 				cTDEmSystemInfo& S = SV[si];
-				for (auto ci = 0; ci < 3; ci++) {
-					if (S.Comp[ci].Use) writeresult_component(buf, OI, si, S.Comp[ci].Name, "observed", "Observed", 'E', 15, 6, S.Comp[ci].oP, S.Comp[ci].oS, S.invertPrimaryPlusSecondary);
+				for (size_t ci = 0; ci < 3; ci++) {
+					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
+						si, S.CompInfo[ci].Name,
+						"observed", "Observed",
+						'E', 15, 6, S.CompInfo[ci].oP, S.CompInfo[ci].oS, S.invertPrimaryPlusSecondary);
 				}
 			}
 		}
 
+		
 		//Noise Estimates
 		if (OO.NoiseEstimates) {
 			for (size_t si = 0; si < nsystems; si++) {
 				cTDEmSystemInfo& S = SV[si];
-				for (auto ci = 0; ci < 3; ci++) {
-					if (S.Comp[ci].Use) writeresult_component(buf, OI, si, S.Comp[ci].Name, "noise", "Estimated noise", 'E', 15, 6, 0.0, S.Comp[ci].oE, false);
+				for (size_t ci = 0; ci < 3; ci++) {
+					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
+						si, S.CompInfo[ci].Name,
+						"noise", "Estimated noise",						
+						'E', 15, 6, 0.0, S.CompInfo[ci].oE, false);
 				}
 			}
 		}
-
+		
 		//PredictedData
 		if (OO.PredictedData) {
 			for (size_t si = 0; si < nsystems; si++) {
 				cTDEmSystemInfo& S = SV[si];
-				if (S.Comp[0].Use) writeresult_component(buf, OI, si, "X", "predicted", "Predicted", 'E', 15, 6, S.predicted.xcomponent.Primary, S.predicted.xcomponent.Secondary, S.invertPrimaryPlusSecondary);
-				if (S.Comp[1].Use) writeresult_component(buf, OI, si, "Y", "predicted", "Predicted", 'E', 15, 6, S.predicted.ycomponent.Primary, S.predicted.ycomponent.Secondary, S.invertPrimaryPlusSecondary);
-				if (S.Comp[2].Use) writeresult_component(buf, OI, si, "Z", "predicted", "Predicted", 'E', 15, 6, S.predicted.zcomponent.Primary, S.predicted.zcomponent.Secondary, S.invertPrimaryPlusSecondary);
+				for (size_t ci = 0; ci < 3; ci++) {
+					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
+						si, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
+						S.predicted.component(ci).Primary,
+						S.predicted.component(ci).Secondary,
+						S.invertPrimaryPlusSecondary);
+				}
 			}
 		}
+		
 
-		OI.addfield("AlphaC", 'E', 15, 6);
-		OI.setcomment("AlphaC inversion parameter");
-		buf += strprint("%15.6le", AlphaC);
-
-		OI.addfield("AlphaT", 'E', 15, 6);
-		OI.setcomment("AlphaT inversion parameter");
-		buf += strprint("%15.6le", AlphaT);
-
-		OI.addfield("AlphaG", 'E', 15, 6);
-		OI.setcomment("AlphaG inversion parameter");
-		buf += strprint("%15.6le", AlphaG);
-
-		OI.addfield("AlphaS", 'E', 15, 6);
-		OI.setcomment("AlphaS inversion parameter");
-		buf += strprint("%15.6le", AlphaS);
-
-		OI.addfield("PhiD", 'E', 15, 6);
-		OI.setcomment("Normalised data misfit");
-		buf += strprint("%15.6le", LastPhiD);
-
-		OI.addfield("PhiM", 'E', 15, 6);
-		OI.setcomment("Combined model norm");
-		buf += strprint("%15.6le", LastPhiM);
-
-		OI.addfield("PhiC", 'E', 15, 6);
-		OI.setcomment("Conductivity model norm");
-		buf += strprint("%15.6le", LastPhiC);
-
-		OI.addfield("PhiT", 'E', 15, 6);
-		OI.setcomment("Thickness model norm");
-		buf += strprint("%15.6le", LastPhiT);
-
-		OI.addfield("PhiG", 'E', 15, 6);
-		OI.setcomment("Geometry model norm");
-		buf += strprint("%15.6le", LastPhiG);
-
-		OI.addfield("PhiS", 'E', 15, 6);
-		OI.setcomment("Smoothness model norm");
-		buf += strprint("%15.6le", LastPhiS);
-
-		OI.addfield("Lambda", 'E', 15, 6);
-		OI.setcomment("Lambda regularization parameter");
-		buf += strprint("%15.6le", LastLambda);
-
-		OI.addfield("Iterations", 'I', 4, 0);
-		OI.setcomment("Number of iterations");
-		buf += strprint("%4lu", LastIteration);
-
-		//Carriage return		
-		buf += strprint("\n");
-		//fprintf(ofp, buf.c_str());
-		//fflush(ofp);
-
-		OI.lockfields();
-		if (Outputrecord == 1) {
-			sFilePathParts fpp = getfilepathparts(OO.DataFile);
-
-			std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
-			OI.write_simple_header(hdrfile);
-
-			std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
-			OI.write_aseggdf_header(aseggdffile);
-		}
-		Outputrecord++;
-		*/
+		//Inversion parameters and norms
+		OM->writefield(pi, AlphaC, "AlphaC", "AlphaC inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, AlphaT, "AlphaT", "AlphaT inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, AlphaG, "AlphaG", "AlphaG inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, AlphaS, "AlphaS", "AlphaS inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);		
+		OM->writefield(pi, LastPhiD, "PhiD", "Normalised data misfit", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, LastPhiM, "PhiM", "Combined model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, LastPhiC, "PhiC", "Conductivity model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, LastPhiT, "PhiT", "Thickness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, LastPhiG, "PhiG", "Geometry model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, LastPhiS, "PhiS", "Smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, LastLambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);		
+		OM->writefield(pi, LastIteration, "Iterations", "Number of iterations", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 4, 0);
+				
+		//End of record book keeping
 		OM->end_point_output();
 		static int dummy = OM->end_first_record();//only do this once
 	};
 
+	std::vector<double> copy(const VectorDouble& d) const {
+		std::vector<double> v((double*)(d.data()), (double*)(d.data() + d.size()));
+		return v;
+	};
+	
 	void writeresult_geometry(const cTDEmGeometry& g, const std::string& fieldnameprefix, const std::string& commentprefix, const bool invertedfieldsonly)
 	{
 		//static std::vector<cOutputField> f(g.size());
@@ -2344,28 +2251,26 @@ class cSBSInverter{
 			//buf += strprint("%9.2lf", g[i]);
 		//}
 	}
-
-	void writeresult_component(std::string& buf, cOutputFileInfo& OI, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& commprefix, const char& form, const size_t& width, const size_t& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
+	
+	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const size_t& width, const size_t& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
 	{
-		std::string sysfield = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
-		std::string syscomm = commprefix + strprint(" EMSystem %d ", (int)sysnum + 1);
-
-		std::string fmt;
-		if (form == 'F') fmt = strprint("%%%d.%dlf", width, decimals);
-		else if (form == 'E') fmt = strprint("%%%d.%dle", width, decimals);
-		else {
-			glog.errormsg(_SRC_, "Invalid output format %c\n", form);
-		}
-
+		std::string DN_WINDOW = "em_window";
+		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
+		std::string sysdesc = descprefix + strprint(" EMSystem %d ", (int)sysnum + 1);
 		if (includeprimary) {
-			OI.addfield(sysfield + comp + "P", form, width, decimals);
-			OI.setdescription(syscomm + comp + "-component primary field");
-			buf += strprint(fmt.c_str(), p);
+			std::string name = sysname + comp + "P";
+			std::string desc = sysdesc + comp + "-component primary field";			
+			OM->writefield(pointindex,
+				p, name, desc, UNITLESS,
+				1, NC_FLOAT, DN_NONE, form, width, decimals);			
 		}
-		OI.addfield(sysfield + comp + "S", form, width, decimals, s.size());
-		OI.setdescription(syscomm + comp + "-component secondary field windows");
-		for (size_t w = 0; w < s.size(); w++) {
-			buf += strprint(fmt.c_str(), s[w]);
+
+		{
+			std::string name = sysname + comp + "S";
+			std::string desc = sysdesc + comp + "-component secondary field";
+			OM->writefield(pointindex,
+				s, name, desc, UNITLESS,
+				s.size(), NC_FLOAT, DN_WINDOW, form, width, decimals);
 		}
 	}
 

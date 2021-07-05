@@ -34,15 +34,25 @@ struct sTDEmNoiseModel{
 	sTDEmNoiseModelComponent zcomponent;
 };
 
-struct sTDEmComponent{  
+struct cTDEmComponent{  
 	double Primary;
 	std::vector<double> Secondary;
 };
 
-struct sTDEmData{	
-	sTDEmComponent xcomponent;
-	sTDEmComponent ycomponent;
-	sTDEmComponent zcomponent;
+class cTDEmData {	
+		
+private:
+	cTDEmComponent data[3];
+
+public:
+
+	cTDEmData() {};
+
+	cTDEmComponent& component(const size_t i) { return data[i]; }
+	cTDEmComponent& xcomponent() { return data[0]; }
+	cTDEmComponent& ycomponent() { return data[1]; }
+	cTDEmComponent& zcomponent() { return data[2]; }
+
 };
 
 class cTDEmResponse{
@@ -392,6 +402,7 @@ public:
   double YScale;
   double ZScale;
 
+  //cTDEmData data;
   std::vector<double> X; //Secondary X field
   std::vector<double> Y; //Secondary Y field 
   std::vector<double> Z; //Secondary Z field 
@@ -401,16 +412,7 @@ public:
       
  
   std::vector<WindowSpecification> WinSpec;
-
-  //void printwindows();
-  //void write_windows(const std::string& path);
-  //void write_timedomainwaveform(const std::string& path);
-  //void write_frequencydomainwaveform(const std::string& path);
-  //void write_discretefrequencies(const std::string& path);
-  //void write_splinedfrequencies(const std::string& path);
-  //void write_frequencyseries(const std::string& path);
-  //void write_timesseries(const std::string& path);
-      
+    
   double primary(const size_t component){
 	  if (component == 0) return PrimaryX;
 	  else if (component == 1) return PrimaryY;
