@@ -3,6 +3,13 @@
 
 ## Geoscience Australia Airborne Electromagnetics Programs
 
+## Creation Notes
+- This repo was duplicated from https://github.com/GeoscienceAustralia/ga-aem.git on 20210706 
+- It was as made private for RB's CSIRO Secondment work but allows eventual pushing back to the original repo.
+- Followed instructions from the link below
+	- https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-on-github/duplicating-a-repository
+
+
 - Author:	Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au)
 - Language:	mostly C++, some matlab, some python
 
