@@ -3,15 +3,18 @@
 
 ## Geoscience Australia Airborne Electromagnetics Programs
 
+- Authors
+	- Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au)
+	- Richard Taylor, Geoscience Australia
+
+- Language: Mostly C++, some matlab, some python
+
+
 ## Creation Notes
 - This repo was duplicated from https://github.com/GeoscienceAustralia/ga-aem.git on 20210706 
 - It was as made private for RB's CSIRO Secondment work but allows eventual pushing back to the original repo.
 - Followed instructions from the link below
 	- https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-on-github/duplicating-a-repository
-
-
-- Author:	Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au)
-- Language:	mostly C++, some matlab, some python
 
 ## Releases
 ### Release-20160606
@@ -27,6 +30,12 @@
 1. GAFORWARDMODELTDEM - 1D forward modelling program for AEM data
 2. GALEISBSTDEM - deterministic 1D sample by sample inversion of AEM data
 3. GARJMCMCTDEM - stochastic 1D sample by sample inversion of AEM data
+4. CTLINEDATA2SGRID - (undocumented) convert inversion outputs to GoCAD SGrids 
+5. CTLINEDATA2GEOREFIMAGE - (undocumented) convert inversion outputs to static georeferenced section images that can be displayed in a 2D GIS (a poor man's 3D).
+6. CTLINEDATA2SLICEGRIDS - (undocumented) convert inversion outputs to layer, depth and elevation-slice grids in ErMapper format
+7. CTLINEDATA2CURTAINIMAGE - (undocumented) convert inversion outputs to GA's Earth Sci curtain image format
+8. EXAMPLE_FORWARD_MODEL - (undocumented) simple C++ example of how to use the code to run a forward models.
+
 
 ## Documentation
 - [User Manual](docs/GA-AEM_Programs_User_Manual.pdf)
@@ -60,12 +69,15 @@ The programs required additional code or libraries as described below.
 	- Only required if you are compiling the code.
 	- Not required if you are just going to use the precompiled executables.
 
-2. Template Numerical Toolkit (TNT)
-	- TNT is a C++ linear algebra package developed by the National Institute of Standards and Technology (NIST).
-	- See http://math.nist.gov/tnt/index.html.
-	- TNT is included as a git submodule of this repository (see [submodules](submodules/README.md)).
-	- TNT is only required if you are compiling the code.
-	- TNT is not required if you are just going to use the precompiled executables.
+2. Eigen 
+	- A C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.
+	- Language: C++
+	- Website: http://eigen.tuxfamily.org/.	
+	- Repository: https://github.com/eigenteam/eigen-git-mirror.git	
+	- Eigen is not required if you just want to run the precompiled Windows executables.
+	- Eigen is only required if you want to compile the source code.
+	- Eigen is included as a git submodule of this repository (see [submodules](submodules/README.md)).
+
 
 3. Message Passing Interface (MPI)
 	- MPI is a standard used for parallel computation.  The MPI standard has been implemented in several different flavours by different consortia.
