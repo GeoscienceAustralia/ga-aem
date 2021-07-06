@@ -265,7 +265,7 @@ public:
 
 	double get_chi2() const {
 		double chi2 = 0.0;
-		for (double di = 0; di < r2.size(); di++) {
+		for (size_t di = 0; di < r2.size(); di++) {
 			chi2 += r2[di]/nvar[di];
 		}
 		return chi2;
@@ -763,11 +763,11 @@ public:
 		cSummaryModels s(np);
 		for (size_t pi = 0; pi < np; pi++) {
 			cHistogramStats<double> hs = hstats(pi);
-			s.mean[pi] = hs.mean;
-			s.mode[pi] = hs.mode;
-			s.p10[pi]  = hs.p10;
-			s.p50[pi] = hs.p50;
-			s.p90[pi]  = hs.p90;
+			s.mean[pi] = (float)hs.mean;
+			s.mode[pi] = (float)hs.mode;
+			s.p10[pi]  = (float)hs.p10;
+			s.p50[pi]  = (float)hs.p50;
+			s.p90[pi]  = (float)hs.p90;
 		}
 		return s;
 	}
