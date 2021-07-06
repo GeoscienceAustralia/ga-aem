@@ -103,7 +103,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\geophysics-netcdf\src\geophysics_netcdf.h" />
+    <ClInclude Include="..\..\src\gaaem_version.h" />
     <ClInclude Include="..\..\src\galeisbstdem.h" />
+    <ClInclude Include="..\..\src\inputmanager.h" />
     <ClInclude Include="..\..\src\large_loop.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />

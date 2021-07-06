@@ -788,74 +788,74 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		std::string buf;
 		//Id
 		OI.addfield("uniqueid", 'I', 12, 0);
-		OI.setcomment("Inversion sequence number");
+		OI.setdescription("Inversion sequence number");
 		buf += strprint("%12lu", CurrentRecord);
 
 		OI.addfield("survey", 'I', 12, 0);
-		OI.setcomment("Survey number");
+		OI.setdescription("Survey number");
 		buf += strprint("%12lu", surveynumber);
 
 		OI.addfield("date", 'I', 12, 0);
-		OI.setcomment("Date number");
+		OI.setdescription("Date number");
 		buf += strprint("%12lu", datenumber);
 
 		OI.addfield("flight", 'I', 12, 0);
-		OI.setcomment("Flight number, IntrepidFlightNumber");
+		OI.setdescription("Flight number, IntrepidFlightNumber");
 		buf += strprint("%12lu", flightnumber);
 
 		OI.addfield("line", 'I', 12, 0);
-		OI.setcomment("Line number, IntrepidLineNumber");
+		OI.setdescription("Line number, IntrepidLineNumber");
 		buf += strprint("%12lu", linenumber);
 
 		OI.addfield("fiducial", 'F', 12, 2);
-		OI.setcomment("Fiducial number, IntrepidFiducial");
+		OI.setdescription("Fiducial number, IntrepidFiducial");
 		buf += strprint("%12.2lf", fidnumber);
 
 		//Location
 		OI.addfield("easting", 'F', 9, 1);
-		OI.setunits("m"); OI.setcomment("IntrepidX");
+		OI.setunits("m"); OI.setdescription("IntrepidX");
 		buf += strprint("%9.1lf", xord);
 
 		OI.addfield("northing", 'F', 10, 1);
-		OI.setunits("m"); OI.setcomment("IntrepidY");
+		OI.setunits("m"); OI.setdescription("IntrepidY");
 		buf += strprint("%10.1lf", yord);
 
 		OI.addfield("elevation", 'F', 10, 2);
-		OI.setunits("m"); OI.setcomment("Ground elevation relative to sea-level");
+		OI.setunits("m"); OI.setdescription("Ground elevation relative to sea-level");
 		buf += strprint("%10.2lf", elevation);
 
 		///////////////////
 
 		OI.addfield("nchains", 'I', 9, 0);
-		OI.setcomment("Number of chains");
+		OI.setdescription("Number of chains");
 		buf += strprint("%9lu", nchains());
 
 		OI.addfield("nsamples", 'I', 9, 0);
-		OI.setcomment("Number of samples per chain");
+		OI.setdescription("Number of samples per chain");
 		buf += strprint("%9lu", nsamples);
 
 		OI.addfield("nburnin", 'I', 9, 0);
-		OI.setcomment("Number of samples in burn-in");
+		OI.setdescription("Number of samples in burn-in");
 		buf += strprint("%9lu", nburnin);
 
 		OI.addfield("sampletime", 'F', 8, 2);
-		OI.setunits("s"); OI.setcomment("Sampling wall time in seconds");
+		OI.setunits("s"); OI.setdescription("Sampling wall time in seconds");
 		buf += strprint("%8.2lf", samplingtime);
 
 		OI.addfield("misfit_lowest", 'E', 10, 6);
-		OI.setcomment("Lowest misfit on any chain");
+		OI.setdescription("Lowest misfit on any chain");
 		buf += strprint("%15.6le", misfit_lowest);
 
 		OI.addfield("misfit_average", 'E', 10, 6);
-		OI.setcomment("Average misfit over all chains");
+		OI.setdescription("Average misfit over all chains");
 		buf += strprint("%15.6le", misfit_average);
 
 		OI.addfield("ndepthcells", 'I', 4, 0);
-		OI.setcomment("Number of depth cells or bins in histograms");
+		OI.setdescription("Number of depth cells or bins in histograms");
 		buf += strprint("%4lu", ndepthcells);
 
 		OI.addfield("depthcelltop", 'F', 8, 2, ndepthcells);
-		OI.setunits("m"); OI.setcomment("Depths of cell tops");
+		OI.setunits("m"); OI.setdescription("Depths of cell tops");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			double dcc = pmap.toppbin(j);
 			if (param_position.islog10()) {
@@ -870,49 +870,49 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		std::string fmt = "%15.6le";
 
 		OI.addfield("conductivity_mean", 'E', width, decimals, ndepthcells);
-		OI.setunits("S/m"); OI.setcomment("Conductivity of mean model");
+		OI.setunits("S/m"); OI.setdescription("Conductivity of mean model");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			buf += strprint(fmt.c_str(), hs[j].mean);
 		}
 
 		OI.addfield("conductivity_mode", 'E', width, decimals, ndepthcells);
-		OI.setunits("S/m"); OI.setcomment("Conductivity of mode model");
+		OI.setunits("S/m"); OI.setdescription("Conductivity of mode model");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			buf += strprint(fmt.c_str(), hs[j].mode);
 		}
 
 		OI.addfield("conductivity_p50", 'E', width, decimals, ndepthcells);
-		OI.setunits("S/m"); OI.setcomment("Conductivity at 50th percentile or median");
+		OI.setunits("S/m"); OI.setdescription("Conductivity at 50th percentile or median");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			buf += strprint(fmt.c_str(), hs[j].p50);
 		}
 
 		OI.addfield("conductivity_p10", 'E', width, decimals, ndepthcells);
-		OI.setunits("S/m"); OI.setcomment("Conductivity at 10th percentile");
+		OI.setunits("S/m"); OI.setdescription("Conductivity at 10th percentile");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			buf += strprint(fmt.c_str(), hs[j].p10);
 		}
 
 		OI.addfield("conductivity_p90", 'E', width, decimals, ndepthcells);
-		OI.setunits("S/m"); OI.setcomment("Conductivity at 90th percentile");
+		OI.setunits("S/m"); OI.setdescription("Conductivity at 90th percentile");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			buf += strprint(fmt.c_str(), hs[j].p90);
 		}
 
 		OI.addfield("conductivity_highestlikelihood", 'E', width, decimals, ndepthcells);
-		OI.setunits("S/m"); OI.setcomment("Conductivity of highest likelihood model");
+		OI.setunits("S/m"); OI.setdescription("Conductivity of highest likelihood model");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			buf += strprint(fmt.c_str(), hlike[j]);
 		}
 
 		OI.addfield("conductivity_lowestmisfit", 'E', width, decimals, ndepthcells);
-		OI.setunits("S/m"); OI.setcomment("Conductivity of howest misfit model");
+		OI.setunits("S/m"); OI.setdescription("Conductivity of howest misfit model");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			buf += strprint(fmt.c_str(), lmfit[j]);
 		}
 
 		OI.addfield("changepoint", 'I', 11, 0, ndepthcells);
-		OI.setunits("counts"); OI.setcomment("Changepoint histogram");
+		OI.setunits("counts"); OI.setdescription("Changepoint histogram");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			buf += strprint("%11lu", pmap.changepoint()[j]);
 		}

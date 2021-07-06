@@ -12,9 +12,15 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <cassert>
 
+constexpr auto DN_LAYER = "layer";
+const std::string DN_NONE;
+const std::string UNITLESS;
+
+
 class cEarth1D{
 
 public:
+
 	std::vector<double> thickness;
 	std::vector<double> conductivity;
 	std::vector<double> chargeability;
@@ -63,6 +69,29 @@ public:
 		chargeability = std::vector<double>(_chargeability, _chargeability + nlayers);
 		timeconstant  = std::vector<double>(_timeconstant, _timeconstant + nlayers);
 		frequencydependence = std::vector<double>(_frequencydependence, _frequencydependence + nlayers);		
+	}
+
+	std::vector<double> layer_top_depth() const
+	{
+		const size_t n = thickness.size();
+		std::vector<double> dtop(n+1);
+		dtop[0] = 0.0;
+		for (size_t i = 1; i <= n; i++) {
+			dtop[i] = dtop[i-1] + thickness[i-1];
+		}		
+		return dtop;
+	}
+
+	std::vector<double> layer_bottom_depth() const 
+	{
+		const size_t n = thickness.size();
+		std::vector<double> dbot(n+1);		
+		dbot[0] = thickness[0];
+		for (size_t i = 1; i < n; i++) {
+			dbot[i] = dbot[i-1] + thickness[i];
+		}
+		dbot[n] = dbot[n-1] + thickness[n-1];
+		return dbot;
 	}
 	
 	size_t nlayers() const
