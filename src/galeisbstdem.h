@@ -557,7 +557,8 @@ class cSBSInverter{
 			OM = std::make_unique<cASCIIOutputManager>(ob);
 		}
 		
-		std::string s = OM->datafilename();
+		//TODO NETCDF output not available from ASCII input
+		//std::string s = OM->datafilename();
 		OM->opendatafile(IM->datafilename(), IM->subsamplerate());
 		
 	}

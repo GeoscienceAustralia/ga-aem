@@ -127,9 +127,10 @@ class cASCIIInputManager : public cInputManager {
 
 private:
 	cAsciiColumnFile AF;
-	static bool contains_non_numeric_characters(const std::string& str)
-	{
-		size_t pos = str.find_first_not_of("0123456789.+-eE ,\t\r\n");
+	static bool contains_non_numeric_characters(const std::string& str, const size_t& startpos=0)
+	{				
+		const static std::string validchars = "0123456789.+-eE ,\t\r\n";
+		size_t pos = str.find_first_not_of(validchars,startpos);
 		if (pos == std::string::npos) return false;
 		else return true;
 	}
@@ -165,7 +166,8 @@ public:
 	}
 
 	bool is_record_valid() {
-		bool nonnumeric = contains_non_numeric_characters(recordstring());
+		size_t startpos = AF.RT_string.size();
+		bool nonnumeric = contains_non_numeric_characters(recordstring(),startpos);
 		if (nonnumeric) {
 			glog.logmsg("Skipping non-numeric record at line %zu of Input DataFile %s\n", record(), datafilename().c_str());
 			glog.logmsg("\n%s\n\n", recordstring().c_str());
