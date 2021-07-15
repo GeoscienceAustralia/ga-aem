@@ -126,14 +126,7 @@ public:
 class cASCIIInputManager : public cInputManager {
 
 private:
-	cAsciiColumnFile AF;
-	static bool contains_non_numeric_characters(const std::string& str, const size_t& startpos=0)
-	{				
-		const static std::string validchars = "0123456789.+-eE ,\t\r\n";
-		size_t pos = str.find_first_not_of(validchars,startpos);
-		if (pos == std::string::npos) return false;
-		else return true;
-	}
+	cAsciiColumnFile AF;	
 
 public:
 
@@ -150,10 +143,23 @@ public:
 	{		
 		HeaderFileName = b.getstringvalue("DfnFile");
 		fixseparator(HeaderFileName);		
-		
+		fixseparator(DataFileName);
+
 		iotype = IOType::ASCII;
+
+		if (!exists(DataFileName)) {
+			std::string msg = _SRC_;
+			msg += strprint("\n\tD'Oh! the specified data file (%s) does not exist\n", DataFileName.c_str());
+			throw(std::runtime_error(msg));
+		}
+
 		AF.openfile(DataFileName);
 		if (isdefined(HeaderFileName)) {
+			if (!exists(HeaderFileName)) {
+				std::string msg = _SRC_;
+				msg += strprint("\n\tD'oh! the specified DFN file (%s) does not exist\n", HeaderFileName.c_str());
+				throw(std::runtime_error(msg));
+			}
 			glog.logmsg(0, "Parsing Input DfnFile %s\n", HeaderFileName.c_str());
 			AF.parse_aseggdf2_header(HeaderFileName);
 		}
@@ -166,11 +172,10 @@ public:
 	}
 
 	bool is_record_valid() {
-		size_t startpos = AF.RT_string.size();
-		bool nonnumeric = contains_non_numeric_characters(recordstring(),startpos);
-		if (nonnumeric) {
-			glog.logmsg("Skipping non-numeric record at line %zu of Input DataFile %s\n", record(), datafilename().c_str());
-			glog.logmsg("\n%s\n\n", recordstring().c_str());
+		bool status =  AF.is_record_valid();
+		if (status == false) {
+			glog.logmsg("\tSkipping non-valid record at line %zu of Input DataFile %s\n", record(), datafilename().c_str());
+			glog.logmsg("%s\n\n", recordstring().c_str());
 			return false;
 		}
 		return true;

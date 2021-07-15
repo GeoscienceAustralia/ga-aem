@@ -1257,6 +1257,12 @@ public:
 
   void readsystemdescriptorfile(std::string systemdescriptorfile)
   {
+	  if (!exists(systemdescriptorfile)) {
+		  std::string msg = _SRC_;
+		  msg += strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.c_str());
+		  throw(std::runtime_error(msg));
+	  }
+
 	  STM = cBlock(systemdescriptorfile);
 	  SystemName = STM.getstringvalue("Name");
 	  SystemType = STM.getstringvalue("Type");
@@ -1538,6 +1544,12 @@ public:
 
   std::vector<std::vector<double>> readwaveformfile(const std::string& filename)
   {
+	  if (!exists(filename)) {
+		  std::string msg = _SRC_;
+		  msg += strprint("\n\tD'Oh! the specified waveform file (%s) does not exist\n", filename.c_str());
+		  throw(std::runtime_error(msg));
+	  }
+
 	  FILE* fp = fileopen(filename, "r");
 	  if (fp == NULL) {
 		  glog.errormsg(_SRC_, "Unable to open waveformfile %s\n", filename.c_str());
@@ -1546,13 +1558,13 @@ public:
 	  int num;
 	  std::vector<std::vector<double>> w;
 	  double time, value;
-	  while ((num = fscanf(fp, "%lf %lf\n", &time, &value)) == 2) {
+	  while ((num = std::fscanf(fp, "%lf %lf\n", &time, &value)) == 2) {
 		  std::vector<double> v(2);
 		  v[0] = time;
 		  v[1] = value;
 		  w.push_back(v);
 	  }
-	  fclose(fp);
+	  std::fclose(fp);
 	  return w;
 
   }
