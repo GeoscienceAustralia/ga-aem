@@ -37,7 +37,7 @@ class cOutputField {
 		std::string ncdimname;//dimension names		
 		char notation = 0;//ascii notation form I, F, E
 		size_t width = 0 ;//ascii width
-		size_t precision = 0;//ascii numver of decimals places
+		size_t precision = 0;//ascii number of decimals places
 				
 		cOutputField(			
 			const std::string& _name,//name
@@ -48,7 +48,7 @@ class cOutputField {
 			const std::string& _ncdimname,//dimension names		
 			const char& _notation,//ascii notation I, F, E
 			const size_t& _width,//ascii width
-			const size_t& _precision//ascii numver of decimals places			
+			const size_t& _precision//ascii number of decimals places			
 			)
 		{					
 			name = _name;
@@ -82,11 +82,7 @@ public:
 
 	void initialise(const cBlock& b) {		
 		DataFileName = b.getstringvalue("DataFile");
-		fixseparator(DataFileName);
-		//LogFileName = b.getstringvalue("LogFile");
-		//fixseparator(DataFileName);
-		//Subsample = b.getsizetvalue("Subsample");
-		//if (!isdefined(Subsample)) { Subsample = 1; }
+		fixseparator(DataFileName);		
 	}
 
 	static bool isnetcdf(const cBlock& b) {
@@ -120,9 +116,9 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii numver of decimals places			
+		const size_t& _precision//ascii number of decimals places			
 	) = 0;
 
 	template <typename T> 
@@ -135,14 +131,14 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E, A
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii numver of decimals places					
+		const size_t& _precision//ascii number of decimals places					
 	) 
 	{
 		std::shared_ptr<cOutputField> f = getfield(_name);
 		if (!f) {
-			f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
+			f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
 		}
 		write(vals, f, pointindex);
 		return true;
@@ -208,12 +204,12 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
 		const size_t& _precision//ascii number of decimals places			
 	) {
-		std::shared_ptr<cOutputField> f = std::make_shared<cOutputField>(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
-		OI.addfield(_name, _notation, _width, _precision, _bands);
+		std::shared_ptr<cOutputField> f = std::make_shared<cOutputField>(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
+		OI.addfield(_name, _fmtchar, _width, _precision, _bands);
 		OI.setunits(_units);
 		OI.setdescription(_description);
 		return f;
@@ -345,13 +341,13 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii numver of decimals places			
+		const size_t& _precision//ascii number of decimals places			
 	) {	
 		std::shared_ptr<cOutputField> of = getfield(_name);
 		if (!of) {
-			flist.push_back(cOutputField(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision));
+			flist.push_back(cOutputField(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision));
 			addvar(flist.back());
 			of = std::make_shared<cOutputField>(flist.back());			
 		}		
@@ -365,15 +361,15 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision,//ascii numver of decimals places			
-		const int& pointindex,//
-		const size_t& vals//ascii numver of decimals places			
+		const size_t& _precision,//ascii number of decimals places			
+		const int& pointindex,
+		const size_t& vals
 	) {
 		std::shared_ptr<cOutputField> of = getfield(_name);		
 		if (!of) {
-			of = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
+			of = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
 		}
 		write(of, pointindex, vals);
 		return true;

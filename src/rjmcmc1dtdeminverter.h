@@ -854,7 +854,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		OI.setdescription("Number of depth cells or bins in histograms");
 		buf += strprint("%4lu", ndepthcells);
 
-		OI.addfield("depthcelltop", 'F', 8, 2, ndepthcells);
+		OI.addfield("depthcelltop", 'F', 8, 2, (int)ndepthcells);		
 		OI.setunits("m"); OI.setdescription("Depths of cell tops");
 		for (size_t j = 0; j < ndepthcells; j++) {
 			double dcc = pmap.toppbin(j);

@@ -159,16 +159,13 @@ public:
 	bool NoiseEstimates = false;
 	bool PredictedData = false;
 	bool Dump = false;
-
 	std::string DumpPath(const size_t datafilerecord, const size_t iteration) const
 	{
 		return DumpBasePath + pathseparatorstring() + 
 			strprint("si%07d", (int)datafilerecord) + pathseparatorstring() +
 			strprint("it%03d", (int)iteration) + pathseparatorstring();
 	};
-
 	cOutputOptions(){};
-
 	cOutputOptions(const cBlock& b) {
 		//DataFile = b.getstringvalue("DataFile");
 		//fixseparator(DataFile);
@@ -196,8 +193,7 @@ public:
 			}
 			makedirectorydeep(DumpBasePath.c_str());
 		}
-	}
-	
+	}	
 };
 
 class cComponentInfo {
@@ -335,9 +331,12 @@ public:
 
 class cSBSInverter{
 
+	private:
+	std::vector<size_t> Q;//indices of the data that are not culled
+
 	public:
 	
-	cBlock  Control;
+	cBlock Control;
 	int Size;
 	int Rank;
 	bool UsingOpenMP;
@@ -349,9 +348,7 @@ class cSBSInverter{
 	std::unique_ptr<cInputManager> IM;
 	std::unique_ptr<cOutputManager> OM;
 
-	cOutputOptions OO;
-	//FILE* ofp = (FILE*)NULL;
-	//size_t Outputrecord; //output record number
+	cOutputOptions OO;	
 	
 	//Column definitions
 	cFieldDefinition sn, dn, fn, ln, fidn;
@@ -401,9 +398,10 @@ class cSBSInverter{
 	eSmoothnessMethod SmoothnessMethod;
 	eNormType  NormType;
 
-	size_t nlayers;
-	size_t ndata;
+	size_t ndata_all;
+	size_t ndata_inv;
 	size_t nparam;
+	size_t nlayers;	
 	size_t ngeomparam;	
 	
 	VectorDouble Obs;
@@ -515,8 +513,7 @@ class cSBSInverter{
 		loadcontrolfile(controlfile);
 		parsecolumns();
 		setup_data();
-		setup_parameters();
-		resize_matrices();
+		setup_parameters();		
 		go();	
 	}
 
@@ -525,9 +522,7 @@ class cSBSInverter{
 		glog.logmsg(0, "Loading control file %s\n", filename.c_str());
 		Control = cBlock(filename);
 		OO = cOutputOptions(Control.findblock("Output"));
-		std::string suffix = stringvalue(Rank, ".%04d");
-		//OM->Logfile  = insert_after_filename(OO->Logfile, suffix);
-		//OM->DataFile = insert_after_filename(OO->DataFile, suffix);
+		std::string suffix = stringvalue(Rank, ".%04d");		
 		openlogfile(); //load this first to get outputlogfile opened
 
 		//Load control file
@@ -555,12 +550,8 @@ class cSBSInverter{
 		}
 		else {
 			OM = std::make_unique<cASCIIOutputManager>(ob);
-		}
-		
-		//TODO NETCDF output not available from ASCII input
-		//std::string s = OM->datafilename();
-		OM->opendatafile(IM->datafilename(), IM->subsamplerate());
-		
+		}				
+		OM->opendatafile(IM->datafilename(), IM->subsamplerate());		
 	}
 
 	void openlogfile()
@@ -709,32 +700,29 @@ class cSBSInverter{
 
 	void setup_data()
 	{
-		ndata = 0;
+		ndata_all = 0;
 		for (size_t si = 0; si < nsystems; si++) {
 			cTDEmSystemInfo& S = SV[si];
 			if (S.invertXPlusZ) {
-				S.xzIndex = (int) ndata;
+				S.xzIndex = (int) ndata_all;
 				S.CompInfo[0].dataindex = -1;
 				S.CompInfo[2].dataindex = -1;
-				ndata += S.nwindows;
+				ndata_all += S.nwindows;
 
 				if (S.CompInfo[1].Use) {
-					S.CompInfo[1].dataindex = (int) ndata;
-					ndata += S.nwindows;
+					S.CompInfo[1].dataindex = (int) ndata_all;
+					ndata_all += S.nwindows;
 				}
 			}
 			else {
 				for (size_t i = 0; i < 3; i++) {
 					if (S.CompInfo[i].Use) {
-						S.CompInfo[i].dataindex = (int) ndata;
-						ndata += S.nwindows;
+						S.CompInfo[i].dataindex = (int) ndata_all;
+						ndata_all += S.nwindows;
 					}
 				}
 			}
-		}
-		Obs.resize(ndata);
-		Err.resize(ndata);
-		Pred.resize(ndata);
+		}				
 	}
 
 	void setup_parameters()
@@ -806,11 +794,6 @@ class cSBSInverter{
 		RefParamStd.resize(nparam);
 	}
 
-	void resize_matrices()
-	{
-		J = MatrixDouble(ndata, nparam);
-	}
-
 	bool parserecord()
 	{
 		if (IM->parserecord() == false) return false;
@@ -866,7 +849,7 @@ class cSBSInverter{
 		LastLambda = 1e8;
 
 		initialise_data();
-		initialise_parameters();
+		initialise_parameters();		
 		initialise_Wd();
 		initialise_Wc();
 		initialise_Wt();
@@ -904,6 +887,9 @@ class cSBSInverter{
 
 	void initialise_data()
 	{
+		std::vector<double> obs(ndata_all);
+		std::vector<double> err(ndata_all);
+		std::vector<double> pred(ndata_all);
 		for (size_t si = 0; si < nsystems; si++) {
 			cTDEmSystemInfo& S = SV[si];
 			cTDEmSystem& T = S.T;
@@ -917,7 +903,6 @@ class cSBSInverter{
 				S.CompInfo[2].oP = T.PrimaryZ;
 			}
 
-			
 			if (S.invertXPlusZ){
 				for (size_t wi = 0; wi < S.nwindows; wi++) {
 
@@ -929,20 +914,20 @@ class cSBSInverter{
 						X += S.CompInfo[0].oP;
 						Z += S.CompInfo[2].oP;
 					}
-					Obs[di] = std::hypot(X,Z);
+					obs[di] = std::hypot(X,Z);
 
 					const double& Xerr = S.CompInfo[0].oE[wi];
 					const double& Zerr = S.CompInfo[2].oE[wi];
-					Err[di] = std::hypot(X*Xerr,Z*Zerr)/Obs[di];
+					err[di] = std::hypot(X*Xerr,Z*Zerr)/obs[di];
 					
 					//Y Comp
 					if (S.CompInfo[1].Use) {
 						di = S.CompInfo[1].dataindex + wi;
-						Obs[di] = S.CompInfo[1].oS[wi];
+						obs[di] = S.CompInfo[1].oS[wi];
 						if (S.invertPrimaryPlusSecondary) {
-							Obs[di] += S.CompInfo[1].oP;
+							obs[di] += S.CompInfo[1].oP;
 						}
-						Err[di] = S.CompInfo[1].oE[wi];
+						err[di] = S.CompInfo[1].oE[wi];
 					}
 				}
 			}
@@ -951,20 +936,49 @@ class cSBSInverter{
 					if (S.CompInfo[ci].Use == false) continue;
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
 						size_t di = S.CompInfo[ci].dataindex + wi;
-						Obs[di] = S.CompInfo[ci].oS[wi];
+						obs[di] = S.CompInfo[ci].oS[wi];
 						if (S.invertPrimaryPlusSecondary) {
-							Obs[di] += S.CompInfo[ci].oP;
+							obs[di] += S.CompInfo[ci].oP;
 						}
-						Err[di] = S.CompInfo[ci].oE[wi];
+						err[di] = S.CompInfo[ci].oE[wi];
 					}
 				}
 			}
 		}
 
+		//Work out indices to be culled
+		//for (size_t i = 0; i < 5; i++) {
+		//	obs[i] = nullval();
+		//}
+		//obs[1]  = nullval();
+		//obs[2]  = nullval();
+		//obs[4]  = nullval();
+		//obs[14] = nullval();
+		Q.clear();
+		for (size_t i = 0; i < ndata_all; i++){
+			if(isnotnull(obs[i])) Q.push_back(i);
+		}
+		ndata_inv = Q.size();		
+		Err = cull(err);
+		Obs = cull(obs);
+
 		if (OO.Dump) {
 			write(Obs, dumppath()+"observed.dat");
 			write(Err, dumppath()+"observed_std.dat");
 		}
+	}
+
+	inline bool isnull(const double& val) {
+		return val == DBL_MAX;
+	}
+
+	inline bool isnotnull(const double& val) {
+		return val != DBL_MAX;
+	}
+
+	double nullval(){
+		double d = DBL_MAX;
+		return d;
 	}
 
 	void initialise_parameters()
@@ -1015,9 +1029,9 @@ class cSBSInverter{
 
 	void initialise_Wd()
 	{		
-		Wd = MatrixDouble::Zero(ndata, ndata);		
-		double s = 1.0 / (double)ndata;
-		for (size_t i = 0; i < ndata; i++) {
+		Wd = MatrixDouble::Zero(ndata_inv, ndata_inv);		
+		double s = 1.0 / (double)ndata_inv;
+		for (size_t i = 0; i < ndata_inv; i++) {
 			Wd(i,i) = s / (Err[i] * Err[i]);
 		}		
 		if (OO.Dump) writetofile(Wd, dumppath() + "Wd.dat");
@@ -1248,7 +1262,7 @@ class cSBSInverter{
 
 		}
 		else {
-			for (size_t i = 0; i < ndata; i++) {
+			for (size_t i = 0; i < ndata_inv; i++) {
 				const double r = (d[i] - g[i]) / e[i];
 				V(i,i) *= 1.0 / std::abs(r);
 			}
@@ -1266,10 +1280,10 @@ class cSBSInverter{
 	double l1_norm(const VectorDouble& g)
 	{
 		double l1 = 0.0;
-		for (size_t i = 0; i < ndata; i++) {
+		for (size_t i = 0; i < ndata_inv; i++) {
 			l1 += std::abs(Obs[i] - g[i]) / Err[i];
 		}
-		return l1 / ndata;
+		return l1 / ndata_inv;
 	}
 
 	double l2_norm(const VectorDouble& g)
@@ -1389,8 +1403,42 @@ class cSBSInverter{
 		}
 	}
 
+	VectorDouble cull(const VectorDouble& vall) const {
+		assert(Q.size() == ndata_inv);
+		assert(vall.size() == ndata_all);
+		VectorDouble vinv(ndata_inv);
+		for (size_t i = 0; i < ndata_inv; i++) {
+			vinv[i] = vall[Q[i]];
+		}
+		return vinv;
+	}
+
+	VectorDouble cull(const std::vector<double>& vall) const {
+		assert(Q.size() == ndata_inv);
+		assert(vall.size() == ndata_all);
+		VectorDouble vinv(ndata_inv);
+		for (size_t i = 0; i < ndata_inv; i++) {
+			vinv[i] = vall[Q[i]];
+		}
+		return vinv;
+	}
+
+	MatrixDouble cull(const MatrixDouble& mall) const {
+		assert(Q.size() == ndata_inv);
+		assert(mall.rows() == ndata_all);
+		assert(mall.cols() == nparam);		
+		MatrixDouble minv(ndata_inv, nparam);
+		for (size_t i = 0; i < ndata_inv; i++) {
+			minv.row(i) = mall.row(Q[i]);
+		}
+		return minv;
+	}
+
+
 	void forwardmodel(const VectorDouble& parameters, VectorDouble& predicted, bool computederivatives)
 	{
+		VectorDouble pred(ndata_all);
+
 		cEarth1D      e = get_earth(parameters);
 		cTDEmGeometry g = get_geometry(parameters);
 		for (size_t si = 0; si < nsystems; si++) {
@@ -1426,20 +1474,23 @@ class cSBSInverter{
 
 			if (S.invertXPlusZ) {
 				for (size_t wi = 0; wi < nw; wi++) {
-					predicted[wi + S.xzIndex] = xzfm[wi];
-					if (S.CompInfo[1].Use) predicted[wi + S.CompInfo[1].dataindex] = yfm[wi];
+					pred[wi + S.xzIndex] = xzfm[wi];
+					if (S.CompInfo[1].Use) pred[wi + S.CompInfo[1].dataindex] = yfm[wi];
 				}
 			}
 			else {
 				for (size_t wi = 0; wi < nw; wi++) {
-					if (S.CompInfo[0].Use) predicted[wi + S.CompInfo[0].dataindex] = xfm[wi];
-					if (S.CompInfo[1].Use) predicted[wi + S.CompInfo[1].dataindex] = yfm[wi];
-					if (S.CompInfo[2].Use) predicted[wi + S.CompInfo[2].dataindex] = zfm[wi];
+					if (S.CompInfo[0].Use) pred[wi + S.CompInfo[0].dataindex] = xfm[wi];
+					if (S.CompInfo[1].Use) pred[wi + S.CompInfo[1].dataindex] = yfm[wi];
+					if (S.CompInfo[2].Use) pred[wi + S.CompInfo[2].dataindex] = zfm[wi];
 				}
 			}
 
-			if (computederivatives) {
+			predicted = cull(pred);
+			std::vector<double> tmp = copy(predicted);
 
+			if (computederivatives) {
+				MatrixDouble M(ndata_all, nparam);
 				std::vector<double> xdrv(nw);
 				std::vector<double> ydrv(nw);
 				std::vector<double> zdrv(nw);
@@ -1457,7 +1508,7 @@ class cSBSInverter{
 						//multiply by natural log(10) as parameters are in logbase10 units
 						double sf = log(10.0)*e.conductivity[li];
 						xdrv *= sf; ydrv *= sf; zdrv *= sf;
-						fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 				}
 
@@ -1472,7 +1523,7 @@ class cSBSInverter{
 						//multiply by natural log(10) as parameters are in logbase10 units
 						double sf = log(10.0)*e.thickness[li];
 						xdrv *= sf; ydrv *= sf; zdrv *= sf;
-						fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 				}
 
@@ -1483,7 +1534,7 @@ class cSBSInverter{
 					T.setprimaryfields();
 					T.setsecondaryfields();
 					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-					fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 				}
 
 				if (solve_txrx_dx) {
@@ -1493,7 +1544,7 @@ class cSBSInverter{
 					T.setprimaryfields();
 					T.setsecondaryfields();
 					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-					fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 				}
 
 				if (solve_txrx_dy) {
@@ -1503,7 +1554,7 @@ class cSBSInverter{
 					T.setprimaryfields();
 					T.setsecondaryfields();
 					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-					fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 				}
 
 				if (solve_txrx_dz) {
@@ -1513,22 +1564,23 @@ class cSBSInverter{
 					T.setprimaryfields();
 					T.setsecondaryfields();
 					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-					fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 				}
 
 				if (solve_rx_pitch) {
 					size_t pindex = rx_pitchIndex;
 					T.drx_pitch(xfm, zfm, g.rx_pitch, xdrv, zdrv);
 					ydrv *= 0.0;
-					fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 				}
 
 				if (solve_rx_roll) {
 					size_t pindex = rx_rollIndex;
 					T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
 					xdrv *= 0.0;
-					fillJacobianColumn(S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-				}
+					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+				}				
+				J = cull(M);
 			}
 		}
 	}
@@ -1546,20 +1598,20 @@ class cSBSInverter{
 		}
 	}
 
-	void fillJacobianColumn(cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
+	void fillMatrixColumn(MatrixDouble& M, cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
 	{
 		const size_t nw = S.T.NumberOfWindows;
 		if (S.invertXPlusZ) {
-			for (size_t w = 0; w < nw; w++) {
-				J(w + S.xzIndex, pindex) = (xfm[w] * xdrv[w] + zfm[w] * zdrv[w]) / xzfm[w];
-				if (S.CompInfo[1].Use)J(w + S.CompInfo[1].dataindex,pindex) = xdrv[w];
+			for (size_t w = 0; w < nw; w++) {				
+				M(w + S.xzIndex, pindex) = (xfm[w] * xdrv[w] + zfm[w] * zdrv[w]) / xzfm[w];
+				if (S.CompInfo[1].Use)M(w + S.CompInfo[1].dataindex,pindex) = xdrv[w];
 			}
 		}
 		else {
 			for (size_t w = 0; w < nw; w++) {				
-				if (S.CompInfo[0].Use)J(w + S.CompInfo[0].dataindex,pindex) = xdrv[w];
-				if (S.CompInfo[1].Use)J(w + S.CompInfo[1].dataindex,pindex) = ydrv[w];
-				if (S.CompInfo[2].Use)J(w + S.CompInfo[2].dataindex,pindex) = zdrv[w];				
+				if (S.CompInfo[0].Use)M(w + S.CompInfo[0].dataindex,pindex) = xdrv[w];
+				if (S.CompInfo[1].Use)M(w + S.CompInfo[1].dataindex,pindex) = ydrv[w];
+				if (S.CompInfo[2].Use)M(w + S.CompInfo[2].dataindex,pindex) = zdrv[w];				
 			}
 		}
 	}
@@ -1568,8 +1620,8 @@ class cSBSInverter{
 	{
 		VectorDouble s = VectorDouble::Zero(nparam);
 		for (size_t pi = 0; pi < nparam; pi++) {
-			for (size_t di = 0; di < ndata; di++) {
-				s[pi] += (std::fabs(J(di,pi)) * std::sqrt((double)ndata*Wd(di,di)));
+			for (size_t di = 0; di < ndata_inv; di++) {
+				s[pi] += (std::fabs(J(di,pi)) * std::sqrt((double)ndata_inv*Wd(di,di)));
 			}
 		}		
 		return s;
@@ -1582,7 +1634,7 @@ class cSBSInverter{
 		for (size_t i = 0; i < nparam; i++) {
 			iCm(i,i) = 1.0 / (RefParamStd[i] * RefParamStd[i]);
 		}
-		MatrixDouble X = (double)ndata*JtWdJ + iCm;		
+		MatrixDouble X = (double)ndata_inv*JtWdJ + iCm;		
 		MatrixDouble pinvX = pseudoInverse(X);
 		VectorDouble s(nparam);
 		for (size_t i = 0; i < nparam; i++) {
@@ -1638,7 +1690,7 @@ class cSBSInverter{
 				cTrial t = targetsearch(LastLambda, TargetPhiD);
 				VectorDouble dm = parameterchange(t.lambda);
 				VectorDouble mtemp = Param + (t.stepfactor*dm);
-				VectorDouble gtemp(ndata);
+				VectorDouble gtemp(ndata_inv);
 				forwardmodel(mtemp, gtemp, false);
 				double phidtemp = phiData(gtemp);
 				percentchange = 100.0*(LastPhiD - phidtemp) / (LastPhiD);
@@ -1978,7 +2030,7 @@ class cSBSInverter{
 	{
 		VectorDouble dm(nparam);
 		VectorDouble p(nparam);
-		VectorDouble g(ndata);
+		VectorDouble g(ndata_inv);
 		dm = parameterchange(triallambda);
 		cTrialCache cache;
 		cTrial t0;
@@ -2036,7 +2088,7 @@ class cSBSInverter{
 		OM->writefield(pi, Id.uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.surveynumber, "survey", "Survey number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.daynumber, "date", "Date number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
-		//OM->writefield(pi, Id.flightnumber, "flight", "Flight number", NONE, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		OM->writefield(pi, Id.flightnumber, "flight", "Flight number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.linenumber, "line", "Line number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.fidnumber, "fiducial", "Fiducial number", UNITLESS, 1, NC_DOUBLE, DN_NONE, 'F', 12, 2);
 
@@ -2059,6 +2111,11 @@ class cSBSInverter{
 			OM->writefield(pi, GM[i], "inverted_" + GM.fname(i), "Inverted " + GI.description(i), GI.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
 		}
 				
+		//ndata
+		OM->writefield(pi,
+			ndata_inv, "ndata", "Number of data in inversion", UNITLESS,
+			1, NC_UINT, DN_NONE, 'I', 4, 0);
+
 		//Earth	
 		OM->writefield(pi,
 			nlayers,"nlayers","Number of layers ", UNITLESS,
@@ -2105,7 +2162,7 @@ class cSBSInverter{
 			std::vector<double> ndbot = -1.0 * EM.layer_bottom_depth();
 			OM->writefield(pi,
 				ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
-				ndbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);			
+				ndbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.InterfaceElevations) {			
@@ -2113,7 +2170,7 @@ class cSBSInverter{
 			etop += Location.groundelevation;
 			OM->writefield(pi,
 				etop, "elevation_interface", "Elevation of interface", "m",
-				etop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);						
+				etop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 				
 		if (OO.ParameterSensitivity) {
@@ -2130,7 +2187,7 @@ class cSBSInverter{
 				v.push_back(0.0);//halfspace layer not a parameter
 				OM->writefield(pi,
 					v, "thickness_sensitivity", "Thickness parameter sensitivity", UNITLESS,
-					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);				
+					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 
 			size_t k = 0;
@@ -2236,24 +2293,7 @@ class cSBSInverter{
 		static int dummy = OM->end_first_record();//only do this once
 	};
 
-	std::vector<double> copy(const VectorDouble& d) const {
-		std::vector<double> v((double*)(d.data()), (double*)(d.data() + d.size()));
-		return v;
-	};
-	
-	void writeresult_geometry(const cTDEmGeometry& g, const std::string& fieldnameprefix, const std::string& commentprefix, const bool invertedfieldsonly)
-	{
-		//static std::vector<cOutputField> f(g.size());
-		//for (size_t i = 0; i < g.size(); i++) {
-			//if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
-			//OI.addfield(fieldnameprefix + g.fname(i), 'F', 9, 2);
-			//OI.setunits(g.units(i));
-			//OI.setdescription(commentprefix + g.description(i));
-			//buf += strprint("%9.2lf", g[i]);
-		//}
-	}
-	
-	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const size_t& width, const size_t& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
+	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
 	{
 		std::string DN_WINDOW = "em_window";
 		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
