@@ -4,17 +4,15 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-cxxflags   += -fPIC 
-#-static-libgcc
-ldflags    += -shared 
-#-static-libstdc++
+cxxflags   += -fPIC
+ldflags    += -shared
 bindir     = ../python/gatdaem1d
 
 srcdir     = ../src
-#tntdir     = ../third_party/tnt
+tntdir     = ../third_party/tnt
 objdir     = ./obj
-includes   = -I$(srcdir) -I$(FFTW_INC)
-libs       = -L$(FFTW_LIB) -lfftw3
+includes   = -I$(srcdir) -I$(tntdir)
+libs       = -L$(FFTW_DIR) -lfftw3
 library    = $(bindir)/gatdaem1d.so
 
 all: compile link
