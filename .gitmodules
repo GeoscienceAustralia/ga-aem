@@ -7,4 +7,8 @@
 [submodule "submodules/eigen"]
 	path = submodules/eigen
 	url = https://github.com/eigenteam/eigen-git-mirror.git
+[submodule "submodules/csv-parser"]
 
+	path = submodules/csv-parser
+	
+	url = https://github.com/vincentlaucsb/csv-parser.git
