@@ -12,3 +12,12 @@
 	path = submodules/csv-parser
 	
 	url = https://github.com/vincentlaucsb/csv-parser.git
+
+[submodule "submodules/geophysics-netcdf"]
+
+	path = submodules/geophysics-netcdf
+	url = git@github.com:GeoscienceAustralia/geophysics-netcdf.git
+[submodule "submodules/netcdf-cxx4"]
+	path = submodules/netcdf-cxx4
+	url = git@github.com:Unidata/netcdf-cxx4.git
+

@@ -10,22 +10,49 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncAtt.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncByte.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncChar.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncCheck.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncCompoundType.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncDim.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncDouble.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncEnumType.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncException.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncFile.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncFloat.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncGroup.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncGroupAtt.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncInt.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncInt64.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncOpaqueType.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncShort.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncString.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncType.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncUbyte.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncUint.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncUint64.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncUshort.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncVar.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncVarAtt.cpp" />
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncVlenType.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{6833B6B1-D6A3-4E06-9186-01CF8339F8EF}</ProjectGuid>
+    <ProjectGuid>{881E5465-4273-43A2-85B3-69B1C9AF0509}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>tdemrjmcmc1d</RootNamespace>
-    <ProjectName>garjmcmctdem</ProjectName>
+    <RootNamespace>libnetcdfcxx</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -36,27 +63,21 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\msmpi.x64.props" />
-    <Import Project="..\propertysheets\fftw.x64.props" />
-    <Import Project="..\propertysheets\ga-aem.props" />
-    <Import Project="..\propertysheets\eigen.props" />
     <Import Project="..\propertysheets\netcdf4.props" />
     <Import Project="..\propertysheets\netcdf4-cxx.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\propertysheets\msmpi.x64.props" />
-    <Import Project="..\propertysheets\fftw.x64.props" />
-    <Import Project="..\propertysheets\ga-aem.props" />
-    <Import Project="..\propertysheets\eigen.props" />
-    <Import Project="..\propertysheets\geophysics-netcdf.props" />
+    <Import Project="..\propertysheets\netcdf4.props" />
+    <Import Project="..\propertysheets\netcdf4-cxx.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(Platform)\$(Configuration)\</OutDir>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -64,13 +85,18 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_MPI_ENABLED;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -80,35 +106,22 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_MPI_ENABLED;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <PostBuildEvent>
+      <Command />
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message />
+    </PostBuildEvent>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\src\garjmcmctdem.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\src\rjmcmc1d.h" />
-    <ClInclude Include="..\..\src\rjmcmc1dtdeminverter.h" />
-    <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\eigen_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\random_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\vector_utils.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

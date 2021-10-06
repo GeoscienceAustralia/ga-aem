@@ -613,12 +613,12 @@ public:
 
 		std::vector<double> longitude(plout.size());
 		std::vector<double> latitude(plout.size());		
-		en2ll(x, y, longitude, latitude);
+		en2lonlat(x, y, longitude, latitude);
 		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";		
 		savexml(longitude, latitude);
 	}
 
-	void en2ll(const std::vector<double>& e_in, const std::vector<double>& n_in, std::vector<double>& lon_out, std::vector<double>& lat_out)
+	void en2lonlat(const std::vector<double>& e_in, const std::vector<double>& n_in, std::vector<double>& lon_out, std::vector<double>& lat_out)
 	{
 		int inepsgcode = cCRS::epsgcode(D.inputdatumprojection);
 		if (inepsgcode < 0) {
@@ -626,7 +626,8 @@ public:
 			throw(std::runtime_error(msg));
 		}		
 		int outepsgcode = cCRS::epsgcode("WGS84|GEODETIC");
-		transform(inepsgcode, e_in, n_in, outepsgcode, lon_out, lat_out);
+		//transform(inepsgcode, e_in, n_in, outepsgcode, lon_out, lat_out);
+		transform(inepsgcode, e_in, n_in, outepsgcode, lat_out, lon_out);
 	}
 
 	void savepoints(const std::vector<RDP::Point>& p, const std::string& filename){
@@ -650,7 +651,7 @@ public:
 	{
 		std::vector<double> imagelon(nhpixels);
 		std::vector<double> imagelat(nhpixels);		
-		en2ll(imagex, imagey, imagelon, imagelat);
+		en2lonlat(imagex, imagey, imagelon, imagelat);
 		std::string xypath = outdir + "geometry\\" + basename() + ".path.txt";
 		FILE* fp = fileopen(xypath,"w");
 		for (size_t i = 0; i < nhpixels; i++) {

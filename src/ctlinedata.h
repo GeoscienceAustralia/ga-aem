@@ -38,7 +38,7 @@ public:
 
 	cCTLineData(const cBlock& b, const std::string& dfnfile){
 		B = b;
-		A.parse_aseggdf2_header(dfnfile);
+		A.parse_aseggdf2_dfn(dfnfile);
 	}
 
 	void load(const std::vector<std::string>& L)
@@ -225,9 +225,9 @@ public:
 		else{
 			size_t findex = A.fieldindexbyname(s);
 			if (findex >= 0 && findex < A.fields.size()) {
-				r.from = (int)A.fields[findex].startcolumn;
-				r.to = (int)A.fields[findex].endcolumn();
-				r.from--; r.to--;
+				r.from = (int)A.fields[findex].startcol();
+				r.to = (int)A.fields[findex].endcol();
+				//r.from++; r.to++;
 				return r;
 			}
 			return r;//invalid;

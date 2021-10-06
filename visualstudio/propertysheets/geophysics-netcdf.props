@@ -1,15 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets">
-    <Import Project="gdal.props" />
-    <Import Project="boost.props" />
-    <Import Project="cgal.props" />
-    <Import Project="netcdf4-cxx.props" />
     <Import Project="netcdf4.props" />
+    <Import Project="netcdf4-cxx.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(GEOPHYSICS_NETCDF_ROOT)\src;$(GEOPHYSICS_NETCDF_ROOT)\submodules\marray\include\andres;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\submodules\geophysics-netcdf\src;..\..\submodules\geophysics-netcdf\submodules\marray\include\andres;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
     <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>

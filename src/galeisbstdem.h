@@ -29,9 +29,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 	extern omp_lock_t fftw_thread_lock;
 #endif
 
-enum eNormType { L1, L2 };
-enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
-enum eBracketResult { BR_BRACKETED, BR_MINBRACKETED, BR_ALLABOVE, BR_ALLBELOW };
+enum class eNormType { L1, L2 };
+enum class eSmoothnessMethod { DERIVATIVE_1ST, DERIVATIVE_2ND };
+enum class eBracketResult { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
 
 class cTrial{
 
@@ -145,8 +145,7 @@ class cOutputOptions {
 private:
 	std::string DumpBasePath;
 
-public:
-	//std::string DataFile;
+public:	
 	std::string LogFile;
 	bool PositiveLayerTopDepths = false;
 	bool NegativeLayerTopDepths = false;
@@ -166,10 +165,7 @@ public:
 			strprint("it%03d", (int)iteration) + pathseparatorstring();
 	};
 	cOutputOptions(){};
-	cOutputOptions(const cBlock& b) {
-		//DataFile = b.getstringvalue("DataFile");
-		//fixseparator(DataFile);
-
+	cOutputOptions(const cBlock& b) {		
 		LogFile = b.getstringvalue("LogFile");				
 		fixseparator(LogFile);
 
@@ -336,6 +332,7 @@ class cSBSInverter{
 
 	public:
 	
+	std::string OutputMessage;
 	cBlock Control;
 	int Size;
 	int Rank;
@@ -489,7 +486,7 @@ class cSBSInverter{
 			if (OO.Dump) {
 				FILE* fp = fileopen(dumppath() + "record.dat", "w");
 				fprintf(fp, "Record\t%zu", IM->record());
-				fclose(fp);
+				fclose(fp);				
 			}
 			
 			double t1 = gettime();
@@ -497,10 +494,10 @@ class cSBSInverter{
 				double t2 = gettime();
 				double etime = t2 - t1;
 				writeresult(job-1);
-				glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str());
+				glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str(), OutputMessage.c_str());
 			}
 			else {
-				glog.logmsg("Rec %6zu  skipping due to parse error\n", 1 + IM->record());
+				glog.logmsg("Rec %6zu  Skipping %s\n", 1 + IM->record(), OutputMessage.c_str());
 			}
 		}
 		glog.close();
@@ -511,7 +508,7 @@ class cSBSInverter{
 	{
 		_GSTITEM_
 		loadcontrolfile(controlfile);
-		parsecolumns();
+		set_field_definitions();
 		setup_data();
 		setup_parameters();		
 		go();	
@@ -589,38 +586,38 @@ class cSBSInverter{
 		AlphaS = b.getdoublevalue("AlphaSmoothness");
 
 
-		NormType = L2;//default
+		NormType = eNormType::L2;//default
 		std::string nt = b.getstringvalue("NormType");
 		if (!isdefined(nt)) {
-			NormType = L2;
+			NormType = eNormType::L2;
 		}
 		else if (strcasecmp(nt, "L1") == 0) {
-			NormType = L1;
+			NormType = eNormType::L1;
 		}
 		else if (strcasecmp(nt, "L2") == 0) {
-			NormType = L2;
+			NormType = eNormType::L2;
 		}
 		else {
 			glog.errormsg("Unknown NormType %s\n", nt.c_str());
 		}
 
 
-		SmoothnessMethod = SM_2ND_DERIVATIVE;//default
+		SmoothnessMethod = eSmoothnessMethod::DERIVATIVE_2ND;//default
 		std::string sm = b.getstringvalue("SmoothnessMethod");
 		if (!isdefined(sm)) {
-			SmoothnessMethod = SM_2ND_DERIVATIVE;
+			SmoothnessMethod = eSmoothnessMethod::DERIVATIVE_2ND;
 		}
 		else if (strcasecmp(sm, "Minimise1stDerivatives") == 0) {
-			SmoothnessMethod = SM_1ST_DERIVATIVE;
+			SmoothnessMethod = eSmoothnessMethod::DERIVATIVE_1ST;
 		}
 		else if (strcasecmp(sm, "Minimize1stDerivatives") == 0) {
-			SmoothnessMethod = SM_1ST_DERIVATIVE;
+			SmoothnessMethod = eSmoothnessMethod::DERIVATIVE_1ST;
 		}
 		else if (strcasecmp(sm, "Minimise2ndDerivatives") == 0) {
-			SmoothnessMethod = SM_2ND_DERIVATIVE;
+			SmoothnessMethod = eSmoothnessMethod::DERIVATIVE_2ND;
 		}
 		else if (strcasecmp(sm, "Minimize2ndDerivatives") == 0) {
-			SmoothnessMethod = SM_2ND_DERIVATIVE;
+			SmoothnessMethod = eSmoothnessMethod::DERIVATIVE_2ND;
 		}
 		else {
 			glog.errormsg(_SRC_, "Unknown SmoothnessMethod %s\n", sm.c_str());
@@ -632,7 +629,7 @@ class cSBSInverter{
 		MinimumImprovement = b.getdoublevalue("MinimumPercentageImprovement");
 	}
 
-	void parsecolumns()
+	void set_field_definitions()
 	{
 		cBlock b = Control.findblock("Input.Columns");
 		sn.initialise(b, "SurveyNumber");
@@ -644,23 +641,23 @@ class cSBSInverter{
 		yord.initialise(b, "Northing");
 		elevation.initialise(b, "GroundElevation");
 
-		fd_GI = parsegeometry(b);
+		fd_GI = set_field_definitions_geometry(b);
 
 		cBlock rm = b.findblock("ReferenceModel");
-		fd_GR = parsegeometry(rm);
+		fd_GR = set_field_definitions_geometry(rm);
 		fd_ERc.initialise(rm, "Conductivity");
 		fd_ERt.initialise(rm, "Thickness");
 
 		cBlock sd = b.findblock("StdDevReferenceModel");
-		fd_GS = parsegeometry(sd);
+		fd_GS = set_field_definitions_geometry(sd);
 		fd_ESc.initialise(sd, "Conductivity");
 		fd_ESt.initialise(sd, "Thickness");
 
 		cBlock tfr = b.findblock("TotalFieldReconstruction");
-		fd_GTFR = parsegeometry(tfr);		
+		fd_GTFR = set_field_definitions_geometry(tfr);		
 	}
 
-	std::vector<cFieldDefinition> parsegeometry(const cBlock& b)
+	std::vector<cFieldDefinition> set_field_definitions_geometry(const cBlock& b)
 	{
 		std::vector<cFieldDefinition> g(10);
 		for (size_t i = 0; i < g.size(); i++) {
@@ -796,8 +793,7 @@ class cSBSInverter{
 
 	bool parserecord()
 	{
-		if (IM->parserecord() == false) return false;
-		//std::cout << "Record " << IM->record() << std::endl;
+		if (IM->parserecord() == false) return false;		
 		bool readstatus = true;
 		bool status;
 		Id.uniqueid = IM->record();
@@ -843,22 +839,24 @@ class cSBSInverter{
 		S.CompInfo[2].readdata(IM);
 	}
 
-	void initialise_sample()
+	bool initialise_sample()
 	{
 		LastIteration = 0;
 		LastLambda = 1e8;
 
-		initialise_data();
+		bool status = initialise_data();
+		if (status == false) return false;
+
 		initialise_parameters();		
 		initialise_Wd();
 		initialise_Wc();
 		initialise_Wt();
 		initialise_Wg();
 
-		if (SmoothnessMethod == SM_1ST_DERIVATIVE) {
+		if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_1ST) {
 			initialise_L_Ws_1st_derivative();
 		}
-		else if (SmoothnessMethod == SM_2ND_DERIVATIVE) {
+		else if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_2ND) {
 			initialise_L_Ws_2nd_derivative();
 		}
 
@@ -883,9 +881,10 @@ class cSBSInverter{
 			fprintf(fp, "%zu\t%zu\t%zu\t%zu\t%zu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
 			fclose(fp);
 		}
+		return true;
 	}
 
-	void initialise_data()
+	bool initialise_data()
 	{
 		std::vector<double> obs(ndata_all);
 		std::vector<double> err(ndata_all);
@@ -945,42 +944,47 @@ class cSBSInverter{
 				}
 			}
 		}
-
-		//Work out indices to be culled
-		//for (size_t i = 0; i < 5; i++) {
-		//	obs[i] = nullval();
-		//}
-		//obs[1]  = nullval();
-		//obs[2]  = nullval();
-		//obs[4]  = nullval();
-		//obs[14] = nullval();
+		
+		//Work out indices to be culled				
 		Q.clear();
 		for (size_t i = 0; i < ndata_all; i++){
-			if(isnotnull(obs[i])) Q.push_back(i);
+			if(!isnull(obs[i])  && !isnull(err[i])) Q.push_back(i);			
 		}
-		ndata_inv = Q.size();		
+		ndata_inv = Q.size();
+
+		if (ndata_inv != ndata_all) {
+			size_t ncull = ndata_all - ndata_inv;
+			OutputMessage += strprint(", %d null data/noise were culled",(int)ncull);
+		}
 		Err = cull(err);
 		Obs = cull(obs);
+
+		//Check for zero err values		
+		int nzeroerr = 0;
+		for (size_t i = 0; i < Err.size(); i++) {
+			if (Err[i] == 0.0) nzeroerr++;
+		}
+		if (nzeroerr > 0) {			
+			OutputMessage += strprint(", Skipped %d noise values were 0.0", nzeroerr);
+			return false;
+		}
 
 		if (OO.Dump) {
 			write(Obs, dumppath()+"observed.dat");
 			write(Err, dumppath()+"observed_std.dat");
 		}
+		return true;
 	}
 
 	inline bool isnull(const double& val) {
-		return val == DBL_MAX;
+		//if (val == 29322580645161.28516) return true;
+		//else if (val == 293196483870967808.00000) return true;		
+		if (val >  1e14) return true;
+		else if (val < -1e14) return true;
+		else if (isdefined(val)) return false;		
+		else return true;				
 	}
-
-	inline bool isnotnull(const double& val) {
-		return val != DBL_MAX;
-	}
-
-	double nullval(){
-		double d = DBL_MAX;
-		return d;
-	}
-
+	
 	void initialise_parameters()
 	{
 		if (solve_conductivity) {
@@ -1258,7 +1262,7 @@ class cSBSInverter{
 
 
 		MatrixDouble V = Wd;
-		if (NormType == L2) {
+		if (NormType == eNormType::L2) {
 
 		}
 		else {
@@ -1297,7 +1301,7 @@ class cSBSInverter{
 	double phiData(const VectorDouble& g)
 	{
 		double phid;
-		if (NormType == L1) {
+		if (NormType == eNormType::L1) {
 			phid = l1_norm(g);
 		}
 		else {
@@ -1438,6 +1442,8 @@ class cSBSInverter{
 	void forwardmodel(const VectorDouble& parameters, VectorDouble& predicted, bool computederivatives)
 	{
 		VectorDouble pred(ndata_all);
+		MatrixDouble M;
+		if(computederivatives)M.resize(ndata_all, nparam);
 
 		cEarth1D      e = get_earth(parameters);
 		cTDEmGeometry g = get_geometry(parameters);
@@ -1483,20 +1489,15 @@ class cSBSInverter{
 					if (S.CompInfo[0].Use) pred[wi + S.CompInfo[0].dataindex] = xfm[wi];
 					if (S.CompInfo[1].Use) pred[wi + S.CompInfo[1].dataindex] = yfm[wi];
 					if (S.CompInfo[2].Use) pred[wi + S.CompInfo[2].dataindex] = zfm[wi];
-				}
+				}				
 			}
-
-			predicted = cull(pred);
-			std::vector<double> tmp = copy(predicted);
-
-			if (computederivatives) {
-				MatrixDouble M(ndata_all, nparam);
+						
+			if (computederivatives) {				
 				std::vector<double> xdrv(nw);
 				std::vector<double> ydrv(nw);
 				std::vector<double> zdrv(nw);
 
 				if (solve_conductivity) {
-
 					for (size_t li = 0; li < nlayers; li++) {
 						size_t pindex = li + cIndex;
 						T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
@@ -1579,10 +1580,12 @@ class cSBSInverter{
 					T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
 					xdrv *= 0.0;
 					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-				}				
-				J = cull(M);
+				}								
 			}
 		}
+				
+		predicted = cull(pred);		
+		if (computederivatives)	J = cull(M);		
 	}
 
 	void fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv)
@@ -1645,12 +1648,18 @@ class cSBSInverter{
 
 	bool invert()
 	{
-		if (parserecord()) {
-			initialise_sample();
-			iterate();
-			return true;
+		OutputMessage = "";
+		if (parserecord() == false) {
+			OutputMessage += ", Skipping - could not parse record";
+			return false;
 		}
-		return false;
+
+		if (initialise_sample() == false) {
+			return false;
+		}
+
+		iterate(); 		
+		return true;
 	}
 
 	void iterate()
@@ -1664,6 +1673,7 @@ class cSBSInverter{
 			LastPhiD = phiData(Pred);
 			TargetPhiD = std::max(LastPhiD * 0.7, MinimumPhiD);
 			if (OO.Dump) {
+				makedirectorydeep(dumppath());
 				writetofile(Obs,dumppath() + "d.dat");
 				writetofile(Err,dumppath() + "e.dat");
 				writetofile(Pred,dumppath() + "g.dat");
@@ -1687,7 +1697,7 @@ class cSBSInverter{
 				TerminationReason = "Small % improvement";
 			}
 			else {
-				cTrial t = targetsearch(LastLambda, TargetPhiD);
+				cTrial t = targetsearch(LastLambda, TargetPhiD);				
 				VectorDouble dm = parameterchange(t.lambda);
 				VectorDouble mtemp = Param + (t.stepfactor*dm);
 				VectorDouble gtemp(ndata_inv);
@@ -1731,29 +1741,30 @@ class cSBSInverter{
 		cTrialCache T;
 		T.target = target;
 		eBracketResult b = brackettarget(T, target, currentlambda);
-
-		if (b == BR_BRACKETED) {
+		cTrial t{};
+		if (b == eBracketResult::BRACKETED) {
 			//bracketed target - find with Brents Method
 			double newphid = DBL_MIN;
 			double lambda = brentsmethod(T, target, newphid);
-			return T.findlambda(lambda);
+			t = T.findlambda(lambda);			
 		}
-		else if (b == BR_MINBRACKETED) {
+		else if (b == eBracketResult::MINBRACKETED) {
 			//bracketed minimum but above target - take smallest phid
-			return T.minphidtrial();
+			t = T.minphidtrial();			
 		}
-		else if (b == BR_ALLBELOW) {
+		else if (b == eBracketResult::ALLBELOW) {
 			//all below target	- take the largest lambda			
-			return T.maxlambdatrial();
+			t = T.maxlambdatrial();			
 		}
-		else if (b == BR_ALLABOVE) {
+		else if (b == eBracketResult::ALLABOVE) {
 			//all above target - take smallest phid
-			return T.minphidtrial();
+			t = T.minphidtrial();			
 		}
 		else {
 			glog.errormsg(_SRC_, "targetsearch(): Unknown value %d returned from target brackettarget()\n", b);
 		}
-		return T.minphidtrial();
+		//T.print(t.lambda, t.phid);
+		return t;		
 	}
 
 	bool istargetbraketed(cTrialCache& T)
@@ -1799,7 +1810,7 @@ class cSBSInverter{
 				trialfunction(T, pow10(x[k]));
 				bool tarbrak = istargetbraketed(T);
 				if (tarbrak) {
-					return BR_BRACKETED;//target bracketed		
+					return eBracketResult::BRACKETED;//target bracketed		
 				}
 			}
 
@@ -1826,20 +1837,20 @@ class cSBSInverter{
 			trialfunction(T, pow10(startx + x[k]));
 			bool tarbrak = istargetbraketed(T);
 			if (tarbrak) {
-				return BR_BRACKETED;//target bracketed		
+				return eBracketResult::BRACKETED;//target bracketed		
 			}
 		}		
 		//T.print(LastLambda, LastPhiD);
 		//prompttocontinue();
 
 		if (T.maxphid() < target) {
-			return BR_ALLBELOW;//all below target	
+			return eBracketResult::ALLBELOW;//all below target	
 		}
 
 		bool minbrak = isminbraketed(T);
-		if (minbrak)return BR_MINBRACKETED;//min bracketed											
+		if (minbrak)return eBracketResult::MINBRACKETED;//min bracketed											
 
-		return BR_ALLABOVE;//all above target
+		return eBracketResult::ALLABOVE;//all above target
 	}
 
 	double brentsmethod(cTrialCache& T, const double target, double& newphid)
@@ -2088,7 +2099,8 @@ class cSBSInverter{
 		OM->writefield(pi, Id.uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.surveynumber, "survey", "Survey number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.daynumber, "date", "Date number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
-		OM->writefield(pi, Id.flightnumber, "flight", "Flight number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		//TODO fix the example file
+		//OM->writefield(pi, Id.flightnumber, "flight", "Flight number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.linenumber, "line", "Line number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.fidnumber, "fiducial", "Fiducial number", UNITLESS, 1, NC_DOUBLE, DN_NONE, 'F', 12, 2);
 
@@ -2369,7 +2381,8 @@ class cSBSInverter{
 
 	std::string dumppath() const
 	{
-		return OO.DumpPath(IM->record(),LastIteration);
+		std::string s = OO.DumpPath(IM->record(),LastIteration);
+		return s;
 	};
 	
 

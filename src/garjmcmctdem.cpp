@@ -7,8 +7,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #include <vector>
-using namespace std;
-
 #include "gaaem_version.h"
 #include "general_utils.h"
 #include "file_utils.h"

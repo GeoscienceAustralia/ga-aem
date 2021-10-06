@@ -66,61 +66,68 @@ public:
 	const size_t& record() const { return Record; }
 	
 	template<typename T>
-	bool read(const cFieldDefinition& cd, T& v)
+	bool read(const cFieldDefinition& fd, T& v)
 	{
-		if (cd.definitiontype() == UNAVAILABLE) {
+		if (fd.definitiontype() == cFieldDefinition::TYPE::UNAVAILABLE) {
 			v = undefinedvalue(v);
 			return false;
 		}
-		else if (cd.definitiontype() == NUMERIC) {
-			v = (T)cd.numericvalue[0];
+		else if (fd.definitiontype() == cFieldDefinition::TYPE::NUMERIC) {
+			v = (T)fd.numericvalue[0];
 			return true;
 		}
 
 		std::vector<T> vec;
-		bool status = file_read(cd,vec,1);
+		bool status = file_read(fd,vec,1);
 		v = vec[0];
 
 		if (iotype != IOType::ASCII) {//Don't flip if ASCII reader as it already does this - to be fixed
-			if (cd.flip) { v = -1 * v; } {
-				cd.applyoperator(v);
+			if (fd.flip) { v = -1 * v; } {
+				fd.applyoperator(v);
 			}
 		}
 		return true;
 	}
 
 	template<typename T>
-	bool read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
+	bool read(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n)
 	{
 		vec.resize(n);
-		if (cd.definitiontype() == NUMERIC) {
-			size_t deflen = cd.numericvalue.size();
+		if (fd.definitiontype() == cFieldDefinition::TYPE::NUMERIC) {
+			size_t deflen = fd.numericvalue.size();
 			for (size_t i = 0; i < n; i++) {
-				if (deflen == 1)vec[i] = (T)cd.numericvalue[0];
-				else            vec[i] = (T)cd.numericvalue[i];
+				if (deflen == 1)vec[i] = (T)fd.numericvalue[0];
+				else            vec[i] = (T)fd.numericvalue[i];
 			}
 			return true;
 		}
 
-		bool status = file_read(cd, vec, n);
+		bool status = file_read(fd, vec, n);
 
 		if (iotype != IOType::ASCII) {//Don't flip if ASCII reader as it already does this - to be fixed
 			for (size_t i = 0; i < vec.size(); i++) {
-				if (cd.flip) { vec[i] = -vec[i]; }
-				cd.applyoperator(vec[i]);
+				if (fd.flip) { vec[i] = -vec[i]; }
+				fd.applyoperator(vec[i]);
 			}
 		}
 		return true;
 	}
-
+		
 	template<typename T>
-	bool file_read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
-	{		
+	bool file_read(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n)
+	{				
 		if (iotype == IOType::ASCII) {
-			return ((cASCIIInputManager*)this)->file_read(cd, vec, n);
+			return ((cASCIIInputManager*)this)->file_read(fd, vec, n);
 		}
-		return ((cNetCDFInputManager*)this)->file_read(cd, vec, n);
-	}	
+		else if (iotype == IOType::NETCDF) {
+			((cNetCDFInputManager*)this)->file_read(fd, vec, n);
+		} 
+		else{
+			std::string msg = _SRC_;
+			msg += "\n\tUnsupported IOType\n";
+			throw(std::runtime_error(msg));
+		}
+	}
 };
 
 class cASCIIInputManager : public cInputManager {
@@ -141,27 +148,52 @@ public:
 
 	void initialise(const cBlock& b)
 	{		
-		HeaderFileName = b.getstringvalue("DfnFile");
-		fixseparator(HeaderFileName);		
-		fixseparator(DataFileName);
-
 		iotype = IOType::ASCII;
+		HeaderFileName = b.getstringvalue("DfnFile");
+		if(!isdefined(HeaderFileName)){
+			HeaderFileName = b.getstringvalue("HeaderFile");
+		}
+		
+		if(isdefined(HeaderFileName)) {
+			fixseparator(HeaderFileName);
+			if (!exists(HeaderFileName)) {
+				std::string msg = _SRC_;
+				msg += strprint("\n\tD'oh! the specified header file (%s) does not exist\n", HeaderFileName.c_str());
+				throw(std::runtime_error(msg));
+			}
+		}
 
+		fixseparator(DataFileName);
 		if (!exists(DataFileName)) {
 			std::string msg = _SRC_;
 			msg += strprint("\n\tD'Oh! the specified data file (%s) does not exist\n", DataFileName.c_str());
 			throw(std::runtime_error(msg));
 		}
-
 		AF.openfile(DataFileName);
-		if (isdefined(HeaderFileName)) {
-			if (!exists(HeaderFileName)) {
+
+
+		if (isdefined(HeaderFileName)) {			
+			glog.logmsg(0, "Parsing input headerFile %s\n", HeaderFileName.c_str());
+			std::string ext = extractfileextension(HeaderFileName);
+			if (strcasecmp(ext,".dfn")==0){
+				AF.parse_aseggdf2_dfn(HeaderFileName);
+				AF.headertype = cAsciiColumnFile::HeaderType::DFN;
+				AF.parsetype  = cAsciiColumnFile::ParseType::FIXEDWIDTH;
+			}
+			else if (strcasecmp(ext, ".csv") == 0) {
+				AF.parse_csv_header(HeaderFileName);
+				AF.headertype = cAsciiColumnFile::HeaderType::CSV;
+				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
+			}
+			else {
 				std::string msg = _SRC_;
-				msg += strprint("\n\tD'oh! the specified DFN file (%s) does not exist\n", HeaderFileName.c_str());
+				msg += strprint("\n\tD'oh! the specified header file (%s) is not .csv or .dfn\n", HeaderFileName.c_str());
 				throw(std::runtime_error(msg));
 			}
-			glog.logmsg(0, "Parsing Input DfnFile %s\n", HeaderFileName.c_str());
-			AF.parse_aseggdf2_header(HeaderFileName);
+		}
+		else{
+			AF.headertype = cAsciiColumnFile::HeaderType::NONE;
+			AF.parsetype  = cAsciiColumnFile::ParseType::DELIMITED;
 		}
 
 		size_t headerlines = b.getsizetvalue("Headerlines");
@@ -208,11 +240,11 @@ public:
 	const std::string& recordstring() const { return AF.currentrecord_string(); }
 
 	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
-
+	
 	template<typename T>
-	bool file_read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
-	{		
-		bool status = cd.getvalue(AF, vec, n);		
+	bool file_read(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n)
+	{									
+		bool status = AF.getvec_fielddefinition(fd, vec, n);
 		return status;	
 	}	
 };
@@ -256,9 +288,9 @@ public:
 	}
 
 	template<typename T>
-	bool file_read(const cFieldDefinition& cd, std::vector<T>& v, const size_t n)
+	bool file_read(const cFieldDefinition& fd, std::vector<T>& v, const size_t n)
 	{
-		NC.getDataByPointIndex(cd.varname, Record, v);
+		NC.getDataByPointIndex(fd.varname, Record, v);
 		return true;
 	}
 
