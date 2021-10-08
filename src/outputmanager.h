@@ -236,6 +236,8 @@ public:
 		OI.write_simple_header(hdrfile);
 		std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
 		OI.write_aseggdf_header(aseggdffile);
+		std::string csvfile = fpp.directory + fpp.prefix + ".csv";
+		OI.write_csv_header(csvfile);
 	};
 		
 	bool write(const int& val, const std::shared_ptr<cOutputField> of, const int& pointindex) {		

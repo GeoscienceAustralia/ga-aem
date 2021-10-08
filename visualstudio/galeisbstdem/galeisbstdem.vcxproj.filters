@@ -76,5 +76,8 @@
     <ClInclude Include="..\..\submodules\geophysics-netcdf\src\geophysics_netcdf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_formats.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
