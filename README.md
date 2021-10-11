@@ -9,6 +9,13 @@
 
 - Language: Mostly C++, some matlab, some python
 
+## Cloning
+
+When initially cloning the repository in git it is convenient to use the "--recursive" option so that all the submodules and their respective submodules are initialised and populated with code.
+
+``````script
+>> git clone --recursive git@github.com:rcb547/ga-aem-csiro.git
+``````
 
 ## Creation Notes
 - This repo was duplicated from https://github.com/GeoscienceAustralia/ga-aem.git on 20210706 
