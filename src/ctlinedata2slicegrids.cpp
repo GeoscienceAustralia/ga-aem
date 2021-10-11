@@ -239,7 +239,7 @@ public:
 		double t1 = gettime();
 		printf("Reading input data file %s\n",DataFile.c_str());
 		cAsciiColumnFile A;		
-		A.parse_aseggdf2_dfn(DfnFile);
+		A.read_dfn(DfnFile);
 
 		std::vector<std::vector<double>> exclude = b.getdoublematrix("ExcludeLineRanges");
 		std::string lfield = b.getstringvalue("LineNumber");

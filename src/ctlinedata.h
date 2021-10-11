@@ -38,7 +38,7 @@ public:
 
 	cCTLineData(const cBlock& b, const std::string& dfnfile){
 		B = b;
-		A.parse_aseggdf2_dfn(dfnfile);
+		A.read_dfn(dfnfile);
 	}
 
 	void load(const std::vector<std::string>& L)

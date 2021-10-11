@@ -176,7 +176,7 @@ public:
 			glog.logmsg(0, "Parsing input headerFile %s\n", HeaderFileName.c_str());
 			std::string ext = extractfileextension(HeaderFileName);
 			if (strcasecmp(ext,".dfn")==0){
-				AF.parse_aseggdf2_dfn(HeaderFileName);
+				AF.read_dfn(HeaderFileName);
 				AF.headertype = cAsciiColumnFile::HeaderType::DFN;
 				AF.parsetype  = cAsciiColumnFile::ParseType::FIXEDWIDTH;
 			}
