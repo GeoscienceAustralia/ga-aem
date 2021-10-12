@@ -239,7 +239,7 @@ public:
 		double t1 = gettime();
 		printf("Reading input data file %s\n",DataFile.c_str());
 		cAsciiColumnFile A;		
-		A.parse_aseggdf2_header(DfnFile);
+		A.read_dfn(DfnFile);
 
 		std::vector<std::vector<double>> exclude = b.getdoublematrix("ExcludeLineRanges");
 		std::string lfield = b.getstringvalue("LineNumber");
@@ -379,7 +379,7 @@ public:
 			bool excludedline = false;
 			if (exclude.size() > 0){
 				double line;
-				A.getfield(findex_l, line);
+				A.getfieldbyindex(findex_l, line);
 				for (size_t k = 0; k < exclude.size(); k++){
 					if (line >= exclude[k][0] && line <= exclude[k][1]){
 						excludedline = true;
@@ -390,17 +390,17 @@ public:
 			if (excludedline)continue;
 
 			double x, y, e;
-			A.getfield(findex_x, x);
+			A.getfieldbyindex(findex_x, x);
 			xdata.push_back(x);
 
-			A.getfield(findex_y, y);
+			A.getfieldbyindex(findex_y, y);
 			ydata.push_back(y);
 
-			A.getfield(findex_e, e);
+			A.getfieldbyindex(findex_e, e);
 			edata.push_back(e);
 
 			std::vector<double> v;
-			A.getfield(findex_c, v);
+			A.getfieldbyindex(findex_c, v);
 			if (haveconductivity){
 				for (int i = 0; i < (int) nlayers; i++){
 					cdata[i].push_back(cscale*v[i]);
@@ -413,7 +413,7 @@ public:
 			}
 			
 			std::vector<double> w;
-			A.getfield(findex_d, w);
+			A.getfieldbyindex(findex_d, w);
 			if (havedepth){
 				for (int i = 0; i < (int) nlayers; i++){
 					ddata[i].push_back(w[i]);

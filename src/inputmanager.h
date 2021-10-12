@@ -68,11 +68,11 @@ public:
 	template<typename T>
 	bool read(const cFieldDefinition& cd, T& v)
 	{
-		if (cd.definitiontype() == UNAVAILABLE) {
+		if (cd.definitiontype() == cFieldDefinition::TYPE::UNAVAILABLE) {
 			v = undefinedvalue(v);
 			return false;
 		}
-		else if (cd.definitiontype() == NUMERIC) {
+		else if (cd.definitiontype() == cFieldDefinition::TYPE::NUMERIC) {
 			v = (T)cd.numericvalue[0];
 			return true;
 		}
@@ -93,7 +93,7 @@ public:
 	bool read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
 	{
 		vec.resize(n);
-		if (cd.definitiontype() == NUMERIC) {
+		if (cd.definitiontype() == cFieldDefinition::TYPE::NUMERIC) {
 			size_t deflen = cd.numericvalue.size();
 			for (size_t i = 0; i < n; i++) {
 				if (deflen == 1)vec[i] = (T)cd.numericvalue[0];
@@ -154,7 +154,7 @@ public:
 		AF.openfile(DataFileName);
 		if (isdefined(HeaderFileName)) {
 			glog.logmsg(0, "Parsing Input DfnFile %s\n", HeaderFileName.c_str());
-			AF.parse_aseggdf2_header(HeaderFileName);
+			AF.read_dfn(HeaderFileName);
 		}
 
 		size_t headerlines = b.getsizetvalue("Headerlines");
@@ -205,7 +205,8 @@ public:
 	template<typename T>
 	bool file_read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
 	{		
-		bool status = cd.getvalue(AF, vec, n);		
+		//bool status  = cd.getvalue(AF, vec, n);		
+		bool status = AF.getvec_fielddefinition(cd, vec, n);
 		return status;	
 	}	
 };
