@@ -4,8 +4,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LibraryPath>$(GEOPHYSICS_NETCDF_ROOT)\visualstudio\libnetcdfcxx\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(GEOPHYSICS_NETCDF_ROOT)\submodules\netcdf-cxx4\cxx4;$(IncludePath)</IncludePath>
+    <LibraryPath>..\libnetcdfcxx\$(Platform)\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\submodules\netcdf-cxx4\cxx4;$(IncludePath)</IncludePath>
     <_PropertySheetDisplayName>netcdf4-cxx</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
