@@ -66,8 +66,10 @@ class cOutputField {
 };
 
 class cOutputManager {
-
+		
 public:
+	int Size = 1;
+	int Rank = 0;
 	enum class IOType { ASCII, NETCDF, NONE };
 
 protected:		
@@ -76,13 +78,18 @@ protected:
 	std::list<cOutputField> flist;
 
 public:
+	
 	cOutputManager() {};
 
 	virtual ~cOutputManager() {};
 
-	void initialise(const cBlock& b) {		
+	void initialise(const cBlock& b, const int& size, const int& rank) {
+		Size = size;
+		Rank = rank;
 		DataFileName = b.getstringvalue("DataFile");
-		fixseparator(DataFileName);		
+		fixseparator(DataFileName);
+		std::string suffix = stringvalue(Rank, ".%04d");
+		DataFileName = insert_after_filename(DataFileName, suffix);		
 	}
 
 	static bool isnetcdf(const cBlock& b) {
@@ -175,20 +182,24 @@ private:
 		else buf << std::fixed;
 	}
 
-public:
+	bool SaveDFNHeader = false;
+	bool SaveCSVHeader = false;
+	bool SaveHDRHeader = false;
 
-	std::string HeaderFileName;
-		
-	cASCIIOutputManager(const cBlock& b) {
-		cOutputManager::initialise(b);
+public:
+	
+	cASCIIOutputManager(const cBlock& b, const int& size, const int& rank) {
+		cOutputManager::initialise(b,size,rank);
 		initialise(b);
 	}
 
 	~cASCIIOutputManager() {	};
 
 	void initialise(const cBlock& b)
-	{		
-		
+	{						
+		SaveDFNHeader = b.getboolvalue("SaveDFNHeader");
+		SaveCSVHeader = b.getboolvalue("SaveCSVHeader");
+		SaveHDRHeader = b.getboolvalue("SaveHDRHeader");
 	}
 	
 	bool opendatafile(const std::string& srcfile, const size_t& subsample) {	
@@ -226,18 +237,29 @@ public:
 	};
 
 	bool end_first_record(){
-		write_headers();
+		if(Rank == 0) {
+			write_headers();
+		}
 		return true;
 	}
 
-	void write_headers(){
+	void write_headers(){		
 		sFilePathParts fpp = getfilepathparts(datafilename());
-		std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
-		OI.write_simple_header(hdrfile);
-		std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
-		OI.write_aseggdf_header(aseggdffile);
-		std::string csvfile = fpp.directory + fpp.prefix + ".csv";
-		OI.write_csv_header(csvfile);
+
+		if (SaveDFNHeader) {
+			std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
+			OI.write_aseggdf_header(aseggdffile);
+		}
+
+		if (SaveCSVHeader) {
+			std::string csvfile = fpp.directory + fpp.prefix + ".csvh";
+			OI.write_csv_header(csvfile);
+		}
+
+		if (SaveHDRHeader) {
+			std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
+			OI.write_simple_header(hdrfile);
+		}		
 	};
 		
 	bool write(const int& val, const std::shared_ptr<cOutputField> of, const int& pointindex) {		
@@ -296,8 +318,8 @@ private:
 
 public:
 
-	cNetCDFOutputManager(const cBlock& b) {
-		cOutputManager::initialise(b);
+	cNetCDFOutputManager(const cBlock& b, const int& size, const int& rank) {
+		cOutputManager::initialise(b, size, rank);
 		initialise(b);
 	}
 
@@ -305,7 +327,7 @@ public:
 
 	void initialise(const cBlock& b)
 	{						
-		glog.logmsg(0, "Opening Input DataFile %s\n", DataFileName.c_str());		
+		glog.logmsg(0, "Opening Output DataFile %s\n", DataFileName.c_str());		
 		iotype = IOType::NETCDF;		
 	}
 

@@ -171,23 +171,27 @@ public:
 		}
 		AF.openfile(DataFileName);
 
-
 		if (isdefined(HeaderFileName)) {			
-			glog.logmsg(0, "Parsing input headerFile %s\n", HeaderFileName.c_str());
+			glog.logmsg(0, "Parsing input HeaderFile %s\n", HeaderFileName.c_str());
 			std::string ext = extractfileextension(HeaderFileName);
 			if (strcasecmp(ext,".dfn")==0){
 				AF.read_dfn(HeaderFileName);
 				AF.headertype = cAsciiColumnFile::HeaderType::DFN;
 				AF.parsetype  = cAsciiColumnFile::ParseType::FIXEDWIDTH;
 			}
-			else if (strcasecmp(ext, ".csv") == 0) {
+			else if (strcasecmp(ext,".csv")==0) {
+				AF.parse_csv_header(HeaderFileName);
+				AF.headertype = cAsciiColumnFile::HeaderType::CSV;
+				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
+			}
+			else if (strcasecmp(ext,".csvh")==0) {
 				AF.parse_csv_header(HeaderFileName);
 				AF.headertype = cAsciiColumnFile::HeaderType::CSV;
 				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
 			}
 			else {
 				std::string msg = _SRC_;
-				msg += strprint("\n\tD'oh! the specified header file (%s) is not .csv or .dfn\n", HeaderFileName.c_str());
+				msg += strprint("\n\tD'oh! the specified header file (%s) is not .dfn or .csv or .csvh\n", HeaderFileName.c_str());
 				throw(std::runtime_error(msg));
 			}
 		}
@@ -206,8 +210,14 @@ public:
 	bool is_record_valid() {
 		bool status =  AF.is_record_valid();
 		if (status == false) {
-			glog.logmsg("\tSkipping non-valid record at line %zu of Input DataFile %s\n", record(), datafilename().c_str());
-			glog.logmsg("%s\n\n", recordstring().c_str());
+			std::string msg;
+			msg = strprint("Skipping non-valid record at line %zu of Input DataFile %s\n", record(), datafilename().c_str());
+			glog.logmsg(msg);
+			std::cerr << msg;
+
+			msg = strprint("%s\n", recordstring().c_str());
+			glog.logmsg(msg);
+			std::cerr << msg;
 			return false;
 		}
 		return true;

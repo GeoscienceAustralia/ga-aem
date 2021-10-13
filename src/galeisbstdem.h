@@ -329,14 +329,14 @@ class cSBSInverter{
 
 	private:
 	std::vector<size_t> Q;//indices of the data that are not culled
-
-	public:
-	
-	std::string OutputMessage;
-	cBlock Control;
+	std::string CommandLine;
 	int Size;
 	int Rank;
 	bool UsingOpenMP;
+
+	public:		
+	std::string OutputMessage;
+	cBlock Control;
 	
 	std::vector<cTDEmSystemInfo> SV;
 		
@@ -344,6 +344,7 @@ class cSBSInverter{
 	
 	std::unique_ptr<cInputManager> IM;
 	std::unique_ptr<cOutputManager> OM;
+	size_t pointsoutput = 0;
 
 	cOutputOptions OO;	
 	
@@ -448,22 +449,26 @@ class cSBSInverter{
 	size_t rx_pitchIndex;
 	size_t rx_rollIndex;
 	
-	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp)
+	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline)
 	{		
 		_GSTPUSH_
-		try {			
+		try {					
 			Size = size;
 			Rank = rank;
 			UsingOpenMP = usingopenmp;
+			CommandLine = commandline;
 			initialise(controlfile);			
 		}
 		catch (const std::string& msg) {
-			glog.logmsg(msg);
+			std::cerr << msg;
+			glog.logmsg(msg);			
 		}
 		catch (const std::runtime_error& e) {
+			std::cerr << e.what();
 			glog.logmsg(std::string(e.what()));
 		}
 		catch (const std::exception& e) {
+			std::cerr << e.what();
 			glog.logmsg(std::string(e.what()));
 		}		
 	};
@@ -472,37 +477,6 @@ class cSBSInverter{
 	{				
 		glog.close();
 	};
-
-	int go()
-	{
-		_GSTITEM_
-		int job = 0;
-		while (IM->readnextrecord()) {
-			job++;
-			if (((job - 1) % Size) != Rank) continue;
-			bool valid = IM->is_record_valid();
-			if (valid == false) continue;
-
-			if (OO.Dump) {
-				FILE* fp = fileopen(dumppath() + "record.dat", "w");
-				fprintf(fp, "Record\t%zu", IM->record());
-				fclose(fp);				
-			}
-			
-			double t1 = gettime();
-			if (invert()) {
-				double t2 = gettime();
-				double etime = t2 - t1;
-				writeresult(job-1);
-				glog.logmsg("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str(), OutputMessage.c_str());
-			}
-			else {
-				glog.logmsg("Rec %6zu  Skipping %s\n", 1 + IM->record(), OutputMessage.c_str());
-			}
-		}
-		glog.close();
-		return 0;
-	}
 
 	void initialise(const std::string& controlfile)
 	{
@@ -519,7 +493,8 @@ class cSBSInverter{
 		glog.logmsg(0, "Loading control file %s\n", filename.c_str());
 		Control = cBlock(filename);
 		OO = cOutputOptions(Control.findblock("Output"));
-		std::string suffix = stringvalue(Rank, ".%04d");		
+		std::string suffix = stringvalue(Rank, ".%04d");				
+		OO.LogFile = insert_after_filename(OO.LogFile,suffix);
 		openlogfile(); //load this first to get outputlogfile opened
 
 		//Load control file
@@ -543,25 +518,72 @@ class cSBSInverter{
 			#if !defined HAVE_NETCDF
 			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
 			#endif			
-			OM = std::make_unique<cNetCDFOutputManager>(ob);			
+			OM = std::make_unique<cNetCDFOutputManager>(ob,Size,Rank);			
 		}
 		else {
-			OM = std::make_unique<cASCIIOutputManager>(ob);
+			OM = std::make_unique<cASCIIOutputManager>(ob,Size,Rank);
 		}				
 		OM->opendatafile(IM->datafilename(), IM->subsamplerate());		
 	}
 
 	void openlogfile()
-	{
+	{		
 		glog.logmsg(0, "Opening log file %s\n", OO.LogFile.c_str());
 		glog.open(OO.LogFile);
-		glog.logmsg(0, "Control file %s\n", Control.Filename.c_str());
-		glog.logmsg(0, "Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
+		glog.logmsg(0, "%s\n", CommandLine.c_str());
+		glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());				
 		glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
-		glog.logmsg(0, "Processes=%d\tRank=%d\n", Size, Rank);
+		if (UsingOpenMP && Size > 1) {
+			glog.logmsg(0, "Using OpenMP threading Processes=%d\tRank=%d\n", Size, Rank);
+		}
+		else if (Size>1) {
+			glog.logmsg(0, "Using MPI Processes=%d\tRank=%d\n", Size, Rank);
+		}
+		else {
+			glog.logmsg(0, "Standalone Processes=%d\tRank=%d\n", Size, Rank);
+		}
+
+		glog.logmsg(0, "Control file %s\n", Control.Filename.c_str());
 		glog.log(Control.get_as_string());
 		glog.flush();
 	}
+
+	int go()
+	{
+		_GSTITEM_
+			int job = 0;
+		while (IM->readnextrecord()) {
+			job++;
+			if (((job - 1) % Size) != Rank) continue;
+			bool valid = IM->is_record_valid();
+			if (valid == false) continue;
+
+			if (OO.Dump) {
+				FILE* fp = fileopen(dumppath() + "record.dat", "w");
+				fprintf(fp, "Record\t%zu", IM->record());
+				fclose(fp);
+			}
+
+			double t1 = gettime();
+			if (invert()) {
+				double t2 = gettime();
+				double etime = t2 - t1;
+				writeresult(job - 1);
+				std::string msg = strprint("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str(), OutputMessage.c_str());
+				glog.logmsg(msg);
+				if (OutputMessage.size() > 0) {
+					std::cerr << msg;
+				}
+			}
+			else {
+				std::string msg = strprint("Rec %6zu  Skipping %s\n", 1 + IM->record(), OutputMessage.c_str());
+				glog.logmsg(msg);
+				std::cerr << msg;
+			}
+			}
+		glog.close();
+		return 0;
+		}
 
 	void parseoptions()
 	{
@@ -965,10 +987,10 @@ class cSBSInverter{
 			if (Err[i] == 0.0) nzeroerr++;
 		}
 		if (nzeroerr > 0) {			
-			OutputMessage += strprint(", Skipped %d noise values were 0.0", nzeroerr);
+			OutputMessage += strprint(", Skipped %d noise values were 0.0", nzeroerr);			
 			return false;
 		}
-
+		
 		if (OO.Dump) {
 			write(Obs, dumppath()+"observed.dat");
 			write(Err, dumppath()+"observed_std.dat");
@@ -2301,8 +2323,11 @@ class cSBSInverter{
 		OM->writefield(pi, LastIteration, "Iterations", "Number of iterations", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 4, 0);
 				
 		//End of record book keeping
-		OM->end_point_output();
-		static int dummy = OM->end_first_record();//only do this once
+		OM->end_point_output();		
+		if (pointsoutput == 0) {			
+			OM->end_first_record();//only do this once		
+		}
+		pointsoutput++;
 	};
 
 	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
