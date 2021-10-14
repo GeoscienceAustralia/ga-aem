@@ -37,7 +37,7 @@ class cOutputField {
 		std::string ncdimname;//dimension names		
 		char notation = 0;//ascii notation form I, F, E
 		size_t width = 0 ;//ascii width
-		size_t precision = 0;//ascii numver of decimals places
+		size_t precision = 0;//ascii number of decimals places
 				
 		cOutputField(			
 			const std::string& _name,//name
@@ -48,7 +48,7 @@ class cOutputField {
 			const std::string& _ncdimname,//dimension names		
 			const char& _notation,//ascii notation I, F, E
 			const size_t& _width,//ascii width
-			const size_t& _precision//ascii numver of decimals places			
+			const size_t& _precision//ascii number of decimals places			
 			)
 		{					
 			name = _name;
@@ -66,8 +66,10 @@ class cOutputField {
 };
 
 class cOutputManager {
-
+		
 public:
+	int Size = 1;
+	int Rank = 0;
 	enum class IOType { ASCII, NETCDF, NONE };
 
 protected:		
@@ -76,17 +78,18 @@ protected:
 	std::list<cOutputField> flist;
 
 public:
+	
 	cOutputManager() {};
 
 	virtual ~cOutputManager() {};
 
-	void initialise(const cBlock& b) {		
+	void initialise(const cBlock& b, const int& size, const int& rank) {
+		Size = size;
+		Rank = rank;
 		DataFileName = b.getstringvalue("DataFile");
 		fixseparator(DataFileName);
-		//LogFileName = b.getstringvalue("LogFile");
-		//fixseparator(DataFileName);
-		//Subsample = b.getsizetvalue("Subsample");
-		//if (!isdefined(Subsample)) { Subsample = 1; }
+		std::string suffix = stringvalue(Rank, ".%04d");
+		DataFileName = insert_after_filename(DataFileName, suffix);		
 	}
 
 	static bool isnetcdf(const cBlock& b) {
@@ -120,9 +123,9 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii numver of decimals places			
+		const size_t& _precision//ascii number of decimals places			
 	) = 0;
 
 	template <typename T> 
@@ -135,14 +138,14 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E, A
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii numver of decimals places					
+		const size_t& _precision//ascii number of decimals places					
 	) 
 	{
 		std::shared_ptr<cOutputField> f = getfield(_name);
 		if (!f) {
-			f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
+			f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
 		}
 		write(vals, f, pointindex);
 		return true;
@@ -179,20 +182,24 @@ private:
 		else buf << std::fixed;
 	}
 
-public:
+	bool SaveDFNHeader = false;
+	bool SaveCSVHeader = false;
+	bool SaveHDRHeader = false;
 
-	std::string HeaderFileName;
-		
-	cASCIIOutputManager(const cBlock& b) {
-		cOutputManager::initialise(b);
+public:
+	
+	cASCIIOutputManager(const cBlock& b, const int& size, const int& rank) {
+		cOutputManager::initialise(b,size,rank);
 		initialise(b);
 	}
 
 	~cASCIIOutputManager() {	};
 
 	void initialise(const cBlock& b)
-	{		
-		
+	{						
+		SaveDFNHeader = b.getboolvalue("SaveDFNHeader");
+		SaveCSVHeader = b.getboolvalue("SaveCSVHeader");
+		SaveHDRHeader = b.getboolvalue("SaveHDRHeader");
 	}
 	
 	bool opendatafile(const std::string& srcfile, const size_t& subsample) {	
@@ -208,12 +215,12 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
 		const size_t& _precision//ascii number of decimals places			
 	) {
-		std::shared_ptr<cOutputField> f = std::make_shared<cOutputField>(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
-		OI.addfield(_name, _notation, _width, _precision, _bands);
+		std::shared_ptr<cOutputField> f = std::make_shared<cOutputField>(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
+		OI.addfield(_name, _fmtchar, _width, _precision, _bands);
 		OI.setunits(_units);
 		OI.setdescription(_description);
 		return f;
@@ -230,16 +237,29 @@ public:
 	};
 
 	bool end_first_record(){
-		write_headers();
+		if(Rank == 0) {
+			write_headers();
+		}
 		return true;
 	}
 
-	void write_headers(){
+	void write_headers(){		
 		sFilePathParts fpp = getfilepathparts(datafilename());
-		std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
-		OI.write_simple_header(hdrfile);
-		std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
-		OI.write_aseggdf_header(aseggdffile);
+
+		if (SaveDFNHeader) {
+			std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
+			OI.write_aseggdf_header(aseggdffile);
+		}
+
+		if (SaveCSVHeader) {
+			std::string csvfile = fpp.directory + fpp.prefix + ".csvh";
+			OI.write_csv_header(csvfile);
+		}
+
+		if (SaveHDRHeader) {
+			std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
+			OI.write_simple_header(hdrfile);
+		}		
 	};
 		
 	bool write(const int& val, const std::shared_ptr<cOutputField> of, const int& pointindex) {		
@@ -298,8 +318,8 @@ private:
 
 public:
 
-	cNetCDFOutputManager(const cBlock& b) {
-		cOutputManager::initialise(b);
+	cNetCDFOutputManager(const cBlock& b, const int& size, const int& rank) {
+		cOutputManager::initialise(b, size, rank);
 		initialise(b);
 	}
 
@@ -307,7 +327,7 @@ public:
 
 	void initialise(const cBlock& b)
 	{						
-		glog.logmsg(0, "Opening Input DataFile %s\n", DataFileName.c_str());		
+		glog.logmsg(0, "Opening Output DataFile %s\n", DataFileName.c_str());		
 		iotype = IOType::NETCDF;		
 	}
 
@@ -345,13 +365,13 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii numver of decimals places			
+		const size_t& _precision//ascii number of decimals places			
 	) {	
 		std::shared_ptr<cOutputField> of = getfield(_name);
 		if (!of) {
-			flist.push_back(cOutputField(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision));
+			flist.push_back(cOutputField(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision));
 			addvar(flist.back());
 			of = std::make_shared<cOutputField>(flist.back());			
 		}		
@@ -365,15 +385,15 @@ public:
 		const size_t& _bands,//number of bands
 		const nc_type& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
-		const char& _notation,//ascii form I, F, E
+		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision,//ascii numver of decimals places			
-		const int& pointindex,//
-		const size_t& vals//ascii numver of decimals places			
+		const size_t& _precision,//ascii number of decimals places			
+		const int& pointindex,
+		const size_t& vals
 	) {
 		std::shared_ptr<cOutputField> of = getfield(_name);		
 		if (!of) {
-			of = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _notation, _width, _precision);
+			of = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
 		}
 		write(of, pointindex, vals);
 		return true;

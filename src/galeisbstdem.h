@@ -348,11 +348,10 @@ class cSBSInverter{
 	
 	std::unique_ptr<cInputManager> IM;
 	std::unique_ptr<cOutputManager> OM;
+	size_t pointsoutput = 0;
 
 	cOutputOptions OO;
-	//FILE* ofp = (FILE*)NULL;
-	//size_t Outputrecord; //output record number
-	
+		
 	//Column definitions
 	cFieldDefinition sn, dn, fn, ln, fidn;
 	cFieldDefinition xord, yord, elevation;	
@@ -526,8 +525,8 @@ class cSBSInverter{
 		Control = cBlock(filename);
 		OO = cOutputOptions(Control.findblock("Output"));
 		std::string suffix = stringvalue(Rank, ".%04d");
-		//OM->Logfile  = insert_after_filename(OO->Logfile, suffix);
-		//OM->DataFile = insert_after_filename(OO->DataFile, suffix);
+		OO.LogFile  = insert_after_filename(OO.LogFile, suffix);
+		//OM->Dat>DataFileName = insert_after_filename(OO->DataFile, suffix);
 		openlogfile(); //load this first to get outputlogfile opened
 
 		//Load control file
@@ -551,10 +550,10 @@ class cSBSInverter{
 			#if !defined HAVE_NETCDF
 			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
 			#endif			
-			OM = std::make_unique<cNetCDFOutputManager>(ob);			
+			OM = std::make_unique<cNetCDFOutputManager>(ob,Size,Rank);			
 		}
 		else {
-			OM = std::make_unique<cASCIIOutputManager>(ob);
+			OM = std::make_unique<cASCIIOutputManager>(ob,Size,Rank);
 		}
 		
 		std::string s = OM->datafilename();
@@ -2230,9 +2229,12 @@ class cSBSInverter{
 		OM->writefield(pi, LastLambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);		
 		OM->writefield(pi, LastIteration, "Iterations", "Number of iterations", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 4, 0);
 				
-		//End of record book keeping
 		OM->end_point_output();
-		static int dummy = OM->end_first_record();//only do this once
+		//End of record book keeping
+		if (pointsoutput == 0) {
+			OM->end_first_record();//only do this once		
+		}
+		pointsoutput++;		
 	};
 
 	std::vector<double> copy(const VectorDouble& d) const {

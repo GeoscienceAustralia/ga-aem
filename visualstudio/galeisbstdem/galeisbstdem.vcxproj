@@ -107,8 +107,8 @@
     <ClInclude Include="..\..\src\gaaem_version.h" />
     <ClInclude Include="..\..\src\galeisbstdem.h" />
     <ClInclude Include="..\..\src\inputmanager.h" />
-    <ClInclude Include="..\..\src\large_loop.h" />
     <ClInclude Include="..\..\src\lem.h" />
+    <ClInclude Include="..\..\src\outputmanager.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\asciicolumnfile.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
