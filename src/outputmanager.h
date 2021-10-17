@@ -182,9 +182,9 @@ private:
 		else buf << std::fixed;
 	}
 
-	bool SaveDFNHeader = false;
-	bool SaveCSVHeader = false;
-	bool SaveHDRHeader = false;
+	bool SaveDFNHeader = true;
+	bool SaveCSVHeader = true;
+	bool SaveHDRHeader = true;
 
 public:
 	
@@ -196,10 +196,19 @@ public:
 	~cASCIIOutputManager() {	};
 
 	void initialise(const cBlock& b)
-	{						
-		SaveDFNHeader = b.getboolvalue("SaveDFNHeader");
-		SaveCSVHeader = b.getboolvalue("SaveCSVHeader");
-		SaveHDRHeader = b.getboolvalue("SaveHDRHeader");
+	{								
+		bool status;
+		if (b.getvalue("SaveDFNHeader", status)) {
+			SaveDFNHeader = status;
+		};
+
+		if (b.getvalue("SaveCSVHeader", status)) {
+			SaveCSVHeader = status;
+		};
+
+		if (b.getvalue("SaveHDRHeader", status)) {
+			SaveHDRHeader = status;
+		};
 	}
 	
 	bool opendatafile(const std::string& srcfile, const size_t& subsample) {	
