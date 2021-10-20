@@ -106,7 +106,6 @@
     <ClInclude Include="..\..\src\gaaem_version.h" />
     <ClInclude Include="..\..\src\galeisbstdem.h" />
     <ClInclude Include="..\..\src\inputmanager.h" />
-    <ClInclude Include="..\..\src\large_loop.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\outputmanager.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />

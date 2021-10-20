@@ -130,13 +130,14 @@ class cTrialCache{
 	void print(const double& lambda, const double& phid)
 	{
 		sort_lambda();
-		printf("\n");
-		printf("CurrentLambda = %lf CurrentPhid = %lf    Target = %lf\n", lambda, phid, target);
-		printf("N    Stepfactor       Lambda          Phid\n");
+		std::string msg = "\n";
+		msg += strprint("CurrentLambda = %lf CurrentPhid = %lf    Target = %lf\n", lambda, phid, target);
+		msg += strprint("N    Stepfactor       Lambda          Phid\n");
 		for (size_t i = 0; i < trial.size(); i++) {
-			printf("%2zu %12g %12g %12g\n", trial[i].order, trial[i].stepfactor, trial[i].lambda, trial[i].phid);
-		}
-		printf("\n");
+			msg += strprint("%2zu %12g %12g %12g\n", trial[i].order, trial[i].stepfactor, trial[i].lambda, trial[i].phid);
+		}		
+		//std::cout << msg << std::endl;
+		std::cerr << msg << std::endl;
 	}
 };
 
@@ -327,12 +328,22 @@ public:
 
 class cSBSInverter{
 
-	private:
-	std::vector<size_t> Q;//indices of the data that are not culled
+	private:	
 	std::string CommandLine;
 	int Size;
 	int Rank;
 	bool UsingOpenMP;
+	std::vector<size_t> ActiveData;//indices of the data that are not culled
+	bool Verbose = false;
+
+	inline static bool isnull(const double& val) {
+		//if (val == 29322580645161.28516) return true;
+		//else if (val == 293196483870967808.00000) return true;		
+		if (val > 1e14) return true;
+		else if (val < -1e14) return true;
+		else if (isdefined(val)) return false;
+		else return true;
+	}
 
 	public:		
 	std::string OutputMessage;
@@ -391,7 +402,9 @@ class cSBSInverter{
 	
 	double AlphaC;
 	double AlphaT;
-	double AlphaG;
+	double AlphaG;	
+	int    BeginGeometrySolveIteration;
+
 	double AlphaS;
 	eSmoothnessMethod SmoothnessMethod;
 	eNormType  NormType;
@@ -402,25 +415,25 @@ class cSBSInverter{
 	size_t nlayers;	
 	size_t ngeomparam;	
 	
-	VectorDouble Obs;
-	VectorDouble Err;
-	VectorDouble Pred;
+	Vector Obs;
+	Vector Err;
+	Vector Pred;
 
-	VectorDouble Param;
-	VectorDouble RefParam;
-	VectorDouble RefParamStd;
+	Vector Param;
+	Vector RefParam;
+	Vector RefParamStd;
 
-	VectorDouble ParameterSensitivity;
-	VectorDouble ParameterUncertainty;
+	Vector ParameterSensitivity;
+	Vector ParameterUncertainty;
 	
-	MatrixDouble J;		
-	MatrixDouble Wd;
-	MatrixDouble Wc;
-	MatrixDouble Wt;
-	MatrixDouble Wg;
-	MatrixDouble Wr;	
-	MatrixDouble Ws;
-	MatrixDouble Wm;
+	Matrix J;		
+	Matrix Wd;
+	Matrix Wc;
+	Matrix Wt;
+	Matrix Wg;
+	Matrix Wr;	
+	Matrix Ws;
+	Matrix Wm;
 		
 	double MinimumPhiD;//overall	
 	double MinimumImprovement;//			
@@ -436,7 +449,7 @@ class cSBSInverter{
 	double LastPhiG;
 	double LastPhiS;
 	double LastLambda;
-	size_t LastIteration;
+	size_t LastIteration=0;
 	
 	
 	size_t cIndex;//Conductivty parameters start index
@@ -491,12 +504,16 @@ class cSBSInverter{
 	void loadcontrolfile(const std::string& filename)
 	{
 		glog.logmsg(0, "Loading control file %s\n", filename.c_str());
-		Control = cBlock(filename);
-		OO = cOutputOptions(Control.findblock("Output"));
+		Control = cBlock(filename);		
+		cBlock ob = Control.findblock("Output");
+
+		OO = cOutputOptions(ob);
+		Verbose = ob.getboolvalue("verbose");
+
 		std::string suffix = stringvalue(Rank, ".%04d");				
 		OO.LogFile = insert_after_filename(OO.LogFile,suffix);
 		openlogfile(); //load this first to get outputlogfile opened
-
+		
 		//Load control file
 		parseoptions();
 		initialisesystems();
@@ -512,8 +529,7 @@ class cSBSInverter{
 		else {			
 			IM = std::make_unique<cASCIIInputManager>(ib);
 		}
-
-		cBlock ob = Control.findblock("Output");
+		
 		if (cOutputManager::isnetcdf(ob)){
 			#if !defined HAVE_NETCDF
 			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
@@ -551,7 +567,7 @@ class cSBSInverter{
 	int go()
 	{
 		_GSTITEM_
-			int job = 0;
+		int job = 0;
 		while (IM->readnextrecord()) {
 			job++;
 			if (((job - 1) % Size) != Rank) continue;
@@ -604,9 +620,13 @@ class cSBSInverter{
 
 		AlphaC = b.getdoublevalue("AlphaConductivity");
 		AlphaT = b.getdoublevalue("AlphaThickness");
-		AlphaG = b.getdoublevalue("AlphaGeometry");
+		AlphaG = b.getdoublevalue("AlphaGeometry");		
 		AlphaS = b.getdoublevalue("AlphaSmoothness");
-
+		
+		BeginGeometrySolveIteration = b.getintvalue("BeginGeometrySolveIteration");						
+		if (!isdefined(BeginGeometrySolveIteration)) {
+			BeginGeometrySolveIteration = 0;
+		}
 
 		NormType = eNormType::L2;//default
 		std::string nt = b.getstringvalue("NormType");
@@ -861,33 +881,17 @@ class cSBSInverter{
 		S.CompInfo[2].readdata(IM);
 	}
 
-	bool initialise_sample()
-	{
+	bool initialise_sample(){
 		LastIteration = 0;
 		LastLambda = 1e8;
-
 		bool status = initialise_data();
 		if (status == false) return false;
-
 		initialise_parameters();		
 		initialise_Wd();
-		initialise_Wc();
-		initialise_Wt();
-		initialise_Wg();
-
-		if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_1ST) {
-			initialise_L_Ws_1st_derivative();
-		}
-		else if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_2ND) {
-			initialise_L_Ws_2nd_derivative();
-		}
-
-		initialise_Wr_Wm();
-
+		initialise_Wm();
 		Param = RefParam;
 		LastPhiM = phiModel(Param, LastPhiC, LastPhiT, LastPhiG, LastPhiS);
 		TerminationReason = "Has not terminated";
-
 		if (OO.Dump) {
 			const std::string dp = dumppath();
 			GR.write(dp+"geometry_start.dat");
@@ -906,8 +910,7 @@ class cSBSInverter{
 		return true;
 	}
 
-	bool initialise_data()
-	{
+	bool initialise_data(){
 		std::vector<double> obs(ndata_all);
 		std::vector<double> err(ndata_all);
 		std::vector<double> pred(ndata_all);
@@ -968,11 +971,11 @@ class cSBSInverter{
 		}
 		
 		//Work out indices to be culled				
-		Q.clear();
+		ActiveData.clear();
 		for (size_t i = 0; i < ndata_all; i++){
-			if(!isnull(obs[i])  && !isnull(err[i])) Q.push_back(i);			
+			if(!isnull(obs[i])  && !isnull(err[i])) ActiveData.push_back(i);			
 		}
-		ndata_inv = Q.size();
+		ndata_inv = ActiveData.size();
 
 		if (ndata_inv != ndata_all) {
 			size_t ncull = ndata_all - ndata_inv;
@@ -981,9 +984,9 @@ class cSBSInverter{
 		Err = cull(err);
 		Obs = cull(obs);
 
-		//Check for zero err values		
+		//Check for zero Error values		
 		int nzeroerr = 0;
-		for (size_t i = 0; i < Err.size(); i++) {
+		for (size_t i = 0; i < ndata_inv; i++) {
 			if (Err[i] == 0.0) nzeroerr++;
 		}
 		if (nzeroerr > 0) {			
@@ -997,18 +1000,8 @@ class cSBSInverter{
 		}
 		return true;
 	}
-
-	inline bool isnull(const double& val) {
-		//if (val == 29322580645161.28516) return true;
-		//else if (val == 293196483870967808.00000) return true;		
-		if (val >  1e14) return true;
-		else if (val < -1e14) return true;
-		else if (isdefined(val)) return false;		
-		else return true;				
-	}
-	
-	void initialise_parameters()
-	{
+		
+	void initialise_parameters(){
 		if (solve_conductivity) {
 			for (size_t i = 0; i < nlayers; i++) {
 				RefParam[i + cIndex] = log10(ER.conductivity[i]);
@@ -1053,19 +1046,17 @@ class cSBSInverter{
 
 	}
 
-	void initialise_Wd()
-	{		
-		Wd = MatrixDouble::Zero(ndata_inv, ndata_inv);		
+	void initialise_Wd() {
+		Wd = Matrix::Zero(ndata_inv, ndata_inv);
 		double s = 1.0 / (double)ndata_inv;
 		for (size_t i = 0; i < ndata_inv; i++) {
-			Wd(i,i) = s / (Err[i] * Err[i]);
-		}		
+			Wd(i, i) = s / (Err[i] * Err[i]);
+		}
 		if (OO.Dump) writetofile(Wd, dumppath() + "Wd.dat");
 	}
 
-	void initialise_Wc()
-	{
-		Wc = MatrixDouble::Zero(nparam, nparam);		
+	void initialise_Wc(){
+		Wc = Matrix::Zero(nparam, nparam);		
 		if (solve_conductivity == false)return;
 
 		std::vector<double> t(nlayers);
@@ -1095,9 +1086,8 @@ class cSBSInverter{
 		}
 	}
 
-	void initialise_Wt()
-	{
-		Wt = MatrixDouble::Zero(nparam, nparam);
+	void initialise_Wt(){
+		Wt = Matrix::Zero(nparam, nparam);
 		if (solve_thickness == false)return;
 
 		double s = AlphaT / (double)(nlayers - 1);
@@ -1108,9 +1098,8 @@ class cSBSInverter{
 
 	}
 
-	void initialise_Wg()
-	{
-		Wg = MatrixDouble::Zero(nparam, nparam);
+	void initialise_Wg(){		
+		Wg = Matrix::Zero(nparam, nparam);
 		if (ngeomparam <= 0)return;
 
 		double s = AlphaG / (double)ngeomparam;
@@ -1122,7 +1111,7 @@ class cSBSInverter{
 
 	void initialise_L_Ws_1st_derivative()
 	{
-		Ws = MatrixDouble::Zero(nparam, nparam);
+		Ws = Matrix::Zero(nparam, nparam);
 		if (AlphaS == 0 || nlayers < 3) return;
 		if (solve_conductivity == false) return;
 
@@ -1137,7 +1126,7 @@ class cSBSInverter{
 		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
 		double tavg = tsum / (double)nlayers;
 
-		MatrixDouble L = MatrixDouble::Zero(nlayers - 1, nparam);
+		Matrix L = Matrix::Zero(nlayers - 1, nparam);
 		size_t neqn = 0;
 		for (size_t li = 1; li < nlayers; li++) {
 			size_t pindex = cIndex + li;
@@ -1155,7 +1144,7 @@ class cSBSInverter{
 
 	void initialise_L_Ws_2nd_derivative()
 	{
-		Ws = MatrixDouble::Zero(nparam, nparam);
+		Ws = Matrix::Zero(nparam, nparam);
 		if (AlphaS == 0 || nlayers < 3) return;
 		if (solve_conductivity == false) return;
 
@@ -1174,7 +1163,7 @@ class cSBSInverter{
 		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
 		double tavg = tsum / (double)nlayers;
 
-		MatrixDouble L = MatrixDouble::Zero(nlayers - 2, nparam);
+		Matrix L = Matrix::Zero(nlayers - 2, nparam);
 		size_t neqn = 0;
 		for (size_t li = 1; li < nlayers - 1; li++) {
 			size_t pindex = cIndex + li;
@@ -1193,15 +1182,33 @@ class cSBSInverter{
 		Ws *= (AlphaS / (double)(nlayers - 2));
 	}
 
-	void initialise_Wr_Wm()
-	{
-		Wr = MatrixDouble::Zero(nparam, nparam);
+	void initialise_Wr(){
+		initialise_Wc();
+		initialise_Wt();
+		initialise_Wg();
+		Wr = Matrix::Zero(nparam, nparam);
 		if (AlphaC > 0.0) Wr += Wc;
 		if (AlphaT > 0.0) Wr += Wt;
 		if (AlphaG > 0.0) Wr += Wg;
+	}
 
+	void initialise_Ws() {
+		if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_1ST) {
+			initialise_L_Ws_1st_derivative();
+		}
+		else if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_2ND) {
+			initialise_L_Ws_2nd_derivative();
+		}
+	}
+
+	void initialise_Wm(){		
+		initialise_Ws();
+		initialise_Wr();		
 		Wm = Wr + Ws;
+		dump_W_matrices();		
+	}
 
+	void dump_W_matrices(){		
 		if (OO.Dump) {
 			writetofile(Wc, dumppath() + "Wc.dat");
 			writetofile(Wt, dumppath() + "Wt.dat");
@@ -1210,13 +1217,12 @@ class cSBSInverter{
 			writetofile(Ws, dumppath() + "Ws.dat");
 			writetofile(Wm, dumppath() + "Wm.dat");
 		}
-
 	}
-
-	VectorDouble parameterchange(const double lambda)
+	
+	Vector parameterchange(const double lambda)
 	{
-		VectorDouble x  = solve(lambda);
-		VectorDouble dm = x - Param;
+		Vector x  = solve(lambda);
+		Vector dm = x - Param;
 
 		if (solve_conductivity) {
 			for (size_t li = 0; li < nlayers; li++) {
@@ -1267,7 +1273,7 @@ class cSBSInverter{
 		return dm;
 	}
 
-	VectorDouble solve(const double lambda)
+	Vector solve(const double lambda)
 	{
 		// Phi = (d-g(m)+Jm) Wd (d-g(m)+Jm) + lambda ( (m-m0)' Wr (m-m0) + m' Ws m) )
 		//Ax = b
@@ -1276,14 +1282,14 @@ class cSBSInverter{
 		//b = J'Wd(d - g(m) + Jm) + lambda*Wr*m0
 		//dm = m(n+1) - m = x - m
 
-		const VectorDouble& m = Param;
-		const VectorDouble& d = Obs;
-		const VectorDouble& g = Pred;
-		const VectorDouble& e = Err;
-		const VectorDouble& m0 = RefParam;
+		const Vector& m = Param;
+		const Vector& d = Obs;
+		const Vector& g = Pred;
+		const Vector& e = Err;
+		const Vector& m0 = RefParam;
 
 
-		MatrixDouble V = Wd;
+		Matrix V = Wd;
 		if (NormType == eNormType::L2) {
 
 		}
@@ -1294,16 +1300,16 @@ class cSBSInverter{
 			}
 		}
 
-		MatrixDouble JtV = J.transpose() * V;
-		MatrixDouble JtVJ = JtV * J;
+		Matrix JtV = J.transpose() * V;
+		Matrix JtVJ = JtV * J;
 
-		VectorDouble b = JtV * (d - g + J * m) + lambda * (Wr * m0);
-		MatrixDouble A = JtVJ + lambda * Wm;
-		VectorDouble x = pseudoInverse(A)*b;
+		Vector b = JtV * (d - g + J * m) + lambda * (Wr * m0);
+		Matrix A = JtVJ + lambda * Wm;
+		Vector x = pseudoInverse(A)*b;
 		return x;
 	}
 
-	double l1_norm(const VectorDouble& g)
+	double l1_norm(const Vector& g)
 	{
 		double l1 = 0.0;
 		for (size_t i = 0; i < ndata_inv; i++) {
@@ -1312,15 +1318,15 @@ class cSBSInverter{
 		return l1 / ndata_inv;
 	}
 
-	double l2_norm(const VectorDouble& g)
+	double l2_norm(const Vector& g)
 	{
-		VectorDouble v = Obs - g;
-		VectorDouble a = Wd * v;
+		Vector v = Obs - g;
+		Vector a = Wd * v;
 		double l2 = mtDm(v, Wd);
 		return l2;
 	}
 
-	double phiData(const VectorDouble& g)
+	double phiData(const Vector& g)
 	{
 		double phid;
 		if (NormType == eNormType::L1) {
@@ -1331,19 +1337,21 @@ class cSBSInverter{
 		}
 		//This reports invalid models 
 		if (phid < 0.0) {
-			phid = 1e9;
-			glog.warningmsg(_SRC_, "Caught invalid PhiD\n");
+			phid = 1e9;			
+			std::string msg = strprint("Caught invalid PhiD\n");
+			glog.logmsg(msg);
+			std::cerr << msg << std::endl;
 		}
 		return phid;
 	}
 
-	double phiModel(const VectorDouble& p)
+	double phiModel(const Vector& p)
 	{
 		double phic, phit, phig, phis;
 		return phiModel(p, phic, phit, phig, phis);
 	}
 
-	double phiModel(const VectorDouble& p, double& phic, double& phit, double& phig, double& phis)
+	double phiModel(const Vector& p, double& phic, double& phit, double& phig, double& phis)
 	{
 		phic = phiC(p);
 		phit = phiT(p);
@@ -1354,37 +1362,37 @@ class cSBSInverter{
 		return v;
 	}
 
-	double phiC(const VectorDouble& p)
+	double phiC(const Vector& p)
 	{
 		if (AlphaC == 0.0)return 0.0;
 		if (solve_conductivity == false)return 0.0;
-		VectorDouble v = p - RefParam;
+		Vector v = p - RefParam;
 		return mtDm(v, Wc);
 	}
 
-	double phiT(const VectorDouble& p)
+	double phiT(const Vector& p)
 	{
 		if (AlphaT == 0.0)return 0.0;
 		if (solve_thickness == false)return 0.0;
-		VectorDouble v = p - RefParam;
+		Vector v = p - RefParam;
 		return mtDm(v, Wt);
 	}
 
-	double phiG(const VectorDouble& p)
+	double phiG(const Vector& p)
 	{
 		if (AlphaG == 0.0)return 0.0;
 		if (ngeomparam == 0)return 0.0;
-		VectorDouble v = p - RefParam;
+		Vector v = p - RefParam;
 		return mtDm(v, Wg);
 	}
 
-	double phiS(const VectorDouble& p)
+	double phiS(const Vector& p)
 	{
 		if (AlphaS == 0)return 0.0;
 		else return mtAm(p, Ws);
 	}
 
-	cEarth1D get_earth(const VectorDouble& parameters)
+	cEarth1D get_earth(const Vector& parameters)
 	{
 		cEarth1D e = ER;
 		if (solve_conductivity) {
@@ -1401,7 +1409,7 @@ class cSBSInverter{
 		return e;
 	}
 
-	cTDEmGeometry get_geometry(const VectorDouble& parameters)
+	cTDEmGeometry get_geometry(const Vector& parameters)
 	{
 		cTDEmGeometry g = GI;
 		if (solve_tx_height)g.tx_height = parameters[tx_heightIndex];
@@ -1429,43 +1437,46 @@ class cSBSInverter{
 		}
 	}
 
-	VectorDouble cull(const VectorDouble& vall) const {
-		assert(Q.size() == ndata_inv);
+	Vector cull(const Vector& vall) const {
+		assert(ActiveData.size() == ndata_inv);
 		assert(vall.size() == ndata_all);
-		VectorDouble vinv(ndata_inv);
+		Vector vinv(ndata_inv);
 		for (size_t i = 0; i < ndata_inv; i++) {
-			vinv[i] = vall[Q[i]];
+			vinv[i] = vall[ActiveData[i]];
 		}
 		return vinv;
 	}
 
-	VectorDouble cull(const std::vector<double>& vall) const {
-		assert(Q.size() == ndata_inv);
+	Vector cull(const std::vector<double>& vall) const {
+		assert(ActiveData.size() == ndata_inv);
 		assert(vall.size() == ndata_all);
-		VectorDouble vinv(ndata_inv);
+		Vector vinv(ndata_inv);
 		for (size_t i = 0; i < ndata_inv; i++) {
-			vinv[i] = vall[Q[i]];
+			vinv[i] = vall[ActiveData[i]];
 		}
 		return vinv;
 	}
 
-	MatrixDouble cull(const MatrixDouble& mall) const {
-		assert(Q.size() == ndata_inv);
+	Matrix cull(const Matrix& mall) const {
+		assert(ActiveData.size() == ndata_inv);
 		assert(mall.rows() == ndata_all);
 		assert(mall.cols() == nparam);		
-		MatrixDouble minv(ndata_inv, nparam);
+		Matrix minv(ndata_inv, nparam);
 		for (size_t i = 0; i < ndata_inv; i++) {
-			minv.row(i) = mall.row(Q[i]);
+			minv.row(i) = mall.row(ActiveData[i]);
 		}
 		return minv;
 	}
 
-
-	void forwardmodel(const VectorDouble& parameters, VectorDouble& predicted, bool computederivatives)
+	void forwardmodel(const Vector& parameters, Vector& predicted, bool computederivatives)
 	{
-		VectorDouble pred(ndata_all);
-		MatrixDouble M;
-		if(computederivatives)M.resize(ndata_all, nparam);
+		Vector pred(ndata_all);
+		Matrix M;
+		if (computederivatives) {
+			//bookmark;
+			M.resize(ndata_all, nparam);
+			M.setZero();
+		}
 
 		cEarth1D      e = get_earth(parameters);
 		cTDEmGeometry g = get_geometry(parameters);
@@ -1549,60 +1560,66 @@ class cSBSInverter{
 						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 				}
+				
+				if (LastIteration + 1 >= BeginGeometrySolveIteration) {
+					if (solve_tx_height) {
+						size_t pindex = tx_heightIndex;
+						T.LEM.calculation_type = CT_HDERIVATIVE;
+						T.LEM.derivative_layer = INT_MAX;
+						T.setprimaryfields();
+						T.setsecondaryfields();
+						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					}
 
-				if (solve_tx_height) {
-					size_t pindex = tx_heightIndex;
-					T.LEM.calculation_type = CT_HDERIVATIVE;
-					T.LEM.derivative_layer = INT_MAX;
-					T.setprimaryfields();
-					T.setsecondaryfields();
-					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					if (solve_txrx_dx) {
+						size_t pindex = txrx_dxIndex;
+						T.LEM.calculation_type = CT_XDERIVATIVE;
+						T.LEM.derivative_layer = INT_MAX;
+						T.setprimaryfields();
+						T.setsecondaryfields();
+						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					}
+
+					if (solve_txrx_dy) {
+						size_t pindex = txrx_dyIndex;
+						T.LEM.calculation_type = CT_YDERIVATIVE;
+						T.LEM.derivative_layer = INT_MAX;
+						T.setprimaryfields();
+						T.setsecondaryfields();
+						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					}
+
+					if (solve_txrx_dz) {
+						size_t pindex = txrx_dzIndex;
+						T.LEM.calculation_type = CT_ZDERIVATIVE;
+						T.LEM.derivative_layer = INT_MAX;
+						T.setprimaryfields();
+						T.setsecondaryfields();
+						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					}
+
+					if (solve_rx_pitch) {
+						size_t pindex = rx_pitchIndex;
+						T.drx_pitch(xfm, zfm, g.rx_pitch, xdrv, zdrv);
+						ydrv *= 0.0;
+						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					}
+
+					if (solve_rx_roll) {
+						size_t pindex = rx_rollIndex;
+						T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
+						xdrv *= 0.0;
+						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+					}
 				}
-
-				if (solve_txrx_dx) {
-					size_t pindex = txrx_dxIndex;
-					T.LEM.calculation_type = CT_XDERIVATIVE;
-					T.LEM.derivative_layer = INT_MAX;
-					T.setprimaryfields();
-					T.setsecondaryfields();
-					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-				}
-
-				if (solve_txrx_dy) {
-					size_t pindex = txrx_dyIndex;
-					T.LEM.calculation_type = CT_YDERIVATIVE;
-					T.LEM.derivative_layer = INT_MAX;
-					T.setprimaryfields();
-					T.setsecondaryfields();
-					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-				}
-
-				if (solve_txrx_dz) {
-					size_t pindex = txrx_dzIndex;
-					T.LEM.calculation_type = CT_ZDERIVATIVE;
-					T.LEM.derivative_layer = INT_MAX;
-					T.setprimaryfields();
-					T.setsecondaryfields();
-					fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-				}
-
-				if (solve_rx_pitch) {
-					size_t pindex = rx_pitchIndex;
-					T.drx_pitch(xfm, zfm, g.rx_pitch, xdrv, zdrv);
-					ydrv *= 0.0;
-					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-				}
-
-				if (solve_rx_roll) {
-					size_t pindex = rx_rollIndex;
-					T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
-					xdrv *= 0.0;
-					fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-				}								
+				if (Verbose) std::cerr << "\n-----------------\n";
+				if (Verbose) std::cerr << "It " << LastIteration+1 << std::endl;
+				if (Verbose) std::cerr << M;
+				if (Verbose) std::cerr << "\n-----------------\n";
 			}
 		}
 				
@@ -1623,7 +1640,7 @@ class cSBSInverter{
 		}
 	}
 
-	void fillMatrixColumn(MatrixDouble& M, cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
+	void fillMatrixColumn(Matrix& M, cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
 	{
 		const size_t nw = S.T.NumberOfWindows;
 		if (S.invertXPlusZ) {
@@ -1641,9 +1658,9 @@ class cSBSInverter{
 		}
 	}
 
-	VectorDouble compute_parameter_sensitivity()
+	Vector compute_parameter_sensitivity()
 	{
-		VectorDouble s = VectorDouble::Zero(nparam);
+		Vector s = Vector::Zero(nparam);
 		for (size_t pi = 0; pi < nparam; pi++) {
 			for (size_t di = 0; di < ndata_inv; di++) {
 				s[pi] += (std::fabs(J(di,pi)) * std::sqrt((double)ndata_inv*Wd(di,di)));
@@ -1652,16 +1669,16 @@ class cSBSInverter{
 		return s;
 	}
 
-	VectorDouble compute_parameter_uncertainty()
+	Vector compute_parameter_uncertainty()
 	{
-		MatrixDouble JtWdJ = J.transpose()*Wd*J;
-		MatrixDouble iCm = MatrixDouble::Zero(nparam, nparam);
+		Matrix JtWdJ = J.transpose()*Wd*J;
+		Matrix iCm = Matrix::Zero(nparam, nparam);
 		for (size_t i = 0; i < nparam; i++) {
 			iCm(i,i) = 1.0 / (RefParamStd[i] * RefParamStd[i]);
 		}
-		MatrixDouble X = (double)ndata_inv*JtWdJ + iCm;		
-		MatrixDouble pinvX = pseudoInverse(X);
-		VectorDouble s(nparam);
+		Matrix X = (double)ndata_inv*JtWdJ + iCm;		
+		Matrix pinvX = pseudoInverse(X);
+		Vector s(nparam);
 		for (size_t i = 0; i < nparam; i++) {
 			s[i] = std::sqrt(pinvX(i,i));
 		}
@@ -1685,7 +1702,7 @@ class cSBSInverter{
 	}
 
 	void iterate()
-	{
+	{		
 		double percentchange = 100.0;
 		bool   keepiterating = true;
 
@@ -1708,7 +1725,7 @@ class cSBSInverter{
 
 			if (LastIteration >= MaxIterations) {
 				keepiterating = false;
-				TerminationReason = "Too many iterations";
+				TerminationReason = "Too many iterations";				
 			}
 			else if (LastPhiD <= MinimumPhiD) {
 				keepiterating = false;
@@ -1718,11 +1735,11 @@ class cSBSInverter{
 				keepiterating = false;
 				TerminationReason = "Small % improvement";
 			}
-			else {
+			else {								
 				cTrial t = targetsearch(LastLambda, TargetPhiD);				
-				VectorDouble dm = parameterchange(t.lambda);
-				VectorDouble mtemp = Param + (t.stepfactor*dm);
-				VectorDouble gtemp(ndata_inv);
+				Vector dm = parameterchange(t.lambda);
+				Vector mtemp = Param + (t.stepfactor*dm);
+				Vector gtemp(ndata_inv);
 				forwardmodel(mtemp, gtemp, false);
 				double phidtemp = phiData(gtemp);
 				percentchange = 100.0*(LastPhiD - phidtemp) / (LastPhiD);
@@ -1735,6 +1752,7 @@ class cSBSInverter{
 					LastPhiM = phiModel(Param, LastPhiC, LastPhiT, LastPhiG, LastPhiS);
 				}
 			}
+			if (Verbose) std::cerr << TerminationReason << std::endl;
 			LastIteration++;
 		}
 
@@ -1785,7 +1803,7 @@ class cSBSInverter{
 		else {
 			glog.errormsg(_SRC_, "targetsearch(): Unknown value %d returned from target brackettarget()\n", b);
 		}
-		//T.print(t.lambda, t.phid);
+		if(Verbose) T.print(t.lambda, t.phid);
 		return t;		
 	}
 
@@ -1846,24 +1864,19 @@ class cSBSInverter{
 		}
 		else {
 			trialfunction(T, pow10(startx));
-		}
-		//T.print(LastLambda,LastPhiD);
-		//prompttocontinue();
+		}		
 
 		std::vector<double> x;
 		x.push_back(+1); x.push_back(-1);
 		x.push_back(+2); x.push_back(-2);
 		x.push_back(+3); x.push_back(-3);
-		for (size_t k = 0; k < x.size(); k++) {
-			//T.print(LastLambda, LastPhiD);
+		for (size_t k = 0; k < x.size(); k++) {			
 			trialfunction(T, pow10(startx + x[k]));
 			bool tarbrak = istargetbraketed(T);
 			if (tarbrak) {
 				return eBracketResult::BRACKETED;//target bracketed		
 			}
-		}		
-		//T.print(LastLambda, LastPhiD);
-		//prompttocontinue();
+		}				
 
 		if (T.maxphid() < target) {
 			return eBracketResult::ALLBELOW;//all below target	
@@ -1897,7 +1910,9 @@ class cSBSInverter{
 		double fa = T.trial[index - 1].phid - target;
 		double fb = T.trial[index].phid - target;
 		if (fa * fb >= 0.0) {
-			glog.warningmsg(_SRC_, "Target must be bracketed\n");
+			std::string msg = strprint("Warning: Target must be bracketed\n");
+			glog.logmsg(msg);
+			std::cerr << msg << std::endl;
 		}
 
 		double c = 0;
@@ -1974,10 +1989,12 @@ class cSBSInverter{
 				double tmp = a; a = b; b = tmp; tmp = fa; fa = fb; fb = tmp;
 			}
 			i++;
-			if (i > 20) {
-				//T.print(LastLambda, LastPhiD);				
-				glog.warningmsg(_SRC_, "Too many bisections\n");
+			if (i > 20) {	
 				newphid = fb + target;
+
+				std::string msg = strprint("Warning: Too many bisections\n");
+				glog.logmsg(msg);
+				std::cerr << msg << std::endl;				
 				return pow10(b);
 			}
 		}
@@ -1991,7 +2008,7 @@ class cSBSInverter{
 		}
 	}
 
-	double goldensearch(double a, double b, double c, double xtol, const double lambda, const VectorDouble& m, const VectorDouble& dm, VectorDouble& g, cTrialCache& cache)
+	double goldensearch(double a, double b, double c, double xtol, const double lambda, const Vector& m, const Vector& dm, Vector& g, cTrialCache& cache)
 	{
 		//adapted from http://en.wikipedia.org/wiki/Golden_section_search	
 		const double resphi = 2 - ((1 + sqrt(5.0)) / 2.0);
@@ -2013,7 +2030,7 @@ class cSBSInverter{
 		double fx = cache.sfsearch(x);
 		if (fx < 0) {
 			cTrial t;
-			VectorDouble p = m + x * dm;
+			Vector p = m + x * dm;
 			forwardmodel(p, g, false);
 			fx = phiData(g);
 			t.stepfactor = x;
@@ -2021,14 +2038,13 @@ class cSBSInverter{
 			t.phim = phiModel(p);
 			t.order = cache.trial.size();
 			t.lambda = lambda;
-			cache.trial.push_back(t);
-			//printf("%lf %lf\n",x,fx);
+			cache.trial.push_back(t);			
 		}
 
 		double fb = cache.sfsearch(b);
 		if (fb < 0) {
 			cTrial t;
-			VectorDouble p = m + b * dm;
+			Vector p = m + b * dm;
 			forwardmodel(p, g, false);
 			fb = phiData(g);
 			t.stepfactor = b;
@@ -2036,8 +2052,7 @@ class cSBSInverter{
 			t.phim = phiModel(p);
 			t.order = cache.trial.size();
 			t.lambda = lambda;
-			cache.trial.push_back(t);
-			//printf("%lf %lf\n",b,fb);
+			cache.trial.push_back(t);			
 		}
 
 		assert(fx != fb);
@@ -2061,11 +2076,13 @@ class cSBSInverter{
 
 	double trialfunction(cTrialCache& T, const double triallambda)
 	{
-		VectorDouble dm(nparam);
-		VectorDouble p(nparam);
-		VectorDouble g(ndata_inv);
+		Vector dm(nparam);
+		Vector p(nparam);
+		Vector g(ndata_inv);
 		dm = parameterchange(triallambda);
 		cTrialCache cache;
+		cache.target = T.target;
+
 		cTrial t0;
 		t0.phid = LastPhiD;
 		t0.phim = LastPhiM;
@@ -2098,12 +2115,10 @@ class cSBSInverter{
 			t3.stepfactor = gsf;
 			t3.lambda = triallambda;
 			t3.order = cache.trial.size();
-			cache.trial.push_back(t3);
-			//double gsf = goldensearch(0.0,0.5,1.0,tau,Param,dm,g,cache);
-			//printf("gsf=%lf\n",gsf);				
-		}
-		//printtrials(cache);
-		//prompttocontinue();
+			cache.trial.push_back(t3);			
+		}		
+		if (Verbose) cache.print(LastLambda,LastPhiD);
+		
 		size_t minindex = cache.minphidindex();
 
 		cTrial t = cache.trial[minindex];
@@ -2121,8 +2136,9 @@ class cSBSInverter{
 		OM->writefield(pi, Id.uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.surveynumber, "survey", "Survey number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.daynumber, "date", "Date number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		
 		//TODO fix the example file
-		//OM->writefield(pi, Id.flightnumber, "flight", "Flight number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		OM->writefield(pi, Id.flightnumber, "flight", "Flight number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.linenumber, "line", "Line number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		OM->writefield(pi, Id.fidnumber, "fiducial", "Fiducial number", UNITLESS, 1, NC_DOUBLE, DN_NONE, 'F', 12, 2);
 
@@ -2385,7 +2401,7 @@ class cSBSInverter{
 		return status;
 	}
 	
-	void write(const VectorDouble& v, std::string path) const 
+	void write(const Vector& v, std::string path) const 
 	{
 		FILE* fp = fileopen(path, "w");
 		for (auto  i = 0; i < v.rows(); i++) {
