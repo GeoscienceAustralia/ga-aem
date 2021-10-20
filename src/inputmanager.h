@@ -127,6 +127,7 @@ public:
 			msg += "\n\tUnsupported IOType\n";
 			throw(std::runtime_error(msg));
 		}
+		return false;
 	}
 };
 
