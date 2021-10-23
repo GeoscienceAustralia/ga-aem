@@ -38,9 +38,9 @@ class cTrial{
 public:
 	size_t order;
 	double lambda;
-	double phid;
-	double phim;
 	double stepfactor;
+	double phid;
+	double phim;	
 
 	static bool lambda_compare(const cTrial& a, const cTrial& b)
 	{				
@@ -326,6 +326,23 @@ public:
 	}
 };
 
+//State at end of an Iteration
+class cIterationState {
+
+public:
+	size_t iteration = 0;	
+	double lambda = 0.0;
+	double targetphid = 0.0;
+	double phid = 0.0;
+	double phim = 0.0;
+	double phic = 0.0;
+	double phit = 0.0;
+	double phig = 0.0;
+	double phis = 0.0;
+	Vector pred;
+	Vector param;
+};
+
 class cSBSInverter{
 
 	private:	
@@ -383,8 +400,8 @@ class cSBSInverter{
 	cEarth1D ES;//Standard deviation earth
 	cEarth1D EM;//Final inversion earth
 
-	double min_conductivity = 1e-5;
-	double max_conductivity = 10.0;
+	double min_log10_conductivity = std::log10(1.0e-5);
+	double max_log10_conductivity = std::log10(10.0);
 
 	bool solve_conductivity;
 	bool solve_thickness;	
@@ -404,6 +421,7 @@ class cSBSInverter{
 	double AlphaT;
 	double AlphaG;	
 	int    BeginGeometrySolveIteration;
+	bool   FreeGeometry = false;
 
 	double AlphaS;
 	eSmoothnessMethod SmoothnessMethod;
@@ -416,10 +434,7 @@ class cSBSInverter{
 	size_t ngeomparam;	
 	
 	Vector Obs;
-	Vector Err;
-	Vector Pred;
-
-	Vector Param;
+	Vector Err;	
 	Vector RefParam;
 	Vector RefParamStd;
 
@@ -439,18 +454,9 @@ class cSBSInverter{
 	double MinimumImprovement;//			
 	size_t MaxIterations;
 	std::string TerminationReason;
-
-	double TargetPhiD;//for an iteration
 	
-	double LastPhiD;//for previous iteration
-	double LastPhiM;
-	double LastPhiC;
-	double LastPhiT;
-	double LastPhiG;
-	double LastPhiS;
-	double LastLambda;
-	size_t LastIteration=0;
-	
+	cIterationState CIS;
+		
 	
 	size_t cIndex;//Conductivty parameters start index
     size_t tIndex;//Thickness parameters start index
@@ -563,44 +569,7 @@ class cSBSInverter{
 		glog.log(Control.get_as_string());
 		glog.flush();
 	}
-
-	int go()
-	{
-		_GSTITEM_
-		int job = 0;
-		while (IM->readnextrecord()) {
-			job++;
-			if (((job - 1) % Size) != Rank) continue;
-			bool valid = IM->is_record_valid();
-			if (valid == false) continue;
-
-			if (OO.Dump) {
-				FILE* fp = fileopen(dumppath() + "record.dat", "w");
-				fprintf(fp, "Record\t%zu", IM->record());
-				fclose(fp);
-			}
-
-			double t1 = gettime();
-			if (invert()) {
-				double t2 = gettime();
-				double etime = t2 - t1;
-				writeresult(job - 1);
-				std::string msg = strprint("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, LastIteration, LastPhiD, etime, TerminationReason.c_str(), OutputMessage.c_str());
-				glog.logmsg(msg);
-				if (OutputMessage.size() > 0) {
-					std::cerr << msg;
-				}
-			}
-			else {
-				std::string msg = strprint("Rec %6zu  Skipping %s\n", 1 + IM->record(), OutputMessage.c_str());
-				glog.logmsg(msg);
-				std::cerr << msg;
-			}
-			}
-		glog.close();
-		return 0;
-		}
-
+	
 	void parseoptions()
 	{
 		cBlock b = Control.findblock("Options");
@@ -664,8 +633,6 @@ class cSBSInverter{
 		else {
 			glog.errormsg(_SRC_, "Unknown SmoothnessMethod %s\n", sm.c_str());
 		}
-
-
 		MaxIterations = b.getsizetvalue("MaximumIterations");
 		MinimumPhiD = b.getdoublevalue("MinimumPhiD");
 		MinimumImprovement = b.getdoublevalue("MinimumPercentageImprovement");
@@ -768,11 +735,11 @@ class cSBSInverter{
 	{
 		double v;
 		if (Control.getvalue("Earth.MinConductivity", v)) {
-			min_conductivity = v;
+			min_log10_conductivity = std::log10(v);
 		}
 
 		if (Control.getvalue("Earth.MaxConductivity", v)) {
-			max_conductivity = v;
+			max_log10_conductivity = std::log10(v);
 		}
 
 		nlayers = Control.getsizetvalue("Earth.NumberOfLayers");
@@ -828,7 +795,7 @@ class cSBSInverter{
 		}
 
 		///////////////
-		Param.resize(nparam);
+		//Param.resize(nparam);
 		RefParam.resize(nparam);
 		RefParamStd.resize(nparam);
 	}
@@ -880,36 +847,7 @@ class cSBSInverter{
 		S.CompInfo[1].readdata(IM);
 		S.CompInfo[2].readdata(IM);
 	}
-
-	bool initialise_sample(){
-		LastIteration = 0;
-		LastLambda = 1e8;
-		bool status = initialise_data();
-		if (status == false) return false;
-		initialise_parameters();		
-		initialise_Wd();
-		initialise_Wm();
-		Param = RefParam;
-		LastPhiM = phiModel(Param, LastPhiC, LastPhiT, LastPhiG, LastPhiS);
-		TerminationReason = "Has not terminated";
-		if (OO.Dump) {
-			const std::string dp = dumppath();
-			GR.write(dp+"geometry_start.dat");
-			ER.write(dp+"earth_start.dat");
-
-			GR.write(dp+"geometry_ref.dat");
-			ER.write(dp+"earth_ref.dat");
-
-			GS.write(dp+"geometry_std.dat");
-			ES.write(dp+"earth_std.dat");
-
-			FILE* fp = fileopen(dp+"Id.dat","w");
-			fprintf(fp, "%zu\t%zu\t%zu\t%zu\t%zu\t%lf\t%lf\t%lf\t%lf\t%lf", Id.uniqueid, Id.surveynumber, Id.daynumber, Id.flightnumber, Id.linenumber, Id.fidnumber, Location.x, Location.y, Location.groundelevation, Location.z);
-			fclose(fp);
-		}
-		return true;
-	}
-
+	
 	bool initialise_data(){
 		std::vector<double> obs(ndata_all);
 		std::vector<double> err(ndata_all);
@@ -992,12 +930,7 @@ class cSBSInverter{
 		if (nzeroerr > 0) {			
 			OutputMessage += strprint(", Skipped %d noise values were 0.0", nzeroerr);			
 			return false;
-		}
-		
-		if (OO.Dump) {
-			write(Obs, dumppath()+"observed.dat");
-			write(Err, dumppath()+"observed_std.dat");
-		}
+		}				
 		return true;
 	}
 		
@@ -1219,28 +1152,51 @@ class cSBSInverter{
 		}
 	}
 	
-	Vector parameterchange(const double lambda)
+	Vector parameterchange(const double& lambda, const Vector& param, const Vector& pred)
 	{
-		Vector x  = solve(lambda);
-		Vector dm = x - Param;
+		Vector m = solve(lambda, param, pred);
+		Vector dm = m - param;
 
-		if (solve_conductivity) {
-			for (size_t li = 0; li < nlayers; li++) {
-				size_t pindex = li + cIndex;
-				if (Param[pindex] + dm[pindex] > log10(max_conductivity)) {
-					//printf("upper limit li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
-					dm[pindex] = log10(max_conductivity) - Param[pindex];
-				}
-				else if (Param[pindex] + dm[pindex] < log10(min_conductivity)) {
-					//printf("lower limit li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
-					dm[pindex] = log10(min_conductivity) - Param[pindex];
+		bool bound = true;
+		if (bound) {
+			if (solve_conductivity) {
+				for (size_t li = 0; li < nlayers; li++) {
+					size_t pindex = li + cIndex;
+					if (m[pindex] > max_log10_conductivity) {
+						std::cerr << rec_it_str() << std::endl;
+						std::cerr << "Upper bound reached" << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << param[pindex] << "\tm+dm=" << m[pindex] << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(param[pindex]) << "\tm+dm=" << pow10(m[pindex]) << std::endl;
+						dm[pindex] = max_log10_conductivity - param[pindex];
+						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(param[pindex]) << "\tm+dm=" << pow10(dm[pindex] + param[pindex]) << std::endl;
+					}
+					else if (m[pindex] < min_log10_conductivity) {
+						std::cerr << rec_it_str() << std::endl;
+						std::cerr << "Lower upper bound reached" << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << param[pindex] << "\tm+dm=" << m[pindex] << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(param[pindex]) << "\tm+dm=" << pow10(m[pindex]) << std::endl;
+						dm[pindex] = min_log10_conductivity - param[pindex];
+						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(param[pindex]) << "\tm+dm=" << pow10(dm[pindex] + param[pindex]) << std::endl;
+					}
 				}
 			}
-		}
 
-		if (solve_thickness) {
-			for (size_t li = 0; li < nlayers - 1; li++) {
-				size_t pindex = li + tIndex;
+			if (solve_thickness) {
+				for (size_t li = 0; li < nlayers - 1; li++) {
+					size_t pindex = li + tIndex;
+					if (dm[pindex] > 0.5) {
+						//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
+						dm[pindex] = 0.5;
+					}
+					else if (dm[pindex] < -0.5) {
+						//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
+						dm[pindex] = -0.5;
+					}
+				}
+			}
+
+			if (solve_tx_height) {
+				size_t pindex = tx_heightIndex;
 				if (dm[pindex] > 0.5) {
 					//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 					dm[pindex] = 0.5;
@@ -1249,31 +1205,19 @@ class cSBSInverter{
 					//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
 					dm[pindex] = -0.5;
 				}
-			}
-		}
 
-		if (solve_tx_height) {
-			size_t pindex = tx_heightIndex;
-			if (dm[pindex] > 0.5) {
-				//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
-				dm[pindex] = 0.5;
-			}
-			else if (dm[pindex] < -0.5) {
-				//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
-				dm[pindex] = -0.5;
-			}
-
-			if (Param[pindex] + dm[pindex] > 1000) {
-				dm[pindex] = 1000 - Param[pindex];
-			}
-			else if (Param[pindex] + dm[pindex] < 10) {
-				dm[pindex] = 10 - Param[pindex];
+				if (param[pindex] + dm[pindex] > 1000) {
+					dm[pindex] = 1000 - param[pindex];
+				}
+				else if (param[pindex] + dm[pindex] < 10) {
+					dm[pindex] = 10 - param[pindex];
+				}
 			}
 		}
 		return dm;
 	}
 
-	Vector solve(const double lambda)
+	Vector solve(const double& lambda, const Vector& param, const Vector& pred)
 	{
 		// Phi = (d-g(m)+Jm) Wd (d-g(m)+Jm) + lambda ( (m-m0)' Wr (m-m0) + m' Ws m) )
 		//Ax = b
@@ -1282,9 +1226,9 @@ class cSBSInverter{
 		//b = J'Wd(d - g(m) + Jm) + lambda*Wr*m0
 		//dm = m(n+1) - m = x - m
 
-		const Vector& m = Param;
+		const Vector& m = param;
 		const Vector& d = Obs;
-		const Vector& g = Pred;
+		const Vector& g = pred;
 		const Vector& e = Err;
 		const Vector& m0 = RefParam;
 
@@ -1468,7 +1412,7 @@ class cSBSInverter{
 		return minv;
 	}
 
-	void forwardmodel(const Vector& parameters, Vector& predicted, bool computederivatives)
+	Vector forwardmodel(const Vector& parameters, bool computederivatives=false)
 	{
 		Vector pred(ndata_all);
 		Matrix M;
@@ -1561,7 +1505,7 @@ class cSBSInverter{
 					}
 				}
 				
-				if (LastIteration + 1 >= BeginGeometrySolveIteration) {
+				if (FreeGeometry) {
 					if (solve_tx_height) {
 						size_t pindex = tx_heightIndex;
 						T.LEM.calculation_type = CT_HDERIVATIVE;
@@ -1617,14 +1561,14 @@ class cSBSInverter{
 					}
 				}
 				if (Verbose) std::cerr << "\n-----------------\n";
-				if (Verbose) std::cerr << "It " << LastIteration+1 << std::endl;
+				if (Verbose) std::cerr << "It " << CIS.iteration+1 << std::endl;
 				if (Verbose) std::cerr << M;
 				if (Verbose) std::cerr << "\n-----------------\n";
 			}
 		}
-				
-		predicted = cull(pred);		
-		if (computederivatives)	J = cull(M);		
+		
+		if (computederivatives)	J = cull(M);
+		return cull(pred);		
 	}
 
 	void fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv)
@@ -1685,107 +1629,82 @@ class cSBSInverter{
 		return s;
 	}
 
-	bool invert()
-	{
-		OutputMessage = "";
-		if (parserecord() == false) {
-			OutputMessage += ", Skipping - could not parse record";
-			return false;
-		}
-
-		if (initialise_sample() == false) {
-			return false;
-		}
-
-		iterate(); 		
-		return true;
-	}
-
-	void iterate()
-	{		
-		double percentchange = 100.0;
-		bool   keepiterating = true;
-
-		while (keepiterating == true) {
-
-			forwardmodel(Param, Pred, true);
-			LastPhiD = phiData(Pred);
-			TargetPhiD = std::max(LastPhiD * 0.7, MinimumPhiD);
-			if (OO.Dump) {
-				makedirectorydeep(dumppath());
-				writetofile(Obs,dumppath() + "d.dat");
-				writetofile(Err,dumppath() + "e.dat");
-				writetofile(Pred,dumppath() + "g.dat");
-				EM = get_earth(Param);
-				GM = get_geometry(Param);
-				EM.write(dumppath()+"earth_inv.dat");
-				GM.write(dumppath()+"geometry_inv.dat");
-				save_iteration_file();
-			}
-
-			if (LastIteration >= MaxIterations) {
-				keepiterating = false;
-				TerminationReason = "Too many iterations";				
-			}
-			else if (LastPhiD <= MinimumPhiD) {
-				keepiterating = false;
-				TerminationReason = "Reached minimum";
-			}
-			else if (percentchange < MinimumImprovement) {
-				keepiterating = false;
-				TerminationReason = "Small % improvement";
-			}
-			else {								
-				cTrial t = targetsearch(LastLambda, TargetPhiD);				
-				Vector dm = parameterchange(t.lambda);
-				Vector mtemp = Param + (t.stepfactor*dm);
-				Vector gtemp(ndata_inv);
-				forwardmodel(mtemp, gtemp, false);
-				double phidtemp = phiData(gtemp);
-				percentchange = 100.0*(LastPhiD - phidtemp) / (LastPhiD);
-
-				if (phidtemp < LastPhiD) {
-					Param = mtemp;
-					Pred = gtemp;
-					LastPhiD = phidtemp;
-					LastLambda = t.lambda;
-					LastPhiM = phiModel(Param, LastPhiC, LastPhiT, LastPhiG, LastPhiS);
-				}
-			}
-			if (Verbose) std::cerr << TerminationReason << std::endl;
-			LastIteration++;
-		}
-
-		EM = get_earth(Param);
-		GM = get_geometry(Param);
-		forwardmodel(Param, Pred, false);
-		set_predicted();
-
-		forwardmodel(Param, Pred, true);
-		ParameterSensitivity = compute_parameter_sensitivity();
-		ParameterUncertainty = compute_parameter_uncertainty();
-	}
-
-	void save_iteration_file() {
-		FILE* fp = fileopen(dumppath() + "iteration.dat", "w");
-		fprintf(fp, "Iteration\t%zu\n", LastIteration);
-		fprintf(fp, "TargetPhiD\t%lf\n", TargetPhiD);
-		fprintf(fp, "PhiD\t%lf\n", LastPhiD);
-		fprintf(fp, "Lambda\t%lf\n", LastLambda);
-		fprintf(fp, "\n");
-		fclose(fp);
+	void save_iteration_file(const cIterationState& S) {
+		std::ofstream ofs(dumppath() + "iteration.dat");
+		ofs << "Iteration "  << S.iteration << std::endl;
+		ofs << "TargetPhiD " << S.targetphid << std::endl;
+		ofs << "PhiD "       << S.phid << std::endl;
+		ofs << "Lambda "     << S.lambda << std::endl;		
 	};
 
-	cTrial targetsearch(const double currentlambda, const double target)
+	double trialfunction(cTrialCache& T, const double triallambda)
+	{
+		Vector dm(nparam);
+		Vector p(nparam);
+		Vector g(ndata_inv);
+
+		//std::cout << currS.param.transpose() << std::endl;
+		//std::cout << currS.pred.transpose() << std::endl;
+
+		dm = parameterchange(triallambda, CIS.param, CIS.pred);
+		cTrialCache cache;
+		cache.target = T.target;
+
+		cTrial t0;
+		t0.phid = CIS.phid;
+		t0.phim = CIS.phim;
+		t0.stepfactor = 0.0;
+		t0.lambda = triallambda;
+		t0.order = cache.trial.size();
+		cache.trial.push_back(t0);
+
+		cTrial t1;
+		p = CIS.param + dm;
+		g = forwardmodel(p, false);
+		t1.phid = phiData(g);
+		t1.phim = phiModel(p);
+		t1.stepfactor = 1.0;
+		t1.lambda = triallambda;
+		t1.order = cache.trial.size();
+		cache.trial.push_back(t1);
+
+		double pcdiff = 100 * (t1.phid - t0.phid) / t0.phid;
+		if (pcdiff > 0.0 || pcdiff < -1.0) {
+			//ie dont do not do golden search
+			//if only tiny improvement				
+			double xtol = 0.1;
+			double gsf = goldensearch(0.0, 0.38196601125010510, 1.0, xtol, triallambda, CIS.param, dm, g, cache);
+
+			cTrial t3;
+			p = CIS.param + gsf * dm;
+			g = forwardmodel(p, false);
+			t3.phid = phiData(g);
+			t3.phim = phiModel(p);
+			t3.stepfactor = gsf;
+			t3.lambda = triallambda;
+			t3.order = cache.trial.size();
+			cache.trial.push_back(t3);
+		}
+		//if (Verbose) cache.print(CIS.lambda, CIS.phid);
+
+		size_t minindex = cache.minphidindex();
+
+		cTrial t = cache.trial[minindex];
+		t.order = T.trial.size();
+		T.trial.push_back(t);
+		return t.phid;
+	}
+
+	cTrial targetsearch(const double& currentlambda, const double& targetphid)
 	{
 		cTrialCache T;
-		T.target = target;
-		eBracketResult b = brackettarget(T, target, currentlambda);
+		T.target = targetphid;
+		eBracketResult b = brackettarget(T, targetphid, currentlambda);
 		cTrial t{};
 		if (b == eBracketResult::BRACKETED) {
 			//bracketed target - find with Brents Method
 			double newphid = DBL_MIN;
-			double lambda = brentsmethod(T, target, newphid);
+			double lambda = brentsmethod(T, targetphid, newphid);
 			t = T.findlambda(lambda);			
 		}
 		else if (b == eBracketResult::MINBRACKETED) {
@@ -1803,7 +1722,7 @@ class cSBSInverter{
 		else {
 			glog.errormsg(_SRC_, "targetsearch(): Unknown value %d returned from target brackettarget()\n", b);
 		}
-		if(Verbose) T.print(t.lambda, t.phid);
+		if (Verbose) T.print(CIS.lambda, CIS.phid);
 		return t;		
 	}
 
@@ -1841,7 +1760,7 @@ class cSBSInverter{
 	eBracketResult brackettarget(cTrialCache& T, const double target, const double currentlambda)
 	{
 		double startx = log10(currentlambda);
-		if (LastIteration == 0) {
+		if (CIS.iteration == 0) {
 			std::vector<double> x;
 			x.push_back(8); x.push_back(6);
 			x.push_back(4); x.push_back(2);
@@ -2031,7 +1950,7 @@ class cSBSInverter{
 		if (fx < 0) {
 			cTrial t;
 			Vector p = m + x * dm;
-			forwardmodel(p, g, false);
+			g = forwardmodel(p, false);
 			fx = phiData(g);
 			t.stepfactor = x;
 			t.phid = fx;
@@ -2045,7 +1964,7 @@ class cSBSInverter{
 		if (fb < 0) {
 			cTrial t;
 			Vector p = m + b * dm;
-			forwardmodel(p, g, false);
+			g = forwardmodel(p, false);
 			fb = phiData(g);
 			t.stepfactor = b;
 			t.phid = fb;
@@ -2073,61 +1992,8 @@ class cSBSInverter{
 			}
 		}
 	}
-
-	double trialfunction(cTrialCache& T, const double triallambda)
-	{
-		Vector dm(nparam);
-		Vector p(nparam);
-		Vector g(ndata_inv);
-		dm = parameterchange(triallambda);
-		cTrialCache cache;
-		cache.target = T.target;
-
-		cTrial t0;
-		t0.phid = LastPhiD;
-		t0.phim = LastPhiM;
-		t0.stepfactor = 0.0;
-		t0.lambda = triallambda;
-		t0.order = cache.trial.size();
-		cache.trial.push_back(t0);
-
-		cTrial t1;
-		p = Param + dm;
-		forwardmodel(p, g, false);
-		t1.phid = phiData(g);
-		t1.phim = phiModel(p);
-		t1.stepfactor = 1.0;
-		t1.lambda = triallambda;
-		t1.order = cache.trial.size();
-		cache.trial.push_back(t1);
-
-		double pcdiff = 100 * (t1.phid - t0.phid) / t0.phid;
-		if (pcdiff > 0.0 || pcdiff < -1.0) {
-			//ie dont do not do golden search
-			//if only tiny improvement				
-			double xtol = 0.1;
-			double gsf = goldensearch(0.0, 0.38196601125010510, 1.0, xtol, triallambda, Param, dm, g, cache);
-			cTrial t3;
-			p = Param + gsf * dm;
-			forwardmodel(p, g, false);
-			t3.phid = phiData(g);
-			t3.phim = phiModel(p);
-			t3.stepfactor = gsf;
-			t3.lambda = triallambda;
-			t3.order = cache.trial.size();
-			cache.trial.push_back(t3);			
-		}		
-		if (Verbose) cache.print(LastLambda,LastPhiD);
-		
-		size_t minindex = cache.minphidindex();
-
-		cTrial t = cache.trial[minindex];
-		t.order = T.trial.size();
-		T.trial.push_back(t);
-		return t.phid;
-	}
-
-	void writeresult(const int& pointindex)
+	
+	void writeresult(const int& pointindex, const cIterationState& S)
 	{		
 		const int& pi = pointindex;
 		OM->begin_point_output();
@@ -2329,14 +2195,14 @@ class cSBSInverter{
 		OM->writefield(pi, AlphaT, "AlphaT", "AlphaT inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, AlphaG, "AlphaG", "AlphaG inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, AlphaS, "AlphaS", "AlphaS inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);		
-		OM->writefield(pi, LastPhiD, "PhiD", "Normalised data misfit", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, LastPhiM, "PhiM", "Combined model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, LastPhiC, "PhiC", "Conductivity model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, LastPhiT, "PhiT", "Thickness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, LastPhiG, "PhiG", "Geometry model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, LastPhiS, "PhiS", "Smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, LastLambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);		
-		OM->writefield(pi, LastIteration, "Iterations", "Number of iterations", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 4, 0);
+		OM->writefield(pi, S.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phim, "PhiM", "Combined model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phic, "PhiC", "Conductivity model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phit, "PhiT", "Thickness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phig, "PhiG", "Geometry model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phis, "PhiS", "Smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.lambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.iteration, "Iterations", "Number of iterations", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 4, 0);
 				
 		//End of record book keeping
 		OM->end_point_output();		
@@ -2419,14 +2285,193 @@ class cSBSInverter{
 		fclose(fp);
 	}
 
+	std::string rec_it_str() const
+	{
+		std::ostringstream os;		
+		os << "Record " << IM->record() << " It " << CIS.iteration;
+		return os.str();
+	};
 
 	std::string dumppath() const
 	{
-		std::string s = OO.DumpPath(IM->record(),LastIteration);
+		std::string s = OO.DumpPath(IM->record(),CIS.iteration);
 		return s;
 	};
-	
+		
+	void dump_first_iteration() {		
+			const std::string dp = dumppath();
+			makedirectorydeep(dumppath());
 
+			write(Obs, dp + "observed.dat");
+			write(Err, dp + "observed_std.dat");
+
+			GR.write(dp + "geometry_start.dat");
+			ER.write(dp + "earth_start.dat");
+
+			GR.write(dp + "geometry_ref.dat");
+			ER.write(dp + "earth_ref.dat");
+
+			GS.write(dp + "geometry_std.dat");
+			ES.write(dp + "earth_std.dat");
+									
+			std::ofstream ofs(dp+"Id.dat");
+			char tab = '\t';			
+			ofs << Id.uniqueid << tab 
+				<< Id.surveynumber << tab
+				<< Id.daynumber << tab
+				<< Id.flightnumber << tab
+				<< Id.linenumber << tab
+				<< Id.fidnumber << tab
+				<< Location.x << tab
+				<< Location.y << tab
+				<< Location.groundelevation << tab
+				<< Location.z;			
+	}
+
+	void dump_iteration(const cIterationState& state) {
+		const std::string dp = dumppath();
+		makedirectorydeep(dp);
+		writetofile(Obs, dp + "d.dat");
+		writetofile(Err, dp + "e.dat");
+		writetofile(state.pred, dp + "g.dat");
+		cEarth1D e = get_earth(state.param);
+		cTDEmGeometry g = get_geometry(state.param);
+		e.write(dumppath() + "earth_inv.dat");
+		g.write(dumppath() + "geometry_inv.dat");
+		save_iteration_file(state);
+	}
+
+	bool initialise_sample() {	
+		CIS = cIterationState();
+		bool status = initialise_data();
+		if (status == false) return false;
+		initialise_parameters();
+		initialise_Wd();
+		initialise_Wm();		
+		return true;
+	}
+
+	void iterate() {
+		_GSTITEM_				
+		CIS.iteration = 0;
+		CIS.lambda = 1e8;
+		CIS.param = RefParam;		
+		CIS.pred = forwardmodel(CIS.param, false);
+		CIS.phid = phiData(CIS.pred);
+		CIS.targetphid = CIS.phid;
+		CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phis);
+
+		TerminationReason = "Has not terminated";
+
+		if (OO.Dump) {
+			dump_first_iteration();
+			dump_iteration(CIS);
+		}
+					
+		double percentchange = 100.0;
+		bool   keepiterating = true;
+		while (keepiterating == true) {
+			if (CIS.iteration >= MaxIterations) {
+				keepiterating = false;
+				TerminationReason = "Too many iterations";
+			}
+			else if (CIS.phid <= MinimumPhiD) {
+				keepiterating = false;
+				TerminationReason = "Reached minimum";
+			}
+			else if (percentchange < MinimumImprovement) {
+				keepiterating = false;
+				TerminationReason = "Small % improvement";
+			}
+			else {				
+				if (CIS.iteration+1 >= BeginGeometrySolveIteration) FreeGeometry = true;
+				else FreeGeometry = false;
+				//if ((CIS.iteration+1)%2) FreeGeometry = false;
+				//else FreeGeometry = true;
+
+				Vector g = forwardmodel(CIS.param, true);
+				
+				double targetphid = std::max(CIS.phid*0.7, MinimumPhiD);
+				cTrial t  = targetsearch(CIS.lambda, targetphid);
+				Vector dm = parameterchange(t.lambda, CIS.param, CIS.pred);
+				Vector m = CIS.param + (t.stepfactor * dm);
+				
+				g = forwardmodel(m, false);
+				double phid = phiData(g);
+
+				percentchange = 100.0 * (CIS.phid - phid) / (CIS.phid);
+				if (phid < CIS.phid) {				
+					CIS.iteration++;
+					CIS.param = m;
+					CIS.pred = g;
+					CIS.targetphid = targetphid;										
+					CIS.phid   = phid;
+					CIS.lambda = t.lambda;
+					CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phis);					
+					if (OO.Dump) dump_iteration(CIS);
+				}						
+			}			
+		} 
+		
+		EM = get_earth(CIS.param);
+		GM = get_geometry(CIS.param);
+		CIS.pred = forwardmodel(CIS.param, true);
+		set_predicted();		
+		ParameterSensitivity = compute_parameter_sensitivity();
+		ParameterUncertainty = compute_parameter_uncertainty();
+	}
+
+	bool invert() {
+		_GSTITEM_
+		OutputMessage = "";
+		if (parserecord() == false) {
+			OutputMessage += ", Skipping - could not parse record";
+			return false;
+		}
+
+		if (initialise_sample() == false) {
+			return false;
+		}
+
+		iterate();
+		return true;
+	}
+
+	int go() {
+		_GSTITEM_
+		int job = 0;
+		while (IM->readnextrecord()) {
+			job++;
+			if (((job - 1) % Size) != Rank) continue;
+			bool valid = IM->is_record_valid();
+			if (valid == false) continue;
+
+			if (OO.Dump) {
+				FILE* fp = fileopen(dumppath() + "record.dat", "w");
+				fprintf(fp, "Record\t%zu", IM->record());
+				fclose(fp);
+			}
+
+			double t1 = gettime();
+			if (invert()) {
+				double t2 = gettime();
+				double etime = t2 - t1;
+				writeresult(job - 1, CIS);
+				std::string msg = strprint("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, CIS.iteration, CIS.phid, etime, TerminationReason.c_str(), OutputMessage.c_str());
+				glog.logmsg(msg);
+				if (OutputMessage.size() > 0) {
+					std::cerr << msg;
+				}
+			}
+			else {
+				std::string msg = strprint("Rec %6zu  Skipping %s\n", 1 + IM->record(), OutputMessage.c_str());
+				glog.logmsg(msg);
+				std::cerr << msg;
+			}
+		}
+		glog.close();
+		return 0;
+	}	
 };
 
 #endif
