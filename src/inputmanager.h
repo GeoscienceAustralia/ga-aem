@@ -23,8 +23,7 @@ class cInputManager {
 public:
 	enum class IOType { ASCII, NETCDF, NONE };
 
-protected:	
-	bool AtStart = true;
+protected:		
 	std::string DataFileName;
 	IOType iotype = IOType::NONE;
 	size_t Subsample = 1;
@@ -56,11 +55,10 @@ public:
 
 	virtual bool is_record_valid() { return true; }
 		
-	virtual bool readnextrecord() = 0;
+	virtual bool read_record(const size_t& record) = 0;
 
 	virtual bool parserecord() { return true; }
 	
-
 	const std::string& datafilename() { return DataFileName; }
 
 	const size_t& record() const { return Record; }
@@ -139,6 +137,7 @@ private:
 public:
 
 	std::string HeaderFileName;
+	std::size_t HeaderLines;
 		
 	cASCIIInputManager(const cBlock& b) {
 		cInputManager::initialise(b);
@@ -170,6 +169,7 @@ public:
 			msg += strprint("\n\tD'Oh! the specified data file (%s) does not exist\n", DataFileName.c_str());
 			throw(std::runtime_error(msg));
 		}
+		
 		AF.openfile(DataFileName);
 
 		if (isdefined(HeaderFileName)) {			
@@ -203,9 +203,7 @@ public:
 
 		size_t headerlines = b.getsizetvalue("Headerlines");
 		if (!isdefined(headerlines)) { headerlines = 0; }
-		for (size_t k = 0; k < headerlines; k++) {
-			AF.readnextrecord();
-		}				
+		HeaderLines = headerlines;				
 	}
 
 	bool is_record_valid() {
@@ -224,22 +222,10 @@ public:
 		return true;
 	}
 	
-	bool readnextrecord()
+	bool read_record(const size_t& n)
 	{
-		bool status = true;
-		if (AtStart == true) {
-			status = AF.readnextrecord();
-			if (status == false)return false;
-			AtStart = false;
-			Record = 0;
-		}
-		else {
-			AF.skiprecords(Subsample - 1);
-			status = AF.readnextrecord();
-			if (status == false) return false;
-			Record += Subsample;
-		}		
-		return true;
+		Record = n;
+		return AF.load_record(n+HeaderLines);
 	}
 
 	bool parserecord() {
@@ -282,8 +268,15 @@ public:
 		NC.open(DataFileName, netCDF::NcFile::FileMode::read);		
 	}
 
-	bool readnextrecord()
+	bool read_record(const size_t& n)
 	{
+		Record = n;
+		#if defined HAVE_NETCDF
+			if (Record > NC.ntotalsamples()) return false;
+		#endif
+		return true;
+
+		/*
 		bool status = true;		
 		if (AtStart == true) {
 			AtStart = false;
@@ -294,8 +287,9 @@ public:
 			#if defined HAVE_NETCDF
 				if (Record > NC.ntotalsamples()) return false;
 			#endif
-		}				
+		}		
 		return true;
+		*/		
 	}
 
 	template<typename T>

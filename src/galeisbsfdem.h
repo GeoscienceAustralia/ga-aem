@@ -230,25 +230,25 @@ private:
 	//std::vector<double> doublevector(const cFieldDefinition& coldef, const size_t& n);
 	//std::vector<int> intvector(const cFieldDefinition& coldef, const size_t& n);
 
-	VectorDouble vObs;
-	VectorDouble vErr;
-	VectorDouble vPred;
-	VectorDouble vParam;
-	VectorDouble vRefParam;
-	VectorDouble vRefParamStd;
-	MatrixDouble A;
-	VectorDouble x;
-	VectorDouble b;
-	MatrixDouble J;
-	MatrixDouble JtWd;
-	MatrixDouble JtWdJ;
-	MatrixDouble Wd;
-	MatrixDouble Wc;
-	MatrixDouble Wt;
-	MatrixDouble Wg;
-	MatrixDouble Wm;
-	MatrixDouble L;
-	MatrixDouble LtL;
+	Vector vObs;
+	Vector vErr;
+	Vector vPred;
+	Vector vParam;
+	Vector vRefParam;
+	Vector vRefParamStd;
+	Matrix A;
+	Vector x;
+	Vector b;
+	Matrix J;
+	Matrix JtWd;
+	Matrix JtWdJ;
+	Matrix Wd;
+	Matrix Wc;
+	Matrix Wt;
+	Matrix Wg;
+	Matrix Wm;
+	Matrix L;
+	Matrix LtL;
 
 	double LastPhiD;//for previous iteration
 	double LastPhiM;
@@ -815,8 +815,8 @@ private:
 	void fillLtL()
 	{
 		if (AlphaS == 0 || nlayers < 3) return;
-		L = MatrixDouble(nlayers - 2, nparam);
-		LtL = MatrixDouble(nparam, nparam);
+		L = Matrix(nlayers - 2, nparam);
+		LtL = Matrix(nparam, nparam);
 
 		L.setZero();
 
@@ -876,7 +876,7 @@ private:
 		fclose(fp);
 	}
 
-	void dumptofile(const VectorDouble& v, std::string path)
+	void dumptofile(const Vector& v, std::string path)
 	{
 		FILE* fp = fileopen(DumpPath + path, "w");
 		for (size_t c = 0; c < nCoilsets; c++) {
@@ -905,7 +905,7 @@ private:
 		fclose(fp);
 	}
 
-	double phiData(const VectorDouble& g)
+	double phiData(const Vector& g)
 	{
 		double val;
 		double sum = 0.0;
@@ -916,7 +916,7 @@ private:
 		return (sum / ndata);
 	}
 
-	double phiModel(const VectorDouble& p)
+	double phiModel(const Vector& p)
 	{
 		double val;
 		double sum = 0.0;
@@ -927,7 +927,7 @@ private:
 		return (sum / nparam);
 	}
 
-	double phiModel(const VectorDouble& p, double& phic, double& phit, double& phig, double& phis)
+	double phiModel(const Vector& p, double& phic, double& phit, double& phig, double& phis)
 	{
 		phic = phiC(p);
 		phit = phiT(p);
@@ -942,34 +942,34 @@ private:
 		return v;
 	}
 	
-	double phiC(const VectorDouble& p)
+	double phiC(const Vector& p)
 	{
 		if (SolveConductivity == false)return 0.0;
-		VectorDouble v = p - vRefParam;
+		Vector v = p - vRefParam;
 		return mtDm(v, Wc);
 	}
 
-	double phiT(const VectorDouble& p)
+	double phiT(const Vector& p)
 	{
 		if (SolveThickness == false)return 0.0;
-		VectorDouble v = p - vRefParam;
+		Vector v = p - vRefParam;
 		return mtDm(v, Wt);
 	}
 
-	double phiG(const VectorDouble& p)
+	double phiG(const Vector& p)
 	{
 		if (SolveBirdHeight == false)return 0.0;
-		VectorDouble v = p - vRefParam;
+		Vector v = p - vRefParam;
 		return mtDm(v, Wg);
 	}
 	
-	double phiS(const VectorDouble& p)
+	double phiS(const Vector& p)
 	{
 		if (AlphaS == 0)return 0.0;
 		else return mtAm(p, LtL);
 	}
 
-	cEarth1D get_earth(const VectorDouble& parameters)
+	cEarth1D get_earth(const Vector& parameters)
 	{
 		cEarth1D e = ER;
 		if (SolveConductivity) {
@@ -986,7 +986,7 @@ private:
 		return e;
 	}
 	
-	cFDEmGeometry get_geometry(const VectorDouble& parameters)
+	cFDEmGeometry get_geometry(const Vector& parameters)
 	{
 		cFDEmGeometry g = GR;
 		if (SolveBirdHeight) {
@@ -995,7 +995,7 @@ private:
 		return g;
 	}
 	
-	cFDEmData get_data(const VectorDouble& data)
+	cFDEmData get_data(const Vector& data)
 	{
 		cFDEmData d;
 		d.inphase.resize(nCoilsets);
@@ -1007,7 +1007,7 @@ private:
 		return d;
 	}
 
-	void forwardmodel(const VectorDouble& parameters, VectorDouble& predicted, bool computederivatives)
+	void forwardmodel(const Vector& parameters, Vector& predicted, bool computederivatives)
 	{
 		cEarth1D e = get_earth(parameters);
 		cFDEmGeometry g = get_geometry(parameters);
@@ -1083,10 +1083,10 @@ private:
 		//b = J'Wd(d - g(m) + Jm) + labda*Wm*m0
 		//dm = m(n+1) - m = x - m
 
-		const VectorDouble& m = vParam;
-		const VectorDouble& d = vObs;
-		const VectorDouble& g = vPred;
-		const VectorDouble& m0 = vRefParam;
+		const Vector& m = vParam;
+		const Vector& d = vObs;
+		const Vector& g = vPred;
+		const Vector& m0 = vRefParam;
 
 		double zc = lambda * AlphaC;
 		double zt = lambda * AlphaT;
@@ -1122,7 +1122,7 @@ private:
 
 	void solveAxb()
 	{
-		MatrixDouble pinvA = pseudoInverse(A);
+		Matrix pinvA = pseudoInverse(A);
 		x = pinvA * b;
 
 		//writetofile(A,DumpPath+"A.dat");	
@@ -1132,9 +1132,9 @@ private:
 	
 	void iterate()
 	{
-		VectorDouble dm(nparam);
-		VectorDouble gtemp(ndata);
-		VectorDouble mtemp(nparam);
+		Vector dm(nparam);
+		Vector gtemp(ndata);
+		Vector mtemp(nparam);
 		double phidtemp, phimtemp, phictemp, phittemp, phigtemp, phistemp;
 
 		size_t iteration = 0;
@@ -1235,11 +1235,11 @@ private:
 		}
 	}
 	
-	VectorDouble parameterchange(const double lambda)
+	Vector parameterchange(const double lambda)
 	{
 		fillAb(lambda);
 		solveAxb();
-		VectorDouble dm = x - vParam;
+		Vector dm = x - vParam;
 
 		if (SolveConductivity) {
 			for (size_t li = 0; li < nlayers; li++) {
@@ -1540,7 +1540,7 @@ private:
 		printf("\n");
 	}
 	
-	double goldensearch(double a, double b, double c, double xtol, const double lambda, const VectorDouble& m, const VectorDouble& dm, VectorDouble& g, cTrialCache& cache)
+	double goldensearch(double a, double b, double c, double xtol, const double lambda, const Vector& m, const Vector& dm, Vector& g, cTrialCache& cache)
 	{
 		//adapted from http://en.wikipedia.org/wiki/Golden_section_search	
 		double resphi = 2 - ((1 + sqrt(5.0)) / 2.0);
@@ -1562,7 +1562,7 @@ private:
 		double fx = cache.sfsearch(x);
 		if (fx < 0) {
 			cTrial t;
-			VectorDouble p = m + x * dm;
+			Vector p = m + x * dm;
 			forwardmodel(p, g, false);
 			fx = phiData(g);
 			t.stepfactor = x;
@@ -1577,7 +1577,7 @@ private:
 		double fb = cache.sfsearch(b);
 		if (fb < 0) {
 			cTrial t;
-			VectorDouble p = m + b * dm;
+			Vector p = m + b * dm;
 			forwardmodel(p, g, false);
 			fb = phiData(g);
 			t.stepfactor = b;
@@ -1610,9 +1610,9 @@ private:
 	
 	double trialfunction(cTrialCache& T, const double triallambda)
 	{
-		VectorDouble dm(nparam);
-		VectorDouble p(nparam);
-		VectorDouble g(ndata);
+		Vector dm(nparam);
+		Vector p(nparam);
+		Vector g(ndata);
 		dm = parameterchange(triallambda);
 		cTrialCache cache;
 		cTrial t0;

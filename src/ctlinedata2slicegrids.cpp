@@ -359,7 +359,7 @@ public:
 
 		//Skip header lines
 		for (size_t k = 0; k < HeaderLines; k++){
-			A.readnextrecord();
+			A.load_next_record();
 		}
 
 		xdata.reserve(nreserve);
@@ -373,7 +373,7 @@ public:
 			ddata[i].reserve(nreserve);
 		}
 				
-		while (A.readnextrecord()){
+		while (A.load_next_record()){
 			A.parserecord();
 
 			bool excludedline = false;
@@ -442,7 +442,7 @@ public:
 
 			//Skip due to subsampling
 			for (size_t k = 0; k < SubSample-1; k++){
-				A.readnextrecord();
+				A.load_next_record();
 			}
 		}		
 		double t2 = gettime();

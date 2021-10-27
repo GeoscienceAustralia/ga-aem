@@ -2298,6 +2298,11 @@ class cSBSInverter{
 		return s;
 	};
 		
+	void dump_record_number() {
+		std::ofstream of(dumppath() + "record.dat");
+		of << "Record\t" << IM->record() << std::endl;;
+	}
+
 	void dump_first_iteration() {		
 			const std::string dp = dumppath();
 			makedirectorydeep(dumppath());
@@ -2439,36 +2444,43 @@ class cSBSInverter{
 
 	int go() {
 		_GSTITEM_
-		int job = 0;
-		while (IM->readnextrecord()) {
-			job++;
-			if (((job - 1) % Size) != Rank) continue;
-			bool valid = IM->is_record_valid();
-			if (valid == false) continue;
 
-			if (OO.Dump) {
-				FILE* fp = fileopen(dumppath() + "record.dat", "w");
-				fprintf(fp, "Record\t%zu", IM->record());
-				fclose(fp);
-			}
+		bool readstatus = true;
+		int paralleljob = 0;		
+		do{	
+			int record = paralleljob*IM->subsamplerate();			
+			if ((paralleljob % Size) == Rank) {								
+				readstatus = IM->read_record(record);				
+				if (readstatus) {
+					bool valid = IM->is_record_valid();
+					if (valid == true) {
+						if (OO.Dump) {
+							dump_record_number();
+						}
 
-			double t1 = gettime();
-			if (invert()) {
-				double t2 = gettime();
-				double etime = t2 - t1;
-				writeresult(job - 1, CIS);
-				std::string msg = strprint("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, CIS.iteration, CIS.phid, etime, TerminationReason.c_str(), OutputMessage.c_str());
-				glog.logmsg(msg);
-				if (OutputMessage.size() > 0) {
-					std::cerr << msg;
+						double t1 = gettime();
+						bool invstatus = invert();
+						double t2 = gettime();
+						double etime = t2 - t1;
+
+						if (invstatus) {							
+							writeresult(record, CIS);
+							std::string msg = strprint("Rec %6zu  %3zu  %5zu  %10lf  Its=%3zu  PhiD=%6.2lf  time=%.1lfs  %s %s\n", 1 + IM->record(), Id.flightnumber, Id.linenumber, Id.fidnumber, CIS.iteration, CIS.phid, etime, TerminationReason.c_str(), OutputMessage.c_str());
+							glog.logmsg(msg);
+							if (OutputMessage.size() > 0) {
+								std::cerr << msg;
+							}
+						}
+						else {
+							std::string msg = strprint("Rec %6zu  Skipping %s\n", 1 + IM->record(), OutputMessage.c_str());
+							glog.logmsg(msg);
+							std::cerr << msg;
+						}
+					}
 				}
-			}
-			else {
-				std::string msg = strprint("Rec %6zu  Skipping %s\n", 1 + IM->record(), OutputMessage.c_str());
-				glog.logmsg(msg);
-				std::cerr << msg;
-			}
-		}
+			}	
+			paralleljob++;
+		} while (readstatus == true);
 		glog.close();
 		return 0;
 	}	
