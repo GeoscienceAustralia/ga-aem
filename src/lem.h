@@ -6,8 +6,8 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef _le_H
-#define _le_H
+#ifndef _lem_H_
+#define _lem_H_
 
 #if defined _WIN32
 	//Microsoft Visual Studio seems to have underscore (_j0, _j1) in Bessel function names
@@ -31,12 +31,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 typedef std::complex<double> cdouble;
 
 struct HankelTransform{
-	cdouble FM;
-	cdouble dC;
-	cdouble dT;
-	cdouble dZ;
-	cdouble dH;
-	cdouble dR;
+	cdouble FM = 0.0;
+	cdouble dC = 0.0;
+	cdouble dT = 0.0;
+	cdouble dZ = 0.0;
+	cdouble dH = 0.0;
+	cdouble dR = 0.0;
 };
 
 struct HankelTransforms{
@@ -46,35 +46,35 @@ struct HankelTransforms{
 };
 
 struct RealField{
-	double x;
-	double y;
-	double z;
+	double x=0.0;
+	double y=0.0;
+	double z=0.0;
 };
 
 struct ComplexField{
-	cdouble x;
-	cdouble y;
-	cdouble z;
+	cdouble x=0.0;
+	cdouble y=0.0;
+	cdouble z=0.0;
 };
 
 struct TotalField{
-	RealField    p;//primary filed component
-	ComplexField s;//secondary field component  
+	RealField    p = {};//primary filed component
+	ComplexField s = {};//secondary field component  
 };
 
 struct ResponseField{
-	TotalField   v;//due to vertical dipole
-	TotalField   h;//due to y directed horizontal dipole
-	TotalField   t;//due to total dipole
+	TotalField   v = {};//due to vertical dipole
+	TotalField   h = {};//due to y directed horizontal dipole
+	TotalField   t = {};//due to total dipole
 };
 
 class PropogationMatrix{
 
 public:
-	cdouble e11;
-	cdouble e12;
-	cdouble e21;
-	cdouble e22;
+	cdouble e11 = 0.0;
+	cdouble e12 = 0.0;
+	cdouble e21 = 0.0;
+	cdouble e22 = 0.0;
 
 	PropogationMatrix& operator+=(const PropogationMatrix& rhs)
 	{		
@@ -108,72 +108,76 @@ public:
 };
 
 struct AbscissaLayerNode{
-	cdouble   U;
-	cdouble   Exp2UT;
+	cdouble   U = 0.0;
+	cdouble   Exp2UT = 0.0;
 	PropogationMatrix LayerMatrix;
 	PropogationMatrix LayerPreMatrix;
 	PropogationMatrix LayerPostMatrix;
 };
 
 struct AbscissaNode{
-	double Lambda;
-	double Lambda2;
-	double Lambda3;
-	double Lambda4;
-	double LambdaR;
-	double j0LambdaR;
-	double j1LambdaR;
+	double Lambda = 0.0;
+	double Lambda2 = 0.0;
+	double Lambda3 = 0.0;
+	double Lambda4 = 0.0;
+	double LambdaR = 0.0;
+	double j0LambdaR = 0.0;
+	double j1LambdaR = 0.0;
 	std::vector<AbscissaLayerNode> Layer;
 	PropogationMatrix P_Full;
-	cdouble P21onP11;
+	cdouble P21onP11 = 0.0;
 };
 
 struct FrequencyNode{
-	double Frequency;
-	double Omega;
-	double MuZeroOmega;
-	cdouble iMuZeroOmega;
-	double ApproximateHalfspace;
-	double PeakLambda;
-	double LowerBound;
-	double UpperBound;
-	double AbscissaSpacing;
+	double Frequency = 0.0;
+	double Omega = 0.0;
+	double MuZeroOmega = 0.0;
+	cdouble iMuZeroOmega = 0.0;
+	double ApproximateHalfspace = 0.0;
+	double PeakLambda = 0.0;
+	double LowerBound = 0.0;
+	double UpperBound = 0.0;
+	double AbscissaSpacing = 0.0;
 	std::vector<AbscissaNode> Abscissa;
 };
 
 struct LayerNode{
-	double Thickness;  // m
-	double Conductivity; // S/m
-	double Chargeability; // 
-	double TimeConstant; // s
-	double FrequencyDependence;	//unit less
+	double Thickness = 0.0;  // m
+	double Conductivity = 0.0; // S/m
+	double Chargeability = 0.0; // 
+	double TimeConstant = 0.0; // s
+	double FrequencyDependence = 0.0;	//unit less
 };
 
-enum eRZeroMethod     {
-	RZM_PROPOGATIONMATRIX,
-	RZM_RECURSIVE
-};
-
-enum eCalculationType { 
-	CT_FORWARDMODEL,
-	CT_CONDUCTIVITYDERIVATIVE,
-	CT_THICKNESSDERIVATIVE,
-	CT_HDERIVATIVE,
-	CT_RDERIVATIVE,
-	CT_XDERIVATIVE,
-	CT_YDERIVATIVE,
-	CT_ZDERIVATIVE,	
-	CT_NONE
-};
-
-enum eIPType {
-	IP_NONE,
-	IP_COLECOLE,
-	IP_PELTON
-};
 
 class cLEM {
-	
+
+public:
+
+	enum class RZeroMethod {
+		PROPOGATIONMATRIX,
+		RECURSIVE
+	};
+
+	enum class CalculationType {
+		FORWARDMODEL,
+		CONDUCTIVITYDERIVATIVE,
+		THICKNESSDERIVATIVE,
+		HDERIVATIVE,
+		RDERIVATIVE,
+		XDERIVATIVE,
+		YDERIVATIVE,
+		ZDERIVATIVE,
+		NONE
+	};
+
+	enum class IPType {
+		NONE,
+		COLECOLE,
+		PELTON
+	};
+
+private:
 	size_t NumFrequencies;
 	std::vector<FrequencyNode> Frequency;		
 	std::vector<HankelTransforms> Hankel;
@@ -204,10 +208,10 @@ public:
 	double ModellingLoopRadius = 0.0; //dipole by default
 	size_t NumAbscissa;
 	size_t NumLayers;
-	eRZeroMethod rzerotype;
-	eIPType iptype;
+	RZeroMethod rzerotype;
+	IPType iptype;
 	size_t derivative_layer;
-	eCalculationType calculation_type;
+	CalculationType calculation_type;
 	ResponseField Fields;
 
 	cLEM(){ initialise(); }
@@ -528,7 +532,7 @@ public:
 				}
 				else{
 					cdouble cip;
-					if (iptype == IP_COLECOLE){
+					if (iptype == IPType::COLECOLE){
 						cip = ip_colecole_conductivity(Layer[li].Conductivity, Layer[li].Chargeability, Layer[li].TimeConstant, Layer[li].FrequencyDependence, Frequency[fi].Omega);
 					}
 					else {
@@ -558,12 +562,13 @@ public:
 		v = Frequency[fi].iMuZeroOmega*v*v;
 		return (-4.0*peaklambda*peaklambda*rz / v).real();
 	}
+	
 	inline cdouble rzero(const size_t& fi, const double& lambda)
 	{
-		if (rzerotype == RZM_RECURSIVE){
+		if (rzerotype == RZeroMethod::RECURSIVE){
 			return rzero_recursive(fi, lambda);
 		}
-		//else if(rzerotype==LE_RZT_PROPOGATIONMATRIX){
+		//else if(rzerotype==RZeroMethod::PROPOGATIONMATRIX){
 		//	return rzero_propogationmatrix(fi,lambda);	
 		//}
 		else{
@@ -867,32 +872,32 @@ public:
 
 		trapezoid(fi);//the results go into the variable trapezoid_result
 
-		if (calculation_type == CT_FORWARDMODEL){
+		if (calculation_type == CalculationType::FORWARDMODEL){
 			H.I0.FM = trapezoid_result[0];
 			H.I1.FM = trapezoid_result[1];
 			H.I2.FM = trapezoid_result[2];
 		}
-		else if (calculation_type == CT_CONDUCTIVITYDERIVATIVE){
+		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE){
 			H.I0.dC = trapezoid_result[0];
 			H.I1.dC = trapezoid_result[1];
 			H.I2.dC = trapezoid_result[2];
 		}
-		else if (calculation_type == CT_THICKNESSDERIVATIVE){
+		else if (calculation_type == CalculationType::THICKNESSDERIVATIVE){
 			H.I0.dT = trapezoid_result[0];
 			H.I1.dT = trapezoid_result[1];
 			H.I2.dT = trapezoid_result[2];
 		}
-		else if (calculation_type == CT_ZDERIVATIVE){
+		else if (calculation_type == CalculationType::ZDERIVATIVE){
 			H.I0.dZ = trapezoid_result[0];
 			H.I1.dZ = trapezoid_result[1];
 			H.I2.dZ = trapezoid_result[2];
 		}
-		else if (calculation_type == CT_HDERIVATIVE){
+		else if (calculation_type == CalculationType::HDERIVATIVE){
 			H.I0.dH = trapezoid_result[0];
 			H.I1.dH = trapezoid_result[1];
 			H.I2.dH = trapezoid_result[2];
 		}
-		else if (calculation_type == CT_RDERIVATIVE || calculation_type == CT_XDERIVATIVE || calculation_type == CT_YDERIVATIVE){
+		else if (calculation_type == CalculationType::RDERIVATIVE || calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE){
 			H.I0.dR = trapezoid_result[0];
 			H.I1.dR = trapezoid_result[1];
 			H.I2.dR = trapezoid_result[2];
@@ -960,39 +965,39 @@ public:
 
 		cdouble k;
 		switch (calculation_type){
-		case CT_FORWARDMODEL:
+		case CalculationType::FORWARDMODEL:
 			k = loopfactor * A.P21onP11;
 			integrand_result[0] = k*l3e*j0;
 			integrand_result[1] = k*l3e*j1;
 			integrand_result[2] = k*l2e*j1;
 			break;
-		case CT_CONDUCTIVITYDERIVATIVE:
+		case CalculationType::CONDUCTIVITYDERIVATIVE:
 			k = loopfactor * dP21onP11dCj(fi, ai, derivative_layer);
 			integrand_result[0] = k*l3e*j0;
 			integrand_result[1] = k*l3e*j1;
 			integrand_result[2] = k*l2e*j1;
 			break;
-		case CT_THICKNESSDERIVATIVE:
+		case CalculationType::THICKNESSDERIVATIVE:
 			k = loopfactor * dP21onP11dTj(fi, ai, derivative_layer);
 			integrand_result[0] = k*l3e*j0;
 			integrand_result[1] = k*l3e*j1;
 			integrand_result[2] = k*l2e*j1;
 			break;
-		case CT_ZDERIVATIVE:
+		case CalculationType::ZDERIVATIVE:
 			k = loopfactor * A.P21onP11;
 			integrand_result[0] = k * -l4e*j0;
 			integrand_result[1] = k * -l4e*j1;
 			integrand_result[2] = k * -l3e*j1;
 			break;
-		case CT_HDERIVATIVE:
+		case CalculationType::HDERIVATIVE:
 			k = loopfactor * A.P21onP11;;
 			integrand_result[0] = k * -l4e*j0;
 			integrand_result[1] = k * -l4e*j1;
 			integrand_result[2] = k * -l3e*j1;
 			break;
-		case CT_RDERIVATIVE:
-		case CT_XDERIVATIVE:
-		case CT_YDERIVATIVE:
+		case CalculationType::RDERIVATIVE:
+		case CalculationType::XDERIVATIVE:
+		case CalculationType::YDERIVATIVE:
 			k = loopfactor * A.P21onP11;
 			if (R != 0.0) {
 				integrand_result[0] = k * (-l4e*j1);			
@@ -1023,27 +1028,27 @@ public:
 		if (BigR == 0)return;
 		if (Source_Orientation.z == 0.0)return;//ie no vertical dipole contribution
 
-		if (calculation_type == CT_FORWARDMODEL){
+		if (calculation_type == CalculationType::FORWARDMODEL){
 			Fields.v.p.x = THREEONFOURPI*X*(Z - H) / BigR5;
 			Fields.v.p.y = THREEONFOURPI*Y*(Z - H) / BigR5;
 			Fields.v.p.z = THREEONFOURPI*(Z - H)*(Z - H) / BigR5 - ONEONFOURPI / BigR3;
 		}
-		else if (calculation_type == CT_CONDUCTIVITYDERIVATIVE || calculation_type == CT_THICKNESSDERIVATIVE){
+		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE || calculation_type == CalculationType::THICKNESSDERIVATIVE){
 			Fields.v.p.x = 0.0;
 			Fields.v.p.y = 0.0;
 			Fields.v.p.z = 0.0;
 		}
-		else if (calculation_type == CT_HDERIVATIVE){			
+		else if (calculation_type == CalculationType::HDERIVATIVE){
 			Fields.v.p.x = 0.0;
 			Fields.v.p.y = 0.0;
 			Fields.v.p.z = 0.0;
 		}
-		else if (calculation_type == CT_ZDERIVATIVE){
+		else if (calculation_type == CalculationType::ZDERIVATIVE){
 			Fields.v.p.x = THREEONFOURPI*X*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
 			Fields.v.p.y = THREEONFOURPI*Y*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
 			Fields.v.p.z = THREEONFOURPI*(3.0*(Z - H) / BigR5 - 5.0*(Z - H)*(Z - H)*(Z - H) / BigR7);
 		}
-		else if (calculation_type == CT_XDERIVATIVE || calculation_type == CT_YDERIVATIVE || calculation_type == CT_RDERIVATIVE){
+		else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE){
 			double dxdX = THREEONFOURPI*(Z - H)*(1.0 / BigR5 - 5.0*X*X / BigR7);
 			double dydX = THREEONFOURPI*Y*(Z - H)*-5.0*X / BigR7;
 			double dzdX = THREEONFOURPI*(Z - H)*(Z - H)*-5.0*X / BigR7 - ONEONFOURPI*-3.0*X / BigR5;
@@ -1052,21 +1057,21 @@ public:
 			double dydY = THREEONFOURPI*(Z - H)*(1.0 / BigR5 - 5.0*Y*Y / BigR7);
 			double dzdY = THREEONFOURPI*(Z - H)*(Z - H)*-5.0*Y / BigR7 - ONEONFOURPI*-3.0*Y / BigR5;
 
-			if (calculation_type == CT_XDERIVATIVE){
+			if (calculation_type == CalculationType::XDERIVATIVE){
 				double dXdXo = cosxyrotation;
 				double dYdXo = -sinxyrotation;
 				Fields.v.p.x = dxdX*dXdXo + dxdY*dYdXo;
 				Fields.v.p.y = dydX*dXdXo + dydY*dYdXo;
 				Fields.v.p.z = dzdX*dXdXo + dzdY*dYdXo;
 			}
-			else if (calculation_type == CT_YDERIVATIVE){
+			else if (calculation_type == CalculationType::YDERIVATIVE){
 				double dXdYo = sinxyrotation;
 				double dYdYo = cosxyrotation;
 				Fields.v.p.x = dxdX*dXdYo + dxdY*dYdYo;
 				Fields.v.p.y = dydX*dXdYo + dydY*dYdYo;
 				Fields.v.p.z = dzdX*dXdYo + dzdY*dYdYo;
 			}
-			else if (calculation_type == CT_RDERIVATIVE){
+			else if (calculation_type == CalculationType::RDERIVATIVE){
 				Fields.v.p.x = dxdX*XonR + dxdY*YonR;
 				Fields.v.p.y = dydX*XonR + dydY*YonR;
 				Fields.v.p.z = dzdX*XonR + dzdY*YonR;
@@ -1083,33 +1088,33 @@ public:
 
 		if (Source_Orientation.z == 0.0)return;//ie no vertical dipole contribution
 
-		if (calculation_type == CT_FORWARDMODEL){
+		if (calculation_type == CalculationType::FORWARDMODEL){
 			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.FM;
 			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.FM;
 			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.FM;
 		}
-		else if (calculation_type == CT_CONDUCTIVITYDERIVATIVE){
+		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE){
 			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.dC;
 			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dC;
 			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dC;
 		}
-		else if (calculation_type == CT_THICKNESSDERIVATIVE){
+		else if (calculation_type == CalculationType::THICKNESSDERIVATIVE){
 			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.dT;
 			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dT;
 			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dT;
 		}
-		else if (calculation_type == CT_HDERIVATIVE){
+		else if (calculation_type == CalculationType::HDERIVATIVE){
 			//these are negative of d/dz derivatives
 			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.dH;
 			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dH;
 			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dH;
 		}
-		else if (calculation_type == CT_ZDERIVATIVE){
+		else if (calculation_type == CalculationType::ZDERIVATIVE){
 			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.dZ;
 			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dZ;
 			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dZ;
 		}
-		else if (calculation_type == CT_XDERIVATIVE || calculation_type == CT_YDERIVATIVE || calculation_type == CT_RDERIVATIVE) {
+		else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE) {
 
 			cdouble dxdX = 0.0; cdouble dydX = 0.0; cdouble dzdX = 0.0;
 			cdouble dxdY = 0.0; cdouble dydY = 0.0; cdouble dzdY = 0.0;
@@ -1124,21 +1129,21 @@ public:
 				dzdY = -ONEONFOURPI * Hankel[fi].I0.dR * YonR;
 			}
 
-			if (calculation_type == CT_XDERIVATIVE){
+			if (calculation_type == CalculationType::XDERIVATIVE){
 				double dXdXo = cosxyrotation;
 				double dYdXo = -sinxyrotation;
 				Fields.v.s.x = dxdX*dXdXo + dxdY*dYdXo;
 				Fields.v.s.y = dydX*dXdXo + dydY*dYdXo;
 				Fields.v.s.z = dzdX*dXdXo + dzdY*dYdXo;
 			}
-			else if (calculation_type == CT_YDERIVATIVE){
+			else if (calculation_type == CalculationType::YDERIVATIVE){
 				double dXdYo = sinxyrotation;
 				double dYdYo = cosxyrotation;
 				Fields.v.s.x = dxdX*dXdYo + dxdY*dYdYo;
 				Fields.v.s.y = dydX*dXdYo + dydY*dYdYo;
 				Fields.v.s.z = dzdX*dXdYo + dzdY*dYdYo;
 			}
-			else if (calculation_type == CT_RDERIVATIVE){
+			else if (calculation_type == CalculationType::RDERIVATIVE){
 				Fields.v.s.x = dxdX*XonR + dxdY*YonR;
 				Fields.v.s.y = dydX*XonR + dydY*YonR;
 				Fields.v.s.z = dzdX*XonR + dzdY*YonR;
@@ -1162,27 +1167,27 @@ public:
 		if (BigR == 0)return;
 		if (Source_Orientation.x == 0.0 && Source_Orientation.y == 0.0)return;//ie. not horizontal dipole contribution
 
-		if (calculation_type == CT_FORWARDMODEL){
+		if (calculation_type == CalculationType::FORWARDMODEL){
 			Fields.h.p.x = THREEONFOURPI*X*Y / BigR5;
 			Fields.h.p.y = THREEONFOURPI*Y*Y / BigR5 - ONEONFOURPI / BigR3;
 			Fields.h.p.z = THREEONFOURPI*Y*(Z - H) / BigR5;
 		}
-		else if (calculation_type == CT_CONDUCTIVITYDERIVATIVE || calculation_type == CT_THICKNESSDERIVATIVE){
+		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE || calculation_type == CalculationType::THICKNESSDERIVATIVE){
 			Fields.h.p.x = 0.0;
 			Fields.h.p.y = 0.0;
 			Fields.h.p.z = 0.0;
 		}
-		else if (calculation_type == CT_HDERIVATIVE){			
+		else if (calculation_type == CalculationType::HDERIVATIVE){
 			Fields.h.p.x = 0.0;
 			Fields.h.p.y = 0.0;
 			Fields.h.p.z = 0.0;
 		}
-		else if (calculation_type == CT_ZDERIVATIVE){
+		else if (calculation_type == CalculationType::ZDERIVATIVE){
 			Fields.h.p.x = THREEONFOURPI*X*Y*(-5.0*(Z - H) / BigR7);
 			Fields.h.p.y = THREEONFOURPI*Y*Y*(-5.0*(Z - H) / BigR7) - ONEONFOURPI*(-3.0*(Z - H) / BigR5);
 			Fields.h.p.z = THREEONFOURPI*Y*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
 		}
-		else if (calculation_type == CT_XDERIVATIVE || calculation_type == CT_YDERIVATIVE || calculation_type == CT_RDERIVATIVE){
+		else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE){
 			double dxdX = THREEONFOURPI*Y*(1.0 / BigR5 - 5.0*X*X / BigR7);
 			double dydX = THREEONFOURPI*Y*Y*-5.0*X / BigR7 + ONEONFOURPI*3.0*X / BigR5;
 			double dzdX = THREEONFOURPI*Y*(Z - H)*-5.0*X / BigR7;
@@ -1191,21 +1196,21 @@ public:
 			double dydY = THREEONFOURPI*(3.0*Y / BigR5 - 5.0*Y*Y*Y / BigR7);
 			double dzdY = THREEONFOURPI*(Z - H)*(1.0 / BigR5 - 5.0*Y*Y / BigR7);
 
-			if (calculation_type == CT_XDERIVATIVE){
+			if (calculation_type == CalculationType::XDERIVATIVE){
 				double dXdXo = cosxyrotation;
 				double dYdXo = -sinxyrotation;
 				Fields.h.p.x = dxdX*dXdXo + dxdY*dYdXo;
 				Fields.h.p.y = dydX*dXdXo + dydY*dYdXo;
 				Fields.h.p.z = dzdX*dXdXo + dzdY*dYdXo;
 			}
-			else if (calculation_type == CT_YDERIVATIVE){
+			else if (calculation_type == CalculationType::YDERIVATIVE){
 				double dXdYo = sinxyrotation;
 				double dYdYo = cosxyrotation;
 				Fields.h.p.x = dxdX*dXdYo + dxdY*dYdYo;
 				Fields.h.p.y = dydX*dXdYo + dydY*dYdYo;
 				Fields.h.p.z = dzdX*dXdYo + dzdY*dYdYo;
 			}
-			else if (calculation_type == CT_RDERIVATIVE){
+			else if (calculation_type == CalculationType::RDERIVATIVE){
 				Fields.h.p.x = dxdX*XonR + dxdY*YonR;
 				Fields.h.p.y = dydX*XonR + dydY*YonR;
 				Fields.h.p.z = dzdX*XonR + dzdY*YonR;
@@ -1226,32 +1231,32 @@ public:
 		if (R == 0)return;
 		if (Source_Orientation.x == 0.0 && Source_Orientation.y == 0.0)return;//ie. not horizontal dipole contribution
 
-		if (calculation_type == CT_FORWARDMODEL){
+		if (calculation_type == CalculationType::FORWARDMODEL){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.FM / R - Hankel[fi].I0.FM);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.FM / R3 - Y*Y*Hankel[fi].I0.FM / R2);
 			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.FM;
 		}
-		else if (calculation_type == CT_CONDUCTIVITYDERIVATIVE){
+		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dC / R - Hankel[fi].I0.dC);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dC / R3 - Y*Y*Hankel[fi].I0.dC / R2);
 			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dC;
 		}
-		else if (calculation_type == CT_THICKNESSDERIVATIVE){
+		else if (calculation_type == CalculationType::THICKNESSDERIVATIVE){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dT / R - Hankel[fi].I0.dT);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dT / R3 - Y*Y*Hankel[fi].I0.dT / R2);
 			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dT;
 		}
-		else if (calculation_type == CT_HDERIVATIVE){			
+		else if (calculation_type == CalculationType::HDERIVATIVE){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dH / R - Hankel[fi].I0.dH);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dH / R3 - Y*Y*Hankel[fi].I0.dH / R2);
 			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dH;
 		}
-		else if (calculation_type == CT_ZDERIVATIVE){
+		else if (calculation_type == CalculationType::ZDERIVATIVE){
 			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dZ / R - Hankel[fi].I0.dZ);
 			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dZ / R3 - Y*Y*Hankel[fi].I0.dZ / R2);
 			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dZ;
 		}
-		else if (calculation_type == CT_XDERIVATIVE || calculation_type == CT_YDERIVATIVE || calculation_type == CT_RDERIVATIVE){
+		else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE){
 			cdouble a, c, d, e, f, h;
 			cdouble dadx, dcdx, dddx, dedx, dfdx, dhdx;
 			cdouble dady, dcdy, dddy, dedy, dfdy, dhdy;
@@ -1303,21 +1308,21 @@ public:
 			cdouble dzdX = ONEONFOURPI*(Hankel[fi].I1.FM*dhdx + h*Hankel[fi].I1.dR*XonR);
 			cdouble dzdY = ONEONFOURPI*(Hankel[fi].I1.FM*dhdy + h*Hankel[fi].I1.dR*YonR);
 
-			if (calculation_type == CT_XDERIVATIVE){
+			if (calculation_type == CalculationType::XDERIVATIVE){
 				double dXdXo = cosxyrotation;
 				double dYdXo = -sinxyrotation;
 				Fields.h.s.x = dxdX*dXdXo + dxdY*dYdXo;
 				Fields.h.s.y = dydX*dXdXo + dydY*dYdXo;
 				Fields.h.s.z = dzdX*dXdXo + dzdY*dYdXo;
 			}
-			else if (calculation_type == CT_YDERIVATIVE){
+			else if (calculation_type == CalculationType::YDERIVATIVE){
 				double dXdYo = sinxyrotation;
 				double dYdYo = cosxyrotation;
 				Fields.h.s.x = dxdX*dXdYo + dxdY*dYdYo;
 				Fields.h.s.y = dydX*dXdYo + dydY*dYdYo;
 				Fields.h.s.z = dzdX*dXdYo + dzdY*dYdYo;
 			}
-			else if (calculation_type == CT_RDERIVATIVE){
+			else if (calculation_type == CalculationType::RDERIVATIVE){
 				Fields.h.s.x = dxdX*XonR + dxdY*YonR;
 				Fields.h.s.y = dydX*XonR + dydY*YonR;
 				Fields.h.s.z = dzdX*XonR + dzdY*YonR;
