@@ -48,70 +48,8 @@ int finaliseandexit(){
 	return EXIT_FAILURE;
 }
 
-int test() {
-	try {
-		std::string datfile = "test.dat";		
-		std::string dfnfile = "test.dfn";
-		//std::string datfile = "D:\\projects\\2021_Mundi_MinExCRC_GSNSW\\final\\line_data_bfield\\MinEx_CRC_Mundi_AEM_BField_sub10.dat";
-		//std::string dfnfile = "D:\\projects\\2021_Mundi_MinExCRC_GSNSW\\final\\line_data_bfield\\MinEx_CRC_Mundi_AEM_BField.dfn";
-		cAsciiColumnFile F;
-		F.openfile(datfile);
-		F.read_dfn(dfnfile);
-		int linefieldindex = F.fieldindexbyname("Line");
-		std::cout << "Line field index " << linefieldindex << std::endl;
-
-		cStopWatch w;
-		size_t fs = F.file_size();
-		w.reportnow();
-		std::cout << "File size " << fs << std::endl;
-
-		w.reset();
-		size_t rl = F.get_record_length();
-		w.reportnow();
-		std::cout << "Record length " << rl << std::endl;
-
-		w.reset();
-		size_t nr = F.nrecords();
-		w.reportnow();
-		std::cout << "Number of records " << nr << std::endl;
-
-		w.reset();
-		std::string rec = F.get_record(0);
-		std::cout << rec << std::endl << std::endl;
-		w.reportnow();
-
-		w.reset();
-		rec = F.get_record(nr - 1);
-		std::cout << rec << std::endl << std::endl;
-		w.reportnow();
-
-		std::vector<unsigned int> listart;
-		std::vector<unsigned int> licount;
-		std::vector<unsigned int> lnum;
-
-		w.reset();
-		size_t nrec = F.scan_for_line_index(linefieldindex, listart, licount, lnum);
-		w.reportnow();
-
-		w.reset();
-		std::vector<bool> gbf = F.scan_for_groupby_fields(licount);
-		w.reportnow();
-
-		std::cout << "Number of records " << nrec << std::endl;
-		std::cout << "Number of flight lines " << licount.size() << std::endl;
-
-	}
-	catch (const std::runtime_error& e) {
-		std::cerr << e.what();
-	}
-	return 0;
-}
-
-
 int main(int argc, char** argv) {	
-	
-	//return test();
-	
+		
 	std::string commandline = commandlinestring(argc, argv);
 	
 	int mpisize = 1;

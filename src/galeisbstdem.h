@@ -10,6 +10,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #define _galeisbs_H
 
 #include <stdio.h>
+#include <sstream>
 #include <vector>
 #include <cstring>
 #include <algorithm>
@@ -33,14 +34,106 @@ enum class eNormType { L1, L2 };
 enum class eSmoothnessMethod { DERIVATIVE_1ST, DERIVATIVE_2ND };
 enum class eBracketResult { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
 
+class cInvertibleFieldDefinition {
+
+public:	
+	int  index = -1;
+	bool solve = false;
+	cFieldDefinition input;	
+	cFieldDefinition ref;
+	cFieldDefinition std;
+	cFieldDefinition min;
+	cFieldDefinition max;
+	cFieldDefinition tfr;
+	
+	cInvertibleFieldDefinition() {};
+
+	cInvertibleFieldDefinition(const cBlock& parent, const std::string& key) {
+		initialise(parent, key);
+	};
+
+	bool initialise(const cBlock& parent, const std::string& key) {
+		std::string id = parent.findidentifer(key);
+		if (id.compare(ud_string()) != 0) {
+			return entryinit(parent, key);
+		}
+		else {
+			cBlock b = parent.findblock(key);
+			if (b.empty() == true) {
+				std::string msg;
+				msg += strprint("Could not find control file block: %s\n", key.c_str());
+				glog.errormsg(msg);
+			}
+
+			if (blockinit(b) == false) {
+				std::string msg;
+				msg += strprint("Could not parse control file block: %s\n", key.c_str());
+				std::cerr << msg;
+				glog.errormsg(msg);
+			}
+			return true;
+		}
+	};
+
+	bool entryinit(const cBlock& b, const std::string& key) {
+		index = -1;
+		input.initialise(b, key);
+		return true;
+	};
+
+	bool blockinit(const cBlock& b) {
+		b.get("solve", solve, false);
+		input.initialise(b, "input");
+		ref.initialise(b, "ref");
+		std.initialise(b, "std");
+		min.initialise(b, "min");
+		max.initialise(b, "max");
+		tfr.initialise(b, "tfr");
+		return true;
+	};
+
+	bool bound() const {
+
+		if (solve && min.isinitialised() && max.isinitialised()) {
+			return true;
+		}
+		else return false;
+	}
+};
+
+class cGeomMap {
+
+public:
+	cTDEmGeometry input;
+	cTDEmGeometry ref;
+	cTDEmGeometry std;
+	cTDEmGeometry min;
+	cTDEmGeometry max;
+	cTDEmGeometry tfr;
+	cTDEmGeometry invmodel;
+};
+
+class cEarthMap {
+
+public:	
+	cEarth1D ref;
+	cEarth1D std;
+	cEarth1D min;
+	cEarth1D max;
+	cEarth1D invmodel;
+};
+
+typedef std::map<std::string, cFieldDefinition> cFDMap;
+typedef std::map<std::string, cInvertibleFieldDefinition> cIFDMap;
+
 class cTrial{
 
 public:
-	size_t order;
-	double lambda;
-	double stepfactor;
-	double phid;
-	double phim;	
+	size_t order = 0;
+	double lambda = 0.0;
+	double stepfactor = 0.0;
+	double phid = 0.0;
+	double phim = 0.0;
 
 	static bool lambda_compare(const cTrial& a, const cTrial& b)
 	{				
@@ -63,7 +156,7 @@ class cTrialCache{
 
 	public:
 
-	double target;	
+	double target=0;	
 	std::vector<cTrial> trial;
 	double sfsearch(const double& x){		
 		for(size_t k=0; k<trial.size(); ++k){
@@ -199,16 +292,16 @@ public:
 
 	std::string Name;
 	bool Use = false;
-	double  oP;
+	double  oP=0.0;
 	std::vector<double>  oS;
 	std::vector<double>  oE;
 	cFieldDefinition fd_oP;
 	cFieldDefinition fd_oS;
 	cFieldDefinition fd_oE;
-	bool EstimateNoiseFromModel;
+	bool EstimateNoiseFromModel=false;
 	std::vector<double> mn;
 	std::vector<double> an;
-	int dataindex = 0;
+	int dataindex = -1;
 
 	cComponentInfo() {};
 
@@ -278,15 +371,15 @@ public:
 
 	cTDEmSystem T;
 	std::string SystemFile;
-	size_t nwindows;
-	size_t ncomps;
-	size_t nchans;
+	size_t nwindows=0;
+	size_t ncomps=0;
+	size_t nchans=0;
 	cComponentInfo CompInfo[3];
-	int xzIndex;//Start index of XZ in data array
+	int xzIndex=-1;//Start index of XZ in data array
 
-	bool invertXPlusZ;
-	bool invertPrimaryPlusSecondary;
-	bool reconstructPrimary;		
+	bool invertXPlusZ=false;
+	bool invertPrimaryPlusSecondary=false;
+	bool reconstructPrimary=false;		
 	cTDEmData predicted;
 
 	void initialise(const cBlock& b) {
@@ -376,47 +469,37 @@ class cSBSInverter{
 
 	cOutputOptions OO;	
 	
-	//Column definitions
-	cFieldDefinition sn, dn, fn, ln, fidn;
-	cFieldDefinition xord, yord, elevation;	
-	std::vector<cFieldDefinition> fd_GI;
-	std::vector<cFieldDefinition> fd_GR;
-	std::vector<cFieldDefinition> fd_GS;	
-	std::vector<cFieldDefinition> fd_GTFR;	
-	cFieldDefinition fd_ERc;
-	cFieldDefinition fd_ERt;
-	cFieldDefinition fd_ESc;
-	cFieldDefinition fd_ESt;		
-			
+	//Column definitions	
+	cFDMap fdM;
+	cIFDMap fdG;
+	cInvertibleFieldDefinition fdC;
+	cInvertibleFieldDefinition fdT;					
+	
+	//Sample instances
 	sAirborneSampleId Id;
-	sAirborneSampleLocation Location; 	
-	cTDEmGeometry GI;//Input geometry	
-	cTDEmGeometry GR;//Reference model geometry
-	cTDEmGeometry GS;//Standard deviation geometry
-	cTDEmGeometry GTFR;//Total field reconstruction geometry
-	cTDEmGeometry GM;//Final inversion geometry
+	sAirborneSampleLocation Location; 		
+	cGeomMap G;		
+	cEarthMap E;
 	
-	cEarth1D ER;//Reference model earth
-	cEarth1D ES;//Standard deviation earth
-	cEarth1D EM;//Final inversion earth
+	//double min_log10_conductivity = std::log10(1.0e-5);
+	//double max_log10_conductivity = std::log10(10.0);
 
-	double min_log10_conductivity = std::log10(1.0e-5);
-	double max_log10_conductivity = std::log10(10.0);
+	bool solve_thickness() const
+	{
+		return fdT.solve;
+	};
+	bool solve_conductivity() const {
+		return fdC.solve;
+	};
+	bool solve_geometry(const std::string& e) const {
+		return fdG.at(e).solve;		
+	};
+	bool solve_geometry() const {
+		if (_gindex_ == -1) return false;
+		return true;
+	};
 
-	bool solve_conductivity;
-	bool solve_thickness;	
-
-	bool solve_tx_height;
-	bool solve_tx_roll;
-	bool solve_tx_pitch;
-	bool solve_tx_yaw;
-	bool solve_txrx_dx;
-	bool solve_txrx_dy;
-	bool solve_txrx_dz;
-	bool solve_rx_roll;
-	bool solve_rx_pitch;
-	bool solve_rx_yaw;	
-	
+	//base members
 	double AlphaC;
 	double AlphaT;
 	double AlphaG;	
@@ -456,17 +539,26 @@ class cSBSInverter{
 	std::string TerminationReason;
 	
 	cIterationState CIS;
-		
 	
-	size_t cIndex;//Conductivty parameters start index
-    size_t tIndex;//Thickness parameters start index
-	size_t gIndex;//Geometery parameters start index
-	size_t tx_heightIndex;
-	size_t txrx_dxIndex;
-	size_t txrx_dyIndex;
-	size_t txrx_dzIndex;
-	size_t rx_pitchIndex;
-	size_t rx_rollIndex;
+	int _gindex_ = -1;
+	const size_t cindex(const size_t& li) {		
+		if (solve_conductivity() == false) {
+			glog.errormsg("Out of boundes in cindex()\n");
+		}
+		return fdC.index + li;
+	}
+	const size_t tindex(const size_t& li) {
+		if (solve_thickness() == false) {
+			glog.errormsg("Out of boundes in tindex()\n");
+		}
+		return fdT.index + li;
+	}
+	const size_t gindex(const size_t& pi) {
+		if (solve_geometry() == false) {
+			glog.errormsg("Out of boundes in gindex\n");
+		}
+		return pi + _gindex_;
+	}
 	
 	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline)
 	{		
@@ -512,7 +604,8 @@ class cSBSInverter{
 		glog.logmsg(0, "Loading control file %s\n", filename.c_str());
 		Control = cBlock(filename);		
 		cBlock ob = Control.findblock("Output");
-
+		cBlock ib = Control.findblock("Input");
+		
 		OO = cOutputOptions(ob);
 		Verbose = ob.getboolvalue("verbose");
 
@@ -524,7 +617,7 @@ class cSBSInverter{
 		parseoptions();
 		initialisesystems();
 
-		cBlock ib = Control.findblock("Input");
+		
 		if (cInputManager::isnetcdf(ib)){
 			#if !defined HAVE_NETCDF
 			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
@@ -573,19 +666,19 @@ class cSBSInverter{
 	void parseoptions()
 	{
 		cBlock b = Control.findblock("Options");
-		solve_conductivity = b.getboolvalue("SolveConductivity");
-		solve_thickness = b.getboolvalue("SolveThickness");
+		//solve_conductivity = b.getboolvalue("SolveConductivity");
+		//solve_thickness = b.getboolvalue("SolveThickness");
 
-		solve_tx_height = b.getboolvalue("SolveTX_Height");
-		solve_tx_roll = b.getboolvalue("SolveTX_Roll");
-		solve_tx_pitch = b.getboolvalue("SolveTX_Pitch");
-		solve_tx_yaw = b.getboolvalue("SolveTX_Yaw");
-		solve_txrx_dx = b.getboolvalue("SolveTXRX_DX");
-		solve_txrx_dy = b.getboolvalue("SolveTXRX_DY");
-		solve_txrx_dz = b.getboolvalue("SolveTXRX_DZ");
-		solve_rx_roll = b.getboolvalue("SolveRX_Roll");
-		solve_rx_pitch = b.getboolvalue("SolveRX_Pitch");
-		solve_rx_yaw = b.getboolvalue("SolveRX_Yaw");
+		//solve_tx_height = b.getboolvalue("SolveTX_Height");
+		//solve_tx_roll = b.getboolvalue("SolveTX_Roll");
+		//solve_tx_pitch = b.getboolvalue("SolveTX_Pitch");
+		//solve_tx_yaw = b.getboolvalue("SolveTX_Yaw");
+		//solve_txrx_dx = b.getboolvalue("SolveTXRX_DX");
+		//solve_txrx_dy = b.getboolvalue("SolveTXRX_DY");
+		//solve_txrx_dz = b.getboolvalue("SolveTXRX_DZ");
+		//solve_rx_roll = b.getboolvalue("SolveRX_Roll");
+		//solve_rx_pitch = b.getboolvalue("SolveRX_Pitch");
+		//solve_rx_yaw = b.getboolvalue("SolveRX_Yaw");
 
 		AlphaC = b.getdoublevalue("AlphaConductivity");
 		AlphaT = b.getdoublevalue("AlphaThickness");
@@ -637,44 +730,66 @@ class cSBSInverter{
 		MinimumPhiD = b.getdoublevalue("MinimumPhiD");
 		MinimumImprovement = b.getdoublevalue("MinimumPercentageImprovement");
 	}
+	
+	void fdadd(cFDMap& map, const cBlock& parent, const std::string& key) {
+		cFieldDefinition f(parent, key);
+		auto a = map.insert(std::pair(key, f));
+		if (a.second == false) {
+			std::string msg = strprint("Parameter %s has already been already added\n", key.c_str());
+			glog.errormsg(msg);
+		}
+	}
+	
+	cIFDMap fdinitialise_geometry(const cBlock& parent)
+	{		
+		std::map<std::string, cInvertibleFieldDefinition> g;
+		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {			
+			std::string key = cTDEmGeometry::element_name(i);
+			cInvertibleFieldDefinition f(parent, key);
+			auto a = g.insert(std::pair(key, f));
+			if (a.second == false) {
+				std::string msg = strprint("Parameter %s has already been already added\n", key.c_str());
+				glog.errormsg(msg);
+			}
+		}
+		return g;
+	}
 
 	void set_field_definitions()
 	{
-		cBlock b = Control.findblock("Input.Columns");
-		sn.initialise(b, "SurveyNumber");
-		dn.initialise(b, "DateNumber");
-		fn.initialise(b, "FlightNumber");
-		ln.initialise(b, "LineNumber");
-		fidn.initialise(b, "FidNumber");
-		xord.initialise(b, "Easting");
-		yord.initialise(b, "Northing");
-		elevation.initialise(b, "GroundElevation");
+		//bookmark		
+		cBlock b = Control.findblock("Input.Columns");		
+		fdadd(fdM, b, "SurveyNumber");
+		fdadd(fdM, b, "DateNumber");
+		fdadd(fdM, b, "FlightNumber");
+		fdadd(fdM, b, "LineNumber");
+		fdadd(fdM, b, "FidNumber");
+		fdadd(fdM, b, "Easting");
+		fdadd(fdM, b, "Northing");
+		fdadd(fdM, b, "GroundElevation");
+		
+		fdG = fdinitialise_geometry(b);
+		fdC = cInvertibleFieldDefinition(b,"Conductivity");
+		fdT = cInvertibleFieldDefinition(b,"Thickness");
+				
+		//cBlock rm = b.findblock("ReferenceModel");				
+		//fd_ERc.initialise(rm, "Conductivity");
+		//fd_ERt.initialise(rm, "Thickness");
 
-		fd_GI = set_field_definitions_geometry(b);
-
-		cBlock rm = b.findblock("ReferenceModel");
-		fd_GR = set_field_definitions_geometry(rm);
-		fd_ERc.initialise(rm, "Conductivity");
-		fd_ERt.initialise(rm, "Thickness");
-
-		cBlock sd = b.findblock("StdDevReferenceModel");
-		fd_GS = set_field_definitions_geometry(sd);
-		fd_ESc.initialise(sd, "Conductivity");
-		fd_ESt.initialise(sd, "Thickness");
-
-		cBlock tfr = b.findblock("TotalFieldReconstruction");
-		fd_GTFR = set_field_definitions_geometry(tfr);		
+		//cBlock sd = b.findblock("StdDevReferenceModel");
+		//fd_ESc.initialise(sd, "Conductivity");
+		//fd_ESt.initialise(sd, "Thickness");		
 	}
 
 	std::vector<cFieldDefinition> set_field_definitions_geometry(const cBlock& b)
 	{
 		std::vector<cFieldDefinition> g(10);
 		for (size_t i = 0; i < g.size(); i++) {
-			g[i].initialise(b, cTDEmGeometry::fname(i));
+			g[i].initialise(b, cTDEmGeometry::element_name(i));
 		}
 		return g;
 	}
-
+	
 	void set_fftw_lock() {
 		#if defined _OPENMP
 		//If OpenMP is being used set the thread lock while FFTW initialises
@@ -733,69 +848,42 @@ class cSBSInverter{
 
 	void setup_parameters()
 	{
-		double v;
-		if (Control.getvalue("Earth.MinConductivity", v)) {
-			min_log10_conductivity = std::log10(v);
+		bool status = Control.getvalue("Input.Columns.Conductivity.NumberOfLayers",nlayers);
+		if (status == false) {
+			std::stringstream msg;
+			msg << "The NumberOfLayers must be specified in Input.Columns.Conductivity\n";
+			glog.errormsg(msg.str());
 		}
 
-		if (Control.getvalue("Earth.MaxConductivity", v)) {
-			max_log10_conductivity = std::log10(v);
-		}
-
-		nlayers = Control.getsizetvalue("Earth.NumberOfLayers");
 		nparam = 0;
 		ngeomparam = 0;
-		if (solve_conductivity) {
-			cIndex = nparam;
+		if (solve_conductivity()) {			
+			fdC.index = (int)nparam;			
 			nparam += nlayers;
 		}
 
-		if (solve_thickness) {
-			tIndex = nparam;
+		if (solve_thickness()) {
+			fdT.index = (int)nparam;
 			nparam += nlayers - 1;
 		}
 
 
-		//Geometry params
-		gIndex = nparam;
-		if (solve_tx_height) {
-			tx_heightIndex = nparam;
-			nparam++;
-			ngeomparam++;
-		}
-
-		if (solve_txrx_dx) {
-			txrx_dxIndex = nparam;
-			nparam++;
-			ngeomparam++;
-		}
-
-		if (solve_txrx_dy) {
-			txrx_dyIndex = nparam;
-			nparam++;
-			ngeomparam++;
-		}
-
-		if (solve_txrx_dz) {
-			txrx_dzIndex = nparam;
-			nparam++;
-			ngeomparam++;
-		}
-
-		if (solve_rx_pitch) {
-			rx_pitchIndex = nparam;
-			nparam++;
-			ngeomparam++;
-		}
-
-		if (solve_rx_roll) {
-			rx_rollIndex = nparam;
-			nparam++;
-			ngeomparam++;
-		}
-
-		///////////////
-		//Param.resize(nparam);
+		//Geometry params	
+		_gindex_ = (int)nparam;
+		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
+			std::string gname = cTDEmGeometry::element_name(i);
+			cInvertibleFieldDefinition& a = fdG[gname];
+			if (a.solve) {
+				a.index = (int)nparam;
+				nparam++;
+				ngeomparam++;
+			}
+			else {
+				a.index = -1;
+			}
+		}		
+		if (ngeomparam == 0) _gindex_ = -1;//reset if none;
+		
 		RefParam.resize(nparam);
 		RefParamStd.resize(nparam);
 	}
@@ -804,34 +892,34 @@ class cSBSInverter{
 	{
 		if (IM->parserecord() == false) return false;		
 		bool readstatus = true;
-		bool status;
-		Id.uniqueid = IM->record();
-		status = IM->read(sn, Id.surveynumber); if (status == false) readstatus = false;
-		status = IM->read(dn, Id.daynumber); if (status == false) readstatus = false;
-		status = IM->read(fn, Id.flightnumber); if (status == false) readstatus = false;
-		status = IM->read(ln, Id.linenumber); if (status == false) readstatus = false;
-		status = IM->read(fidn, Id.fidnumber); if (status == false) readstatus = false;
-		status = IM->read(xord, Location.x); if (status == false) readstatus = false;
-		status = IM->read(yord, Location.y); if (status == false) readstatus = false;
-		status = IM->read(elevation, Location.groundelevation); if (status == false) readstatus = false;
-
+		bool status;				
+		Id.uniqueid = IM->record();		
+		status = IM->read(fdM["SurveyNumber"], Id.surveynumber); if (status == false) readstatus = false;
+		status = IM->read(fdM["DateNumber"], Id.daynumber); if (status == false) readstatus = false;
+		status = IM->read(fdM["FlightNumber"], Id.flightnumber); if (status == false) readstatus = false;
+		status = IM->read(fdM["LineNumber"], Id.linenumber); if (status == false) readstatus = false;
+		status = IM->read(fdM["FidNumber"], Id.fidnumber); if (status == false) readstatus = false;
+		status = IM->read(fdM["Easting"], Location.x); if (status == false) readstatus = false;
+		status = IM->read(fdM["Northing"], Location.y); if (status == false) readstatus = false;
+		status = IM->read(fdM["GroundElevation"], Location.groundelevation); if (status == false) readstatus = false;
 		Location.z = ud_double();
 		
-		status = readgeometry(fd_GI,GI); if (status == false) readstatus = false;
-		status = readgeometry(fd_GR,GR); 		
-		GR.fillundefined(GI);
-		status = readgeometry(fd_GTFR,GTFR); 
-		GTFR.fillundefined(GI); 
-		status = readgeometry(fd_GS,GS); 
-
-		status = IM->read(fd_ERc, ER.conductivity, nlayers); if (status == false) readstatus = false;
-		status = IM->read(fd_ERt, ER.thickness, nlayers - 1); if (status == false) readstatus = false;
-
-		if (solve_conductivity) {
-			status = IM->read(fd_ESc, ES.conductivity, nlayers); if (status == false) readstatus = false;
+		status = readgeometry(fdG);
+				
+		status = IM->read(fdC.input, E.ref.conductivity, nlayers); if (status == false) readstatus = false;				
+		if (solve_conductivity()) {
+			status = IM->read(fdC.ref, E.ref.conductivity, nlayers); if (status == false) readstatus = false;
+			status = IM->read(fdC.std, E.std.conductivity, nlayers); if (status == false) readstatus = false;
+			status = IM->read(fdC.min, E.min.conductivity, nlayers); if (status == false) readstatus = false;
+			status = IM->read(fdC.max, E.max.conductivity, nlayers); if (status == false) readstatus = false;
 		}
-		if (solve_thickness) {
-			status = IM->read(fd_ESt, ES.thickness, nlayers - 1); if (status == false) readstatus = false;
+
+		status = IM->read(fdT.input, E.ref.thickness, nlayers - 1); if (status == false) readstatus = false;
+		if (solve_thickness()) {
+			status = IM->read(fdT.ref, E.ref.thickness, nlayers - 1); if (status == false) readstatus = false;
+			status = IM->read(fdT.std, E.std.thickness, nlayers - 1); if (status == false) readstatus = false;
+			status = IM->read(fdT.min, E.min.thickness, nlayers - 1); if (status == false) readstatus = false;
+			status = IM->read(fdT.max, E.max.thickness, nlayers - 1); if (status == false) readstatus = false;
 		}
 
 		for (size_t si = 0; si < nsystems; si++) {
@@ -856,8 +944,8 @@ class cSBSInverter{
 			cTDEmSystemInfo& S = SV[si];
 			cTDEmSystem& T = S.T;
 			if (S.reconstructPrimary) {
-				T.setgeometry(GTFR);
-				T.LEM.calculation_type = CT_FORWARDMODEL;
+				T.setgeometry(G.tfr);
+				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();				
 				S.CompInfo[0].oP = T.PrimaryX;
@@ -935,47 +1023,58 @@ class cSBSInverter{
 	}
 		
 	void initialise_parameters(){
-		if (solve_conductivity) {
+		if (solve_conductivity()) {
 			for (size_t i = 0; i < nlayers; i++) {
-				RefParam[i + cIndex] = log10(ER.conductivity[i]);
-				RefParamStd[i + cIndex] = ES.conductivity[i];
+				RefParam[cindex(i)] = log10(E.ref.conductivity[i]);
+				RefParamStd[cindex(i)] = E.std.conductivity[i];
 			}
 		}
 
-		if (solve_thickness) {
+		if (solve_thickness()) {
 			for (size_t i = 0; i < nlayers - 1; i++) {
-				RefParam[i + tIndex] = log10(ER.thickness[i]);
-				RefParamStd[i + tIndex] = ES.thickness[i];
+				RefParam[tindex(i)] = log10(E.ref.thickness[i]);
+				RefParamStd[tindex(i)] = E.std.thickness[i];
 			}
 		}
 
+		for (int i = 0; i < cTDEmGeometry::size(); i++) {
+			std::string gname = cTDEmGeometry::element_name(i);
+			auto a = fdG.at(gname);
+			if (a.index > 0) {
+				RefParam[a.index] = G.ref[gname];
+				RefParamStd[a.index] = G.std[gname];
+			}
+		}
+
+		/*
 		if (solve_tx_height) {
-			RefParam[tx_heightIndex] = GR.tx_height;
-			RefParamStd[tx_heightIndex] = GS.tx_height;
+			RefParam[tx_heightIndex] = G.ref.tx_height;
+			RefParamStd[tx_heightIndex] = G.std.tx_height;
 		}
 
 		if (solve_txrx_dx) {
-			RefParam[txrx_dxIndex] = GR.txrx_dx;
-			RefParamStd[txrx_dxIndex] = GS.txrx_dx;
+			RefParam[txrx_dxIndex] = G.ref.txrx_dx;
+			RefParamStd[txrx_dxIndex] = G.std.txrx_dx;
 		}
 		if (solve_txrx_dy) {
-			RefParam[txrx_dyIndex] = GR.txrx_dy;
-			RefParamStd[txrx_dyIndex] = GS.txrx_dy;
+			RefParam[txrx_dyIndex] = G.ref.txrx_dy;
+			RefParamStd[txrx_dyIndex] = G.std.txrx_dy;
 		}
 		if (solve_txrx_dz) {
-			RefParam[txrx_dzIndex] = GR.txrx_dz;
-			RefParamStd[txrx_dzIndex] = GS.txrx_dz;
+			RefParam[txrx_dzIndex] = G.ref.txrx_dz;
+			RefParamStd[txrx_dzIndex] = G.std.txrx_dz;
 		}
 
 		if (solve_rx_pitch) {
-			RefParam[rx_pitchIndex] = GR.rx_pitch;
-			RefParamStd[rx_pitchIndex] = GS.rx_pitch;
+			RefParam[rx_pitchIndex] = G.ref.rx_pitch;
+			RefParamStd[rx_pitchIndex] = G.std.rx_pitch;
 		}
 
 		if (solve_rx_roll) {
-			RefParam[rx_rollIndex] = GR.rx_roll;
-			RefParamStd[rx_rollIndex] = GS.rx_roll;
+			RefParam[rx_rollIndex] = G.ref.rx_roll;
+			RefParamStd[rx_rollIndex] = G.std.rx_roll;
 		}
+		*/
 
 	}
 
@@ -990,19 +1089,19 @@ class cSBSInverter{
 
 	void initialise_Wc(){
 		Wc = Matrix::Zero(nparam, nparam);		
-		if (solve_conductivity == false)return;
+		if (solve_conductivity() == false)return;
 
 		std::vector<double> t(nlayers);
 		if (nlayers == 1) {
 			t[0] = 1;
 		}
 		else if (nlayers == 2) {
-			t[0] = ER.thickness[0];
-			t[1] = ER.thickness[0];
+			t[0] = E.ref.thickness[0];
+			t[1] = E.ref.thickness[0];
 		}
 		else {
 			for (size_t i = 0; i < (nlayers - 1); i++) {
-				t[i] = ER.thickness[i];
+				t[i] = E.ref.thickness[i];
 			}
 			t[nlayers - 1] = (t[nlayers - 2] / t[nlayers - 3])*t[nlayers - 2];
 		}
@@ -1014,18 +1113,18 @@ class cSBSInverter{
 
 		double s = AlphaC / (double)(nlayers);
 		for (size_t i = 0; i < nlayers; i++) {
-			size_t p = i + cIndex;
+			size_t p = cindex(i);
 			Wc(p,p) = s * (t[i] / tavg) / (RefParamStd[p] * RefParamStd[p]);
 		}
 	}
 
 	void initialise_Wt(){
 		Wt = Matrix::Zero(nparam, nparam);
-		if (solve_thickness == false)return;
+		if (solve_thickness() == false)return;
 
 		double s = AlphaT / (double)(nlayers - 1);
 		for (size_t i = 0; i < nlayers - 1; i++) {
-			size_t p = i + tIndex;
+			size_t p = tindex(i);
 			Wt(p,p) = s / (RefParamStd[p] * RefParamStd[p]);
 		}
 
@@ -1037,7 +1136,7 @@ class cSBSInverter{
 
 		double s = AlphaG / (double)ngeomparam;
 		for (size_t i = 0; i < ngeomparam; i++) {
-			size_t p = i + gIndex;
+			size_t p = gindex(i);
 			Wg(p,p) = s / (RefParamStd[p] * RefParamStd[p]);
 		}
 	}
@@ -1046,11 +1145,11 @@ class cSBSInverter{
 	{
 		Ws = Matrix::Zero(nparam, nparam);
 		if (AlphaS == 0 || nlayers < 3) return;
-		if (solve_conductivity == false) return;
+		if (solve_conductivity() == false) return;
 
 		std::vector<double> t(nlayers);
 		for (size_t i = 0; i < (nlayers - 1); i++) {
-			t[i] = ER.thickness[i];
+			t[i] = E.ref.thickness[i];
 		}
 		t[nlayers - 1] = (t[nlayers - 2] / t[nlayers - 3])*t[nlayers - 2];
 
@@ -1062,7 +1161,7 @@ class cSBSInverter{
 		Matrix L = Matrix::Zero(nlayers - 1, nparam);
 		size_t neqn = 0;
 		for (size_t li = 1; li < nlayers; li++) {
-			size_t pindex = cIndex + li;
+			const size_t& pindex = cindex(li);
 			double t1 = t[li - 1];
 			double t2 = t[li];
 			double d12 = (t1 + t2) / 2.0;
@@ -1079,7 +1178,7 @@ class cSBSInverter{
 	{
 		Ws = Matrix::Zero(nparam, nparam);
 		if (AlphaS == 0 || nlayers < 3) return;
-		if (solve_conductivity == false) return;
+		if (solve_conductivity() == false) return;
 
 		std::vector<double> t(nlayers);
 		if (nlayers == 1) {
@@ -1087,7 +1186,7 @@ class cSBSInverter{
 		}
 		else {
 			for (size_t i = 0; i < (nlayers - 1); i++) {
-				t[i] = ER.thickness[i];
+				t[i] = E.ref.thickness[i];
 			}
 			t[nlayers - 1] = (t[nlayers - 2] / t[nlayers - 3])*t[nlayers - 2];
 		}
@@ -1099,7 +1198,7 @@ class cSBSInverter{
 		Matrix L = Matrix::Zero(nlayers - 2, nparam);
 		size_t neqn = 0;
 		for (size_t li = 1; li < nlayers - 1; li++) {
-			size_t pindex = cIndex + li;
+			const size_t& pindex = cindex(li);
 			double t1 = t[li - 1];
 			double t2 = t[li];
 			double t3 = t[li + 1];
@@ -1152,72 +1251,97 @@ class cSBSInverter{
 		}
 	}
 	
-	Vector parameterchange(const double& lambda, const Vector& param, const Vector& pred)
+	Vector parameterchange(const double& lambda, const Vector& m_old, const Vector& pred)
 	{
-		Vector m = solve(lambda, param, pred);
-		Vector dm = m - param;
+		Vector m_new = solve_linear_system(lambda, m_old, pred);
+		Vector dm = m_new - m_old;
 
-		bool bound = true;
-		if (bound) {
-			if (solve_conductivity) {
-				for (size_t li = 0; li < nlayers; li++) {
-					size_t pindex = li + cIndex;
-					if (m[pindex] > max_log10_conductivity) {
+		if (fdC.bound()) {			
+			for (size_t li = 0; li < nlayers; li++) {
+				const size_t pindex = cindex(li);				
+				const double lmin = std::log10(E.min.conductivity[li]);
+				const double lmax = std::log10(E.max.conductivity[li]);
+				if(m_new[pindex] < lmin) {
+					if (Verbose) {
 						std::cerr << rec_it_str() << std::endl;
-						std::cerr << "Upper bound reached" << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << param[pindex] << "\tm+dm=" << m[pindex] << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(param[pindex]) << "\tm+dm=" << pow10(m[pindex]) << std::endl;
-						dm[pindex] = max_log10_conductivity - param[pindex];
-						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(param[pindex]) << "\tm+dm=" << pow10(dm[pindex] + param[pindex]) << std::endl;
+						std::cerr << "Lower conductivity bound reached" << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
 					}
-					else if (m[pindex] < min_log10_conductivity) {
+					dm[pindex] = lmin - m_old[pindex];
+					if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
+				}
+				else if (m_new[pindex] > lmax) {
+					if (Verbose) {
 						std::cerr << rec_it_str() << std::endl;
-						std::cerr << "Lower upper bound reached" << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << param[pindex] << "\tm+dm=" << m[pindex] << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(param[pindex]) << "\tm+dm=" << pow10(m[pindex]) << std::endl;
-						dm[pindex] = min_log10_conductivity - param[pindex];
-						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(param[pindex]) << "\tm+dm=" << pow10(dm[pindex] + param[pindex]) << std::endl;
+						std::cerr << "Upper conductivity bound reached" << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
 					}
-				}
-			}
-
-			if (solve_thickness) {
-				for (size_t li = 0; li < nlayers - 1; li++) {
-					size_t pindex = li + tIndex;
-					if (dm[pindex] > 0.5) {
-						//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
-						dm[pindex] = 0.5;
-					}
-					else if (dm[pindex] < -0.5) {
-						//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
-						dm[pindex] = -0.5;
-					}
-				}
-			}
-
-			if (solve_tx_height) {
-				size_t pindex = tx_heightIndex;
-				if (dm[pindex] > 0.5) {
-					//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
-					dm[pindex] = 0.5;
-				}
-				else if (dm[pindex] < -0.5) {
-					//printf("li=%zu pindex=%zu dm=%lf\n",li,pindex,dm[pindex]);
-					dm[pindex] = -0.5;
-				}
-
-				if (param[pindex] + dm[pindex] > 1000) {
-					dm[pindex] = 1000 - param[pindex];
-				}
-				else if (param[pindex] + dm[pindex] < 10) {
-					dm[pindex] = 10 - param[pindex];
+					dm[pindex] = lmax - m_old[pindex];
+					if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
 				}
 			}
 		}
+		
+		if (fdT.bound()) {
+			for (size_t li = 0; li < nlayers - 1; li++) {
+				const size_t pindex = tindex(li);
+				const double lmin = std::log10(E.min.thickness[li]);
+				const double lmax = std::log10(E.max.thickness[li]);				
+				if (m_new[pindex] < lmin) {
+					if (Verbose) {
+						std::cerr << rec_it_str() << std::endl;
+						std::cerr << "Lower thickness bound reached" << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+					}
+					dm[pindex] = lmin - m_old[pindex];
+					if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
+				}
+				else if (m_new[pindex] > lmax) {
+					if (Verbose) {
+						std::cerr << rec_it_str() << std::endl;
+						std::cerr << "Upper thickness bound reached" << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+					}
+					dm[pindex] = lmax - m_old[pindex];
+					if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
+				}				
+			}
+		}
+
+		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
+			const std::string ename = cTDEmGeometry::element_name(i);			
+			const cInvertibleFieldDefinition& e = fdG.at(ename);
+			if (e.bound()) {
+				const size_t pindex = e.index;
+				const double emin = G.min[ename];
+				const double emax = G.max[ename];
+				if (m_new[pindex] < emin) {										
+					if (Verbose) {
+						std::cerr << rec_it_str() << std::endl;
+						std::cerr << "Lower " << ename << " bound reached" << std::endl;
+						std::cerr << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+					}
+					dm[pindex] = emin - m_old[pindex];
+				}
+				else if (m_new[pindex] > emax) {
+					if (Verbose) {
+						std::cerr << rec_it_str() << std::endl;
+						std::cerr << "Upper " << ename << " bound reached" << std::endl;
+						std::cerr << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+					}
+					dm[pindex] = emax - m_old[pindex];
+				}
+			}
+		}
+		
 		return dm;
 	}
 
-	Vector solve(const double& lambda, const Vector& param, const Vector& pred)
+	Vector solve_linear_system(const double& lambda, const Vector& param, const Vector& pred)
 	{
 		// Phi = (d-g(m)+Jm) Wd (d-g(m)+Jm) + lambda ( (m-m0)' Wr (m-m0) + m' Ws m) )
 		//Ax = b
@@ -1309,7 +1433,7 @@ class cSBSInverter{
 	double phiC(const Vector& p)
 	{
 		if (AlphaC == 0.0)return 0.0;
-		if (solve_conductivity == false)return 0.0;
+		if (solve_conductivity() == false)return 0.0;
 		Vector v = p - RefParam;
 		return mtDm(v, Wc);
 	}
@@ -1317,7 +1441,7 @@ class cSBSInverter{
 	double phiT(const Vector& p)
 	{
 		if (AlphaT == 0.0)return 0.0;
-		if (solve_thickness == false)return 0.0;
+		if (solve_thickness() == false)return 0.0;
 		Vector v = p - RefParam;
 		return mtDm(v, Wt);
 	}
@@ -1338,16 +1462,16 @@ class cSBSInverter{
 
 	cEarth1D get_earth(const Vector& parameters)
 	{
-		cEarth1D e = ER;
-		if (solve_conductivity) {
+		cEarth1D e = E.ref;
+		if (solve_conductivity()) {
 			for (size_t li = 0; li < nlayers; li++) {
-				e.conductivity[li] = pow10(parameters[li + cIndex]);
+				e.conductivity[li] = pow10(parameters[cindex(li)]);
 			}
 		}
 
-		if (solve_thickness) {
+		if (solve_thickness()) {
 			for (size_t li = 0; li < nlayers - 1; li++) {
-				e.thickness[li] = pow10(parameters[li + tIndex]);
+				e.thickness[li] = pow10(parameters[tindex(li)]);
 			}
 		}
 		return e;
@@ -1355,13 +1479,14 @@ class cSBSInverter{
 
 	cTDEmGeometry get_geometry(const Vector& parameters)
 	{
-		cTDEmGeometry g = GI;
-		if (solve_tx_height)g.tx_height = parameters[tx_heightIndex];
-		if (solve_txrx_dx)g.txrx_dx = parameters[txrx_dxIndex];
-		if (solve_txrx_dy)g.txrx_dy = parameters[txrx_dyIndex];
-		if (solve_txrx_dz)g.txrx_dz = parameters[txrx_dzIndex];
-		if (solve_rx_pitch)g.rx_pitch = parameters[rx_pitchIndex];
-		if (solve_rx_roll)g.rx_roll = parameters[rx_rollIndex];
+		cTDEmGeometry g = G.input;
+		for (int i = 0; i < cTDEmGeometry::size(); i++) {
+			std::string gname = cTDEmGeometry::element_name(i);
+			auto p = fdG.at(gname);
+			if (p.solve) {
+				g[gname] = parameters[p.index];
+			}
+		}		
 		return g;
 	}
 
@@ -1432,7 +1557,7 @@ class cSBSInverter{
 			T.setgeometry(g);
 
 			//Forwardmodel
-			T.LEM.calculation_type = CT_FORWARDMODEL;
+			T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 			T.LEM.derivative_layer = INT_MAX;
 			T.setupcomputations();
 			T.setprimaryfields();
@@ -1474,10 +1599,10 @@ class cSBSInverter{
 				std::vector<double> ydrv(nw);
 				std::vector<double> zdrv(nw);
 
-				if (solve_conductivity) {
+				if (solve_conductivity()) {
 					for (size_t li = 0; li < nlayers; li++) {
-						size_t pindex = li + cIndex;
-						T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
+						const size_t& pindex = cindex(li);
+						T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
 						T.LEM.derivative_layer = li;
 						T.setprimaryfields();
 						T.setsecondaryfields();
@@ -1490,10 +1615,10 @@ class cSBSInverter{
 					}
 				}
 
-				if (solve_thickness) {
+				if (solve_thickness()) {
 					for (size_t li = 0; li < nlayers - 1; li++) {
-						size_t pindex = li + tIndex;
-						T.LEM.calculation_type = CT_THICKNESSDERIVATIVE;
+						size_t pindex = tindex(li);
+						T.LEM.calculation_type = cLEM::CalculationType::THICKNESSDERIVATIVE;
 						T.LEM.derivative_layer = li;
 						T.setprimaryfields();
 						T.setsecondaryfields();
@@ -1505,10 +1630,11 @@ class cSBSInverter{
 					}
 				}
 				
-				if (FreeGeometry) {
-					if (solve_tx_height) {
-						size_t pindex = tx_heightIndex;
-						T.LEM.calculation_type = CT_HDERIVATIVE;
+				if (FreeGeometry) {					
+					
+					if (solve_geometry("tx_height")) {
+						size_t pindex = fdG["tx_height"].index;						
+						T.LEM.calculation_type = cLEM::CalculationType::HDERIVATIVE;
 						T.LEM.derivative_layer = INT_MAX;
 						T.setprimaryfields();
 						T.setsecondaryfields();
@@ -1516,9 +1642,9 @@ class cSBSInverter{
 						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 
-					if (solve_txrx_dx) {
-						size_t pindex = txrx_dxIndex;
-						T.LEM.calculation_type = CT_XDERIVATIVE;
+					if (solve_geometry("txrx_dx")) {
+						size_t pindex = fdG["txrx_dx"].index;
+						T.LEM.calculation_type = cLEM::CalculationType::XDERIVATIVE;
 						T.LEM.derivative_layer = INT_MAX;
 						T.setprimaryfields();
 						T.setsecondaryfields();
@@ -1526,9 +1652,9 @@ class cSBSInverter{
 						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 
-					if (solve_txrx_dy) {
-						size_t pindex = txrx_dyIndex;
-						T.LEM.calculation_type = CT_YDERIVATIVE;
+					if (solve_geometry("txrx_dy")) {
+						size_t pindex = fdG["txrx_dy"].index;
+						T.LEM.calculation_type = cLEM::CalculationType::YDERIVATIVE;
 						T.LEM.derivative_layer = INT_MAX;
 						T.setprimaryfields();
 						T.setsecondaryfields();
@@ -1536,9 +1662,9 @@ class cSBSInverter{
 						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 
-					if (solve_txrx_dz) {
-						size_t pindex = txrx_dzIndex;
-						T.LEM.calculation_type = CT_ZDERIVATIVE;
+					if (solve_geometry("txrx_dz")) {
+						size_t pindex = fdG["txrx_dz"].index;
+						T.LEM.calculation_type = cLEM::CalculationType::ZDERIVATIVE;
 						T.LEM.derivative_layer = INT_MAX;
 						T.setprimaryfields();
 						T.setsecondaryfields();
@@ -1546,24 +1672,27 @@ class cSBSInverter{
 						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 
-					if (solve_rx_pitch) {
-						size_t pindex = rx_pitchIndex;
+					if (solve_geometry("rx_pitch")) {
+						size_t pindex = fdG["rx_pitch"].index;					
 						T.drx_pitch(xfm, zfm, g.rx_pitch, xdrv, zdrv);
 						ydrv *= 0.0;
 						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 
-					if (solve_rx_roll) {
-						size_t pindex = rx_rollIndex;
+					if (solve_geometry("rx_roll")) {
+						size_t pindex = fdG["rx_roll"].index;
 						T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
 						xdrv *= 0.0;
 						fillMatrixColumn(M, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 					}
 				}
-				if (Verbose) std::cerr << "\n-----------------\n";
-				if (Verbose) std::cerr << "It " << CIS.iteration+1 << std::endl;
-				if (Verbose) std::cerr << M;
-				if (Verbose) std::cerr << "\n-----------------\n";
+
+				if (Verbose) {
+					std::cerr << "\n-----------------\n";
+					std::cerr << "It " << CIS.iteration + 1 << std::endl;
+					std::cerr << M;
+					std::cerr << "\n-----------------\n";
+				}
 			}
 		}
 		
@@ -2015,16 +2144,16 @@ class cSBSInverter{
 		
 		//Geometry Input
 		bool invertedfieldsonly = false;
-		for (size_t i = 0; i < GI.size(); i++) {
+		for (size_t i = 0; i < G.input.size(); i++) {
 			if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
-			OM->writefield(pi, GI[i], "input_" + GI.fname(i), "Input " + GI.description(i), GI.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
+			OM->writefield(pi, G.input[i], "input_" + G.input.element_name(i), "Input " + G.input.description(i), G.input.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
 		}
 
 		//Geometry Modelled		
 		invertedfieldsonly = true;
-		for (size_t i = 0; i < GM.size(); i++) {
+		for (size_t i = 0; i < G.invmodel.size(); i++) {
 			if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
-			OM->writefield(pi, GM[i], "inverted_" + GM.fname(i), "Inverted " + GI.description(i), GI.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
+			OM->writefield(pi, G.invmodel[i], "inverted_" + G.invmodel.element_name(i), "Inverted " + G.invmodel.description(i), G.invmodel.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
 		}
 				
 		//ndata
@@ -2038,14 +2167,14 @@ class cSBSInverter{
 			1, NC_UINT, DN_NONE, 'I', 4, 0);
 		
 		OM->writefield(pi,
-			EM.conductivity, "conductivity", "Layer conductivity", "S/m",
-			EM.conductivity.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
+			E.invmodel.conductivity, "conductivity", "Layer conductivity", "S/m",
+			E.invmodel.conductivity.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 		
 		double bottomlayerthickness = 100.0;
-		if (solve_thickness == false && nlayers > 1) {
-			bottomlayerthickness = EM.thickness[nlayers - 2];
+		if (solve_thickness() == false && nlayers > 1) {
+			bottomlayerthickness = E.invmodel.thickness[nlayers - 2];
 		}
-		std::vector<double> thickness = EM.thickness;
+		std::vector<double> thickness = E.invmodel.thickness;
 		thickness.push_back(bottomlayerthickness);
 
 		OM->writefield(pi,
@@ -2054,35 +2183,35 @@ class cSBSInverter{
 					
 				
 		if (OO.PositiveLayerTopDepths) {			
-			std::vector<double> dtop = EM.layer_top_depth();
+			std::vector<double> dtop = E.invmodel.layer_top_depth();
 			OM->writefield(pi,
 				dtop, "depth_top", "Depth to top of layer", "m",
 				dtop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.NegativeLayerTopDepths) {
-			std::vector<double> ndtop = -1.0*EM.layer_top_depth();
+			std::vector<double> ndtop = -1.0*E.invmodel.layer_top_depth();
 			OM->writefield(pi,
 				ndtop, "depth_top_negative", "Negative of depth to top of layer", "m",
 				ndtop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 		
 		if (OO.PositiveLayerBottomDepths) {
-			std::vector<double> dbot = EM.layer_bottom_depth();
+			std::vector<double> dbot = E.invmodel.layer_bottom_depth();
 			OM->writefield(pi,
 				dbot, "depth_bottom", "Depth to bottom of layer", "m",
 				dbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.NegativeLayerBottomDepths) {
-			std::vector<double> ndbot = -1.0 * EM.layer_bottom_depth();
+			std::vector<double> ndbot = -1.0 * E.invmodel.layer_bottom_depth();
 			OM->writefield(pi,
 				ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
 				ndbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.InterfaceElevations) {			
-			std::vector<double> etop = EM.layer_top_depth();
+			std::vector<double> etop = E.invmodel.layer_top_depth();
 			etop += Location.groundelevation;
 			OM->writefield(pi,
 				etop, "elevation_interface", "Elevation of interface", "m",
@@ -2091,15 +2220,15 @@ class cSBSInverter{
 				
 		if (OO.ParameterSensitivity) {
 			std::vector<double> ps = copy(ParameterSensitivity);
-			if (solve_conductivity) {
-				std::vector<double> v(ps.begin() + cIndex, ps.begin() + cIndex + nlayers);
+			if (solve_conductivity()) {
+				std::vector<double> v(ps.begin() + cindex(0), ps.begin() + cindex(0) + nlayers);
 				OM->writefield(pi,
 					v, "conductivity_sensitivity", "Conductivity parameter sensitivity", UNITLESS,
 					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 			
-			if (solve_thickness) {
-				std::vector<double> v(ps.begin() + tIndex, ps.begin() + tIndex + nlayers-1);
+			if (solve_thickness()) {
+				std::vector<double> v(ps.begin() + tindex(0), ps.begin() + tindex(0) + nlayers-1);
 				v.push_back(0.0);//halfspace layer not a parameter
 				OM->writefield(pi,
 					v, "thickness_sensitivity", "Thickness parameter sensitivity", UNITLESS,
@@ -2107,28 +2236,29 @@ class cSBSInverter{
 			}
 
 			size_t k = 0;
-			for (size_t gi = 0; gi < GI.size(); gi++) {				
-				if (solvegeometryindex(gi) == false)continue;
-				std::string name = "inverted_" + GI.fname(gi) + "_sensitivity";
-				std::string desc = GI.description(gi) + " parameter sensitivity";
-				OM->writefield(pi, 
-					ps[gIndex+k], name, desc, UNITLESS,
-					1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-				k++;
+			for (size_t gi = 0; gi < G.input.size(); gi++) {				
+				if (solvegeometryindex(gi) == true) {
+					std::string name = "inverted_" + G.input.element_name(gi) + "_sensitivity";
+					std::string desc = G.input.description(gi) + " parameter sensitivity";
+					OM->writefield(pi,
+						ps[gindex(k)], name, desc, UNITLESS,
+						1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+					k++;
+				}
 			}
 		}
 
 		if (OO.ParameterUncertainty) {
 			std::vector<double> pu = copy(ParameterUncertainty);
-			if (solve_conductivity) {
-				std::vector<double> v(pu.begin() + cIndex, pu.begin() + cIndex + nlayers);
+			if (solve_conductivity()) {
+				std::vector<double> v(pu.begin() + cindex(0), pu.begin() + cindex(0) + nlayers);
 				OM->writefield(pi,
 					v, "conductivity_uncertainty", "Conductivity parameter uncertainty", "log10(S/m)",
 					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 
-			if (solve_thickness) {
-				std::vector<double> v(pu.begin() + tIndex, pu.begin() + tIndex + nlayers - 1);
+			if (solve_thickness()) {
+				std::vector<double> v(pu.begin() + tindex(0), pu.begin() + tindex(0) + nlayers - 1);
 				v.push_back(0.0);//halfspace layer not a parameter
 				OM->writefield(pi,
 					v, "thickness_uncertainty", "Thickness parameter uncertainty", "log10(m)",
@@ -2136,12 +2266,12 @@ class cSBSInverter{
 			}
 
 			size_t k = 0;
-			for (size_t gi = 0; gi < GI.size(); gi++) {
-				if (solvegeometryindex(gi) == false)continue;
-				std::string name = "inverted_" + GI.fname(gi) + "_uncertainty";
-				std::string desc = GI.description(gi) + " parameter uncertainty";
+			for (size_t gi = 0; gi < G.input.size(); gi++) {
+				if (solvegeometryindex(gi) == false) continue;
+				std::string name = "inverted_" + G.input.element_name(gi) + "_uncertainty";
+				std::string desc = G.input.description(gi) + " parameter uncertainty";
 				OM->writefield(pi,
-					pu[gIndex + k], name, desc, GI.units(gi),
+					pu[gindex(k)], name, desc, G.input.units(gi),
 					1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 				k++;
 			}
@@ -2234,25 +2364,45 @@ class cSBSInverter{
 		}
 	}
 
-	bool solvegeometryindex(const size_t index)
+	bool solvegeometryindex(const size_t index) {		
+		//eGeometryElementType getype = cTDEmGeometry::elementtype(index);		
+		return fdG.at(cTDEmGeometry::element_name(index)).solve;
+	}
+	
+	bool readgeometry(cIFDMap& map)
 	{
-		eGeometryElementType getype = cTDEmGeometry::elementtype(index);
+		bool status = true;
+		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
+			std::string ename = cTDEmGeometry::element_name(i);
+			const cInvertibleFieldDefinition e = map[ename];
+			bool inpstatus = IM->read(e.input, G.input[i]);
+			if (inpstatus == false) {
+				status = false;
+			}
 
-		switch (getype) {
-		case GE_TX_HEIGHT: return solve_tx_height; break;
-		case GE_TX_ROLL:   return solve_tx_roll; break;
-		case GE_TX_PITCH:  return solve_tx_pitch; break;
-		case GE_TX_YAW:    return solve_tx_yaw; break;
-		case GE_TXRX_DX:   return solve_txrx_dx; break;
-		case GE_TXRX_DY:   return solve_txrx_dy; break;
-		case GE_TXRX_DZ:   return solve_txrx_dz; break;
-		case GE_RX_ROLL:   return solve_rx_roll; break;
-		case GE_RX_PITCH:  return solve_rx_pitch; break;
-		case GE_RX_YAW:    return solve_rx_yaw; break;
-		default:
-			glog.errormsg(_SRC_, "Geometry index %zu out of range\n", index);
-			return false;
+			bool refstatus = IM->read(e.ref, G.ref[i]);			
+			if (refstatus == false) {
+				G.ref[i] = G.input[i];
+			}
+
+			bool tfrstatus = IM->read(e.tfr, G.tfr[i]);
+			if (tfrstatus == false) {
+				G.tfr[i] = G.input[i];
+			}
+
+			if (e.solve) {
+				bool stdstatus = IM->read(e.std, G.std[i]);
+				if (stdstatus == false) {			
+					std::ostringstream msg;
+					msg << "Error: no std defined for "<< ename << std::endl;					
+					glog.errormsg(msg.str());
+				}
+
+				bool minstatus = IM->read(e.min, G.min[i]);
+				bool maxstatus = IM->read(e.max, G.max[i]);
+			}
 		}
+		return status;
 	}
 
 	bool readgeometry(const std::vector<cFieldDefinition>& gfd, cTDEmGeometry& g)
@@ -2310,14 +2460,14 @@ class cSBSInverter{
 			write(Obs, dp + "observed.dat");
 			write(Err, dp + "observed_std.dat");
 
-			GR.write(dp + "geometry_start.dat");
-			ER.write(dp + "earth_start.dat");
+			G.ref.write(dp + "geometry_start.dat");
+			E.ref.write(dp + "earth_start.dat");
 
-			GR.write(dp + "geometry_ref.dat");
-			ER.write(dp + "earth_ref.dat");
+			G.ref.write(dp + "geometry_ref.dat");
+			E.ref.write(dp + "earth_ref.dat");
 
-			GS.write(dp + "geometry_std.dat");
-			ES.write(dp + "earth_std.dat");
+			G.std.write(dp + "geometry_std.dat");
+			E.std.write(dp + "earth_std.dat");
 									
 			std::ofstream ofs(dp+"Id.dat");
 			char tab = '\t';			
@@ -2418,8 +2568,8 @@ class cSBSInverter{
 			}			
 		} 
 		
-		EM = get_earth(CIS.param);
-		GM = get_geometry(CIS.param);
+		E.invmodel = get_earth(CIS.param);
+		G.invmodel = get_geometry(CIS.param);
 		CIS.pred = forwardmodel(CIS.param, true);
 		set_predicted();		
 		ParameterSensitivity = compute_parameter_sensitivity();
@@ -2448,7 +2598,7 @@ class cSBSInverter{
 		bool readstatus = true;
 		int paralleljob = 0;		
 		do{	
-			int record = paralleljob*IM->subsamplerate();			
+			int record = paralleljob*(int)IM->subsamplerate();			
 			if ((paralleljob % Size) == Rank) {								
 				readstatus = IM->read_record(record);				
 				if (readstatus) {
