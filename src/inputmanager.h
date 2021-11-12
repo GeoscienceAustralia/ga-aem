@@ -16,6 +16,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #endif
 
 class cASCIIInputManager;
+
 class cNetCDFInputManager;
 
 class cInputManager {
@@ -59,12 +60,43 @@ public:
 
 	virtual bool parserecord() { return true; }
 	
+	virtual bool get_acsiicolumnfield(const std::string& fname, cAsciiColumnField& c) const {
+		glog.errormsg("get_acsiicolumnfield() not yet implemented\n");
+		return true;
+	}
+
+	virtual bool set_variant_type(const std::string& fname, cVrnt& vnt) const {
+		glog.errormsg("set_variant_type() not yet implemented\n");
+		return true;
+	}
+		
 	const std::string& datafilename() { return DataFileName; }
 
 	const size_t& record() const { return Record; }
-	
+			
+	bool readvnt(cFDVar& fdv, const size_t n=1)
+	{
+		cFieldDefinition& fd  = fdv.first;
+		cVrnt& vnt = fdv.second;
+
+		auto ReadVisitor = [&](auto& t) {
+			bool s = read(fd, t, n);
+		};		
+		std::visit(ReadVisitor, vnt);		
+		return true;
+	}
+
+	bool readfdvnt(cFdVrnt& fdv, const size_t n = 1)
+	{		
+		auto ReadVisitor = [&](auto& t) {
+			bool s = read(fdv.fd, t, n);
+		};
+		std::visit(ReadVisitor, fdv.vnt);
+		return true;
+	}
+
 	template<typename T>
-	bool read(const cFieldDefinition& fd, T& v)
+	bool read(const cFieldDefinition& fd, T& v, const size_t n=1)
 	{
 		if (fd.definitiontype() == cFieldDefinition::TYPE::UNAVAILABLE) {
 			v = undefinedvalue(v);
@@ -93,9 +125,22 @@ public:
 		vec.resize(n);
 		if (fd.definitiontype() == cFieldDefinition::TYPE::NUMERIC) {
 			size_t deflen = fd.numericvalue.size();
-			for (size_t i = 0; i < n; i++) {
-				if (deflen == 1)vec[i] = (T)fd.numericvalue[0];
-				else            vec[i] = (T)fd.numericvalue[i];
+			if (deflen != 1 && deflen != n) {
+				std::ostringstream oss;
+				oss << "Mismatch in field sizes for '<" << fd.keyname << ">' : expected " << n << " but got " << deflen << std::endl;
+				glog.errormsg(oss.str());
+			}
+			
+
+			if (deflen == 1) {
+				for (size_t i = 0; i < n; i++) {
+					vec[i] = (T)fd.numericvalue[0];					
+				}
+			}
+			else {				
+				for (size_t i = 0; i < n; i++) {					
+					vec[i] = (T) fd.numericvalue[i];
+				}
 			}
 			return true;
 		}
@@ -244,6 +289,34 @@ public:
 		bool status = AF.getvec_fielddefinition(fd, vec, n);
 		return status;	
 	}	
+
+	bool getfield(const std::string& fname) {
+		int findex  = AF.fieldindexbyname(fname);
+		cAsciiColumnField c = AF.fields[findex];
+	}
+
+	bool get_acsiicolumnfield(const std::string& fname, cAsciiColumnField& c) const {		
+		int findex = AF.fieldindexbyname(fname);
+		if (findex >= 0) {
+			c = AF.fields[findex];
+			return true;
+		}
+		return false;		
+	}
+
+	bool set_variant_type(const std::string& fname, cVrnt& vnt) const {
+		cAsciiColumnField c;
+		bool status = get_acsiicolumnfield(fname, c);
+		if (status) {			
+			c.set_variant_type(vnt);
+			return true;
+		}
+		else {
+			glog.errormsg("Could not find field");
+			return false;
+		}		
+	}
+
 };
 
 #if defined HAVE_NETCDF
@@ -275,21 +348,6 @@ public:
 			if (Record > NC.ntotalsamples()) return false;
 		#endif
 		return true;
-
-		/*
-		bool status = true;		
-		if (AtStart == true) {
-			AtStart = false;
-			Record = 0;
-		}
-		else {
-			Record += Subsample;
-			#if defined HAVE_NETCDF
-				if (Record > NC.ntotalsamples()) return false;
-			#endif
-		}		
-		return true;
-		*/		
 	}
 
 	template<typename T>

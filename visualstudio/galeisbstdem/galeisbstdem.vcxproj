@@ -103,8 +103,9 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\cinverter.h" />
+    <ClInclude Include="..\..\src\csbsinverter.h" />
     <ClInclude Include="..\..\src\gaaem_version.h" />
-    <ClInclude Include="..\..\src\galeisbstdem.h" />
     <ClInclude Include="..\..\src\inputmanager.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\outputmanager.h" />
