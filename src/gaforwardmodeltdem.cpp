@@ -65,20 +65,20 @@ int process(std::string controlfilename)
 	if (strcasecmp(ext, ".csv") == 0){
 		csvoutput = true;
 	}
-
-	std::string ipmodel    = C.getstringvalue("Control.IPModel");
-	eIPType iptype = IP_NONE;
+	
+	std::string ipmodel = C.getstringvalue("Control.IPModel");
+	cLEM::IPType iptype = cLEM::IPType::NONE;
 	if (strcasecmp(ipmodel, ud_string()) == 0){
-		iptype = IP_NONE;
+		iptype = cLEM::IPType::NONE;
 	}
 	else if (strcasecmp(ipmodel, "none")==0){
-		iptype = IP_NONE;
+		iptype = cLEM::IPType::NONE;
 	}
 	else if(strcasecmp(ipmodel, "colecole")==0){
-		iptype = IP_COLECOLE;
+		iptype = cLEM::IPType::COLECOLE;
 	}
 	else if (strcasecmp(ipmodel, "pelton")==0){
-		iptype = IP_PELTON;
+		iptype = cLEM::IPType::PELTON;
 	}
 	else{
 		printf("Unknown IPModel %s: use none colecole or peltion\n", ipmodel.c_str());
@@ -88,7 +88,7 @@ int process(std::string controlfilename)
 	std::string sysfile = C.getstringvalue("Control.SystemFile");
 	printf("Opening AEM system file %s\n", sysfile.c_str());
 	cTDEmSystem T(sysfile.c_str());
-	T.LEM.iptype = (eIPType)iptype;
+	T.LEM.iptype = (cLEM::IPType)iptype;
 
 	printf("Opening input file %s\n", inputfile.c_str());
 	FILE* fin = fileopen(inputfile, "r");

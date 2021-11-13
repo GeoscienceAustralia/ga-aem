@@ -400,7 +400,7 @@ public:
 	bool forward_model(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry){		
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.LEM.calculation_type = CT_FORWARDMODEL;
+		T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 		T.LEM.derivative_layer = INT_MAX;
 		T.setupcomputations();
 		T.setprimaryfields();
@@ -412,7 +412,7 @@ public:
 		size_t nlayers = conductivity.size();
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.LEM.calculation_type = CT_FORWARDMODEL;
+		T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 		T.LEM.derivative_layer = INT_MAX;
 		T.setupcomputations();
 		T.setprimaryfields();
@@ -448,7 +448,7 @@ public:
 			}
 
 			for (size_t li = 0; li < nlayers; li++){
-				T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
+				T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
 				T.LEM.derivative_layer = li;
 				T.setupcomputations();
 				T.setprimaryfields();
@@ -466,7 +466,7 @@ public:
 			}			
 
 			for (size_t gi = 0; gi < UGI.size(); gi++){								
-				if (cTDEmGeometry::elementtype(UGI[gi]) == GE_RX_PITCH){
+				if (cTDEmGeometry::elementtype(UGI[gi]) == cTDEmGeometry::ElementType::rx_pitch){
 					std::vector<double> dxbdp;
 					std::vector<double> dzbdp;
 					T.drx_pitch(X, Z, geometry.rx_pitch, dxbdp, dzbdp);					
@@ -923,7 +923,7 @@ public:
 		G.resize(10);
 		cBlock g = Control.findblock("Input.Geometry");
 		for (size_t i = 0; i < G.size(); i++){
-			std::string fname = cTDEmGeometry::fname(i);
+			std::string fname = cTDEmGeometry::element_name(i);
 			cBlock b = g.findblock(fname);	
 			if (b.Name.size() == 0){				
 				glog.logmsg(0, "Could not find block for geometry parameter %s\n", fname.c_str());
@@ -2154,14 +2154,14 @@ public:
 			buf += strprint("%10.2lf", fdelevation(lsi));
 					
 			for (size_t gi = 0; gi < G.size(); gi++){
-				OI.addfield(gref.fname(gi), 'F', 9, 2);
+				OI.addfield(gref.element_name(gi), 'F', 9, 2);
 				OI.setunits(gref.units(gi));
 				OI.setdescription(gref.description(gi));
 				buf += strprint("%9.2lf", gref[gi]);
 			}
 			
 			for (size_t gi = 0; gi < UGI.size(); gi++){
-				OI.addfield("inverted_"+ginv.fname(UGI[gi]), 'F', 9, 2);
+				OI.addfield("inverted_"+ginv.element_name(UGI[gi]), 'F', 9, 2);
 				OI.setunits(ginv.units(UGI[gi]));
 				OI.setdescription("Inverted " + ginv.description(UGI[gi]));
 				buf += strprint("%9.2lf", ginv[UGI[gi]]);

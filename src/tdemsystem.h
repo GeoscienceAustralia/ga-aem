@@ -63,7 +63,8 @@ public:
 };
 
 class cTDEmGeometry{
-	
+
+public:
 	enum class ElementType {
 		tx_height, 
 		tx_roll, tx_pitch, tx_yaw, 
@@ -71,7 +72,7 @@ class cTDEmGeometry{
 		rx_roll, rx_pitch, rx_yaw
 	};
 
-public:
+
 	double tx_height = 0.0;
 	double tx_roll   = 0.0;
 	double tx_pitch  = 0.0;

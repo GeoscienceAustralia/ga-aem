@@ -363,7 +363,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		cTDEmGeometry g;
 		for (size_t gi = 0; gi < g.size(); gi++) {
-			fd_geometry[gi].initialise(b, g.fname(gi));
+			fd_geometry[gi].initialise(b, g.element_name(gi));
 		}
 
 		for (size_t i = 0; i < nsystems; i++) {
@@ -598,7 +598,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 			if (S.reconstructPrimary) {
 				T.setgeometry(IG);
-				T.LEM.calculation_type = CT_FORWARDMODEL;
+				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 
@@ -1085,7 +1085,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			T.setconductivitythickness(c, t);
 			T.setgeometry(G);
 			T.setupcomputations();
-			T.LEM.calculation_type = CT_FORWARDMODEL;
+			T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 			T.LEM.derivative_layer = INT_MAX;
 			T.setprimaryfields();
 			T.setsecondaryfields();
