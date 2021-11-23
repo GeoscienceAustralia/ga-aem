@@ -541,19 +541,22 @@ class cSBSInverter{
 	cIterationState CIS;
 	
 	int _gindex_ = -1;
-	const size_t cindex(const size_t& li) {		
+
+	size_t cindex(const size_t& li) {		
 		if (solve_conductivity() == false) {
 			glog.errormsg("Out of boundes in cindex()\n");
 		}
 		return fdC.index + li;
 	}
-	const size_t tindex(const size_t& li) {
+	
+	size_t tindex(const size_t& li) {
 		if (solve_thickness() == false) {
 			glog.errormsg("Out of boundes in tindex()\n");
 		}
 		return fdT.index + li;
 	}
-	const size_t gindex(const size_t& pi) {
+	
+	size_t gindex(const size_t& pi) {
 		if (solve_geometry() == false) {
 			glog.errormsg("Out of boundes in gindex\n");
 		}

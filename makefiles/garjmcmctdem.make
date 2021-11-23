@@ -7,8 +7,12 @@ SHELL = /bin/sh
 executable  = $(exedir)/garjmcmctdem.exe
 testexe     = $(exedir)/runtests_garjmcmc.exe
 
-includes    = -I$(srcdir)
-includes   += -I$(cpputilssrc)
+includes = -I$(srcdir)
+includes += -I$(cpputilssrc)
+includes += -I$(csv_include)
+includes += -I$(geophysics_netcdf_include)
+includes += -I$(marray_include)
+
 libs        = $(if $(FFTW_DIR),-L$(FFTW_DIR) -lfftw3,-lfftw3)
 testlibs    = $(libs) -lgtest -lgmock -lgtest_main -lpthread
 

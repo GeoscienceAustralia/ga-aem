@@ -7,18 +7,21 @@ export compiler=$1
 export makemode=$2
 export srcdir='../src'
 export cpputilssrc='../submodules/cpp-utils/src'
+export geophysics_netcdf_include='../submodules/geophysics-netcdf/src'
+export marray_include='../submodules/geophysics-netcdf/submodules/marray/include/andres'
+export csv_include='../submodules/csv-parser/single_include'
 
 if [ $compiler == 'intel' ] ; then
 	echo 'Building with Intel compiler'
 	module load intel-compiler
 	export cxx=icpc
-	export cxxflags='-std=c++11 -O3 -Wall'
+	export cxxflags='-std=c++17 -O3 -Wall'
 	export exedir='../bin/gadi/intel'
 elif [ $compiler == 'gnu' ] ; then
 	echo 'Building with GCC compiler'
-	module load gcc/system
+	module load gcc/11.1.0
 	export cxx=g++
-	export cxxflags='-std=c++11 -O3 -Wall -Wno-unknown-pragmas'
+	export cxxflags='-std=c++17 -O3 -Wall -Wno-unknown-pragmas'
 	export exedir='../bin/gadi/gnu'
 else 
 	echo 'Unknow compiler ' $compiler
@@ -60,20 +63,20 @@ $mpicxx -showme
 echo ---------------------------------------
 
 #Compiled as shared libs
-make -f gatdaem1d_python.make $makemode
-make -f gatdaem1d_matlab.make $makemode
-make -f gatdaem1d_julia.make  $makemode
+#make -f gatdaem1d_python.make $makemode
+#make -f gatdaem1d_matlab.make $makemode
+#make -f gatdaem1d_julia.make  $makemode
 
 #Compile without MPI
-make -f ctlinedata2sgrid.make $makemode
-make -f ctlinedata2slicegrids.make $makemode
-make -f removelog10conductivityfromsgrid.make $makemode
-make -f example_forward_model.make $makemode
-make -f gaforwardmodeltdem.make $makemode
+#make -f ctlinedata2sgrid.make $makemode
+#make -f ctlinedata2slicegrids.make $makemode
+#make -f removelog10conductivityfromsgrid.make $makemode
+#make -f example_forward_model.make $makemode
+#make -f gaforwardmodeltdem.make $makemode
 
 #Compile with MPI
 make -f galeisbstdem.make $makemode
-make -f garjmcmctdem.make $makemode
-make -f galeiallatonce.make $makemode
-make -f galeisbsfdem.make $makemode
+#make -f garjmcmctdem.make $makemode
+#make -f galeiallatonce.make $makemode
+#make -f galeisbsfdem.make $makemode
 
