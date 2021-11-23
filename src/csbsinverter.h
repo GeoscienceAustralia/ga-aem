@@ -19,11 +19,14 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <variant>
 
 #include "general_types.h"
-#include "cinverter.h"
-#include "airborne_types.h"
-#include "tdemsystem.h"
 #include "string_utils.h"
 #include "vector_utils.h"
+
+#include "airborne_types.h"
+#include "cinverter.h"
+#include "tdemsystem.h"
+#include "tdemsysteminfo.h"
+#include "samplebunch.h"
 
 class cGeomStruct {
 
@@ -153,222 +156,69 @@ public:
 	}	
 };
 
-/*
-class cComponentInfo1 {
-
-public:
-
-	std::string Name;
-	bool Use = false;
-	double  oP = 0.0;
-	std::vector<double>  oS;
-	std::vector<double>  oE;
-	cFieldDefinition fd_oP;
-	cFieldDefinition fd_oS;
-	cFieldDefinition fd_oE;
-	bool EstimateNoiseFromModel = false;
-	std::vector<double> mn;
-	std::vector<double> an;
-	int dataindex = -1;
-
-	cComponentInfo() {};
-
-	cComponentInfo(const cBlock& b, std::string name, size_t nwindows, bool inverttotalfield)
-	{
-		Name = name;
-		if (b.Entries.size() == 0) {
-			Use = false;
-			return;
-		}
-		Use = b.getboolvalue("Use");
-		if (Use == false)return;
-
-		EstimateNoiseFromModel = b.getboolvalue("EstimateNoiseFromModel");
-
-		if (EstimateNoiseFromModel) {
-			mn = b.getdoublevector("MultiplicativeNoise");
-			an = b.getdoublevector("AdditiveNoise");
-			if (an.size() == 1) {
-				an = std::vector<double>(nwindows, an[0]);
-			}
-			if (an.size() != nwindows) {
-				glog.errormsg(_SRC_, "Must have exactly 1 or nwindows AdditiveNoise values\n");
-			};
-
-			if (mn.size() == 1) {
-				mn = std::vector<double>(nwindows, mn[0]);
-			}
-			if (mn.size() != nwindows) {
-				glog.errormsg(_SRC_, "Must have exactly 1 or nwindows MultiplicativeNoise values\n");
-			}
-		}
-
-		oS.resize(nwindows);
-		oE.resize(nwindows);
-		fd_oP.initialise(b, "Primary");
-		fd_oS.initialise(b, "Secondary");
-		fd_oE.initialise(b, "Noise");
-	}
-
-	size_t nw() const
-	{
-		return oS.size();
-	}
-
-	void readdata(const std::unique_ptr<cInputManager>& IM)
-	{
-		if (Use == false) return;
-		IM->read(fd_oP, oP);
-		IM->read(fd_oS, oS, nw());
-		oE.resize(nw());
-		if (EstimateNoiseFromModel) {
-			for (size_t w = 0; w < nw(); w++) {
-				const double v = 0.01 * mn[w] * oS[w];
-				oE[w] = std::hypot(an[w], v);
-			}
-		}
-		else {
-			IM->read(fd_oE, oE, nw());
-		}
-	}
-};
-*/
-
-class cComponentInfo {
-
-public:
-
-	std::string Name;
-	bool Use = false;
-	double  oP = 0.0;
-	std::vector<double>  oS;
-	std::vector<double>  oE;
-	cFieldDefinition fd_oP;
-	cFieldDefinition fd_oS;
-	cFieldDefinition fd_oE;
-	bool EstimateNoiseFromModel=false;
-	std::vector<double> mn;
-	std::vector<double> an;
-	int dataindex = -1;
-
-	cComponentInfo() {};
-
-	cComponentInfo(const cBlock& b, std::string name, size_t nwindows, bool inverttotalfield)
-	{
-		Name = name;
-		if (b.Entries.size() == 0) {
-			Use = false;
-			return;
-		}
-		Use = b.getboolvalue("Use");
-		if (Use == false)return;
-
-		EstimateNoiseFromModel = b.getboolvalue("EstimateNoiseFromModel");
-
-		if (EstimateNoiseFromModel) {
-			mn = b.getdoublevector("MultiplicativeNoise");
-			an = b.getdoublevector("AdditiveNoise");
-			if (an.size() == 1) {
-				an = std::vector<double>(nwindows, an[0]);
-			}
-			else if (an.size() != nwindows) {				
-				glog.errormsg(_SRC_,"Must have exactly 1 or nwindows AdditiveNoise values\n");				
-			};
-
-			if (mn.size() == 1) {
-				mn = std::vector<double>(nwindows, mn[0]);
-			}			
-			if (mn.size() != nwindows) {
-				glog.errormsg(_SRC_,"Must have exactly 1 or nwindows MultiplicativeNoise values\n");				
-			}
-		}
-
-		oS.resize(nwindows);
-		oE.resize(nwindows);
-		fd_oP.initialise(b, "Primary");
-		fd_oS.initialise(b, "Secondary");
-		fd_oE.initialise(b, "Noise");
-	}
-
-	size_t nw() const
-	{
-		return oS.size();
-	}
-
-	void readdata(const std::unique_ptr<cInputManager>& IM)
-	{
-		if (Use == false) return;
-		IM->read(fd_oP, oP);
-		IM->read(fd_oS, oS, nw());
-		oE.resize(nw());
-		if (EstimateNoiseFromModel) {
-			for (size_t w = 0; w < nw(); w++) {
-				const double v = 0.01*mn[w]*oS[w];
-				oE[w] = std::hypot(an[w],v);
-			}
-		}
-		else {
-			IM->read(fd_oE, oE, nw());
-		}
-	}
-};
-
-class cTDEmSystemInfo {
-
-public:
-
-	cTDEmSystem T;
-	std::string SystemFile;	
-	size_t nwindows=0;
-	size_t ncomps=0;
-	size_t nchans=0;
-	cComponentInfo CompInfo[3];
-	int xzIndex=-1;//Start index of XZ in data array
-
-	bool invertXPlusZ=false;
-	bool invertPrimaryPlusSecondary=false;
-	bool reconstructPrimary=false;		
-	cTDEmData predicted;
-
-	void initialise(const cBlock& b) {
-		std::string dummy;
-		if (b.getvalue("InvertTotalField", dummy)) {
-			glog.errormsg(_SRC_,"InvertTotalField is no longer an option, use InvertPrimaryPlusSecondary instead\n");
-		};
-
-		std::string stmfile = b.getstringvalue("SystemFile");
-		fixseparator(stmfile);
-
-		glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
-		T.readsystemdescriptorfile(stmfile);
-		glog.log("==============System file %s\n", stmfile.c_str());
-		glog.log(T.STM.get_as_string());
-		glog.log("==========================================================================\n");
-		nwindows = T.NumberOfWindows;
-
-		invertXPlusZ = b.getboolvalue("InvertXPlusZ");
-		invertPrimaryPlusSecondary = b.getboolvalue("InvertPrimaryPlusSecondary");
-		reconstructPrimary = b.getboolvalue("ReconstructPrimaryFieldFromInputGeometry");
-
-		CompInfo[0] = cComponentInfo(b.findblock("XComponent"), "X", nwindows, invertPrimaryPlusSecondary);
-		CompInfo[1] = cComponentInfo(b.findblock("YComponent"), "Y", nwindows, invertPrimaryPlusSecondary);
-		CompInfo[2] = cComponentInfo(b.findblock("ZComponent"), "Z", nwindows, invertPrimaryPlusSecondary);
-
-		ncomps = 0;
-		if (CompInfo[0].Use) ncomps++;
-		if (CompInfo[1].Use) ncomps++;
-		if (CompInfo[2].Use) ncomps++;
-
-		if (invertXPlusZ) {
-			CompInfo[0].Use = true;
-			CompInfo[2].Use = true;
-		}
-		nchans = nwindows * ncomps;
-	}
-};
-
 class cSBSInverter : public cInverter {
 
+	using cIFDMap = cKeyVec<std::string, cInvertibleFieldDefinition, caseinsensetiveequal<std::string>>;
+	const size_t XCOMP = 0;
+	const size_t YCOMP = 1;
+	const size_t ZCOMP = 2;
+	const size_t XZAMP = 3;
+	std::vector<std::vector<std::vector<std::vector<int>>>> _dindex_;
+
+	int    BeginGeometrySolveIteration = 0;
+	bool   FreeGeometry = false;
+	
+	Matrix Wc;
+	Matrix Wt;
+	Matrix Wg;
+	Matrix Wr;
+	Matrix Ws;
+	Matrix Wq;
+
+	double AlphaC = 0.0;
+	double AlphaT = 0.0;
+	double AlphaG = 0.0;
+	double AlphaS = 0.0;
+	double AlphaQ = 0.0;
+
+	size_t nSoundings = 0;
+	size_t nBunchSubsample = 0;	
+	size_t nDataPerSounding = 0;
+	size_t nAllData = 0;			
+	size_t nLayers = 0;
+	size_t nParamPerSounding = 0;
+	size_t nGeomParamPerSounding = 0;	
+	size_t cOffset = 0;//Offset within sample of conductivity parameters
+	size_t tOffset = 0;//Offset within sample of thickness parameters
+	size_t gOffset = 0;//Offset within sample of geometry parameters
+
+	size_t nSystems = 0;
+	size_t pointsoutput = 0;
+	std::vector<cGeomStruct> G;
+	std::vector<cEarthStruct> E;	
+	cOutputOptions OO;
+	std::vector<cTDEmSystemInfo> SV;
+
+	//Column definitions		
+	cInvertibleFieldDefinition fdC;
+	cInvertibleFieldDefinition fdT;
+	cIFDMap fdG;
+
+	//Sample instances
+	struct SampleId {
+		int uniqueid = -1;
+		int survey = -1;
+		int date = -1;
+		int flight = -1;
+		int line = -1;
+		double fiducial = -1.0;
+		double x = -1.0;
+		double y = -1.0;
+		double elevation = 0.0;
+	};
+	std::vector<SampleId> Id;
+	cKeyVec<std::string, cFdVrnt, caseinsensetiveequal<std::string>> AncFld;
+	
 private:	
 	
 	Vector cull(const Vector& vall) const {
@@ -403,26 +253,7 @@ private:
 	}
 
 public:			
-			
-	using cIFDMap = cKeyVec<std::string, cInvertibleFieldDefinition, caseinsensetiveequal<std::string>>;
-
-	int    BeginGeometrySolveIteration=0;
-	bool   FreeGeometry = false;
-	size_t nAllData = 0;
 	
-	Matrix Wc;
-	Matrix Wt;
-	Matrix Wg;
-	Matrix Wr;
-	Matrix Ws;
-	Matrix Wq;
-
-	double AlphaC=0.0;
-	double AlphaT=0.0;
-	double AlphaG=0.0;
-	double AlphaS=0.0;
-	double AlphaQ=0.0;
-
 	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline) 
 					: cInverter(controlfile, size, rank, usingopenmp, commandline)
 	{
@@ -446,39 +277,9 @@ public:
 	};
 
 	~cSBSInverter() {
-		std::cout << "Destroying cSBSInverter\n";
+		//std::cout << "Destroying cSBSInverter\n";
 	}
-	
-	cOutputOptions OO;
-	std::vector<cTDEmSystemInfo> SV;		
-	size_t nsystems = 0;			
-	size_t pointsoutput = 0;
-	size_t nlayers = 0;
-	size_t ngeomparam = 0;
-	int _gindex_ = -1;
 			
-	//Column definitions		
-	cInvertibleFieldDefinition fdC;
-	cInvertibleFieldDefinition fdT;					
-	cIFDMap fdG;
-	
-	//Sample instances
-	struct SampleId {
-		int uniqueid = -1;
-		int survey = -1;
-		int date = -1;
-		int flight = -1;
-		int line = -1;
-		double fiducial = -1.0;
-		double x = -1.0;
-		double y = -1.0;
-		double elevation = 0.0;
-	} Id;
-			
-	cKeyVec<std::string,cFdVrnt,caseinsensetiveequal<std::string>> AncFld;
-	cGeomStruct G;		
-	cEarthStruct E;
-		
 	void loadcontrolfile(const std::string& filename)
 	{		
 		glog.logmsg(0, "Loading control file %s\n", filename.c_str());
@@ -530,45 +331,81 @@ public:
 		return fdC.solve;
 	};
 	
-	bool solve_geometry(const std::string& e) {						
+	bool solve_geometry_element(const std::string& e) {						
 		return fdG.cref(e).solve;
 	};
 	
-	bool solve_geometry() const {
-		if (_gindex_ == -1) return false;
+	bool solve_geometry() const {		
+		if (nGeomParamPerSounding > 0) return true;
 		return true;
 	};
 	
+	std::string bunch_id() {
+		const size_t si = Bunch.master_index();
+		const size_t& record = Bunch.master_record();
+		std::ostringstream s;
+		s << "Rec " << ixd(6) << 1 + record;
+		s << " Fl " << ixd(3) << Id[si].flight;
+		s << " Ln " << ixd(7) << Id[si].line;
+		s << " Fd " << fxd(10, 2) << Id[si].fiducial;
+		return s.str();
+	}
+
+	std::string bunch_result(const double& etime) {
+		std::ostringstream s;
+		s << " Its=" << ixd(3) << CIS.iteration;
+		s << " Phid=" << fxd(6, 2) << CIS.phid;
+		s << " Time=" << fxd(4, 1) << etime;
+		s << " " << TerminationReason;
+		s << " " << OutputMessage;
+		s << " nF= " << nForwards / CIS.iteration;
+		s << " nJ= " << nJacobians;
+		return s.str();
+	}
+
 	std::string dumppath() const
 	{
-		std::string s = OO.DumpPath(IM->record(), CIS.iteration);
+		const size_t& record  = Bunch.master_record();
+		std::string s = OO.DumpPath(record, CIS.iteration);
 		return s;
 	};
 
 	void dump_record_number() {
+		const size_t& record = Bunch.master_record();
 		std::ofstream of(dumppath() + "record.dat");
-		of << "Record\t" << IM->record() << std::endl;;
+		of << "Record\t" << record << std::endl;
 	}
 
-	const size_t cindex(const size_t& li) {		
+	const int cindex(const size_t& si, const size_t& li) {
 		if (solve_conductivity() == false) {
 			glog.errormsg("Out of boundes in cindex()\n");
 		}
-		return fdC.index + li;
+		return (int) (si*nParamPerSounding + cOffset + li);
 	}
-	
-	const size_t tindex(const size_t& li) {
+
+	const int tindex(const size_t& si, const size_t& li) {
 		if (solve_thickness() == false) {
 			glog.errormsg("Out of boundes in tindex()\n");
-		}
-		return fdT.index + li;
+		}		
+		return (int) (si*nParamPerSounding + tOffset + li);
 	}
 	
-	const size_t gindex(const size_t& pi) {
+	const int gindex(const size_t& si, const std::string& gname) {
 		if (solve_geometry() == false) {
 			glog.errormsg("Out of boundes in gindex\n");
 		}
-		return pi + _gindex_;
+		const int& goff = fdG.cref(gname).offset;
+		if (goff < 0) return -1;
+		return (int)(si*nParamPerSounding + goff);
+	}
+
+	const int gindex(const size_t& si, const size_t& gi) {
+		if (solve_geometry() == false) {
+			glog.errormsg("Out of boundes in gindex\n");
+		}
+		int goff = fdG[gi].second.offset;
+		if (goff < 0) return -1;
+		return (int)(si*nParamPerSounding + goff);
 	}
 	
 	void openlogfile()
@@ -596,6 +433,14 @@ public:
 	void parseoptions()
 	{
 		cBlock b = Control.findblock("Options");		
+		if (b.getvalue("SoundingsPerBunch", nSoundings)==false) {
+			nSoundings = 1;
+		}
+
+		if (b.getvalue("BunchSubsample", nBunchSubsample) == false) {
+			nBunchSubsample = 1;
+		}
+
 		AlphaC = b.getdoublevalue("AlphaConductivity");
 		AlphaT = b.getdoublevalue("AlphaThickness");
 		AlphaG = b.getdoublevalue("AlphaGeometry");		
@@ -691,14 +536,268 @@ public:
 		return g;
 	}
 	
+	void setup_parameters()
+	{
+		Id.resize(nSoundings);
+		E.resize(nSoundings);
+		G.resize(nSoundings);
+
+		bool status = Control.getvalue("Input.Earth.Conductivity.NumberOfLayers",nLayers);
+		if (status == false) {
+			std::stringstream msg;
+			msg << "The NumberOfLayers must be specified in Input.Columns.Conductivity\n";
+			glog.errormsg(msg.str());
+		}
+
+		nParamPerSounding = 0;
+		nGeomParamPerSounding = 0;
+		cOffset = 0;
+		tOffset = 0;
+		gOffset = 0;		
+
+		if (solve_conductivity()) {			
+			fdC.offset = 0;
+			tOffset += nLayers;
+			gOffset += nLayers;
+			nParamPerSounding += nLayers;
+		}
+
+		if (solve_thickness()) {
+			fdT.offset = (int)tOffset;
+			gOffset += nLayers-1;
+			nParamPerSounding += nLayers-1;
+		}
+
+		//Geometry params			
+		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
+			std::string gname = cTDEmGeometry::element_name(gi);
+			cInvertibleFieldDefinition& g = fdG.cref(gname);
+			if (g.solve) {
+				g.offset = (int)nParamPerSounding;
+				nGeomParamPerSounding++;
+				nParamPerSounding++;
+			}
+			else {
+				g.offset = -1;
+			}
+		}		
+		nParam = nParamPerSounding*nSoundings;				
+		RefParam.resize(nParam);
+		RefParamStd.resize(nParam);
+	}
+	
+	void initialise_Wc() {
+		Wc = Matrix::Zero(nParam, nParam);
+		if (solve_conductivity() == false)return;
+
+		for (size_t si = 0; si < nSoundings; si++) {
+			const cEarthStruct& e = E[si];
+			std::vector<double> t(nLayers);
+			if (nLayers == 1) {
+				t[0] = 1;
+			}
+			else if (nLayers == 2) {
+				t[0] = e.ref.thickness[0];
+				t[1] = e.ref.thickness[0];
+			}
+			else {
+				for (size_t i = 0; i < (nLayers - 1); i++) {
+					t[i] = e.ref.thickness[i];
+				}
+				t[nLayers - 1] = (t[nLayers - 2] / t[nLayers - 3]) * t[nLayers - 2];
+			}
+
+			double tsum = 0.0;
+			for (size_t li = 0; li < nLayers; li++)tsum += t[li];
+			double tavg = tsum / (double)nLayers;
+
+			double s = AlphaC / (double)(nLayers * nSoundings);
+			for (size_t li = 0; li < nLayers; li++) {
+				int p = cindex(si, li);
+				Wc(p, p) = s * (t[li] / tavg) / (RefParamStd[p] * RefParamStd[p]);
+			}
+		}
+	}
+
+	void initialise_Wt() {
+		Wt = Matrix::Zero(nParam, nParam);
+		if (solve_thickness() == false)return;
+
+		const double s = AlphaT / (double)((nLayers - 1) * nSoundings);
+		for (size_t si = 0; si < nSoundings; si++) {
+			for (size_t li = 0; li < nLayers - 1; li++) {
+				const int pi = tindex(si, li);
+				Wt(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+			}
+		}
+	}
+
+	void initialise_Wg() {
+		Wg = Matrix::Zero(nParam, nParam);
+		if (nGeomParamPerSounding <= 0)return;
+
+		double s = AlphaG / (double)(nGeomParamPerSounding * nSoundings);
+		for (size_t si = 0; si < nSoundings; si++) {
+			for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
+				const int pi = gindex(si, gi);
+				if (pi >= 0) {
+					Wg(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+				}
+			}
+		}
+	}
+
+	void initialise_L_Ws_1st_derivative()
+	{
+		Ws = Matrix::Zero(nParam, nParam);
+		if (AlphaS == 0 || nLayers < 3) return;
+		if (solve_conductivity() == false) return;
+
+		Matrix L = Matrix::Zero(nSoundings * (nLayers - 1), nParam);
+		size_t nrows = 0;
+		for (size_t si = 0; si < nSoundings; si++) {
+			const cEarthStruct& e = E[si];
+			std::vector<double> t = e.ref.dummy_thickness();
+			double tavg = mean(t);
+			for (size_t li = 1; li < nLayers; li++) {
+				const int pi0 = cindex(si, li - 1);
+				const int pi1 = cindex(si, li);
+				double t1 = t[li - 1];
+				double t2 = t[li];
+				double d12 = (t1 + t2) / 2.0;
+				double s = sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
+				L(nrows, pi0) = -s / d12;
+				L(nrows, pi1) = s / d12;
+				nrows++;
+			}
+		}
+		Ws = L.transpose() * L;
+		Ws *= (AlphaS / (double)(nrows));
+	}
+
+	void initialise_L_Ws_2nd_derivative()
+	{
+		Ws = Matrix::Zero(nParam, nParam);
+		if (AlphaS == 0 || nLayers < 3) return;
+		if (solve_conductivity() == false) return;
+
+		Matrix L = Matrix::Zero(nSoundings * (nLayers - 2), nParam);
+		size_t nrows = 0;
+		for (size_t si = 0; si < nSoundings; si++) {
+			const cEarthStruct& e = E[si];
+			std::vector<double> t = e.ref.dummy_thickness();
+			double tavg = mean(t);
+			for (size_t li = 1; li < nLayers - 1; li++) {
+				const int pi0 = cindex(si, li - 1);
+				const int pi1 = cindex(si, li);
+				const int pi2 = cindex(si, li + 1);
+				double t1 = t[li - 1];
+				double t2 = t[li];
+				double t3 = t[li + 1];
+				double d12 = (t1 + t2) / 2.0;
+				double d23 = (t2 + t3) / 2.0;
+				double s = sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
+				L(nrows, pi0) = s / d12;
+				L(nrows, pi1) = -s / d12 - s / d23;
+				L(nrows, pi2) = s / d23;
+				nrows++;
+			}
+		}
+		Ws = L.transpose() * L;
+		Ws *= (AlphaS / (double)(nrows));
+	}
+
+	void initialise_Ws() {
+		if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_1ST) {
+			initialise_L_Ws_1st_derivative();
+		}
+		else if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_2ND) {
+			initialise_L_Ws_2nd_derivative();
+		}
+	}
+
+	void initialise_Wq()
+	{
+		Wq = Matrix::Zero(nParam, nParam);
+		if (AlphaQ == 0) return;
+		if (solve_conductivity() == false) return;
+		Matrix L = Matrix::Zero(nLayers * nSoundings, nParam);
+
+		size_t nrows = 0;
+		for (size_t si = 0; si < nSoundings; si++) {
+			const cEarthStruct& e = E[si];
+			std::vector<double> t = e.ref.dummy_thickness();
+			double tavg = mean(t);
+
+			//Loop over constraints equations
+			for (size_t li = 0; li < nLayers; li++) {
+				const int lpindex = cindex(si, li);
+
+				//Loop over layers for this equation
+				for (size_t ki = 0; ki < nLayers; ki++) {
+					const int pindex = cindex(si, ki);
+					double s = std::sqrt(t[li] / tavg);//sqrt because it gets squared in L'L				
+					if (lpindex == pindex) {
+						L(nrows, pindex) = 1.0;
+					}
+					else {
+						L(nrows, pindex) = -1.0 / ((double)nLayers - 1);
+					}
+				}
+				nrows++;
+			}
+		}
+		Wq = L.transpose() * L;
+		Wq *= (AlphaQ / (double)(nrows));
+		//std::cerr << Wq;
+	}
+
+	void initialise_Wr() {
+		initialise_Wc();
+		initialise_Wt();
+		initialise_Wg();
+
+		Wr = Matrix::Zero(nParam, nParam);
+		if (AlphaC > 0.0) Wr += Wc;
+		if (AlphaT > 0.0) Wr += Wt;
+		if (AlphaG > 0.0) Wr += Wg;
+	}
+
+	void initialise_Wm() {
+		initialise_Wq();
+		initialise_Ws();
+		initialise_Wr();
+		Wm = Wr + Ws + Wq;
+	}
+
+	void dump_W_matrices() {
+		if (OO.Dump) {
+			writetofile(Wc, dumppath() + "Wc.dat");
+			writetofile(Wt, dumppath() + "Wt.dat");
+			writetofile(Wg, dumppath() + "Wg.dat");
+			writetofile(Wr, dumppath() + "Wr.dat");
+			writetofile(Ws, dumppath() + "Ws.dat");
+			writetofile(Wm, dumppath() + "Wm.dat");
+			writetofile(Wd, dumppath() + "Wd.dat");
+		}
+	}
+
+	const int& dindex(const size_t& sampleindex, const size_t& systemindex, const size_t& componentindex, const size_t& windowindex) {
+		const size_t& si = sampleindex;
+		const size_t& sysi = systemindex;		
+		const size_t& ci = componentindex;
+		const size_t& wi = windowindex;	
+		return _dindex_[si][sysi][ci][wi];
+	};
+
 	void initialise_systems()
 	{
-		set_fftw_lock();				
+		set_fftw_lock();
 		std::vector<cBlock> B = Control.findblocks("EMSystem");
-		nsystems = B.size();
-		SV.resize(nsystems);
-		for (size_t si = 0; si < nsystems; si++) {
-			SV[si].initialise(B[si]);
+		nSystems = B.size();
+		SV.resize(nSystems);
+		for (size_t sysi = 0; sysi < nSystems; sysi++) {
+			SV[sysi].initialise(B[sysi], nSoundings);
 		}
 		unset_fftw_lock();
 	}
@@ -706,194 +805,112 @@ public:
 	void setup_data()
 	{
 		nAllData = 0;
-		for (size_t si = 0; si < nsystems; si++) {
-			cTDEmSystemInfo& S = SV[si];
-			if (S.invertXPlusZ) {
-				S.xzIndex = (int) nAllData;
-				S.CompInfo[0].dataindex = -1;
-				S.CompInfo[2].dataindex = -1;
-				nAllData += S.nwindows;
-
-				if (S.CompInfo[1].Use) {
-					S.CompInfo[1].dataindex = (int) nAllData;
-					nAllData += S.nwindows;
-				}
-			}
-			else {
-				for (size_t i = 0; i < 3; i++) {
-					if (S.CompInfo[i].Use) {
-						S.CompInfo[i].dataindex = (int) nAllData;
-						nAllData += S.nwindows;
+		_dindex_.resize(nSoundings);
+		for (size_t si = 0; si < nSoundings; si++) {
+			_dindex_[si].resize(nSystems);
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				_dindex_[si][sysi].resize(4);//4 because of xzinversion				
+				for (size_t ci = 0; ci < 4; ci++) {
+					_dindex_[si][sysi][ci].resize(SV[sysi].nwindows);
+					for (size_t wi = 0; wi < SV[sysi].nwindows; wi++) {
+						_dindex_[si][sysi][ci][wi] = -1;
 					}
 				}
 			}
-		}				
-	}
-
-	void setup_parameters()
-	{
-		bool status = Control.getvalue("Input.Earth.Conductivity.NumberOfLayers",nlayers);
-		if (status == false) {
-			std::stringstream msg;
-			msg << "The NumberOfLayers must be specified in Input.Columns.Conductivity\n";
-			glog.errormsg(msg.str());
 		}
 
-		nParam = 0;
-		ngeomparam = 0;
-		if (solve_conductivity()) {			
-			fdC.index = (int)nParam;			
-			nParam += nlayers;
-		}
+		int di = 0;
+		for (size_t si = 0; si < nSoundings; si++) {
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
+				if (S.invertXPlusZ) {
+					nAllData += S.nwindows;
+					for (size_t wi = 0; wi < S.nwindows; wi++) {
+						_dindex_[si][sysi][XZAMP][wi] = di;
+						di++;
+					}
 
-		if (solve_thickness()) {
-			fdT.index = (int)nParam;
-			nParam += nlayers - 1;
-		}
-
-
-		//Geometry params	
-		_gindex_ = (int)nParam;
-		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
-			std::string gname = cTDEmGeometry::element_name(i);
-			cInvertibleFieldDefinition& a = fdG.cref(gname);
-			if (a.solve) {
-				a.index = (int)nParam;
-				nParam++;
-				ngeomparam++;
+					if (S.CompInfo[YCOMP].Use) {
+						nAllData += S.nwindows;
+						for (size_t wi = 0; wi < S.nwindows; wi++) {
+							_dindex_[si][sysi][YCOMP][wi] = di;
+							di++;
+						}
+					}
+				}
+				else {
+					for (size_t ci = 0; ci < 3; ci++) {
+						cTDEmComponentInfo& c = S.CompInfo[ci];
+						if (c.Use) {
+							nAllData += S.nwindows;
+							for (size_t wi = 0; wi < S.nwindows; wi++) {
+								_dindex_[si][sysi][ci][wi] = di;
+								di++;
+							}
+						}
+					}
+				}
 			}
-			else {
-				a.index = -1;
-			}
-		}		
-		if (ngeomparam == 0) _gindex_ = -1;//reset if none;
-		
-		RefParam.resize(nParam);
-		RefParamStd.resize(nParam);
-	}
-	
-	bool read_record()
-	{		
-		if (IM->parserecord() == false) return false;		
-		bool readstatus = true;
-		bool status;				
-		Id.uniqueid = (int) IM->record();
-		
-		status = read_ancillary_fields();
-		
-		status = readgeometry(fdG);
-		
-		status = IM->read(fdC.input, E.ref.conductivity, nlayers); if (status == false) readstatus = false;				
-		if (solve_conductivity()) {
-			status = IM->read(fdC.ref, E.ref.conductivity, nlayers); if (status == false) readstatus = false;
-			status = IM->read(fdC.std, E.std.conductivity, nlayers); if (status == false) readstatus = false;
-			status = IM->read(fdC.min, E.min.conductivity, nlayers); if (status == false) readstatus = false;
-			status = IM->read(fdC.max, E.max.conductivity, nlayers); if (status == false) readstatus = false;
 		}
-		
-		status = IM->read(fdT.input, E.ref.thickness, nlayers - 1); if (status == false) readstatus = false;
-		if (solve_thickness()) {
-			status = IM->read(fdT.ref, E.ref.thickness, nlayers - 1); if (status == false) readstatus = false;
-			status = IM->read(fdT.std, E.std.thickness, nlayers - 1); if (status == false) readstatus = false;
-			status = IM->read(fdT.min, E.min.thickness, nlayers - 1); if (status == false) readstatus = false;
-			status = IM->read(fdT.max, E.max.thickness, nlayers - 1); if (status == false) readstatus = false;
-		}
-		E.sanity_check();
-
-		for (size_t si = 0; si < nsystems; si++) {
-			read_system_data(si);
-		}
-		return readstatus;
 	}
 
-	template<typename T>
-	bool set_ancillary_id(const std::string key, T& value) {
-		int ki = AncFld.keyindex(key);
-		if (ki >= 0) {
-			value = std::get<T>(AncFld[ki].second.vnt);
-			return true;
-		}
-		return false;
-	}
-
-	bool read_ancillary_fields() {
-		for (size_t i = 0; i < AncFld.size(); i++) {
-			IM->readfdvnt(AncFld[i].second);
-		}
-		set_ancillary_id("Survey", Id.survey);
-		set_ancillary_id("Date", Id.date);
-		set_ancillary_id("Flight", Id.flight);
-		set_ancillary_id("Line", Id.line);
-		set_ancillary_id("Fiducial", Id.fiducial);
-		set_ancillary_id("X", Id.x);
-		set_ancillary_id("Y", Id.y);
-		set_ancillary_id("GroundElevation", Id.elevation);
-		return true;
-	}
-
-	void read_system_data(size_t sysindex)
-	{
-		cTDEmSystemInfo& S = SV[sysindex];
-		S.CompInfo[0].readdata(IM);
-		S.CompInfo[1].readdata(IM);
-		S.CompInfo[2].readdata(IM);
-	}
-	
-	bool initialise_data(){
+	bool initialise_bunch_data(){
 		std::vector<double> obs(nAllData);
 		std::vector<double> err(nAllData);
 		std::vector<double> pred(nAllData);
-		for (size_t si = 0; si < nsystems; si++) {
-			cTDEmSystemInfo& S = SV[si];
-			cTDEmSystem& T = S.T;
-			if (S.reconstructPrimary) {
-				T.setgeometry(G.tfr);
-				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-				T.LEM.derivative_layer = INT_MAX;
-				T.setprimaryfields();				
-				S.CompInfo[0].oP = T.PrimaryX;
-				S.CompInfo[1].oP = T.PrimaryY;
-				S.CompInfo[2].oP = T.PrimaryZ;
-			}
 
-			if (S.invertXPlusZ){
-				for (size_t wi = 0; wi < S.nwindows; wi++) {
+		for (size_t si = 0; si < nSoundings; si++) {
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
+				cTDEmSystem& T = S.T;
+				if (S.reconstructPrimary) {
+					T.setgeometry(G[si].tfr);
+					T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+					T.LEM.derivative_layer = INT_MAX;
+					T.setprimaryfields();
+					S.CompInfo[XCOMP].data[si].P = T.PrimaryX;
+					S.CompInfo[YCOMP].data[si].P = T.PrimaryY;
+					S.CompInfo[ZCOMP].data[si].P = T.PrimaryZ;
+				}
 
-					//X+Z Comp
-					size_t di = wi + S.xzIndex;					
-					double X = S.CompInfo[0].oS[wi];
-					double Z = S.CompInfo[2].oS[wi];					
-					if (S.invertPrimaryPlusSecondary) {
-						X += S.CompInfo[0].oP;
-						Z += S.CompInfo[2].oP;
-					}
-					obs[di] = std::hypot(X,Z);
-
-					const double& Xerr = S.CompInfo[0].oE[wi];
-					const double& Zerr = S.CompInfo[2].oE[wi];
-					err[di] = std::hypot(X*Xerr,Z*Zerr)/obs[di];
-					
-					//Y Comp
-					if (S.CompInfo[1].Use) {
-						di = S.CompInfo[1].dataindex + wi;
-						obs[di] = S.CompInfo[1].oS[wi];
+				if (S.invertXPlusZ) {
+					for (size_t wi = 0; wi < S.nwindows; wi++) {
+						//XZ Amplitude						
+						int di = dindex(si, sysi, XZAMP, wi);
+						double X = S.CompInfo[XCOMP].data[si].S[wi];
+						double Z = S.CompInfo[ZCOMP].data[si].S[wi];						
 						if (S.invertPrimaryPlusSecondary) {
-							obs[di] += S.CompInfo[1].oP;
+							X += S.CompInfo[XCOMP].data[si].P;
+							Z += S.CompInfo[ZCOMP].data[si].P;														
 						}
-						err[di] = S.CompInfo[1].oE[wi];
+						obs[di] = std::hypot(X, Z);
+
+						const double& Xerr = S.CompInfo[XCOMP].data[si].E[wi];
+						const double& Zerr = S.CompInfo[ZCOMP].data[si].E[wi];
+						err[di] = std::hypot(X * Xerr, Z * Zerr) / obs[di];
+
+						//Y Comp
+						if (S.CompInfo[YCOMP].Use) {
+							int di = dindex(si, sysi, YCOMP, wi);							
+							obs[di] = S.CompInfo[YCOMP].data[si].S[wi];
+							if (S.invertPrimaryPlusSecondary) {
+								obs[di] += S.CompInfo[YCOMP].data[si].P;
+							}
+							err[di] = S.CompInfo[YCOMP].data[si].E[wi];
+						}
 					}
 				}
-			}
-			else {
-				for (size_t ci = 0; ci < 3; ci++) {
-					if (S.CompInfo[ci].Use == false) continue;
-					for (size_t wi = 0; wi < S.nwindows; wi++) {
-						size_t di = S.CompInfo[ci].dataindex + wi;
-						obs[di] = S.CompInfo[ci].oS[wi];
-						if (S.invertPrimaryPlusSecondary) {
-							obs[di] += S.CompInfo[ci].oP;
+				else {
+					for (size_t ci = 0; ci < 3; ci++) {
+						if (S.CompInfo[ci].Use == false) continue;
+						for (size_t wi = 0; wi < S.nwindows; wi++) {							
+							int di = dindex(si, sysi, ci, wi);
+							obs[di] = S.CompInfo[ci].data[si].S[wi];
+							if (S.invertPrimaryPlusSecondary) {
+								obs[di] += S.CompInfo[ci].data[si].P;
+							}
+							err[di] = S.CompInfo[ci].data[si].E[wi];
 						}
-						err[di] = S.CompInfo[ci].oE[wi];
 					}
 				}
 			}
@@ -911,7 +928,8 @@ public:
 			OutputMessage += strprint(", %d null data/noise were culled",(int)ncull);
 		}
 		Err = cull(err);
-		Obs = cull(obs);
+		Obs = cull(obs);				
+		//std::cerr << std::endl << Obs << std::endl;
 
 		//Check for zero Error values		
 		int nzeroerr = 0;
@@ -925,318 +943,128 @@ public:
 		return true;
 	}
 		
-	void initialise_parameters(){
-		if (solve_conductivity()) {
-			for (size_t i = 0; i < nlayers; i++) {
-				RefParam[cindex(i)] = log10(E.ref.conductivity[i]);
-				RefParamStd[cindex(i)] = E.std.conductivity[i];
+	void initialise_bunch_parameters() {
+
+		for (size_t si = 0; si < nSoundings; si++) {
+			const cEarthStruct& e = E[si];
+			const cGeomStruct& g = G[si];
+			if (solve_conductivity()) {
+				for (size_t li = 0; li < nLayers; li++) {
+					RefParam[cindex(si,li)] = log10(e.ref.conductivity[li]);
+					RefParamStd[cindex(si,li)] = e.std.conductivity[li];
+				}
 			}
-		}
 
-		if (solve_thickness()) {
-			for (size_t i = 0; i < nlayers - 1; i++) {
-				RefParam[tindex(i)] = log10(E.ref.thickness[i]);
-				RefParamStd[tindex(i)] = E.std.thickness[i];
+			if (solve_thickness()) {
+				for (size_t li = 0; li < nLayers - 1; li++) {
+					RefParam[tindex(si,li)] = log10(e.ref.thickness[li]);
+					RefParamStd[tindex(si,li)] = e.std.thickness[li];
+				}
 			}
-		}
 
-		for (int i = 0; i < cTDEmGeometry::size(); i++) {
-			std::string gname = cTDEmGeometry::element_name(i);
-			auto a = fdG.cref(gname);
-			if (a.index > 0) {
-				RefParam[a.index] = G.ref[gname];
-				RefParamStd[a.index] = G.std[gname];
+			for (int gi = 0; gi < cTDEmGeometry::size(); gi++) {
+				std::string gname = cTDEmGeometry::element_name(gi);
+				const int pi = gindex(si, gname);								
+				if (pi >= 0) {						
+					RefParam[pi] = g.ref[gname];
+					RefParamStd[pi] = g.std[gname];
+				}
 			}
-		}		
-	}
-
-	void initialise_Wc(){
-		Wc = Matrix::Zero(nParam, nParam);		
-		if (solve_conductivity() == false)return;
-
-		std::vector<double> t(nlayers);
-		if (nlayers == 1) {
-			t[0] = 1;
-		}
-		else if (nlayers == 2) {
-			t[0] = E.ref.thickness[0];
-			t[1] = E.ref.thickness[0];
-		}
-		else {
-			for (size_t i = 0; i < (nlayers - 1); i++) {
-				t[i] = E.ref.thickness[i];
-			}
-			t[nlayers - 1] = (t[nlayers - 2] / t[nlayers - 3])*t[nlayers - 2];
-		}
-
-
-		double tsum = 0.0;
-		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
-		double tavg = tsum / (double)nlayers;
-
-		double s = AlphaC / (double)(nlayers);
-		for (size_t i = 0; i < nlayers; i++) {
-			size_t p = cindex(i);
-			Wc(p,p) = s * (t[i] / tavg) / (RefParamStd[p] * RefParamStd[p]);
-		}
-	}
-
-	void initialise_Wt(){
-		Wt = Matrix::Zero(nParam, nParam);
-		if (solve_thickness() == false)return;
-
-		double s = AlphaT / (double)(nlayers - 1);
-		for (size_t i = 0; i < nlayers - 1; i++) {
-			size_t p = tindex(i);
-			Wt(p,p) = s / (RefParamStd[p] * RefParamStd[p]);
-		}
-
-	}
-
-	void initialise_Wg(){		
-		Wg = Matrix::Zero(nParam, nParam);
-		if (ngeomparam <= 0)return;
-
-		double s = AlphaG / (double)ngeomparam;
-		for (size_t i = 0; i < ngeomparam; i++) {
-			size_t p = gindex(i);
-			Wg(p,p) = s / (RefParamStd[p] * RefParamStd[p]);
 		}
 	}
 		
-	void initialise_L_Ws_1st_derivative()
-	{
-		Ws = Matrix::Zero(nParam, nParam);
-		if (AlphaS == 0 || nlayers < 3) return;
-		if (solve_conductivity() == false) return;
-
-		std::vector<double> t(nlayers);
-		for (size_t i = 0; i < (nlayers - 1); i++) {
-			t[i] = E.ref.thickness[i];
-		}
-		t[nlayers - 1] = (t[nlayers - 2] / t[nlayers - 3])*t[nlayers - 2];
-
-
-		double tsum = 0.0;
-		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
-		double tavg = tsum / (double)nlayers;
-
-		Matrix L = Matrix::Zero(nlayers - 1, nParam);
-		size_t neqn = 0;
-		for (size_t li = 1; li < nlayers; li++) {
-			const size_t& pindex = cindex(li);
-			double t1 = t[li - 1];
-			double t2 = t[li];
-			double d12 = (t1 + t2) / 2.0;
-			double s = sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
-			L(neqn,pindex - 1) = -s / d12;
-			L(neqn,pindex) = s / d12;
-			neqn++;
-		}
-		Ws = L.transpose() * L;
-		Ws *= (AlphaS / (double)(nlayers - 1));
-	}
-
-	void initialise_L_Ws_2nd_derivative()
-	{
-		Ws = Matrix::Zero(nParam, nParam);
-		if (AlphaS == 0 || nlayers < 3) return;
-		if (solve_conductivity() == false) return;
-
-		std::vector<double> t(nlayers);
-		if (nlayers == 1) {
-			t[0] = 1.0;
-		}
-		else {
-			for (size_t i = 0; i < (nlayers - 1); i++) {
-				t[i] = E.ref.thickness[i];
-			}
-			t[nlayers - 1] = (t[nlayers - 2] / t[nlayers - 3])*t[nlayers - 2];
-		}
-
-		double tsum = 0.0;
-		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
-		double tavg = tsum / (double)nlayers;
-
-		Matrix L = Matrix::Zero(nlayers - 2, nParam);
-		size_t neqn = 0;
-		for (size_t li = 1; li < nlayers - 1; li++) {
-			const size_t& pindex = cindex(li);
-			double t1 = t[li - 1];
-			double t2 = t[li];
-			double t3 = t[li + 1];
-			double d12 = (t1 + t2) / 2.0;
-			double d23 = (t2 + t3) / 2.0;
-			double s = sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
-			L(neqn,pindex - 1) = s / d12;
-			L(neqn,pindex) = -s / d12 - s / d23;
-			L(neqn,pindex + 1) = s / d23;
-			neqn++;
-		}
-		Ws = L.transpose() * L;
-		Ws *= (AlphaS / (double)(nlayers - 2));
-	}
-	
-	void initialise_Ws() {
-		if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_1ST) {
-			initialise_L_Ws_1st_derivative();
-		}
-		else if (SmoothnessMethod == eSmoothnessMethod::DERIVATIVE_2ND) {
-			initialise_L_Ws_2nd_derivative();
-		}
-	}
-
-	void initialise_Wq()
-	{
-		Wq = Matrix::Zero(nParam, nParam);
-		if (AlphaQ == 0) return;
-		if (solve_conductivity() == false) return;
-
-		std::vector<double> t(nlayers);
-		for (size_t i = 0; i < (nlayers - 1); i++) {
-			t[i] = E.ref.thickness[i];
-		}
-		t[nlayers - 1] = (t[nlayers - 2] / t[nlayers - 3]) * t[nlayers - 2];
-
-
-		double tsum = 0.0;
-		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
-		double tavg = tsum / (double)nlayers;
-
-		Matrix L = Matrix::Zero(nlayers, nParam);
-		size_t neqn = 0;
-		for (size_t li = 0; li < nlayers; li++) {
-			const size_t& lpindex = cindex(li);
-			for (size_t ki = 0; ki < nlayers; ki++) {
-				const size_t& kpindex = cindex(ki);				
-				double s = std::sqrt(t[li] / tavg);//sqrt because it gets squared in L'L				
-				if (li == ki) {
-					L(lpindex, kpindex) = 1.0;
-				}
-				else {
-					L(lpindex, kpindex) = -1.0 / ((double)nlayers - 1);
-				}
-				neqn++;
-			}
-		}
-		Wq = L.transpose() * L;
-		Wq *= (AlphaQ / (double)(nlayers));
-		std::cerr << Wq;
-	}
-
-	void initialise_Wr() {
-		initialise_Wc();
-		initialise_Wt();
-		initialise_Wg();
-
-		Wr = Matrix::Zero(nParam, nParam);
-		if (AlphaC > 0.0) Wr += Wc;
-		if (AlphaT > 0.0) Wr += Wt;
-		if (AlphaG > 0.0) Wr += Wg;
-	}
-
-	void initialise_Wm(){
-		initialise_Wq();
-		initialise_Ws();
-		initialise_Wr();		
-		Wm = Wr + Ws + Wq;
-	}
-
-	void dump_W_matrices(){		
-		if (OO.Dump) {
-			writetofile(Wc, dumppath() + "Wc.dat");
-			writetofile(Wt, dumppath() + "Wt.dat");
-			writetofile(Wg, dumppath() + "Wg.dat");
-			writetofile(Wr, dumppath() + "Wr.dat");
-			writetofile(Ws, dumppath() + "Ws.dat");
-			writetofile(Wm, dumppath() + "Wm.dat");
-			writetofile(Wd, dumppath() + "Wd.dat");
-		}
-	}
-	
 	Vector parameter_change(const double& lambda, const Vector& m_old, const Vector& pred)
 	{
 		Vector m_new = solve_linear_system(lambda, m_old, pred);
 		Vector dm = m_new - m_old;
 
 		if (fdC.bound()) {			
-			for (size_t li = 0; li < nlayers; li++) {
-				const size_t pindex = cindex(li);				
-				const double lmin = std::log10(E.min.conductivity[li]);
-				const double lmax = std::log10(E.max.conductivity[li]);
-				if(m_new[pindex] < lmin) {
-					if (Verbose) {
-						std::cerr << rec_it_str() << std::endl;
-						std::cerr << "Lower conductivity bound reached" << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+			for (size_t si = 0; si < nSoundings; si++) {
+				const cEarthStruct& e = E[si];
+				for (size_t li = 0; li < nLayers; li++) {
+					const int pindex = cindex(si,li);
+					const double lmin = std::log10(e.min.conductivity[li]);
+					const double lmax = std::log10(e.max.conductivity[li]);
+					if (m_new[pindex] < lmin) {
+						if (Verbose) {
+							//std::cerr << rec_it_str() << std::endl;
+							//std::cerr << "Lower conductivity bound reached" << std::endl;
+							//std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+							//std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+						}
+						dm[pindex] = lmin - m_old[pindex];
+						//if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
 					}
-					dm[pindex] = lmin - m_old[pindex];
-					if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
-				}
-				else if (m_new[pindex] > lmax) {
-					if (Verbose) {
-						std::cerr << rec_it_str() << std::endl;
-						std::cerr << "Upper conductivity bound reached" << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+					else if (m_new[pindex] > lmax) {
+						if (Verbose) {
+							//std::cerr << rec_it_str() << std::endl;
+							//std::cerr << "Upper conductivity bound reached" << std::endl;
+							//std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+							//std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+						}
+						dm[pindex] = lmax - m_old[pindex];
+						//if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
 					}
-					dm[pindex] = lmax - m_old[pindex];
-					if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
 				}
 			}
 		}
 		
 		if (fdT.bound()) {
-			for (size_t li = 0; li < nlayers - 1; li++) {
-				const size_t pindex = tindex(li);
-				const double lmin = std::log10(E.min.thickness[li]);
-				const double lmax = std::log10(E.max.thickness[li]);				
-				if (m_new[pindex] < lmin) {
-					if (Verbose) {
-						std::cerr << rec_it_str() << std::endl;
-						std::cerr << "Lower thickness bound reached" << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+			for (size_t si = 0; si < nSoundings; si++) {
+				const cEarthStruct& e = E[si];
+				for (size_t li = 0; li < nLayers - 1; li++) {
+					const int pindex = tindex(si,li);
+					const double lmin = std::log10(e.min.thickness[li]);
+					const double lmax = std::log10(e.max.thickness[li]);
+					if (m_new[pindex] < lmin) {
+						if (Verbose) {
+							//std::cerr << rec_it_str() << std::endl;
+							//std::cerr << "Lower thickness bound reached" << std::endl;
+							//std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+							//std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+						}
+						dm[pindex] = lmin - m_old[pindex];
+						//if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
 					}
-					dm[pindex] = lmin - m_old[pindex];
-					if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
+					else if (m_new[pindex] > lmax) {
+						if (Verbose) {
+							//std::cerr << rec_it_str() << std::endl;
+							//std::cerr << "Upper thickness bound reached" << std::endl;
+							//std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+							//std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
+						}
+						dm[pindex] = lmax - m_old[pindex];
+						//if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
+					}
 				}
-				else if (m_new[pindex] > lmax) {
-					if (Verbose) {
-						std::cerr << rec_it_str() << std::endl;
-						std::cerr << "Upper thickness bound reached" << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
-						std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
-					}
-					dm[pindex] = lmax - m_old[pindex];
-					if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
-				}				
 			}
 		}
 
-		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
-			const std::string ename = cTDEmGeometry::element_name(i);			
-			const cInvertibleFieldDefinition& e = fdG.cref(ename);
-			if (e.bound()) {
-				const size_t pindex = e.index;
-				const double emin = G.min[ename];
-				const double emax = G.max[ename];
-				if (m_new[pindex] < emin) {										
-					if (Verbose) {
-						std::cerr << rec_it_str() << std::endl;
-						std::cerr << "Lower " << ename << " bound reached" << std::endl;
-						std::cerr << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+		for (size_t si = 0; si < nSoundings; si++) {
+			cGeomStruct& g = G[si];
+			for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
+				const std::string ename = cTDEmGeometry::element_name(i);
+				const cInvertibleFieldDefinition& e = fdG.cref(ename);
+				if (e.bound()) {
+					const int pi = gindex(si,ename);
+					const double emin = g.min[ename];
+					const double emax = g.max[ename];
+					if (m_new[pi] < emin) {
+						if (Verbose) {
+							//std::cerr << rec_it_str() << std::endl;
+							//std::cerr << "Lower " << ename << " bound reached" << std::endl;
+							//std::cerr << "\tdm=" << dm[pi] << "\tm=" << m_old[pi] << "\tm+dm=" << m_new[pi] << std::endl;
+						}
+						dm[pi] = emin - m_old[pi];
 					}
-					dm[pindex] = emin - m_old[pindex];
-				}
-				else if (m_new[pindex] > emax) {
-					if (Verbose) {
-						std::cerr << rec_it_str() << std::endl;
-						std::cerr << "Upper " << ename << " bound reached" << std::endl;
-						std::cerr << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
+					else if (m_new[pi] > emax) {
+						if (Verbose) {
+							//std::cerr << rec_it_str() << std::endl;
+							//std::cerr << "Upper " << ename << " bound reached" << std::endl;
+							//std::cerr << "\tdm=" << dm[pi] << "\tm=" << m_old[pi] << "\tm+dm=" << m_new[pi] << std::endl;
+						}
+						dm[pi] = emax - m_old[pi];
 					}
-					dm[pindex] = emax - m_old[pindex];
 				}
 			}
 		}
@@ -1244,40 +1072,46 @@ public:
 		return dm;
 	}
 
-	cEarth1D get_earth(const Vector& parameters)
+	std::vector<cEarth1D> get_earth(const Vector& parameters)
 	{
-		cEarth1D e = E.ref;
-		if (solve_conductivity()) {
-			for (size_t li = 0; li < nlayers; li++) {
-				e.conductivity[li] = pow10(parameters[cindex(li)]);
-			}
-		}
+		std::vector<cEarth1D> ev(nSoundings);;
+		for (size_t si = 0; si < nSoundings; si++) {
+			ev[si] = E[si].ref;
+			if (solve_conductivity()) {				
+				for (size_t li = 0; li < nLayers; li++) {
+					ev[si].conductivity[li] = pow10(parameters[cindex(si, li)]);
+				}
+			}			
 
-		if (solve_thickness()) {
-			for (size_t li = 0; li < nlayers - 1; li++) {
-				e.thickness[li] = pow10(parameters[tindex(li)]);
-			}
+			if (solve_thickness()) {				
+				for (size_t li = 0; li < nLayers - 1; li++) {
+					ev[si].thickness[li] = pow10(parameters[tindex(si, li)]);
+				}
+			}			
 		}
-		return e;
+		return ev;
 	}
 
-	cTDEmGeometry get_geometry(const Vector& parameters)
+	std::vector<cTDEmGeometry> get_geometry(const Vector& parameters)
 	{
-		cTDEmGeometry g = G.input;
-		for (int i = 0; i < cTDEmGeometry::size(); i++) {
-			std::string gname = cTDEmGeometry::element_name(i);
-			auto p = fdG.cref(gname);
-			if (p.solve) {
-				g[gname] = parameters[p.index];
+		std::vector<cTDEmGeometry> gv(nSoundings);
+		for (size_t si = 0; si < nSoundings; si++) {
+			gv[si] = G[si].input;
+			for (int gi = 0; gi < cTDEmGeometry::size(); gi++) {
+				const std::string& gname = cTDEmGeometry::element_name(gi);				
+				const int pi = gindex(si, gname);
+				if (pi>=0) {
+					gv[si][gname] = parameters[pi];
+				}
 			}
-		}		
-		return g;
+		}
+		return gv;
 	}
 
 	void set_predicted()
 	{
-		for (size_t si = 0; si < nsystems; si++) {
-			cTDEmSystemInfo& S = SV[si];
+		for (size_t sysi = 0; sysi < nSystems; sysi++) {
+			cTDEmSystemInfo& S = SV[sysi];
 			cTDEmSystem& T = S.T;
 
 			cTDEmData& d = S.predicted;
@@ -1292,171 +1126,180 @@ public:
 
 	void forwardmodel(const Vector& parameters, Vector& predicted) {
 		Matrix dummy;	
-		_forwardmodel_(parameters, predicted, dummy, false);		
+		nForwards++;
+		forwardmodel_impl(parameters, predicted, dummy, false);		
 	}
 
 	void forwardmodel_and_jacobian(const Vector& parameters, Vector& predicted, Matrix& jacobian) {
-		_forwardmodel_(parameters, predicted, jacobian, true);
+		nForwards++;
+		nJacobians++;
+		forwardmodel_impl(parameters, predicted, jacobian, true);
 	}
 
-	void _forwardmodel_(const Vector& parameters, Vector& predicted, Matrix& jacobian, bool computederivatives)
+	void forwardmodel_impl(const Vector& parameters, Vector& predicted, Matrix& jacobian, bool computederivatives)
 	{
 		Vector pred_all(nAllData);
 		Matrix J_all;
+		if (computederivatives) {
+			J_all.resize(nAllData, nParam);
+			J_all.setZero();
+		}
 
-		cEarth1D      e = get_earth(parameters);
-		cTDEmGeometry g = get_geometry(parameters);
-		for (size_t si = 0; si < nsystems; si++) {
-			cTDEmSystemInfo& S = SV[si];
+		std::vector<cEarth1D> ev = get_earth(parameters);
+		std::vector<cTDEmGeometry> gv = get_geometry(parameters);		
+		for (size_t sysi = 0; sysi < nSystems; sysi++) {			
+			cTDEmSystemInfo& S = SV[sysi];
 			cTDEmSystem& T = S.T;
 			const size_t nw = T.NumberOfWindows;
-			T.setconductivitythickness(e.conductivity, e.thickness);
-			T.setgeometry(g);
+			for (size_t si = 0; si < nSoundings; si++) {
+				const cEarth1D& e = ev[si];
+				const cTDEmGeometry& g = gv[si];
+				T.setconductivitythickness(e.conductivity, e.thickness);
+				T.setgeometry(g);
 
-			//Forwardmodel
-			T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-			T.LEM.derivative_layer = INT_MAX;
-			T.setupcomputations();
-			T.setprimaryfields();
-			T.setsecondaryfields();
+				//Forwardmodel
+				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+				T.LEM.derivative_layer = INT_MAX;
+				T.setupcomputations();
+				T.setprimaryfields();
+				T.setsecondaryfields();
 
-			std::vector<double> xfm = T.X;
-			std::vector<double> yfm = T.Y;
-			std::vector<double> zfm = T.Z;
-			std::vector<double> xzfm;
-			if (S.invertPrimaryPlusSecondary) {
-				xfm += T.PrimaryX;
-				yfm += T.PrimaryY;
-				zfm += T.PrimaryZ;
-			}
-
-			if (S.invertXPlusZ) {
-				xzfm.resize(T.NumberOfWindows);
-				for (size_t wi = 0; wi < T.NumberOfWindows; wi++) {
-					xzfm[wi] = std::hypot(xfm[wi], zfm[wi]);
+				std::vector<double> xfm = T.X;
+				std::vector<double> yfm = T.Y;
+				std::vector<double> zfm = T.Z;
+				std::vector<double> xzfm;
+				if (S.invertPrimaryPlusSecondary) {
+					xfm += T.PrimaryX;
+					yfm += T.PrimaryY;
+					zfm += T.PrimaryZ;
 				}
-			}
 
-			if (S.invertXPlusZ) {
-				for (size_t wi = 0; wi < nw; wi++) {
-					pred_all[wi + S.xzIndex] = xzfm[wi];
-					if (S.CompInfo[1].Use) pred_all[wi + S.CompInfo[1].dataindex] = yfm[wi];
+				if (S.invertXPlusZ) {
+					xzfm.resize(T.NumberOfWindows);
+					for (size_t wi = 0; wi < T.NumberOfWindows; wi++) {
+						xzfm[wi] = std::hypot(xfm[wi], zfm[wi]);
+					}
 				}
-			}
-			else {
-				for (size_t wi = 0; wi < nw; wi++) {
-					if (S.CompInfo[0].Use) pred_all[wi + S.CompInfo[0].dataindex] = xfm[wi];
-					if (S.CompInfo[1].Use) pred_all[wi + S.CompInfo[1].dataindex] = yfm[wi];
-					if (S.CompInfo[2].Use) pred_all[wi + S.CompInfo[2].dataindex] = zfm[wi];
-				}				
-			}
+
+				if (S.invertXPlusZ) {
+					for (size_t wi = 0; wi < nw; wi++) {
+						const int& di = dindex(si, sysi, XZAMP, wi);
+						pred_all[di] = xzfm[wi];
+						if (S.CompInfo[1].Use){
+							pred_all[dindex(si, sysi, YCOMP, wi)] = yfm[wi];
+						}
+					}
+				}
+				else {
+					for (size_t wi = 0; wi < nw; wi++) {
+						if (S.CompInfo[XCOMP].Use) pred_all[dindex(si, sysi, XCOMP, wi)] = xfm[wi];
+						if (S.CompInfo[YCOMP].Use) pred_all[dindex(si, sysi, YCOMP, wi)] = yfm[wi];
+						if (S.CompInfo[ZCOMP].Use) pred_all[dindex(si, sysi, ZCOMP, wi)] = zfm[wi];
+					}
+				}
+
+				if (computederivatives) {					
+					std::vector<double> xdrv(nw);
+					std::vector<double> ydrv(nw);
+					std::vector<double> zdrv(nw);
+					if (solve_conductivity()) {
+						for (size_t li = 0; li < nLayers; li++) {
+							const int pindex = cindex(si,li);
+							T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
+							T.LEM.derivative_layer = li;
+							T.setprimaryfields();
+							T.setsecondaryfields();
+
+							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+							//multiply by natural log(10) as parameters are in logbase10 units
+							double sf = log(10.0) * e.conductivity[li];
+							xdrv *= sf; ydrv *= sf; zdrv *= sf;
+							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						}
+					}
+
+					if (solve_thickness()) {
+						for (size_t li = 0; li < nLayers - 1; li++) {
+							const int pindex = tindex(si,li);
+							T.LEM.calculation_type = cLEM::CalculationType::THICKNESSDERIVATIVE;
+							T.LEM.derivative_layer = li;
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+							//multiply by natural log(10) as parameters are in logbase10 units
+							double sf = log(10.0) * e.thickness[li];
+							xdrv *= sf; ydrv *= sf; zdrv *= sf;
+							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						}
+					}
+
+					if (FreeGeometry) {
+
+						if (solve_geometry_element("tx_height")) {							
+							const size_t pindex = gindex(si, "tx_height");
+							T.LEM.calculation_type = cLEM::CalculationType::HDERIVATIVE;
+							T.LEM.derivative_layer = INT_MAX;
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						}
+
+						if (solve_geometry_element("txrx_dx")) {							
+							const size_t pindex = gindex(si,"txrx_dx");
+							T.LEM.calculation_type = cLEM::CalculationType::XDERIVATIVE;
+							T.LEM.derivative_layer = INT_MAX;
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						}
+
+						if (solve_geometry_element("txrx_dy")) {							
+							const size_t pindex = gindex(si, "txrx_dy");
+							T.LEM.calculation_type = cLEM::CalculationType::YDERIVATIVE;
+							T.LEM.derivative_layer = INT_MAX;
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						}
+
+						if (solve_geometry_element("txrx_dz")) {
+							const size_t pindex = gindex(si, "txrx_dz");
+							T.LEM.calculation_type = cLEM::CalculationType::ZDERIVATIVE;
+							T.LEM.derivative_layer = INT_MAX;
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						}
+
+						if (solve_geometry_element("rx_pitch")) {
+							const size_t pindex = gindex(si, "rx_pitch");
+							T.drx_pitch(xfm, zfm, g.rx_pitch, xdrv, zdrv);
+							ydrv *= 0.0;
+							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						}
 						
-			if (computederivatives) {					
-				if (computederivatives) {
-					J_all.resize(nAllData, nParam);
-					J_all.setZero();
-				}
-				std::vector<double> xdrv(nw);
-				std::vector<double> ydrv(nw);
-				std::vector<double> zdrv(nw);
-
-				if (solve_conductivity()) {
-					for (size_t li = 0; li < nlayers; li++) {
-						const size_t& pindex = cindex(li);
-						T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
-						T.LEM.derivative_layer = li;
-						T.setprimaryfields();
-						T.setsecondaryfields();
-
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						//multiply by natural log(10) as parameters are in logbase10 units
-						double sf = log(10.0)*e.conductivity[li];
-						xdrv *= sf; ydrv *= sf; zdrv *= sf;
-						fillMatrixColumn(J_all, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						if (solve_geometry_element("rx_roll")) {
+							const size_t pindex = gindex(si, "rx_roll");
+							T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
+							xdrv *= 0.0;
+							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+						}
 					}
 				}
-
-				if (solve_thickness()) {
-					for (size_t li = 0; li < nlayers - 1; li++) {
-						size_t pindex = tindex(li);
-						T.LEM.calculation_type = cLEM::CalculationType::THICKNESSDERIVATIVE;
-						T.LEM.derivative_layer = li;
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						//multiply by natural log(10) as parameters are in logbase10 units
-						double sf = log(10.0)*e.thickness[li];
-						xdrv *= sf; ydrv *= sf; zdrv *= sf;
-						fillMatrixColumn(J_all, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-				}
-				
-				if (FreeGeometry) {					
-					
-					if (solve_geometry("tx_height")) {
-						const size_t pindex = fdG.cref("tx_height").index;						
-						T.LEM.calculation_type = cLEM::CalculationType::HDERIVATIVE;
-						T.LEM.derivative_layer = INT_MAX;
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						fillMatrixColumn(J_all, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry("txrx_dx")) {
-						const size_t pindex = fdG.cref("txrx_dx").index;
-						T.LEM.calculation_type = cLEM::CalculationType::XDERIVATIVE;
-						T.LEM.derivative_layer = INT_MAX;
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						fillMatrixColumn(J_all, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry("txrx_dy")) {
-						const size_t pindex = fdG.cref("txrx_dy").index;
-						T.LEM.calculation_type = cLEM::CalculationType::YDERIVATIVE;
-						T.LEM.derivative_layer = INT_MAX;
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						fillMatrixColumn(J_all, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry("txrx_dz")) {
-						const size_t pindex = fdG.cref("txrx_dz").index;
-						T.LEM.calculation_type = cLEM::CalculationType::ZDERIVATIVE;
-						T.LEM.derivative_layer = INT_MAX;
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						fillMatrixColumn(J_all, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry("rx_pitch")) {
-						const size_t pindex = fdG.cref("rx_pitch").index;
-						T.drx_pitch(xfm, zfm, g.rx_pitch, xdrv, zdrv);
-						ydrv *= 0.0;
-						fillMatrixColumn(J_all, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry("rx_roll")) {
-						const size_t pindex = fdG.cref("rx_roll").index;
-						T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
-						xdrv *= 0.0;
-						fillMatrixColumn(J_all, S, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-				}				
 			}
 		}
 		predicted = cull(pred_all);
 		if(computederivatives) jacobian = cull(J_all);
 
-		if (Verbose) {
-			std::cerr << "\n-----------------\n";
-			std::cerr << "It " << CIS.iteration + 1 << std::endl;
-			std::cerr << J_all;
-			std::cerr << "\n-----------------\n";
+		if (Verbose && computederivatives) {
+			//std::cerr << "\n-----------------\n";
+			//std::cerr << "J_all: It " << CIS.iteration + 1 << std::endl;			
+			//std::cerr << J_all;			
+			//std::cerr << "\n-----------------\n";
 		}
 	}
 
@@ -1473,45 +1316,40 @@ public:
 		}
 	}
 
-	void fillMatrixColumn(Matrix& M, cTDEmSystemInfo& S, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
+	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
 	{
-		const size_t nw = S.T.NumberOfWindows;
+		const cTDEmSystemInfo& S = SV[sysi];
+		const size_t& nw = S.T.NumberOfWindows;
 		if (S.invertXPlusZ) {
-			for (size_t w = 0; w < nw; w++) {				
-				M(w + S.xzIndex, pindex) = (xfm[w] * xdrv[w] + zfm[w] * zdrv[w]) / xzfm[w];
-				if (S.CompInfo[1].Use)M(w + S.CompInfo[1].dataindex,pindex) = xdrv[w];
+			for (size_t wi = 0; wi < nw; wi++) {								
+				M(dindex(si, sysi, XZAMP, wi), pindex) = (xfm[wi] * xdrv[wi] + zfm[wi] * zdrv[wi]) / xzfm[wi];
+				if (S.CompInfo[1].Use) {
+					M(dindex(si, sysi, YCOMP, wi), pindex) = ydrv[wi];
+				}
 			}
 		}
 		else {
-			for (size_t w = 0; w < nw; w++) {				
-				if (S.CompInfo[0].Use)M(w + S.CompInfo[0].dataindex,pindex) = xdrv[w];
-				if (S.CompInfo[1].Use)M(w + S.CompInfo[1].dataindex,pindex) = ydrv[w];
-				if (S.CompInfo[2].Use)M(w + S.CompInfo[2].dataindex,pindex) = zdrv[w];				
+			for (size_t wi = 0; wi < nw; wi++) {				
+				if (S.CompInfo[XCOMP].Use)M(dindex(si, sysi, XCOMP, wi),pindex) = xdrv[wi];
+				if (S.CompInfo[YCOMP].Use)M(dindex(si, sysi, YCOMP, wi),pindex) = ydrv[wi];
+				if (S.CompInfo[ZCOMP].Use)M(dindex(si, sysi, ZCOMP, wi),pindex) = zdrv[wi];
 			}
 		}
 	}
 
 	void save_iteration_file(const cIterationState& S) {
 		std::ofstream ofs(dumppath() + "iteration.dat");
-		ofs << "Iteration "  << S.iteration << std::endl;
-		ofs << "Lambda " << S.lambda << std::endl;
-		ofs << "TargetPhiD " << S.targetphid << std::endl;
-		ofs << "PhiD " << S.phid << std::endl;		
-		ofs << "PhiM " << S.phim << std::endl;
-		ofs << "PhiC " << S.phic << std::endl;
-		ofs << "PhiT " << S.phit << std::endl;
-		ofs << "PhiG " << S.phig << std::endl;
-		ofs << "PhiS " << S.phis << std::endl;
-		ofs << "PhiQ " << S.phiq << std::endl;
+		ofs << S.info_string();
 	};
 	
 	void writeresult(const int& pointindex, const cIterationState& S)
 	{		
-		const int& pi = pointindex;
+		const int& pi = (int)Bunch.master_record();
+		const int& si = (int)Bunch.master_index();
 		OM->begin_point_output();
 		
 		//Ancillary	
-		OM->writefield(pi, Id.uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
 		for (size_t i = 0; i<AncFld.size(); i++) {
 			cFdVrnt& fdv = AncFld[i].second;
 			cAsciiColumnField c;
@@ -1522,16 +1360,17 @@ public:
 
 		//Geometry Input
 		bool invertedfieldsonly = false;
-		for (size_t i = 0; i < G.input.size(); i++) {
+		for (size_t i = 0; i < G[si].input.size(); i++) {
 			if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
-			OM->writefield(pi, G.input[i], "input_" + G.input.element_name(i), "Input " + G.input.description(i), G.input.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
+			OM->writefield(pi, G[si].input[i], "input_" + G[si].input.element_name(i), "Input " + G[si].input.description(i), G[si].input.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
 		}
 
 		//Geometry Modelled		
+		const cTDEmGeometry& g = G[si].invmodel;
 		invertedfieldsonly = true;
-		for (size_t i = 0; i < G.invmodel.size(); i++) {
-			if (invertedfieldsonly && solvegeometryindex(i) == false)continue;
-			OM->writefield(pi, G.invmodel[i], "inverted_" + G.invmodel.element_name(i), "Inverted " + G.invmodel.description(i), G.invmodel.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
+		for (size_t gi = 0; gi < g.size(); gi++) {
+			if (invertedfieldsonly && solvegeometryindex(gi) == false)continue;
+			OM->writefield(pi, g[gi], "inverted_" + g.element_name(gi), "Inverted " + g.description(gi), g.units(gi), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
 		}
 				
 		//ndata
@@ -1540,19 +1379,20 @@ public:
 			1, NC_UINT, DN_NONE, 'I', 4, 0);
 
 		//Earth	
+		const cEarth1D& e = E[si].invmodel;
 		OM->writefield(pi,
-			nlayers,"nlayers","Number of layers ", UNITLESS,
+			nLayers,"nlayers","Number of layers ", UNITLESS,
 			1, NC_UINT, DN_NONE, 'I', 4, 0);
 		
 		OM->writefield(pi,
-			E.invmodel.conductivity, "conductivity", "Layer conductivity", "S/m",
-			E.invmodel.conductivity.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
+			e.conductivity, "conductivity", "Layer conductivity", "S/m",
+			e.conductivity.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 		
 		double bottomlayerthickness = 100.0;
-		if (solve_thickness() == false && nlayers > 1) {
-			bottomlayerthickness = E.invmodel.thickness[nlayers - 2];
+		if (solve_thickness() == false && nLayers > 1) {
+			bottomlayerthickness = e.thickness[nLayers - 2];
 		}
-		std::vector<double> thickness = E.invmodel.thickness;
+		std::vector<double> thickness = e.thickness;
 		thickness.push_back(bottomlayerthickness);
 
 		OM->writefield(pi,
@@ -1561,36 +1401,36 @@ public:
 					
 				
 		if (OO.PositiveLayerTopDepths) {			
-			std::vector<double> dtop = E.invmodel.layer_top_depth();
+			std::vector<double> dtop = e.layer_top_depth();
 			OM->writefield(pi,
 				dtop, "depth_top", "Depth to top of layer", "m",
 				dtop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.NegativeLayerTopDepths) {
-			std::vector<double> ndtop = -1.0*E.invmodel.layer_top_depth();
+			std::vector<double> ndtop = -1.0*e.layer_top_depth();
 			OM->writefield(pi,
 				ndtop, "depth_top_negative", "Negative of depth to top of layer", "m",
 				ndtop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 		
 		if (OO.PositiveLayerBottomDepths) {
-			std::vector<double> dbot = E.invmodel.layer_bottom_depth();
+			std::vector<double> dbot = e.layer_bottom_depth();
 			OM->writefield(pi,
 				dbot, "depth_bottom", "Depth to bottom of layer", "m",
 				dbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.NegativeLayerBottomDepths) {
-			std::vector<double> ndbot = -1.0 * E.invmodel.layer_bottom_depth();
+			std::vector<double> ndbot = -1.0 * e.layer_bottom_depth();
 			OM->writefield(pi,
 				ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
 				ndbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.InterfaceElevations) {			
-			std::vector<double> etop = E.invmodel.layer_top_depth();
-			etop += Id.elevation;
+			std::vector<double> etop = e.layer_top_depth();
+			etop += Id[si].elevation;
 			OM->writefield(pi,
 				etop, "elevation_interface", "Elevation of interface", "m",
 				etop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
@@ -1599,29 +1439,29 @@ public:
 		if (OO.ParameterSensitivity) {
 			std::vector<double> ps = copy(ParameterSensitivity);
 			if (solve_conductivity()) {
-				std::vector<double> v(ps.begin() + cindex(0), ps.begin() + cindex(0) + nlayers);
+				std::vector<double> v(ps.begin() + cindex(si,0), ps.begin() + cindex(si,0) + nLayers);
 				OM->writefield(pi,
 					v, "conductivity_sensitivity", "Conductivity parameter sensitivity", UNITLESS,
 					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 			
 			if (solve_thickness()) {
-				std::vector<double> v(ps.begin() + tindex(0), ps.begin() + tindex(0) + nlayers-1);
+				std::vector<double> v(ps.begin() + tindex(si,0), ps.begin() + tindex(si,0) + nLayers-1);
 				v.push_back(0.0);//halfspace layer not a parameter
 				OM->writefield(pi,
 					v, "thickness_sensitivity", "Thickness parameter sensitivity", UNITLESS,
 					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 
-			size_t k = 0;
-			for (size_t gi = 0; gi < G.input.size(); gi++) {				
+			const cTDEmGeometry& g = G[si].input;
+			for (size_t gi = 0; gi < g.size(); gi++) {
 				if (solvegeometryindex(gi) == true) {
-					std::string name = "inverted_" + G.input.element_name(gi) + "_sensitivity";
-					std::string desc = G.input.description(gi) + " parameter sensitivity";
+					const std::string& gname = g.element_name(gi);
+					std::string name = "inverted_" + gname + "_sensitivity";
+					std::string desc = g.description(gi) + " parameter sensitivity";
 					OM->writefield(pi,
-						ps[gindex(k)], name, desc, UNITLESS,
-						1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-					k++;
+						ps[gindex(si,gname)], name, desc, UNITLESS,
+						1, NC_FLOAT, DN_NONE, 'E', 15, 6);					
 				}
 			}
 		}
@@ -1629,42 +1469,42 @@ public:
 		if (OO.ParameterUncertainty) {
 			std::vector<double> pu = copy(ParameterUncertainty);
 			if (solve_conductivity()) {
-				std::vector<double> v(pu.begin() + cindex(0), pu.begin() + cindex(0) + nlayers);
+				std::vector<double> v(pu.begin() + cindex(si,0), pu.begin() + cindex(si,0) + nLayers);
 				OM->writefield(pi,
 					v, "conductivity_uncertainty", "Conductivity parameter uncertainty", "log10(S/m)",
 					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 
 			if (solve_thickness()) {
-				std::vector<double> v(pu.begin() + tindex(0), pu.begin() + tindex(0) + nlayers - 1);
+				std::vector<double> v(pu.begin() + tindex(si,0), pu.begin() + tindex(si,0) + nLayers - 1);
 				v.push_back(0.0);//halfspace layer not a parameter
 				OM->writefield(pi,
 					v, "thickness_uncertainty", "Thickness parameter uncertainty", "log10(m)",
 					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
-
-			size_t k = 0;
-			for (size_t gi = 0; gi < G.input.size(); gi++) {
+			
+			const cTDEmGeometry& g = G[si].input;
+			for (size_t gi = 0; gi < g.size(); gi++) {
 				if (solvegeometryindex(gi) == false) continue;
-				std::string name = "inverted_" + G.input.element_name(gi) + "_uncertainty";
-				std::string desc = G.input.description(gi) + " parameter uncertainty";
+				const std::string& gname = g.element_name(gi);
+				std::string name = "inverted_" + gname + "_uncertainty";
+				std::string desc = g.description(gi) + " parameter uncertainty";
 				OM->writefield(pi,
-					pu[gindex(k)], name, desc, G.input.units(gi),
-					1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-				k++;
+					pu[gindex(si,gname)], name, desc, g.units(gi),
+					1, NC_FLOAT, DN_NONE, 'E', 15, 6);				
 			}
 		}
 
 				
 		//ObservedData
 		if (OO.ObservedData) {			
-			for (size_t si = 0; si < nsystems; si++) {
-				cTDEmSystemInfo& S = SV[si];
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						si, S.CompInfo[ci].Name,
 						"observed", "Observed",
-						'E', 15, 6, S.CompInfo[ci].oP, S.CompInfo[ci].oS, S.invertPrimaryPlusSecondary);
+						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary);
 				}
 			}
 		}
@@ -1672,24 +1512,24 @@ public:
 		
 		//Noise Estimates
 		if (OO.NoiseEstimates) {
-			for (size_t si = 0; si < nsystems; si++) {
-				cTDEmSystemInfo& S = SV[si];
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
-						si, S.CompInfo[ci].Name,
+						sysi, S.CompInfo[ci].Name,
 						"noise", "Estimated noise",						
-						'E', 15, 6, 0.0, S.CompInfo[ci].oE, false);
+						'E', 15, 6, 0.0, S.CompInfo[ci].data[si].E, false);
 				}
 			}
 		}
 		
 		//PredictedData
 		if (OO.PredictedData) {
-			for (size_t si = 0; si < nsystems; si++) {
-				cTDEmSystemInfo& S = SV[si];
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
-						si, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
+						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
 						S.predicted.component(ci).Primary,
 						S.predicted.component(ci).Secondary,
 						S.invertPrimaryPlusSecondary);
@@ -1749,21 +1589,122 @@ public:
 		return fdG.cref(cTDEmGeometry::element_name(index)).solve;
 	}
 	
-	bool readgeometry(cIFDMap& map)
+	bool read_bunch(const size_t& record) {
+		_GSTITEM_
+
+		int fi = AncFld.keyindex("line");
+		cFieldDefinition& fdline = AncFld[fi].second.fd;
+		bool bunchstatus = IM->get_bunch(Bunch, fdline, (int)record, (int)nSoundings, (int)nBunchSubsample);
+
+		if (bunchstatus == false) {
+			return bunchstatus;
+		}
+
+		for (size_t si = 0; si < Bunch.size(); si++) {
+			const size_t& record = Bunch.record(si);
+			bool loadstatus = IM->load_record(record);
+			if (loadstatus == false) {
+				OutputMessage += ", Skipping - could not load record";
+				return false;
+			}
+			bool valid = IM->is_record_valid();
+			if (valid == false) {
+				OutputMessage += ", Skipping - record is not valid";
+				return false;
+			}
+			bool readstatus = read_record(si);
+			if (valid == false) {
+				OutputMessage += ", Skipping - could not read record";
+				return false;
+			}
+		}
+		return true;			
+	}
+
+	bool read_record(const size_t& bunchsoundingindex)
+	{
+		const size_t& si = bunchsoundingindex;
+		bool readstatus = true;
+		cEarthStruct& e = E[si];
+		cGeomStruct& g = G[si];
+
+
+		if (IM->parse_record() == false) return false;
+
+		bool status;
+		Id[si].uniqueid = (int)IM->record();
+
+		status = read_ancillary_fields(si);
+		status = read_geometry(si, fdG);
+		status = IM->read(fdC.input, e.ref.conductivity, nLayers); if (status == false) readstatus = false;
+		if (solve_conductivity()) {
+			status = IM->read(fdC.ref, e.ref.conductivity, nLayers); if (status == false) readstatus = false;
+			status = IM->read(fdC.std, e.std.conductivity, nLayers); if (status == false) readstatus = false;
+			status = IM->read(fdC.min, e.min.conductivity, nLayers); if (status == false) readstatus = false;
+			status = IM->read(fdC.max, e.max.conductivity, nLayers); if (status == false) readstatus = false;
+		}
+
+		status = IM->read(fdT.input, e.ref.thickness, nLayers - 1); if (status == false) readstatus = false;
+		if (solve_thickness()) {
+			status = IM->read(fdT.ref, e.ref.thickness, nLayers - 1); if (status == false) readstatus = false;
+			status = IM->read(fdT.std, e.std.thickness, nLayers - 1); if (status == false) readstatus = false;
+			status = IM->read(fdT.min, e.min.thickness, nLayers - 1); if (status == false) readstatus = false;
+			status = IM->read(fdT.max, e.max.thickness, nLayers - 1); if (status == false) readstatus = false;
+		}
+		e.sanity_check();
+
+		for (size_t sysi = 0; sysi < nSystems; sysi++) {
+			read_system_data(sysi, si);
+		}
+		return readstatus;
+	}
+
+	bool read_ancillary_fields(const size_t& bunchindex) {
+		const size_t& si = bunchindex;
+		SampleId& id = Id[si];
+
+		for (size_t fi = 0; fi < AncFld.size(); fi++) {
+			IM->readfdvnt(AncFld[fi].second);
+		}
+
+		set_ancillary_id("Survey", id.survey);
+		set_ancillary_id("Date", id.date);
+		set_ancillary_id("Flight", id.flight);
+		set_ancillary_id("Line", id.line);
+		set_ancillary_id("Fiducial", id.fiducial);
+		set_ancillary_id("X", id.x);
+		set_ancillary_id("Y", id.y);
+		set_ancillary_id("GroundElevation", id.elevation);
+		return true;
+	}
+
+	template<typename T>
+	bool set_ancillary_id(const std::string key, T& value) {
+		int ki = AncFld.keyindex(key);
+		if (ki >= 0) {
+			value = std::get<T>(AncFld[ki].second.vnt);
+			return true;
+		}
+		return false;
+	}
+
+	bool read_geometry(const size_t& bunchindex, cIFDMap& map)
 	{
 		bool status = true;
-		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
-			std::string ename = cTDEmGeometry::element_name(i);
-			const cInvertibleFieldDefinition e = map.cref(ename);
-			bool inpstatus = IM->read(e.input, G.input[i]);
-			bool refstatus = IM->read(e.ref, G.ref[i]);
+		const size_t si = bunchindex;
+		cGeomStruct& g = G[si];
+		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
+			std::string ename = cTDEmGeometry::element_name(gi);
+			const cInvertibleFieldDefinition ge = map.cref(ename);
+			bool inpstatus = IM->read(ge.input, g.input[gi]);
+			bool refstatus = IM->read(ge.ref, g.ref[gi]);
 
 			if (refstatus == false && inpstatus == true) {
-				G.ref[i] = G.input[i];
+				g.ref[gi] = g.input[gi];
 				refstatus = true;
 			}
 			else if (inpstatus == false && refstatus == true) {
-				G.input[i] = G.ref[i];
+				g.input[gi] = g.ref[gi];
 				inpstatus = true;
 			}
 
@@ -1779,27 +1720,27 @@ public:
 				glog.errormsg(msg.str());
 			}
 
-			bool tfrstatus = IM->read(e.tfr, G.tfr[i]);
+			bool tfrstatus = IM->read(ge.tfr, g.tfr[gi]);
 			if (tfrstatus == false) {
-				G.tfr[i] = G.input[i];
+				g.tfr[gi] = g.input[gi];
 			}
 
-			if (e.solve) {
-				bool stdstatus = IM->read(e.std, G.std[i]);
-				if (stdstatus == false) {			
+			if (ge.solve) {
+				bool stdstatus = IM->read(ge.std, g.std[gi]);
+				if (stdstatus == false) {
 					std::ostringstream msg;
-					msg << "Error: no 'Std' defined for "<< ename << std::endl;					
+					msg << "Error: no 'Std' defined for " << ename << std::endl;
 					glog.errormsg(msg.str());
 				}
 
-				bool minstatus = IM->read(e.min, G.min[i]);
-				bool maxstatus = IM->read(e.max, G.max[i]);
+				bool minstatus = IM->read(ge.min, g.min[gi]);
+				bool maxstatus = IM->read(ge.max, g.max[gi]);
 			}
 		}
 		return status;
 	}
 
-	bool readgeometry(const std::vector<cFieldDefinition>& gfd, cTDEmGeometry& g)
+	bool read_geometryxxx(const std::vector<cFieldDefinition>& gfd, cTDEmGeometry& g)
 	{		
 		bool status = true;
 		for (size_t i = 0; i < g.size(); i++) {
@@ -1810,35 +1751,49 @@ public:
 		}
 		return status;
 	}
+	
+	void read_system_data(size_t& sysindex, const size_t& soundingindex)
+	{
+		cTDEmSystemInfo& S = SV[sysindex];
+		S.CompInfo[XCOMP].readdata(IM, soundingindex);
+		S.CompInfo[YCOMP].readdata(IM, soundingindex);
+		S.CompInfo[ZCOMP].readdata(IM, soundingindex);
+	}
+
+	void dump_first_iteration() {
 		
-	void dump_first_iteration() {		
-			const std::string dp = dumppath();
-			makedirectorydeep(dumppath());
+		const std::string dp = dumppath();
+		makedirectorydeep(dumppath());
 
-			write(Obs, dp + "observed.dat");
-			write(Err, dp + "observed_std.dat");
+		const size_t si = Bunch.master_index();
+		cGeomStruct& g = G[si];
+		cEarthStruct& e = E[si];
+		SampleId& id = Id[si];
+		
+		write(Obs, dp + "observed.dat");
+		write(Err, dp + "observed_std.dat");
 
-			G.ref.write(dp + "geometry_start.dat");
-			E.ref.write(dp + "earth_start.dat");
+		g.ref.write(dp + "geometry_start.dat");
+		e.ref.write(dp + "earth_start.dat");
 
-			G.ref.write(dp + "geometry_ref.dat");
-			E.ref.write(dp + "earth_ref.dat");
+		g.ref.write(dp + "geometry_ref.dat");
+		e.ref.write(dp + "earth_ref.dat");
 
-			G.std.write(dp + "geometry_std.dat");
-			E.std.write(dp + "earth_std.dat");
-									
-			std::ofstream ofs(dp+"Id.dat");
-			char sep = '\n';			
-			
-			ofs << Id.uniqueid << sep;
-			ofs << Id.survey << sep;
-			ofs << Id.date << sep;
-			ofs << Id.flight << sep;
-			ofs << Id.line << sep;
-			ofs << Id.fiducial << sep;
-			ofs << Id.x << sep;
-			ofs << Id.y << sep;
-			ofs << Id.elevation << sep;						
+		g.std.write(dp + "geometry_std.dat");
+		e.std.write(dp + "earth_std.dat");
+
+		std::ofstream ofs(dp + "Id.dat");
+		char sep = '\n';
+
+		ofs << id.uniqueid << sep;
+		ofs << id.survey << sep;
+		ofs << id.date << sep;
+		ofs << id.flight << sep;
+		ofs << id.line << sep;
+		ofs << id.fiducial << sep;
+		ofs << id.x << sep;
+		ofs << id.y << sep;
+		ofs << id.elevation << sep;
 	}
 
 	void dump_iteration(const cIterationState& state) {
@@ -1846,19 +1801,23 @@ public:
 		makedirectorydeep(dp);
 		writetofile(Obs, dp + "d.dat");
 		writetofile(Err, dp + "e.dat");
+		writetofile(state.param, dp + "m.dat");
 		writetofile(state.pred, dp + "g.dat");
-		cEarth1D e = get_earth(state.param);
-		cTDEmGeometry g = get_geometry(state.param);
-		e.write(dumppath() + "earth_inv.dat");
-		g.write(dumppath() + "geometry_inv.dat");
+		std::vector<cEarth1D> e = get_earth(state.param);
+		std::vector <cTDEmGeometry> g = get_geometry(state.param);
+		e[Bunch.master_index()].write(dumppath() + "earth_inv.dat");
+		g[Bunch.master_index()].write(dumppath() + "geometry_inv.dat");
 		save_iteration_file(state);
 	}
 
-	bool initialise_sample() {	
+	bool initialise_bunch() {	
+		nForwards = 0;
+		nJacobians = 0;
+		OutputMessage = "";		
 		CIS = cIterationState();
-		bool status = initialise_data();
+		bool status = initialise_bunch_data();
 		if (status == false) return false;
-		initialise_parameters();
+		initialise_bunch_parameters();
 		initialise_Wd();
 		initialise_Wm();		
 		dump_W_matrices();
@@ -1874,7 +1833,7 @@ public:
 		CIS.phid = phiData(CIS.pred);
 		CIS.targetphid = CIS.phid;
 		CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phis, CIS.phim);
-
+		
 		TerminationReason = "Has not terminated";
 
 		if (OO.Dump) {
@@ -1893,11 +1852,14 @@ public:
 				keepiterating = false;
 				TerminationReason = "Reached minimum";
 			}
-			else if (percentchange < MinimumImprovement) {
+			else if (CIS.iteration > 4  && percentchange < MinimumImprovement) {
 				keepiterating = false;
 				TerminationReason = "Small % improvement";
 			}
-			else {				
+			else {			
+				if (Verbose) {
+					std::cerr << CIS.info_string();
+				}
 				if (CIS.iteration+1 >= BeginGeometrySolveIteration) FreeGeometry = true;
 				else FreeGeometry = false;
 				//if ((CIS.iteration+1)%2) FreeGeometry = false;
@@ -1907,7 +1869,7 @@ public:
 				forwardmodel_and_jacobian(CIS.param, g, J);
 				
 				double targetphid = std::max(CIS.phid*0.7, MinimumPhiD);
-				cTrial t  = targetsearch(CIS.lambda, targetphid);
+				cTrial t  = lambda_search_target(CIS.lambda, targetphid);
 				Vector dm = parameter_change(t.lambda, CIS.param, CIS.pred);
 				Vector m = CIS.param + (t.stepfactor * dm);
 				
@@ -1915,7 +1877,7 @@ public:
 				double phid = phiData(g);
 
 				percentchange = 100.0 * (CIS.phid - phid) / (CIS.phid);
-				if (phid < CIS.phid) {				
+				if (phid <= CIS.phid) {				
 					CIS.iteration++;
 					CIS.param = m;
 					CIS.pred = g;
@@ -1928,91 +1890,48 @@ public:
 			}			
 		} 
 		
-		E.invmodel = get_earth(CIS.param);
-		G.invmodel = get_geometry(CIS.param);
+		std::vector<cEarth1D> ev = get_earth(CIS.param);
+		std::vector<cTDEmGeometry> gv = get_geometry(CIS.param);
+		for (size_t si = 0; si < nSoundings; si++) {			
+			E[si].invmodel = ev[si];
+			G[si].invmodel = gv[si];
+		}
+
 		forwardmodel_and_jacobian(CIS.param, CIS.pred, J);
 		set_predicted();		
 		ParameterSensitivity = compute_parameter_sensitivity();
 		ParameterUncertainty = compute_parameter_uncertainty();
 	}
-
-	bool invert() {
-		_GSTITEM_
-		OutputMessage = "";
-		if (read_record() == false) {
-			OutputMessage += ", Skipping - could not parse record";
-			return false;
-		}
-
-		if (initialise_sample() == false) {
-			return false;
-		}
-
-		iterate();
-		return true;
-	}
-
-	std::string record_id() {
-		std::ostringstream s;			
-		s << "Rec " << ixd(6) << 1 + IM->record();
-		s << " Fl " << ixd(3) << Id.flight;
-		s << " Ln " << ixd(7) << Id.line;
-		s << " Fd " << fxd(10,2) << Id.fiducial;
-		return s.str();
-	}
-
-	std::string record_result(const double& etime) {
-		std::ostringstream s;						
-		s << " Its="  << ixd(3) << CIS.iteration;
-		s << " Phid=" << fxd(6,2) << CIS.phid;		
-		s << " Time=" << fxd(4,1) << etime;
-		s << " " << TerminationReason;
-		s << " " << OutputMessage;		
-		return s.str();
-	}
-
+	
 	int execute() {
-		_GSTITEM_		
+		_GSTITEM_				
 		bool readstatus = true;
-		int paralleljob = 0;		
-		do{	
+		int paralleljob = 0;			
+		do{										
 			int record = paralleljob*(int)IM->subsamplerate();			
-			if ((paralleljob % Size) == Rank) {								
-				readstatus = IM->read_record(record);				
-				if (readstatus) {
-					bool valid = IM->is_record_valid();
-					if (valid == true) {
-						if (OO.Dump) {
-							dump_record_number();
-						}
-
+			if ((paralleljob % Size) == Rank) {					
+				std::ostringstream s;				
+				if (readstatus = read_bunch(record)) {
+					s << bunch_id();
+					if (initialise_bunch()) {
 						double t1 = gettime();
-						bool invstatus = invert();
+						iterate();
 						double t2 = gettime();
 						double etime = t2 - t1;
-
-						std::ostringstream s;
-						if (invstatus) {							
-							writeresult(record, CIS);							
-							s << record_id();
-							s << record_result(etime);
-							s << std::endl;
-							glog.logmsg(s.str());
-							if (OutputMessage.size() > 0) {
-								std::cerr << s.str();
-							}
-						}
-						else {
-							s << record_id();
-							s << "Skipping: " << OutputMessage;
-							s << std::endl;
-							glog.logmsg(s.str());
-							std::cerr << s.str();
-						}
-						
+						writeresult(record, CIS);						
+						s << bunch_result(etime);																		
 					}
-				}
-			}	
+					else {
+						OutputMessage += ", Skipping - could not initialise the bunch";						
+					}
+					s << std::endl;
+					if (OutputMessage.size() > 0) {
+						std::cerr << s.str();
+					}
+					glog.logmsg(s.str());
+				}								
+			}
+			//break;
 			paralleljob++;
 		} while (readstatus == true);
 		glog.close();

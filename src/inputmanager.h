@@ -9,6 +9,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #ifndef _inputmanager_H_
 #define _inputmanager_H_
 
+#include "samplebunch.h"
 #include "asciicolumnfile.h"
 #include "fielddefinition.h"
 #if defined HAVE_NETCDF
@@ -55,10 +56,16 @@ public:
 	size_t subsamplerate() { return Subsample; }
 
 	virtual bool is_record_valid() { return true; }
-		
-	virtual bool read_record(const size_t& record) = 0;
+	
+	virtual bool get_bunch(cSampleBunch& bunch, const cFieldDefinition& fd, const int& pointindex, const int& bunchsize, const int& bunchsubsample)
+	{
+		glog.errormsg(_SRC_+"\nfunction not yet implemented\n");
+		return false;
+	};
 
-	virtual bool parserecord() { return true; }
+	virtual bool load_record(const size_t& record) = 0;
+
+	virtual bool parse_record() { return true; }
 	
 	virtual bool get_acsiicolumnfield(const std::string& fname, cAsciiColumnField& c) const {
 		glog.errormsg("get_acsiicolumnfield() not yet implemented\n");
@@ -267,18 +274,75 @@ public:
 		return true;
 	}
 	
-	bool read_record(const size_t& n)
+	bool load_record(const size_t& n)
 	{
 		Record = n;
 		return AF.load_record(n+HeaderLines);
 	}
 
-	bool parserecord() {
-		size_t n = AF.parserecord();
+	bool parse_record() {
+		size_t n = AF.parse_record();
 		if (n <= 1) return false;
 		return true;		
 	}
 	
+	template<typename T>
+	bool get_one(const cFieldDefinition& fd, const size_t& pointindex, T& val) {
+		if (load_record(pointindex)) {
+			if (parse_record()) {
+				if (read(fd, val)) {
+					return true;
+				};
+			}
+		}
+		return false;
+	}
+	
+	bool get_bunch(cSampleBunch& bunch, const cFieldDefinition& fd, const int& pointindex, const int& bunchsize, const int& bunchsubsample)
+	{							
+		int line;
+		bool status = get_one(fd, pointindex, line);
+		if (status == false) return false;
+
+		int pn = pointindex;
+		int ln = line;
+
+		int pa = pointindex - bunchsubsample*((bunchsize-1)/2);
+		while (pa < 0) pa += bunchsubsample;
+		pn = pointindex - bunchsubsample;
+		if (pn < pa) pn = pa;
+
+		while(pn>pa){
+			bool status = get_one(fd, pn, ln);
+			if (status && ln == line) {				
+				pn -= bunchsubsample;
+			}
+			else{
+				pa = pn + bunchsubsample;
+				break;					
+			}													
+		}
+
+		int pb = pa + bunchsubsample * (bunchsize - 1);
+		pn = pointindex;
+		ln = line;
+		while (pn <= pb) {
+			bool status = get_one(fd, pn, ln);
+			if (status && ln == line) {
+				pn += bunchsubsample;
+			}
+			else {
+				pb = pn - bunchsubsample;
+				pa = pb - bunchsubsample * (bunchsize - 1);
+				break;
+			}
+		}
+
+		std::vector<std::size_t> indices = increment((size_t)bunchsize, (size_t)pa,(size_t)bunchsubsample);
+		bunch=cSampleBunch(indices,pointindex);
+		return true;
+	};
+
 	const std::string& recordstring() const { return AF.currentrecord_string(); }
 
 	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
@@ -290,10 +354,10 @@ public:
 		return status;	
 	}	
 
-	bool getfield(const std::string& fname) {
-		int findex  = AF.fieldindexbyname(fname);
-		cAsciiColumnField c = AF.fields[findex];
-	}
+	//bool getfield(const std::string& fname) {
+	//	int findex  = AF.fieldindexbyname(fname);
+	//	cAsciiColumnField c = AF.fields[findex];
+	//}
 
 	bool get_acsiicolumnfield(const std::string& fname, cAsciiColumnField& c) const {		
 		int findex = AF.fieldindexbyname(fname);
@@ -341,7 +405,7 @@ public:
 		NC.open(DataFileName, netCDF::NcFile::FileMode::read);		
 	}
 
-	bool read_record(const size_t& n)
+	bool load_record(const size_t& n)
 	{
 		Record = n;
 		#if defined HAVE_NETCDF

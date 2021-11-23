@@ -36,7 +36,7 @@ class cStackTrace gtrace; //The global instance of the stacktrace
 
 class cSystemInfo;
 
-class cComponentInfo;
+class cTDEmComponentInfo;
 
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 
@@ -214,7 +214,7 @@ public:
 	};
 };
 
-class cComponentInfo {
+class cTDEmComponentInfo {
 
 public:
 	
@@ -229,9 +229,9 @@ public:
 	cField fdmn;
 	cField fdan;
 
-	cComponentInfo() {};
+	cTDEmComponentInfo() {};
 
-	cComponentInfo(const cBlock& b, size_t nwindows, bool inverttotalfield)		
+	cTDEmComponentInfo(const cBlock& b, size_t nwindows, bool inverttotalfield)		
 	{
 		InvertTotalField = inverttotalfield;
 		nw = nwindows;
@@ -328,7 +328,7 @@ private:
 public:
 	cTDEmSystem T;
 	bool InvertTotalField;	
-	std::vector<cComponentInfo> Comp;
+	std::vector<cTDEmComponentInfo> Comp;
 	cSystemInfo(){ 	};
 	bool initialise(const cBlock& b){
 		std::string stm = b.getstringvalue("SystemFile");
@@ -342,9 +342,9 @@ public:
 		}
 
 		Comp.resize(3);
-		Comp[0] = cComponentInfo(b.findblock("XComponent"), nw, InvertTotalField);
-		Comp[1] = cComponentInfo(b.findblock("YComponent"), nw, InvertTotalField);
-		Comp[2] = cComponentInfo(b.findblock("ZComponent"), nw, InvertTotalField);
+		Comp[0] = cTDEmComponentInfo(b.findblock("XComponent"), nw, InvertTotalField);
+		Comp[1] = cTDEmComponentInfo(b.findblock("YComponent"), nw, InvertTotalField);
+		Comp[2] = cTDEmComponentInfo(b.findblock("ZComponent"), nw, InvertTotalField);
 		
 		Comp[0].basedindex = 0;
 		Comp[1].basedindex = 0;
@@ -1993,13 +1993,13 @@ public:
 		cInversionLineSearcher LS(currentphid, targetphid);
 
 		double sf;
-		while (LS.next(sf)){
+		while (LS.next_x(sf)){
 			mtrial = m + sf*dm;
 			forwardmodel_and_jacobian(mtrial, gtrial, false);
 			double phid = PhiD(gtrial);
-			LS.addtrial(sf, phid);
+			LS.add_pair(sf, phid);
 		}
-		LS.nearestindex(bestsf, bestphid);
+		LS.nearest_index(bestsf, bestphid);
 		glog.logmsg(0,  "Find stepfactor time=%lf\n", sw.etimenow());
 		improvement = 100.0*(currentphid - bestphid) / currentphid;
 		glog.logmsg(0,  "Step factor = %.5lf\n", bestsf);
@@ -2219,7 +2219,7 @@ public:
 					cSystemInfo& S = T[si];					
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++){
-						cComponentInfo& C = S.Comp[ci];
+						cTDEmComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;
 						if (S.InvertTotalField){
 							OI.addfield("observed_" + sys + cid[ci] + "P", 'E', 15, 6);
@@ -2240,7 +2240,7 @@ public:
 					cSystemInfo& S = T[si];
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++){
-						cComponentInfo& C = S.Comp[ci];
+						cTDEmComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;						
 						OI.addfield("noise_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
 						OI.setdescription("Estimated noise " + sys + cid[ci] + "-component secondary field windows");
@@ -2258,7 +2258,7 @@ public:
 					S.forward_model(conductivity, thickness, ginv);
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++){
-						cComponentInfo& C = S.Comp[ci];
+						cTDEmComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;
 						if (S.InvertTotalField){
 							OI.addfield("predicted_" +  sys + cid[ci] + "P", 'E', 15, 6);

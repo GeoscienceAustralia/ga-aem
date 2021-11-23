@@ -47,7 +47,7 @@ int process(int argc, char** argv, size_t Size, size_t Rank)
 	while (I.readnextrecord()){		
 		record++;
 		if ((record - 1) % Size != Rank)continue;	
-		I.parserecord();
+		I.parse_record();
 		I.invert();
 	}
 	I.finish();
