@@ -121,6 +121,27 @@ public:
 		}
 		fclose(fp);
 	}
+
+	std::vector<double> dummy_thickness() const {
+		return dummy_thickness(thickness);
+	}
+
+	//A dummy thickness vector to have a finite last layer thickness
+	static std::vector<double> dummy_thickness(const std::vector<double>& t) {
+		const size_t nl = 1 + t.size();
+		std::vector<double> tout = t;
+		if (nl == 1) {
+			tout.push_back(1.0);
+		}
+		else if (nl == 2) {
+			tout.push_back(t[0]);
+		}
+		else {
+			//eg t30 / t29 = t29 / t28;
+			tout.push_back(t[nl - 2] * t[nl - 2] / t[nl - 3]);
+		}
+		return tout;
+	}
 };
 
 #endif

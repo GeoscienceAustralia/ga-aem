@@ -10,6 +10,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #define _outputmanager_H_
 
 #include <list>
+#include <iterator>
+#include <optional>
 #include "asciicolumnfile.h"
 #include "fielddefinition.h"
 
@@ -22,47 +24,85 @@ Author: Ross C. Brodie, Geoscience Australia.
 	#include "geophysics_netcdf.h"
 #endif
 
+template<class T>
+std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values)
+{	
+	std::copy(begin(values), end(values), std::ostream_iterator<T>(stream, ""));
+	//c++20 std::ranges::copy(values, std::ostream_iterator<T>(stream, ""));	
+	return stream;
+}
+
 class cASCIIOutputManager;
+
 class cNetCDFOutputManager;
+
 class cOutputManager;
+
 class cOutputField {
 	
 	public:				
-		std::shared_ptr<cGeophysicsVar> var;
-		std::string name;//name
-		std::string description;//description
-		std::string units;//units	
+		//Base
+		std::string name;//name		
 		size_t bands = 0;//number of bands
-		nc_type ncstoragetype ;//binary storage tyrpe
+
+		//Atts
+		cKeyVecCiStr atts;
+		
+		//Netcdf
+		std::shared_ptr<cGeophysicsVar> var;
+		nc_type ncstoragetype = NC_DOUBLE;//binary storage tyrpe
 		std::string ncdimname;//dimension names		
-		char notation = 0;//ascii notation form I, F, E
-		size_t width = 0 ;//ascii width
-		size_t precision = 0;//ascii number of decimals places
-				
-		cOutputField(			
+		
+		//Ascii
+		cAsciiColumnField acol;		
+						
+		cOutputField() {};
+
+		cOutputField(const std::string& _name, const std::string& _description, const std::string& _units, const size_t& _bands, const nc_type& _ncstoragetype,			const std::string& _ncdimname, const char& _fmtchar, const size_t& _width, const size_t& _decimals){
+			initialise(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
+		};
+
+		cOutputField(const cAsciiColumnField& c){
+			initialise(c);
+		};
+
+		void initialise(
 			const std::string& _name,//name
 			const std::string& _description,//description
 			const std::string& _units,//units	
 			const size_t& _bands,//number of bands
 			const nc_type& _ncstoragetype,//binary storage tyrpe
 			const std::string& _ncdimname,//dimension names		
-			const char& _notation,//ascii notation I, F, E
+			const char& _fmtchar,//ascii notation I, F, E
 			const size_t& _width,//ascii width
-			const size_t& _precision//ascii number of decimals places			
-			)
-		{					
+			const size_t& _decimals//ascii number of decimals places			
+		)
+		{
 			name = _name;
-			description = _description;
-			units = _units;
 			bands = _bands;
+			atts.add(cAsciiColumnField::DESC, _description);
+			atts.add(cAsciiColumnField::UNITS, _units);			
 			ncstoragetype = _ncstoragetype;
 			ncdimname = _ncdimname;
-			notation = _notation;
-			width = _width;
-			precision = _precision;			
-		}	
 
-		//~cOutputField() {};
+			acol.name = name;
+			acol.nbands = bands;
+			acol.atts = atts;
+			acol.fmtchar = _fmtchar;
+			acol.width = _width;
+			acol.decimals = _decimals;
+			
+		}
+
+		void initialise(const cAsciiColumnField& c){			
+			name = c.name;
+			atts = c.atts;
+			bands = c.nbands;
+			acol = c;			
+			ncstoragetype = NC_DOUBLE;
+			ncdimname = DN_NONE;
+		}
+		
 };
 
 class cOutputManager {
@@ -74,8 +114,9 @@ public:
 
 protected:		
 	std::string DataFileName;	
-	IOType iotype = IOType::NONE;	
-	std::list<cOutputField> flist;
+	IOType iotype = IOType::NONE;
+	using spcOutputField = std::shared_ptr<cOutputField>;
+	std::list<spcOutputField> flist;
 
 public:
 	
@@ -105,18 +146,18 @@ public:
 
 	virtual bool opendatafile(const std::string& srcfile, const size_t& subsample) = 0;
 	
-	std::shared_ptr<cOutputField> getfield(const std::string& name) {
-		std::shared_ptr<cOutputField> f;
-		for(auto it = flist.begin(); it != flist.end(); it++) {			
-			if (strcasecmp(it->name, name) == 0) {
-				f = std::make_shared<cOutputField>(*it);
-				return f;
+	spcOutputField getfield(const std::string& name) {
+		spcOutputField f;
+		for(auto it = flist.begin(); it != flist.end(); it++) {												
+			if (strcasecmp((*it)->name, name) == 0) {
+				//f = std::make_shared<cOutputField>(*it);				
+				return *it;
 			}
 		}
 		return f;
 	}
-
-	virtual std::shared_ptr<cOutputField> addfield(
+	
+	virtual spcOutputField addfield(
 		const std::string& _name,//name
 		const std::string& _description,//description
 		const std::string& _units,//units	
@@ -125,9 +166,15 @@ public:
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii number of decimals places			
+		const size_t& _decimals//ascii number of decimals places			
 	) = 0;
 
+	virtual bool writevrnt(const int& pointindex, const cVrnt& vrnt, const cAsciiColumnField& c)
+	{
+		glog.errormsg("Not yet implmented\n");
+		return false;
+	};
+		
 	template <typename T> 
 	bool writefield(
 		const int& pointindex,//point index of sample in the file
@@ -140,13 +187,13 @@ public:
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E, A
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii number of decimals places					
+		const size_t& _decimals//ascii number of decimals places					
 	) 
 	{
-		std::shared_ptr<cOutputField> f = getfield(_name);
+		spcOutputField f = getfield(_name);
 		if (!f) {
-			f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
-		}
+			f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
+		};
 		write(vals, f, pointindex);
 		return true;
 	}
@@ -160,43 +207,74 @@ public:
 	virtual bool addvar(cOutputField& of) { return true; }
 
 	//Cannot templatize these virtual functions
-	virtual bool write(const int& val, std::shared_ptr<cOutputField> of, const int& pointindex) = 0;
-	virtual bool write(const size_t& val, std::shared_ptr<cOutputField> of, const int& pointindex) = 0;
-	virtual bool write(const float& val, std::shared_ptr<cOutputField> of, const int& pointindex) = 0;
-	virtual bool write(const double& val, std::shared_ptr<cOutputField> of, const int& pointindex) = 0;
+	virtual bool write(const int& val, const spcOutputField& of, const int& pointindex) = 0;
+	virtual bool write(const size_t& val, const spcOutputField& of, const int& pointindex) = 0;
+	virtual bool write(const float& val, const spcOutputField& of, const int& pointindex) = 0;
+	virtual bool write(const double& val, const spcOutputField& of, const int& pointindex) = 0;
+	bool write(const char& val, const spcOutputField& of, const int& pointindex) {
+		glog.errormsg("Not yet implmented\n");
+		return false;
+	}
+	
+	virtual bool write(const std::vector<int>& vals, const spcOutputField& of, const int& pointindex) = 0;
+	virtual bool write(const std::vector<size_t>& vals, const spcOutputField& of, const int& pointindex) = 0;
+	virtual bool write(const std::vector<float>& vals, const spcOutputField& of, const int& pointindex) = 0;
+	virtual bool write(const std::vector<double>& vals, const spcOutputField& of, const int& pointindex) = 0;
+	bool write(const std::vector<char>& vals, const spcOutputField& of, const int& pointindex) {
+		glog.errormsg("Not yet implmented\n");
+		return false;
+	}
 
-	virtual bool write(const std::vector<int>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) = 0;	
-	virtual bool write(const std::vector<size_t>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) = 0;
-	virtual bool write(const std::vector<float>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) = 0;
-	virtual bool write(const std::vector<double>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) = 0;	
+	static std::vector<std::string> preferred_sort_order() {
+		static const std::vector<std::string> porder = {
+			cAsciiColumnField::NULLSTR,
+			cAsciiColumnField::UNITS,
+			cAsciiColumnField::DATUM,
+			cAsciiColumnField::PROJECTION,
+			cAsciiColumnField::LONGNAME,
+			cAsciiColumnField::DESC
+		};
+		return porder;
+	}
+
+	void sort_field_atts() {
+		const std::vector<std::string> porder = preferred_sort_order();
+		for (const auto& f : flist) {
+			cAsciiColumnField& c = f->acol;
+			c.atts = c.atts.preferred_sort(porder);
+		}
+	};
+
 };
 
 class cASCIIOutputManager : public cOutputManager {
 
 private:
-	std::ofstream fstrm;		
-	std::ostringstream buf;
-	cOutputFileInfo OI;	
-	void set_formatflags(std::shared_ptr<cOutputField> of){
-		if (of->notation == 'e' || of->notation == 'E') buf << std::scientific;
-		else buf << std::fixed;
+	std::ofstream filestream;
+	std::ostringstream buffer;	
+	void set_formatflags(const spcOutputField& of) {
+		if (of->acol.fmtchar == 'e' || of->acol.fmtchar == 'E') {
+			buffer << std::scientific;
+		}
+		else {
+			buffer << std::fixed;
+		}
 	}
-
 	bool SaveDFNHeader = true;
 	bool SaveCSVHeader = true;
 	bool SaveHDRHeader = true;
 
 public:
-	
+
 	cASCIIOutputManager(const cBlock& b, const int& size, const int& rank) {
-		cOutputManager::initialise(b,size,rank);
+		cOutputManager::initialise(b, size, rank);
 		initialise(b);
 	}
 
 	~cASCIIOutputManager() {	};
 
 	void initialise(const cBlock& b)
-	{								
+	{
 		bool status;
 		if (b.getvalue("SaveDFNHeader", status)) {
 			SaveDFNHeader = status;
@@ -210,14 +288,27 @@ public:
 			SaveHDRHeader = status;
 		};
 	}
-	
-	bool opendatafile(const std::string& srcfile, const size_t& subsample) {	
-		glog.logmsg(0,"Opening Output ASCII DataFile %s\n", DataFileName.c_str());				
-		fstrm.open(DataFileName, std::ofstream::out);				
-		return fstrm.is_open();
+
+	bool opendatafile(const std::string& srcfile, const size_t& subsample) {
+		glog.logmsg(0, "Opening Output ASCII DataFile %s\n", DataFileName.c_str());
+		filestream.open(DataFileName, std::ofstream::out);
+		return filestream.is_open();
 	};
 	
-	std::shared_ptr<cOutputField> addfield(
+	spcOutputField add_smartptr(cOutputField& f){
+		f.acol.fileorder = flist.size();
+		f.acol.startcolumn = 0;
+		f.acol.startchar   = 0;
+		if (flist.size() > 0) {
+			f.acol.startcolumn = 1+flist.back()->acol.endcol();
+			f.acol.startchar = 1+flist.back()->acol.endchar();
+		}				
+		addvar(f);		
+		flist.push_back(std::make_shared<cOutputField>(f));
+		return flist.back();
+	}
+
+	spcOutputField addfield(
 		const std::string& _name,//name
 		const std::string& _description,//description
 		const std::string& _units,//units	
@@ -226,23 +317,34 @@ public:
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii number of decimals places			
-	) {
-		std::shared_ptr<cOutputField> f = std::make_shared<cOutputField>(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
-		OI.addfield(_name, _fmtchar, _width, _precision, _bands);
-		OI.setunits(_units);
-		OI.setdescription(_description);
-		return f;
+		const size_t& _decimals//ascii number of decimals places			
+	) {		
+		spcOutputField sp = getfield(_name);
+		if (!sp) {
+			cOutputField f(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
+			sp = add_smartptr(f);									
+		}		
+		return sp;
+	}
+	
+	virtual spcOutputField addfield(cAsciiColumnField c)
+	{		
+		spcOutputField sp = getfield(c.name);
+		if (!sp) {		
+			cOutputField f(c);			
+			sp = add_smartptr(f);			
+		}
+		return sp;
 	}
 
 	void begin_point_output() {		
-		buf.str(std::string());	//empty buffer
+		buffer.str(std::string());	//empty buffer
 	};
 
 	void end_point_output() {
 
-		buf << std::endl; //Carriage return		
-		fstrm << buf.str() << std::flush; // Write to file
+		buffer << std::endl; //Carriage return		
+		filestream << buffer.str() << std::flush; // Write to file
 	};
 
 	bool end_first_record(){
@@ -254,69 +356,156 @@ public:
 
 	void write_headers(){		
 		sFilePathParts fpp = getfilepathparts(datafilename());
-
+		sort_field_atts();
 		if (SaveDFNHeader) {
 			std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
-			OI.write_aseggdf_header(aseggdffile);
+			write_aseggdf_header(aseggdffile);
 		}
 
 		if (SaveCSVHeader) {
 			std::string csvfile = fpp.directory + fpp.prefix + ".csvh";
-			OI.write_csv_header(csvfile);
+			write_csv_header(csvfile);
 		}
 
 		if (SaveHDRHeader) {
 			std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
-			OI.write_simple_header(hdrfile);
+			write_simple_header(hdrfile);
 		}		
 	};
-		
-	bool write(const int& val, const std::shared_ptr<cOutputField> of, const int& pointindex) {		
+	
+	
+	bool write(const int& val, const spcOutputField& of, const int& pointindex) {		
 		return write_scalar(val, of, pointindex);
 	}
-	bool write(const size_t& val, const std::shared_ptr<cOutputField> of, const int& pointindex) {
-		return write_scalar(val, of, pointindex);
-	}
-	bool write(const float& val, std::shared_ptr<cOutputField> of, const int& pointindex) {
-		return write_scalar(val, of, pointindex);
-	}
-	bool write(const double& val, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	
+	bool write(const size_t& val, const spcOutputField& of, const int& pointindex) {
 		return write_scalar(val, of, pointindex);
 	}
 
-	bool write(const std::vector<int>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {		
+	bool write(const float& val, const spcOutputField& of, const int& pointindex) {
+		return write_scalar(val, of, pointindex);
+	}
+
+	bool write(const double& val, const spcOutputField& of, const int& pointindex) {
+		return write_scalar(val, of, pointindex);
+	}
+
+	bool write(const char& val, const spcOutputField& of, const int& pointindex) {
+		return write_scalar(val, of, pointindex);
+	}
+
+	
+	bool write(const std::vector<int>& vals, const spcOutputField& of, const int& pointindex) {		
 		return write_vector(vals, of, pointindex);
 	}
-	bool write(const std::vector<size_t>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {
+
+	bool write(const std::vector<size_t>& vals, const spcOutputField& of, const int& pointindex) {
 		return write_vector(vals, of, pointindex);
 	}
-	bool write(const std::vector<float>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {
+
+	bool write(const std::vector<float>& vals, const spcOutputField& of, const int& pointindex) {
 		return write_vector(vals, of, pointindex);
 	}
-	bool write(const std::vector<double>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {
+
+	bool write(const std::vector<double>& vals, const spcOutputField& of, const int& pointindex) {
+		return write_vector(vals, of, pointindex);
+	}
+	bool write(const std::vector<char>& vals, const spcOutputField& of, const int& pointindex) {
 		return write_vector(vals, of, pointindex);
 	}
 
 	template <typename T> 
-	bool write_scalar(const T& val, std::shared_ptr<cOutputField> of, const int& pointindex) {		
-		set_formatflags(of);
-		buf.width(of->width);
-		buf.precision(of->precision);
-		buf << val;		
+	bool write_scalar(const T& val, const spcOutputField& f, const int& pointindex) {		
+		set_formatflags(f);				
+		const size_t& w = f->acol.width;
+		const size_t& d = f->acol.decimals;
+		buffer << std::setw(w) << std::setprecision(d) << val;
 		return true;
 	}
 
 	template <typename T>
-	bool write_vector(const std::vector<T>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {		
-		set_formatflags(of);
-		for (size_t i = 0; i < vals.size(); i++) {
-			buf.width(of->width);
-			buf.precision(of->precision);
-			buf << vals[i];
-		}
+	bool write_vector(const std::vector<T>& vals, const spcOutputField& f, const int& pointindex) {
+		set_formatflags(f);
+		const size_t& w = f->acol.width;
+		const size_t& d = f->acol.decimals;				
+		for (size_t i = 0; i < vals.size(); i++) {			
+			buffer << std::setw(w) << std::setprecision(d)  << vals[i];
+		}				
 		return true;
 	}
 	
+	bool writevrnt(const int& pointindex, const cVrnt& vrnt, const cAsciiColumnField& c){
+		spcOutputField sp = getfield(c.name);
+		if (!sp) {
+			sp = addfield(c);
+		}		
+
+		auto WriteVisitor = [&](auto& vals) {
+			write(vals, sp, pointindex);
+		};
+
+		std::visit(WriteVisitor, vrnt);	
+
+		return true;
+	}
+		
+	void write_aseggdf_header(const std::string pathname) {
+		std::ofstream ofs(pathname);
+		ofs << "DEFN   ST=RECD,RT=COMM;RT:A4;COMMENTS:A76" << std::endl;
+		for (const auto& f : flist) {
+			std::string s = f->acol.aseggdf_header_record();
+			ofs << s;
+		}
+		//ofs << "DEFN " << flist.size()+1 << " ST=RECD,RT=;END DEFN" << std::endl;		
+		ofs << "END DEFN" << std::endl;
+	};
+
+	void write_simple_header(const std::string pathname) {
+		std::ofstream ofs(pathname);
+		for (const auto& f : flist) {		
+			std::string s = f->acol.simple_header_record();
+			ofs << s;
+		}		
+	};
+
+	cKeyVecCiStr collect_all_att_names() {
+		cKeyVecCiStr v;
+		for (const auto& f : flist) {
+			for (const auto& [key, value] : f->atts) {
+				v.add(key, std::string());
+			}
+		}
+		return v;
+	}
+
+	void write_csv_header(const std::string pathname) {
+
+		cKeyVecCiStr v = collect_all_att_names();
+		const std::vector<std::string> porder = preferred_sort_order();		
+		v = v.preferred_sort(porder);		
+
+		std::ofstream ofs(pathname);
+		ofs << "Name,Bands,Format";
+		for (size_t j = 0; j < v.size(); j++) {
+			ofs << "," << v[j].first;
+		}
+		ofs << std::endl;
+
+		for (const auto& xf : flist) {		
+			const cAsciiColumnField& c = xf->acol;
+			ofs << c.name << ",";
+			ofs << c.nbands << ",";
+			ofs << c.fmtstr_single();
+			for (size_t j = 0; j < v.size(); j++) {
+				std::string& key = v[j].first;
+				std::string val = c.get_att(key);
+				ofs << ",";
+				if (val.size() > 0) ofs << val;
+			}
+			ofs << std::endl;
+		}
+	};
+
 };
 
 #if defined HAVE_NETCDF
@@ -367,7 +556,7 @@ public:
 		return true;
 	};
 
-	std::shared_ptr<cOutputField> addfield(
+	spcOutputField addfield(
 		const std::string& _name,//name
 		const std::string& _description,//description
 		const std::string& _units,//units	
@@ -376,13 +565,15 @@ public:
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision//ascii number of decimals places			
+		const size_t& _decimals//ascii number of decimals places			
 	) {	
-		std::shared_ptr<cOutputField> of = getfield(_name);
+		spcOutputField of = getfield(_name);
 		if (!of) {
-			flist.push_back(cOutputField(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision));
-			addvar(flist.back());
-			of = std::make_shared<cOutputField>(flist.back());			
+			cOutputField f(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
+			addvar(f);
+			of = std::make_shared<cOutputField>(f);			
+			flist.push_back(of);			
+			return of;			
 		}		
 		return of;
 	}
@@ -396,13 +587,13 @@ public:
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
-		const size_t& _precision,//ascii number of decimals places			
+		const size_t& _decimals,//ascii number of decimals places			
 		const int& pointindex,
 		const size_t& vals
 	) {
-		std::shared_ptr<cOutputField> of = getfield(_name);		
+		spcOutputField of = getfield(_name);		
 		if (!of) {
-			of = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _precision);
+			of = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
 		}
 		write(of, pointindex, vals);
 		return true;
@@ -422,10 +613,11 @@ public:
 			if (of.ncdimname.size()) {
 				dim = NC.addDim(of.ncdimname, of.bands);
 			}
-
 			of.var = std::make_shared<cSampleVar>(NC.addSampleVar(of.name, of.ncstoragetype, dim));
-			of.var->add_description(of.description);
-			of.var->add_units(of.units);
+			
+			for (const auto& [key, value] : of.atts) {				
+				of.var->add_attribute(key,value);
+			}			
 		}
 		else {
 			if (NC.isLineVar(NC.getVar(of.name))) {
@@ -442,36 +634,35 @@ public:
 	}
 	
 	template <typename T>
-	bool write(std::shared_ptr<cOutputField> of, const int& pointindex, const T& val) {
+	bool write(spcOutputField of, const int& pointindex, const T& val) {
 		return of->var->putRecord(pointindex, val);
 	}
 
-	virtual bool write(const int& val, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	virtual bool write(const int& val, const spcOutputField& of, const int& pointindex) {
 		return of->var->putRecord(pointindex, val);		
 	}
-	virtual bool write(const size_t& val, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	virtual bool write(const size_t& val, const spcOutputField& of, const int& pointindex) {
 		return of->var->putRecord(pointindex, val);
 	}
-	virtual bool write(const float& val, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	virtual bool write(const float& val, const spcOutputField& of, const int& pointindex) {
 		return of->var->putRecord(pointindex, val);
 	}
-	virtual bool write(const double& val, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	virtual bool write(const double& val, const spcOutputField& of, const int& pointindex) {
 		return of->var->putRecord(pointindex, val);
 	}
 
-	virtual bool write(const std::vector<int>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	virtual bool write(const std::vector<int>& vals, const spcOutputField& of, const int& pointindex) {
 		return of->var->putRecord(pointindex, vals);		
 	}
-	virtual bool write(const std::vector<size_t>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	virtual bool write(const std::vector<size_t>& vals, const spcOutputField& of, const int& pointindex) {
 		return of->var->putRecord(pointindex, vals);
 	}
-	virtual bool write(const std::vector<float>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	virtual bool write(const std::vector<float>& vals, const spcOutputField& of, const int& pointindex) {
 		return of->var->putRecord(pointindex, vals);
 	}
-	virtual bool write(const std::vector<double>& vals, std::shared_ptr<cOutputField> of, const int& pointindex) {
+	virtual bool write(const std::vector<double>& vals, const spcOutputField& of, const int& pointindex) {
 		return of->var->putRecord(pointindex, vals);		
-	}
-		
+	}	
 };
 #endif
 

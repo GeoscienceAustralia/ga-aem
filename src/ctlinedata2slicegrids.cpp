@@ -374,7 +374,7 @@ public:
 		}
 				
 		while (A.load_next_record()){
-			A.parserecord();
+			A.parse_record();
 
 			bool excludedline = false;
 			if (exclude.size() > 0){

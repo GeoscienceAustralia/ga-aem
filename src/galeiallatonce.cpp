@@ -36,7 +36,7 @@ class cStackTrace gtrace; //The global instance of the stacktrace
 
 class cSystemInfo;
 
-class cComponentInfo;
+class cTDEmComponentInfo;
 
 enum eSmoothnessMethod { SM_1ST_DERIVATIVE, SM_2ND_DERIVATIVE };
 
@@ -214,7 +214,7 @@ public:
 	};
 };
 
-class cComponentInfo {
+class cTDEmComponentInfo {
 
 public:
 	
@@ -229,9 +229,9 @@ public:
 	cField fdmn;
 	cField fdan;
 
-	cComponentInfo() {};
+	cTDEmComponentInfo() {};
 
-	cComponentInfo(const cBlock& b, size_t nwindows, bool inverttotalfield)		
+	cTDEmComponentInfo(const cBlock& b, size_t nwindows, bool inverttotalfield)		
 	{
 		InvertTotalField = inverttotalfield;
 		nw = nwindows;
@@ -328,7 +328,7 @@ private:
 public:
 	cTDEmSystem T;
 	bool InvertTotalField;	
-	std::vector<cComponentInfo> Comp;
+	std::vector<cTDEmComponentInfo> Comp;
 	cSystemInfo(){ 	};
 	bool initialise(const cBlock& b){
 		std::string stm = b.getstringvalue("SystemFile");
@@ -342,9 +342,9 @@ public:
 		}
 
 		Comp.resize(3);
-		Comp[0] = cComponentInfo(b.findblock("XComponent"), nw, InvertTotalField);
-		Comp[1] = cComponentInfo(b.findblock("YComponent"), nw, InvertTotalField);
-		Comp[2] = cComponentInfo(b.findblock("ZComponent"), nw, InvertTotalField);
+		Comp[0] = cTDEmComponentInfo(b.findblock("XComponent"), nw, InvertTotalField);
+		Comp[1] = cTDEmComponentInfo(b.findblock("YComponent"), nw, InvertTotalField);
+		Comp[2] = cTDEmComponentInfo(b.findblock("ZComponent"), nw, InvertTotalField);
 		
 		Comp[0].basedindex = 0;
 		Comp[1].basedindex = 0;
@@ -400,7 +400,7 @@ public:
 	bool forward_model(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry){		
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.LEM.calculation_type = CT_FORWARDMODEL;
+		T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 		T.LEM.derivative_layer = INT_MAX;
 		T.setupcomputations();
 		T.setprimaryfields();
@@ -412,7 +412,7 @@ public:
 		size_t nlayers = conductivity.size();
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.LEM.calculation_type = CT_FORWARDMODEL;
+		T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 		T.LEM.derivative_layer = INT_MAX;
 		T.setupcomputations();
 		T.setprimaryfields();
@@ -448,7 +448,7 @@ public:
 			}
 
 			for (size_t li = 0; li < nlayers; li++){
-				T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;
+				T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
 				T.LEM.derivative_layer = li;
 				T.setupcomputations();
 				T.setprimaryfields();
@@ -466,7 +466,7 @@ public:
 			}			
 
 			for (size_t gi = 0; gi < UGI.size(); gi++){								
-				if (cTDEmGeometry::elementtype(UGI[gi]) == GE_RX_PITCH){
+				if (cTDEmGeometry::elementtype(UGI[gi]) == cTDEmGeometry::ElementType::rx_pitch){
 					std::vector<double> dxbdp;
 					std::vector<double> dzbdp;
 					T.drx_pitch(X, Z, geometry.rx_pitch, dxbdp, dzbdp);					
@@ -923,7 +923,7 @@ public:
 		G.resize(10);
 		cBlock g = Control.findblock("Input.Geometry");
 		for (size_t i = 0; i < G.size(); i++){
-			std::string fname = cTDEmGeometry::fname(i);
+			std::string fname = cTDEmGeometry::element_name(i);
 			cBlock b = g.findblock(fname);	
 			if (b.Name.size() == 0){				
 				glog.logmsg(0, "Could not find block for geometry parameter %s\n", fname.c_str());
@@ -1993,13 +1993,13 @@ public:
 		cInversionLineSearcher LS(currentphid, targetphid);
 
 		double sf;
-		while (LS.next(sf)){
+		while (LS.next_x(sf)){
 			mtrial = m + sf*dm;
 			forwardmodel_and_jacobian(mtrial, gtrial, false);
 			double phid = PhiD(gtrial);
-			LS.addtrial(sf, phid);
+			LS.add_pair(sf, phid);
 		}
-		LS.nearestindex(bestsf, bestphid);
+		LS.nearest_index(bestsf, bestphid);
 		glog.logmsg(0,  "Find stepfactor time=%lf\n", sw.etimenow());
 		improvement = 100.0*(currentphid - bestphid) / currentphid;
 		glog.logmsg(0,  "Step factor = %.5lf\n", bestsf);
@@ -2154,14 +2154,14 @@ public:
 			buf += strprint("%10.2lf", fdelevation(lsi));
 					
 			for (size_t gi = 0; gi < G.size(); gi++){
-				OI.addfield(gref.fname(gi), 'F', 9, 2);
+				OI.addfield(gref.element_name(gi), 'F', 9, 2);
 				OI.setunits(gref.units(gi));
 				OI.setdescription(gref.description(gi));
 				buf += strprint("%9.2lf", gref[gi]);
 			}
 			
 			for (size_t gi = 0; gi < UGI.size(); gi++){
-				OI.addfield("inverted_"+ginv.fname(UGI[gi]), 'F', 9, 2);
+				OI.addfield("inverted_"+ginv.element_name(UGI[gi]), 'F', 9, 2);
 				OI.setunits(ginv.units(UGI[gi]));
 				OI.setdescription("Inverted " + ginv.description(UGI[gi]));
 				buf += strprint("%9.2lf", ginv[UGI[gi]]);
@@ -2219,7 +2219,7 @@ public:
 					cSystemInfo& S = T[si];					
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++){
-						cComponentInfo& C = S.Comp[ci];
+						cTDEmComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;
 						if (S.InvertTotalField){
 							OI.addfield("observed_" + sys + cid[ci] + "P", 'E', 15, 6);
@@ -2240,7 +2240,7 @@ public:
 					cSystemInfo& S = T[si];
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++){
-						cComponentInfo& C = S.Comp[ci];
+						cTDEmComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;						
 						OI.addfield("noise_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
 						OI.setdescription("Estimated noise " + sys + cid[ci] + "-component secondary field windows");
@@ -2258,7 +2258,7 @@ public:
 					S.forward_model(conductivity, thickness, ginv);
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++){
-						cComponentInfo& C = S.Comp[ci];
+						cTDEmComponentInfo& C = S.Comp[ci];
 						if (C.Use == false)continue;
 						if (S.InvertTotalField){
 							OI.addfield("predicted_" +  sys + cid[ci] + "P", 'E', 15, 6);

@@ -16,11 +16,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <random>
 
+
 #include "gaaem_version.h"
 #include "file_utils.h"
 #include "tdemsystem.h"
 #include "vector_utils.h"
-#include "galeisbstdem.h"
+#include "cinverter.h"
+#include "csbsinverter.h"
 #include "stacktrace.h"
 #include "logger.h"
 #include "streamredirecter.h"
@@ -125,13 +127,15 @@ int main(int argc, char** argv) {
 			#pragma omp parallel num_threads(openmpsize)
 			{			
 				int openmprank = omp_get_thread_num();			
-				cSBSInverter I(controlfile, openmpsize, openmprank, usingopenmp, commandline);
+				//cSBSInverter I(controlfile, openmpsize, openmprank, usingopenmp, commandline);				
 			}
 			std::cerr << "Warning log closing " << timestamp() << std::endl;
 		#endif
 	}
 	else {								
-		cSBSInverter I(controlfile, mpisize, mpirank, usingopenmp, commandline);		
+		//cSBSInverter I(controlfile, mpisize, mpirank, usingopenmp, commandline);				
+		std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter>(controlfile, mpisize, mpirank, usingopenmp, commandline);
+		//std::unique_ptr<cSBSInverterX> I = std::make_unique<cSBSInverterX>(controlfile, mpisize, mpirank, usingopenmp, commandline);
 		#if defined _MPI_ENABLED
 			cMpiEnv::world_barrier();
 		#endif
