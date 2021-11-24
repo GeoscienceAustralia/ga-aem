@@ -69,7 +69,8 @@ public:
 		tx_height, 
 		tx_roll, tx_pitch, tx_yaw, 
 		txrx_dx, txrx_dy, txrx_dz,
-		rx_roll, rx_pitch, rx_yaw
+		rx_roll, rx_pitch, rx_yaw,
+		unknown
 	};
 
 
@@ -133,7 +134,7 @@ public:
 		default:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 		}
-		return tx_height;
+		return tx_height;//this will never be reached
 	}
 
 	
@@ -256,6 +257,7 @@ public:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 			break;
 		}		
+		return ElementType::unknown;
 	}
 
 	static cLEM::CalculationType derivativetype(const size_t& index){
@@ -274,7 +276,7 @@ public:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 			break;
 		}
-		//return cLEM::eCalculationType::CT_NONE;
+		return cLEM::CalculationType::NONE;
 	}
 
 	void write(std::string path) const 

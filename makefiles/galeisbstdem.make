@@ -4,10 +4,14 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-executable  = $(exedir)/galeisbstdem.exe
-includes    = -I$(srcdir)
+executable = $(exedir)/galeisbstdem.exe
+includes   = -I$(srcdir)
 includes   += -I$(cpputilssrc)
-libs        = -fopenmp -L$(FFTW_DIR) -lfftw3
+includes   += -I$(csv_include)
+includes   += -I$(geophysics_netcdf_include)
+includes   += -I$(marray_include)
+
+libs        = -lstdc++fs -fopenmp -L$(FFTW_DIR) -lfftw3
 cxxflags   += -fopenmp
 cxxflags   += -D_MPI_ENABLED
 #cxxflags   += -DUSEGLOBALSTACKTRACE

@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
 				glog.logmsg(0, "**Error: %d is a silly number of threads\n", openmpsize);
 				return finaliseandexit();
 			}
-		#else if 
+		#elif 
 		    glog.logmsg(0,"Usage: %s control_file_name [number_of_openmp_threads]\n", argv[0]);
 			glog.logmsg(0,"       **Error: This executable has not been compiled with OpenMP enabbled\n");
 			glog.logmsg(0,"       **Compile with OpenMP or do not specify [number_of_openmp_threads]\n");

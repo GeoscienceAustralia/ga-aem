@@ -376,21 +376,21 @@ public:
 		of << "Record\t" << record << std::endl;
 	}
 
-	const int cindex(const size_t& si, const size_t& li) {
+	int cindex(const size_t& si, const size_t& li) {
 		if (solve_conductivity() == false) {
 			glog.errormsg("Out of boundes in cindex()\n");
 		}
 		return (int) (si*nParamPerSounding + cOffset + li);
 	}
 
-	const int tindex(const size_t& si, const size_t& li) {
+	int tindex(const size_t& si, const size_t& li) {
 		if (solve_thickness() == false) {
 			glog.errormsg("Out of boundes in tindex()\n");
 		}		
 		return (int) (si*nParamPerSounding + tOffset + li);
 	}
 	
-	const int gindex(const size_t& si, const std::string& gname) {
+	int gindex(const size_t& si, const std::string& gname) {
 		if (solve_geometry() == false) {
 			glog.errormsg("Out of boundes in gindex\n");
 		}
@@ -399,7 +399,7 @@ public:
 		return (int)(si*nParamPerSounding + goff);
 	}
 
-	const int gindex(const size_t& si, const size_t& gi) {
+    int gindex(const size_t& si, const size_t& gi) {
 		if (solve_geometry() == false) {
 			glog.errormsg("Out of boundes in gindex\n");
 		}
