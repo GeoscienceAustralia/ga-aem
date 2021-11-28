@@ -174,12 +174,16 @@ class cSBSInverter : public cInverter {
 	Matrix Wr;
 	Matrix Ws;
 	Matrix Wq;
+	Matrix Whc;
+	Matrix Whg;
 
 	double AlphaC = 0.0;
 	double AlphaT = 0.0;
 	double AlphaG = 0.0;
 	double AlphaS = 0.0;
 	double AlphaQ = 0.0;
+	double AlphaHc = 0.0;
+	double AlphaHg = 0.0;
 
 	size_t nSoundings = 0;
 	size_t nBunchSubsample = 0;	
@@ -446,6 +450,8 @@ public:
 		AlphaG = b.getdoublevalue("AlphaGeometry");		
 		AlphaS = b.getdoublevalue("AlphaSmoothness");
 		AlphaQ = b.getdoublevalue("AlphaHomogeneous");
+		AlphaHc = b.getdoublevalue("AlphaHorizontalConductivitySmoothness");
+		AlphaHg = b.getdoublevalue("AlphaHorizontalGeometrySmoothness");
 		
 		BeginGeometrySolveIteration = b.getintvalue("BeginGeometrySolveIteration");						
 		if (!isdefined(BeginGeometrySolveIteration)) {
@@ -748,8 +754,59 @@ public:
 			}
 		}
 		Wq = L.transpose() * L;
-		Wq *= (AlphaQ / (double)(nrows));
-		//std::cerr << Wq;
+		Wq *= (AlphaQ / (double)(nrows));		
+	}
+
+	void initialise_Whc()
+	{		
+		Whc = Matrix::Zero(nParam, nParam);
+		if (AlphaHc == 0) return;
+		if (nSoundings  < 3) return;
+		if (solve_conductivity() == false) return;		
+		Matrix L = Matrix::Zero((nSoundings-2) * nLayers, nParam);
+		size_t nrows = 0;
+		for (size_t si = 1; si < nSoundings-1; si++) {
+			double d01 = std::hypot(Id[si].x - Id[si - 1].x, Id[si].y - Id[si - 1].y);
+			double d12 = std::hypot(Id[si].x - Id[si + 1].x, Id[si].y - Id[si + 1].y);
+			//const cEarthStruct& e = E[si];			
+			for (size_t li = 0; li < nLayers; li++) {
+				const int pi0 = cindex(si-1, li);
+				const int pi1 = cindex(si, li);
+				const int pi2 = cindex(si+1, li);								
+				L(nrows, pi0) = 1.0 / d01;
+				L(nrows, pi1) = -1.0 / d01 - 1.0 / d12;
+				L(nrows, pi2) = 1.0 / d12;
+				nrows++;
+			}
+		}
+		Whc = L.transpose() * L;
+		Whc *= (AlphaHc / (double)(nrows));
+	}
+
+	void initialise_Whg()
+	{
+		Whg = Matrix::Zero(nParam, nParam);
+		if (AlphaHg == 0) return;
+		if (nSoundings < 3) return;
+		if (solve_geometry() == false) return;
+		Matrix L = Matrix::Zero((nSoundings - 2) * nGeomParamPerSounding, nParam);
+		size_t nrows = 0;
+		for (size_t si = 1; si < nSoundings - 1; si++) {
+			double d01 = std::hypot(Id[si].x - Id[si - 1].x, Id[si].y - Id[si - 1].y);
+			double d12 = std::hypot(Id[si].x - Id[si + 1].x, Id[si].y - Id[si + 1].y);			
+			for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
+				const int pi0 = gindex(si - 1, gi);
+				const int pi1 = gindex(si, gi);
+				const int pi2 = gindex(si + 1, gi);
+				if (pi0 < 0)continue;
+				L(nrows, pi0) = 1.0 / d01;
+				L(nrows, pi1) = -1.0 / d01 - 1.0 / d12;
+				L(nrows, pi2) = 1.0 / d12;
+				nrows++;
+			}
+		}
+		Whg = L.transpose() * L;
+		Whg *= (AlphaHg / (double)(nrows));
 	}
 
 	void initialise_Wr() {
@@ -764,21 +821,27 @@ public:
 	}
 
 	void initialise_Wm() {
-		initialise_Wq();
+		initialise_Whc();
+		initialise_Whg();
+		initialise_Wq();		
 		initialise_Ws();
 		initialise_Wr();
-		Wm = Wr + Ws + Wq;
+		Wm = Wr + Ws + Wq + Whc + Whg;
 	}
 
 	void dump_W_matrices() {
 		if (OO.Dump) {
+			writetofile(Wd, dumppath() + "Wd.dat");
 			writetofile(Wc, dumppath() + "Wc.dat");
 			writetofile(Wt, dumppath() + "Wt.dat");
 			writetofile(Wg, dumppath() + "Wg.dat");
 			writetofile(Wr, dumppath() + "Wr.dat");
 			writetofile(Ws, dumppath() + "Ws.dat");
+			writetofile(Wq, dumppath() + "Wq.dat");
+			writetofile(Whc, dumppath() + "Whc.dat");
+			writetofile(Whg, dumppath() + "Whg.dat");
 			writetofile(Wm, dumppath() + "Wm.dat");
-			writetofile(Wd, dumppath() + "Wd.dat");
+			
 		}
 	}
 
@@ -1544,6 +1607,9 @@ public:
 		OM->writefield(pi, AlphaG, "AlphaG", "AlphaGeometry inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, AlphaS, "AlphaS", "AlphaSmoothness inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);		
 		OM->writefield(pi, AlphaQ, "AlphaQ", "AlphaHomogeneous inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, AlphaHc, "AlphaHc", "AlphaHorizontalConductivitySmoothness inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, AlphaHg, "AlphaHg", "AlphaHorizontalGeometrySmoothness inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+
 		OM->writefield(pi, S.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, S.phim, "PhiM", "Combined model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, S.phic, "PhiC", "Conductivity reference model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
@@ -1551,6 +1617,8 @@ public:
 		OM->writefield(pi, S.phig, "PhiG", "Geometry reference model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, S.phis, "PhiS", "Smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, S.phiq, "PhiQ", "Homogeneity model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phihc, "PhiHc", "Horizontal conductivity smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phihg, "PhiHg", "Horizontal geometry smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, S.lambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, S.iteration, "Iterations", "Number of iterations", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 4, 0);
 				
@@ -1739,19 +1807,7 @@ public:
 		}
 		return status;
 	}
-
-	bool read_geometryxxx(const std::vector<cFieldDefinition>& gfd, cTDEmGeometry& g)
-	{		
-		bool status = true;
-		for (size_t i = 0; i < g.size(); i++) {
-			bool istatus = IM->read(gfd[i], g[i]);
-			if (istatus == false) {
-				status = false;
-			}
-		}
-		return status;
-	}
-	
+		
 	void read_system_data(size_t& sysindex, const size_t& soundingindex)
 	{
 		cTDEmSystemInfo& S = SV[sysindex];
@@ -1832,7 +1888,7 @@ public:
 		forwardmodel(CIS.param, CIS.pred);
 		CIS.phid = phiData(CIS.pred);
 		CIS.targetphid = CIS.phid;
-		CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phis, CIS.phim);
+		CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phis, CIS.phiq, CIS.phihc, CIS.phihg);
 		
 		TerminationReason = "Has not terminated";
 
@@ -1884,7 +1940,7 @@ public:
 					CIS.targetphid = targetphid;										
 					CIS.phid   = phid;
 					CIS.lambda = t.lambda;
-					CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phis, CIS.phiq);
+					CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phis, CIS.phiq, CIS.phihc, CIS.phihg);
 					if (OO.Dump) dump_iteration(CIS);
 				}						
 			}			
@@ -1940,19 +1996,21 @@ public:
 
 	double phiModel(const Vector& p)
 	{
-		double phic, phit, phig, phis, phiq;
-		return phiModel(p, phic, phit, phig, phis, phiq);
+		double phic, phit, phig, phis, phiq, phihc, phihg;
+		return phiModel(p, phic, phit, phig, phis, phiq, phihc, phihg);
 	}
 
-	double phiModel(const Vector& p, double& phic, double& phit, double& phig, double& phis, double& phiq)
+	double phiModel(const Vector& p, double& phic, double& phit, double& phig, double& phis, double& phiq, double& phihc, double& phihg)
 	{
 		phic = phiC(p);
 		phit = phiT(p);
 		phig = phiG(p);
 		phis = phiS(p);
 		phiq = phiQ(p);
+		phihc = phiHc(p);
+		phihg = phiHg(p);
 
-		double v = phic + phit + phig + phis + phiq;
+		double v = phic + phit + phig + phis + phiq + phihc + phihg;
 		return v;
 	}
 
@@ -1982,6 +2040,18 @@ public:
 	{
 		if (AlphaS == 0)return 0.0;
 		else return mtAm(p, Ws);
+	}
+
+	double phiHc(const Vector& p)
+	{
+		if (AlphaHc == 0)return 0.0;
+		else return mtAm(p, Whc);
+	}
+
+	double phiHg(const Vector& p)
+	{
+		if (AlphaHg == 0)return 0.0;
+		else return mtAm(p, Whg);
 	}
 
 	double phiQ(const Vector& p)

@@ -271,6 +271,8 @@ public:
 	double phig = 0.0;
 	double phis = 0.0;
 	double phiq = 0.0;
+	double phihc = 0.0;
+	double phihg = 0.0;
 	Vector pred;
 	Vector param;
 
@@ -286,6 +288,8 @@ public:
 		ss << "PhiG " << phig << std::endl;
 		ss << "PhiS " << phis << std::endl;
 		ss << "PhiQ " << phiq << std::endl;
+		ss << "PhiHc " << phihc << std::endl;
+		ss << "PhiHg " << phihg << std::endl;
 		return ss.str();
 	};
 };
