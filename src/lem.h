@@ -179,7 +179,9 @@ public:
 
 private:
 	size_t NumFrequencies;
+public:
 	std::vector<FrequencyNode> Frequency;		
+private:
 	std::vector<HankelTransforms> Hankel;
 	
 	double meanconductivity;
@@ -357,8 +359,6 @@ public:
 		setproperties(c, t);
 	};
 
-	
-
 	cVec pitchrolldipole(double pitch, double roll)
 	{
 		//X = +ve in flight direction
@@ -375,6 +375,7 @@ public:
 		if (roll != 0.0) orientation = orientation.rotate(roll, xaxis);
 		return orientation;
 	};
+
 	void setxyrotation()
 	{
 		//xyrotation is the anticlockwise angle (in degrees) 
@@ -390,16 +391,19 @@ public:
 		cosxyrotation = cos(xyrotation*D2R);
 		sinxyrotation = sin(xyrotation*D2R);
 	}
+
 	void xyrotate(const double& xin, const double& yin, double* xout, double* yout)
 	{
 		*xout =  xin*cosxyrotation + yin*sinxyrotation;
 		*yout = -xin*sinxyrotation + yin*cosxyrotation;
 	}
+
 	void unxyrotate(const double& xin, const double& yin, double* xout, double* yout)
 	{
 		*xout = xin*cosxyrotation - yin*sinxyrotation;
 		*yout = xin*sinxyrotation + yin*cosxyrotation;
 	}
+
 	void unxyrotateandscale(RealField& f, double scalefactor)
 	{
 		double x, y;
@@ -408,6 +412,7 @@ public:
 		f.y = y*scalefactor;
 		f.z = f.z*scalefactor;
 	}
+
 	void unxyrotateandscale(ComplexField& f, double scalefactor)
 	{
 		RealField r;
@@ -427,6 +432,7 @@ public:
 		f.z = cdouble(r.z, i.z);
 
 	}
+
 	void setR(double r)
 	{
 		R = r;
@@ -466,22 +472,7 @@ public:
 			YonR = Y / R;
 		}
 	}
-
-	void setfrequencies(const std::vector<double>& frequencies)
-	{
-		NumFrequencies = frequencies.size();
-		if (Frequency.size() != NumFrequencies)Frequency.resize(NumFrequencies);
-		if (Hankel.size() != NumFrequencies)Hankel.resize(NumFrequencies);
-		for (size_t fi = 0; fi < NumFrequencies; fi++){
-			double omega = TWOPI*frequencies[fi];
-			double muzeroomega = MUZERO*omega;
-			Frequency[fi].Frequency = frequencies[fi];
-			Frequency[fi].Omega = omega;
-			Frequency[fi].MuZeroOmega = muzeroomega;
-			Frequency[fi].iMuZeroOmega = cdouble(0.0, muzeroomega);
-		}
-	};
-	
+		
 	static cdouble ip_colecole_conductivity(
 		const double& conductivity,
 		const double& chargeability,
@@ -519,34 +510,54 @@ public:
 
 	}
 
-	void setfrequencyabscissalayers(const size_t& fi)
+	void init_frequencies(const std::vector<double>& frequencies)
 	{
-		setintegrationnodes(fi);
-		for (size_t ai = 0; ai < NumAbscissa; ai++){
-			Frequency[fi].Abscissa[ai].Layer.resize(NumLayers);
-			for (size_t li = 0; li < NumLayers; li++){
-				cdouble u;
-				if (Layer[li].Chargeability == 0.0){
-					double gamma2 = Layer[li].Conductivity*Frequency[fi].MuZeroOmega;
-					u = sqrt(cdouble(Frequency[fi].Abscissa[ai].Lambda2, gamma2));
-				}
-				else{
-					cdouble cip;
-					if (iptype == IPType::COLECOLE){
-						cip = ip_colecole_conductivity(Layer[li].Conductivity, Layer[li].Chargeability, Layer[li].TimeConstant, Layer[li].FrequencyDependence, Frequency[fi].Omega);
-					}
-					else {
-						cip = ip_pelton_conductivity(Layer[li].Conductivity, Layer[li].Chargeability, Layer[li].TimeConstant, Layer[li].FrequencyDependence, Frequency[fi].Omega);
-					}					
-					cdouble gamma2 = cip*cdouble(0.0,Frequency[fi].MuZeroOmega);
-					u = std::sqrt(Frequency[fi].Abscissa[ai].Lambda2 + gamma2);
-				}								
-				Frequency[fi].Abscissa[ai].Layer[li].U = u;
-				if (li < NumLayers - 1)Frequency[fi].Abscissa[ai].Layer[li].Exp2UT = exp(-2.0*u*Layer[li].Thickness);
-			}
-			setlayermatrices(fi, ai);
-			setpmatrix(fi, ai);
+		NumFrequencies = frequencies.size();
+		if (Frequency.size() != NumFrequencies)Frequency.resize(NumFrequencies);
+		if (Hankel.size() != NumFrequencies)Hankel.resize(NumFrequencies);
+		for (size_t fi = 0; fi < NumFrequencies; fi++) {
+			double omega = TWOPI * frequencies[fi];
+			double muzeroomega = MUZERO * omega;
+			Frequency[fi].Frequency = frequencies[fi];
+			Frequency[fi].Omega = omega;
+			Frequency[fi].MuZeroOmega = muzeroomega;
+			Frequency[fi].iMuZeroOmega = cdouble(0.0, muzeroomega);
 		}
+	};
+
+	void init_frequency(const size_t& fi)
+	{
+		init_integration_nodes(fi);		
+		for (size_t ai = 0; ai < NumAbscissa; ai++) {
+			init_abscissa(fi, ai);
+		}		
+	};
+
+	void init_abscissa(const size_t& fi, const size_t& ai)
+	{
+		Frequency[fi].Abscissa[ai].Layer.resize(NumLayers);
+		for (size_t li = 0; li < NumLayers; li++) {
+			cdouble u;
+			if (Layer[li].Chargeability == 0.0) {
+				double gamma2 = Layer[li].Conductivity * Frequency[fi].MuZeroOmega;
+				u = sqrt(cdouble(Frequency[fi].Abscissa[ai].Lambda2, gamma2));
+			}
+			else {
+				cdouble cip;
+				if (iptype == IPType::COLECOLE) {
+					cip = ip_colecole_conductivity(Layer[li].Conductivity, Layer[li].Chargeability, Layer[li].TimeConstant, Layer[li].FrequencyDependence, Frequency[fi].Omega);
+				}
+				else {
+					cip = ip_pelton_conductivity(Layer[li].Conductivity, Layer[li].Chargeability, Layer[li].TimeConstant, Layer[li].FrequencyDependence, Frequency[fi].Omega);
+				}
+				cdouble gamma2 = cip * cdouble(0.0, Frequency[fi].MuZeroOmega);
+				u = std::sqrt(Frequency[fi].Abscissa[ai].Lambda2 + gamma2);
+			}
+			Frequency[fi].Abscissa[ai].Layer[li].U = u;
+			if (li < NumLayers - 1)Frequency[fi].Abscissa[ai].Layer[li].Exp2UT = exp(-2.0 * u * Layer[li].Thickness);
+		}
+		init_layer_matrices(fi, ai);
+		init_pmatrix(fi, ai);
 	};
 
 	double approximatehalfspace(const size_t& fi)
@@ -556,87 +567,53 @@ public:
 
 		//peak lambda
 		double  peaklambda = sqrt(Frequency[fi].MuZeroOmega * meanlog10conductivity / 4.0);
-		cdouble rz = rzero_recursive(fi, peaklambda);
+		cdouble rz  = rzero_recursive(fi, peaklambda);
+				
 		cdouble  v = (1.0 + rz);
 
 		v = Frequency[fi].iMuZeroOmega*v*v;
 		return (-4.0*peaklambda*peaklambda*rz / v).real();
 	}
-	
-	inline cdouble rzero(const size_t& fi, const double& lambda)
-	{
-		if (rzerotype == RZeroMethod::RECURSIVE){
-			return rzero_recursive(fi, lambda);
-		}
-		//else if(rzerotype==RZeroMethod::PROPOGATIONMATRIX){
-		//	return rzero_propogationmatrix(fi,lambda);	
-		//}
-		else{
-			glog.errormsg(_SRC_,"LE::rzero() unknown rzero calculation option %lu\n", rzerotype);
-			return cdouble(0.0, 0.0);
-		}
-	}
-	inline cdouble rzero_recursive(const size_t& fi, const double& lambda)
+		
+	inline cdouble rzero_recursive(const size_t& fi, const double& lambda) const 
 	{
 		//Wait's recursive formulation
-
-		const double lambda2 = lambda*lambda;
+		const double lambda2 = lambda * lambda;
 		const double muzeroomega = Frequency[fi].MuZeroOmega;
-		cdouble imuzeroomega(0.0, muzeroomega);
+		const cdouble imuzeroomega(0.0, muzeroomega);
 
-		double gamma2 = muzeroomega*Layer[NumLayers - 1].Conductivity;
+		double gamma2 = muzeroomega * Layer[NumLayers - 1].Conductivity;
 		cdouble u = std::sqrt(cdouble(lambda2, gamma2));
 		cdouble y = u / imuzeroomega;
-		if (NumLayers > 1){
-			size_t i = NumLayers - 2;
-			do{
-				gamma2 = muzeroomega*Layer[i].Conductivity;
-				u = std::sqrt(cdouble(lambda2, gamma2));
-				const cdouble Nn = u / imuzeroomega;
-				const cdouble v = u*Layer[i].Thickness;
 
-				//Expand - unstable    	
-				//tanh(v) = (1.0 - v4)/(1.0 + v4 + 2.0*v2);
-				const cdouble v2 = std::exp(-2.0*v);
-				const cdouble v4 = v2*v2;
-				const cdouble tanhv = (1.0 - v4) / (1.0 + v4 + 2.0*v2);
-				y = Nn*(y + Nn*tanhv) / (Nn + y*tanhv);
-			} while (i-- != 0);
+		int i = NumLayers - 2;		
+		while (i >= 0) {
+			gamma2 = muzeroomega * Layer[i].Conductivity;
+			u = std::sqrt(cdouble(lambda2, gamma2));
+			const cdouble Nn = u / imuzeroomega;
+			const cdouble v = u * Layer[i].Thickness;
+
+			//Expand - unstable    	
+			//tanh(v) = (1.0 - v4)/(1.0 + v4 + 2.0*v2);
+			const cdouble v2 = std::exp(-2.0 * v);
+			const cdouble v4 = v2 * v2;
+			const cdouble tanhv = (1.0 - v4) / (1.0 + v4 + 2.0 * v2);
+			y = Nn * (y + Nn * tanhv) / (Nn + y * tanhv);
+			i--;
 		}
-
-
-		/*for(int i=NumLayers-2; i>=0; i--){
-		gamma2 = muzeroomega*Layer[i].Conductivity;
-		u = sqrt(cdouble(lambda2,gamma2));
-		Nn = u/imuzeroomega;
-
-		v1 = u*Layer[i].Thickness;
-
-		//Expand - unstable
-		//tanh(v) = (1.0 - v4)/(1.0 + v4 + 2.0*v2);
-
-		v2 = exp(-2.0*v1);
-		v4 = exp(-4.0*v1);
-		top = 1.0-v4;
-		bot = 1.0+v4+2.0*v2;
-		tanhv = top/bot;
-
-		y = Nn*(y+Nn*tanhv)/(Nn+y*tanhv);
-		if (i == 0)break;//size_t variable cannot decrement below zero because it is unsigned
-		} */
-
-		cdouble N0(0.0, -lambda / (muzeroomega));  // minus because dividing by i.muzero.omega
+		const cdouble N0(0.0, -lambda / (muzeroomega));  // minus because dividing by i.muzero.omega
 		return (N0 - y) / (N0 + y);
-
 	};
+
 	inline cdouble rzero_propogationmatrix(const size_t& fi, const size_t& ai)
 	{
 		//Oldenberg's propogation matrix formulation
-		setlayermatrices(fi, ai);
-		setpmatrix(fi, ai);
+		init_layer_matrices(fi, ai);
+		init_pmatrix(fi, ai);
 		return Frequency[fi].Abscissa[ai].P21onP11;
 	};
-	inline void setlayermatrices(const size_t& fi, const size_t& ai)
+
+	inline void init_layer_matrices(const size_t& fi, const size_t& ai)
 	{
 		cdouble e, eh, e1, e2;
 
@@ -683,7 +660,8 @@ public:
 			}
 		}		
 	};
-	inline void setpmatrix(const size_t& fi, const size_t& ai)
+
+	inline void init_pmatrix(const size_t& fi, const size_t& ai)
 	{
 		AbscissaNode& A = Frequency[fi].Abscissa[ai];
 		//Set Full matrix
@@ -695,6 +673,7 @@ public:
 		}
 		A.P21onP11 = A.P_Full.e21 / A.P_Full.e11;
 	}
+
 	inline PropogationMatrix dMjdCj(const size_t& fi, const size_t& ai, const size_t& li)
 	{
 		PropogationMatrix m;
@@ -718,6 +697,7 @@ public:
 		}
 
 	}
+	
 	inline PropogationMatrix dMjplus1dCj(const size_t& fi, const size_t& ai, const size_t& li)
 	{
 		cdouble duds = Frequency[fi].iMuZeroOmega / (2.0*Frequency[fi].Abscissa[ai].Layer[li].U);
@@ -744,6 +724,7 @@ public:
 		return M;
 
 	}
+	
 	inline PropogationMatrix dPdCj(const size_t& fi, const size_t& ai, const size_t& li)
 	{
 		AbscissaNode& A = Frequency[fi].Abscissa[ai];
@@ -776,11 +757,13 @@ public:
 		}
 
 	}
+	
 	inline cdouble dP21onP11dCj(const size_t& fi, const size_t& ai, const size_t& li)
 	{
 		PropogationMatrix m = dPdCj(fi, ai, li);
 		return m.e21 / Frequency[fi].Abscissa[ai].P_Full.e11 - m.e11*Frequency[fi].Abscissa[ai].P21onP11 / Frequency[fi].Abscissa[ai].P_Full.e11;
 	}
+	
 	inline PropogationMatrix dMjplus1dTj(const size_t& fi, const size_t& ai, const size_t& li)
 	{
 		cdouble y = Frequency[fi].Abscissa[ai].Layer[li + 1].U / Frequency[fi].Abscissa[ai].Layer[li].U;
@@ -794,6 +777,7 @@ public:
 		return m;
 
 	}
+	
 	inline PropogationMatrix dPdTj(const size_t& fi, const size_t& ai, const size_t& li)
 	{
 		AbscissaNode& A = Frequency[fi].Abscissa[ai];
@@ -822,12 +806,14 @@ public:
 			return tmp;
 		}
 	}
+
 	inline cdouble dP21onP11dTj(const size_t& fi, const size_t& ai, const size_t& li)
 	{
 		PropogationMatrix m = dPdTj(fi, ai, li);
 		return m.e21 / Frequency[fi].Abscissa[ai].P_Full.e11 - m.e11*Frequency[fi].Abscissa[ai].P21onP11 / Frequency[fi].Abscissa[ai].P_Full.e11;
 	}
-	void setintegrationnodes(const size_t& fi)
+
+	void init_integration_nodes(const size_t& fi)
 	{
 		FrequencyNode& F = Frequency[fi];;
 		double peak_exp2 = 2.0 / (Z + H);
@@ -859,11 +845,12 @@ public:
 			loglambda += F.AbscissaSpacing;
 		}
 	}
+
 	void dointegrals(const size_t& fi)
 	{
-		dointegrals_trapezoid(fi);
-		//dointegrals_anderson(fi);
+		dointegrals_trapezoid(fi);		
 	}
+
 	inline void dointegrals_trapezoid(const size_t& fi)
 	{
 		HankelTransforms& H = Hankel[fi];

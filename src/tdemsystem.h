@@ -18,6 +18,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "blocklanguage.h"
 #include "earth1d.h"
 #include "lem.h"
+#include "stopwatch.h"
 
 struct sTDEmNoiseModelComponent{	
 	double MultiplicativeNoise;
@@ -587,7 +588,7 @@ public:
 
 	  setup_splineinterp(DiscreteFrequenciesLog10, SplinedFrequencieslog10);
 
-	  LEM.setfrequencies(DiscreteFrequencies);
+	  LEM.init_frequencies(DiscreteFrequencies);
   }
   void spline(const std::vector<double>& x, const std::vector<double>& y, double yp1, double ypn, std::vector<double>& y2)
   {
@@ -756,7 +757,7 @@ public:
   void setupcomputations()
   {
 	  for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
-		  LEM.setfrequencyabscissalayers(fi);
+		  LEM.init_frequency(fi);
 	  }
   }
 
@@ -816,7 +817,7 @@ public:
 	  //Computation for discrete frequencies 	
 	  for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
 		  LEM.dointegrals(fi);
-		  LEM.setsecondaryfields(fi);
+		  LEM.setsecondaryfields(fi);		  
 		  const cdouble& x = LEM.Fields.t.s.x;
 		  const cdouble& y = LEM.Fields.t.s.y;
 		  const cdouble& z = LEM.Fields.t.s.z;
