@@ -671,7 +671,7 @@ public:
 				double t1 = t[li - 1];
 				double t2 = t[li];
 				double d12 = (t1 + t2) / 2.0;
-				double s = sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
+				double s = std::sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
 				L(nrows, pi0) = -s / d12;
 				L(nrows, pi1) = s / d12;
 				nrows++;
@@ -702,7 +702,7 @@ public:
 				double t3 = t[li + 1];
 				double d12 = (t1 + t2) / 2.0;
 				double d23 = (t2 + t3) / 2.0;
-				double s = sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
+				double s = std::sqrt(t2 / tavg);//sqrt because it gets squared in L'L		
 				L(nrows, pi0) = s / d12;
 				L(nrows, pi1) = -s / d12 - s / d23;
 				L(nrows, pi2) = s / d23;
@@ -783,7 +783,7 @@ public:
 		Whc *= (AlphaHc / (double)(nrows));
 	}
 
-	void initialise_Whg()
+	void initialise_Whg_1()
 	{
 		Whg = Matrix::Zero(nParam, nParam);
 		if (AlphaHg == 0) return;
@@ -805,6 +805,71 @@ public:
 				nrows++;
 			}
 		}
+		Whg = L.transpose() * L;
+		Whg *= (AlphaHg / (double)(nrows));
+	}
+
+	void initialise_Whg()
+	{
+		Whg = Matrix::Zero(nParam, nParam);
+		if (AlphaHg == 0) return;
+		if (nSoundings < 5) return;
+		if (solve_geometry() == false) return;
+		Matrix L = Matrix::Zero((nSoundings) * nGeomParamPerSounding, nParam);
+		size_t nrows = 0;
+		
+		double d = 0.0;
+		for (size_t j = 0; j < nSoundings-1; j++) {
+			d += std::hypot(Id[j].x - Id[j + 1].x, Id[j].y - Id[j + 1].y);
+		}
+		d = d / (double)(nSoundings-1);//average sample distance
+
+		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {			
+			for (size_t si = 2; si < nSoundings - 2; si++) {												
+				const int pi0 = gindex(si - 2, gi);
+				const int pi1 = gindex(si - 1, gi);
+				const int pi2 = gindex(si, gi);
+				const int pi3 = gindex(si + 1, gi);
+				const int pi4 = gindex(si + 2, gi);
+				if (pi0 < 0)continue;
+				L(nrows, pi0) = -1.0 / d;
+				L(nrows, pi1) = 4.0 / d;
+				L(nrows, pi2) = -6.0 / d;
+				L(nrows, pi3) = 4.0 / d;
+				L(nrows, pi4) = -1.0 / d;
+				nrows++;
+			}
+
+			/*
+			//Acceleration at 1 same as at 2
+			size_t si = 1;
+			int pi0 = gindex(si - 1, gi);
+			int pi1 = gindex(si, gi);
+			int pi2 = gindex(si + 1, gi);
+			int pi3 = gindex(si + 2, gi);
+			if (pi0 < 0)continue;
+			L(nrows, pi0) =  1.0 / d;
+			L(nrows, pi1) = -3.0 / d;
+			L(nrows, pi2) =  3.0 / d;
+			L(nrows, pi3) = -1.0 / d;
+			nrows++;
+
+			//Acceleration at n-1 same as at n-2
+			si = nSoundings-1;
+			pi0 = gindex(si - 2, gi);
+			pi1 = gindex(si - 1, gi);
+			pi2 = gindex(si , gi);
+			pi3 = gindex(si + 1, gi);
+			if (pi0 < 0)continue;
+			L(nrows, pi0) = -1.0 / d;
+			L(nrows, pi1) =  3.0 / d;
+			L(nrows, pi2) = -3.0 / d;
+			L(nrows, pi3) =  1.0 / d;
+			nrows++;
+			*/
+		}
+
+
 		Whg = L.transpose() * L;
 		Whg *= (AlphaHg / (double)(nrows));
 	}
@@ -1405,7 +1470,7 @@ public:
 		ofs << S.info_string();
 	};
 	
-	void writeresult(const int& pointindex, const cIterationState& S)
+	void write_result(const int& pointindex, const cIterationState& S)
 	{		
 		const int& pi = (int)Bunch.master_record();
 		const int& si = (int)Bunch.master_index();
@@ -1974,7 +2039,7 @@ public:
 						iterate();
 						double t2 = gettime();
 						double etime = t2 - t1;
-						writeresult(record, CIS);						
+						write_result(record, CIS);						
 						s << bunch_result(etime);																		
 					}
 					else {
