@@ -25,11 +25,12 @@ public:
 	size_t ncomps = 0;
 	size_t nchans = 0;
 	cTDEmComponentInfo CompInfo[3];
+	std::vector<cTDEmData> predicted;
 	
 	bool invertXPlusZ = false;
 	bool invertPrimaryPlusSecondary = false;
 	bool reconstructPrimary = false;
-	cTDEmData predicted;
+	
 
 	void initialise(const cBlock& b, const size_t nsoundings) {
 		std::string dummy;

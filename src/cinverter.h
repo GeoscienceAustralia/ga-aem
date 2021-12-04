@@ -782,8 +782,7 @@ protected:
 public:
 
 	cInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline)
-	{
-		std::cout << "Constructing cInverter\n";
+	{		
 		Size = size;
 		Rank = rank;
 		UsingOpenMP = usingopenmp;

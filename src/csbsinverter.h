@@ -221,7 +221,7 @@ class cSBSInverter : public cInverter {
 		double elevation = 0.0;
 	};
 	std::vector<SampleId> Id;
-	cKeyVec<std::string, cFdVrnt, caseinsensetiveequal<std::string>> AncFld;
+	std::vector<cKeyVec<std::string, cFdVrnt, caseinsensetiveequal<std::string>>> AncFld;
 	
 private:	
 	
@@ -260,8 +260,7 @@ public:
 	
 	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline) 
 					: cInverter(controlfile, size, rank, usingopenmp, commandline)
-	{
-		std::cout << "Constructing cSBSInverter\n";
+	{		
 		_GSTPUSH_
 		try {			
 			initialise(controlfile);
@@ -503,7 +502,7 @@ public:
 	{
 		cBlock b = Control.findblock("Input.AncillaryFields");
 		set_field_definitions_ancillary(b);
-		if (AncFld.keyindex("line") < 0) {
+		if (AncFld[0].keyindex("line") < 0) {
 			glog.errormsg("Must specify a linenumber field\n");
 		}
 
@@ -516,6 +515,7 @@ public:
 	}
 
 	void set_field_definitions_ancillary(const cBlock& parent) {
+		AncFld.resize(nSoundings);
 		const cBlock& b = parent;
 		for (size_t i = 0; i < b.Entries.size(); i++) {
 			std::string key   = b.key(i);
@@ -523,7 +523,9 @@ public:
 			cFieldDefinition fd(parent, key);						
 			cFdVrnt fdvrnt(fd,cVrnt());						
 			IM->set_variant_type(fd.varname, fdvrnt.vnt);
-			AncFld.add(key, fdvrnt);
+			for (size_t si = 0; si < nSoundings; si++) {
+				AncFld[si].add(key, fdvrnt);
+			}
 		}		
 	}
 	
@@ -1236,8 +1238,44 @@ public:
 		return gv;
 	}
 
-	void set_predicted()
-	{
+	
+	void set_predicted(const Vector& parameters)
+	{				
+		std::vector<cEarth1D> ev = get_earth(parameters);
+		std::vector<cTDEmGeometry> gv = get_geometry(parameters);
+		for (size_t sysi = 0; sysi < nSystems; sysi++) {
+			cTDEmSystemInfo& S = SV[sysi];
+			S.predicted.resize(nSoundings);
+
+			cTDEmSystem& T = S.T;
+			const size_t nw = T.NumberOfWindows;
+			for (size_t si = 0; si < nSoundings; si++) {
+				const cEarth1D& e = ev[si];
+				const cTDEmGeometry& g = gv[si];
+				T.setconductivitythickness(e.conductivity, e.thickness);
+				T.setgeometry(g);
+
+				//Forwardmodel
+				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+				T.LEM.derivative_layer = INT_MAX;
+				T.setupcomputations();
+				T.setprimaryfields();
+				T.setsecondaryfields();
+
+				cTDEmData& d = S.predicted[si];
+				d.xcomponent().Primary = T.PrimaryX;
+				d.ycomponent().Primary = T.PrimaryY;
+				d.zcomponent().Primary = T.PrimaryZ;
+				d.xcomponent().Secondary = T.X;
+				d.ycomponent().Secondary = T.Y;
+				d.zcomponent().Secondary = T.Z;				
+			}
+		}				
+	}
+
+	/*
+	void set_predicted(const size_t si){
+		
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
 			cTDEmSystemInfo& S = SV[sysi];
 			cTDEmSystem& T = S.T;
@@ -1251,7 +1289,7 @@ public:
 			d.zcomponent().Secondary = T.Z;
 		}
 	}
-
+	*/
 	void forwardmodel(const Vector& parameters, Vector& predicted) {
 		Matrix dummy;	
 		nForwards++;
@@ -1478,11 +1516,11 @@ public:
 		
 		//Ancillary	
 		OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
-		for (size_t i = 0; i<AncFld.size(); i++) {
-			cFdVrnt& fdv = AncFld[i].second;
+		for (size_t fi = 0; fi<AncFld[si].size(); fi++) {
+			cFdVrnt& fdv = AncFld[si][fi].second;
 			cAsciiColumnField c;
 			std::string fname = fdv.fd.varname;
-			IM->get_acsiicolumnfield(fname, c);			
+			IM->get_acsiicolumnfield(fname, c);
 			OM->writevrnt(pi, fdv.vnt, c);
 		}
 
@@ -1658,8 +1696,8 @@ public:
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
-						S.predicted.component(ci).Primary,
-						S.predicted.component(ci).Secondary,
+						S.predicted[si].component(ci).Primary,
+						S.predicted[si].component(ci).Secondary,
 						S.invertPrimaryPlusSecondary);
 				}
 			}
@@ -1725,8 +1763,8 @@ public:
 	bool read_bunch(const size_t& record) {
 		_GSTITEM_
 
-		int fi = AncFld.keyindex("line");
-		cFieldDefinition& fdline = AncFld[fi].second.fd;
+		int fi = AncFld[0].keyindex("line");
+		cFieldDefinition& fdline = AncFld[0][fi].second.fd;
 		bool bunchstatus = IM->get_bunch(Bunch, fdline, (int)record, (int)nSoundings, (int)nBunchSubsample);
 
 		if (bunchstatus == false) {
@@ -1796,26 +1834,26 @@ public:
 		const size_t& si = bunchindex;
 		SampleId& id = Id[si];
 
-		for (size_t fi = 0; fi < AncFld.size(); fi++) {
-			IM->readfdvnt(AncFld[fi].second);
+		for (size_t fi = 0; fi < AncFld[si].size(); fi++) {
+			IM->readfdvnt(AncFld[si][fi].second);
 		}
 
-		set_ancillary_id("Survey", id.survey);
-		set_ancillary_id("Date", id.date);
-		set_ancillary_id("Flight", id.flight);
-		set_ancillary_id("Line", id.line);
-		set_ancillary_id("Fiducial", id.fiducial);
-		set_ancillary_id("X", id.x);
-		set_ancillary_id("Y", id.y);
-		set_ancillary_id("GroundElevation", id.elevation);
+		set_ancillary_id(si, "Survey", id.survey);
+		set_ancillary_id(si, "Date", id.date);
+		set_ancillary_id(si, "Flight", id.flight);
+		set_ancillary_id(si, "Line", id.line);
+		set_ancillary_id(si, "Fiducial", id.fiducial);
+		set_ancillary_id(si, "X", id.x);
+		set_ancillary_id(si, "Y", id.y);
+		set_ancillary_id(si, "GroundElevation", id.elevation);
 		return true;
 	}
 
 	template<typename T>
-	bool set_ancillary_id(const std::string key, T& value) {
-		int ki = AncFld.keyindex(key);
+	bool set_ancillary_id(const size_t& si, const std::string key, T& value) {
+		int ki = AncFld[si].keyindex(key);
 		if (ki >= 0) {
-			value = std::get<T>(AncFld[ki].second.vnt);
+			value = std::get<T>(AncFld[si][ki].second.vnt);
 			return true;
 		}
 		return false;
@@ -2018,8 +2056,8 @@ public:
 			G[si].invmodel = gv[si];
 		}
 
-		forwardmodel_and_jacobian(CIS.param, CIS.pred, J);
-		set_predicted();		
+		set_predicted(CIS.param);
+		forwardmodel_and_jacobian(CIS.param, CIS.pred, J);		
 		ParameterSensitivity = compute_parameter_sensitivity();
 		ParameterUncertainty = compute_parameter_uncertainty();
 	}
@@ -2033,6 +2071,9 @@ public:
 			if ((paralleljob % Size) == Rank) {					
 				std::ostringstream s;				
 				if (readstatus = read_bunch(record)) {
+					//std::cout << " Sz " << Size 
+					//	      << " Rn " << Rank 
+					//	      << " Rc " << record << std::endl;
 					s << bunch_id();
 					if (initialise_bunch()) {
 						double t1 = gettime();
