@@ -238,7 +238,7 @@ private:
 	Vector cull(const std::vector<double>& vall) const {
 		assert(ActiveData.size() == nData);
 		assert(vall.size() == nAllData);
-		Vector vcull(nAllData);
+		Vector vcull(nData);
 		for (size_t i = 0; i < nData; i++) {
 			vcull[i] = vall[ActiveData[i]];
 		}
