@@ -109,8 +109,7 @@ public:
 	size_t insert_order = 0;
 	double lambda = 0.0;
 	double stepfactor = 0.0;
-	double phid = 0.0;
-	//double phim = 0.0;
+	double phid = 0.0;	
 
 	static bool lambda_compare(const cTrial& a, const cTrial& b)
 	{				

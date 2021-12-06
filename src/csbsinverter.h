@@ -27,6 +27,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "tdemsystem.h"
 #include "tdemsysteminfo.h"
 #include "samplebunch.h"
+#include <Eigen/Cholesky>
+#include <Eigen/LU>
 
 class cGeomStruct {
 
@@ -185,6 +187,7 @@ class cSBSInverter : public cInverter {
 	double AlphaHc = 0.0;
 	double AlphaHg = 0.0;
 
+	size_t StartRecord = 0;
 	size_t nSoundings = 0;
 	size_t nBunchSubsample = 0;	
 	size_t nDataPerSounding = 0;
@@ -435,7 +438,11 @@ public:
 	
 	void parseoptions()
 	{
-		cBlock b = Control.findblock("Options");		
+		cBlock b = Control.findblock("Options");				
+		if (b.getvalue("StartRecord", StartRecord) == false) {
+			StartRecord = 1;
+		}
+
 		if (b.getvalue("SoundingsPerBunch", nSoundings)==false) {
 			nSoundings = 1;
 		}
@@ -759,7 +766,7 @@ public:
 		Wq *= (AlphaQ / (double)(nrows));		
 	}
 
-	void initialise_Whc()
+	void initialise_Whc2nd()
 	{		
 		Whc = Matrix::Zero(nParam, nParam);
 		if (AlphaHc == 0) return;
@@ -778,6 +785,28 @@ public:
 				L(nrows, pi0) = 1.0 / d01;
 				L(nrows, pi1) = -1.0 / d01 - 1.0 / d12;
 				L(nrows, pi2) = 1.0 / d12;
+				nrows++;
+			}
+		}
+		Whc = L.transpose() * L;
+		Whc *= (AlphaHc / (double)(nrows));
+	}
+
+	void initialise_Whc1st()
+	{
+		Whc = Matrix::Zero(nParam, nParam);
+		if (AlphaHc == 0) return;
+		if (nSoundings < 3) return;
+		if (solve_conductivity() == false) return;
+		Matrix L = Matrix::Zero((nSoundings - 1) * nLayers, nParam);
+		size_t nrows = 0;
+		for (size_t si = 1; si < nSoundings; si++) {
+			double d = std::hypot(Id[si].x - Id[si - 1].x, Id[si].y - Id[si - 1].y);						
+			for (size_t li = 0; li < nLayers; li++) {
+				const int pi0 = cindex(si - 1, li);
+				const int pi1 = cindex(si, li);
+				L(nrows, pi0) = 1.0 / d;
+				L(nrows, pi1) = -1.0 / d;				
 				nrows++;
 			}
 		}
@@ -888,7 +917,7 @@ public:
 	}
 
 	void initialise_Wm() {
-		initialise_Whc();
+		initialise_Whc1st();
 		initialise_Whg();
 		initialise_Wq();		
 		initialise_Ws();
@@ -2067,7 +2096,7 @@ public:
 		bool readstatus = true;
 		int paralleljob = 0;			
 		do{										
-			int record = paralleljob*(int)IM->subsamplerate();			
+			int record = ((int)StartRecord-1) + paralleljob*(int)IM->subsamplerate();			
 			if ((paralleljob % Size) == Rank) {					
 				std::ostringstream s;				
 				if (readstatus = read_bunch(record)) {
@@ -2195,7 +2224,18 @@ public:
 
 		Vector b = JtV * (d - g + J * m) + lambda * (Wr * m0);
 		Matrix A = JtVJ + lambda * Wm;
-		Vector x = pseudoInverse(A) * b;
+
+		//Vector x = pseudoInverse(A) * b;
+		
+		const Eigen::LLT<Matrix> lltOfA(A);										
+		if (lltOfA.info() == Eigen::NumericalIssue)
+		{
+			std::cerr << "The matrix A is possibly non semi-positive definite" << std::endl << A << std::endl;						
+		}
+		Vector x = lltOfA.solve(b);
+		//Vector x = A.llt().solve(b);
+		//Vector x = A.lu().solve(b);
+
 		return x;
 	}
 };
