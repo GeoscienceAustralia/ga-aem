@@ -126,8 +126,8 @@ public:
 	std::string DumpPath(const size_t datafilerecord, const size_t iteration) const
 	{
 		return DumpBasePath + pathseparatorstring() + 
-			strprint("si%07d", (int)datafilerecord) + pathseparatorstring() +
-			strprint("it%03d", (int)iteration) + pathseparatorstring();
+			strprint("rec_%07d", (int)datafilerecord+1) + pathseparatorstring() +
+			strprint("it_%03d", (int)iteration) + pathseparatorstring();
 	};
 
 	cOutputOptions(){};
@@ -743,20 +743,16 @@ public:
 			const cEarthStruct& e = E[si];
 			std::vector<double> t = e.ref.dummy_thickness();
 			double tavg = mean(t);
-
 			//Loop over constraints equations
 			for (size_t li = 0; li < nLayers; li++) {
+				//double s = std::sqrt(t[li] / tavg);//sqrt because it gets squared in L'L									
 				const int lpindex = cindex(si, li);
-
+				L(nrows, lpindex) = 1.0;
 				//Loop over layers for this equation
 				for (size_t ki = 0; ki < nLayers; ki++) {
-					const int pindex = cindex(si, ki);
-					double s = std::sqrt(t[li] / tavg);//sqrt because it gets squared in L'L				
-					if (lpindex == pindex) {
-						L(nrows, pindex) = 1.0;
-					}
-					else {
-						L(nrows, pindex) = -1.0 / ((double)nLayers - 1);
+					const int kpindex = cindex(si, ki);					
+					if(li!=ki){
+						L(nrows, kpindex) = -1.0 / ((double)nLayers - 1.0);
 					}
 				}
 				nrows++;
@@ -766,7 +762,7 @@ public:
 		Wq *= (AlphaQ / (double)(nrows));		
 	}
 
-	void initialise_Whc2nd()
+	void initialise_Whc_2nd()
 	{		
 		Whc = Matrix::Zero(nParam, nParam);
 		if (AlphaHc == 0) return;
@@ -792,11 +788,11 @@ public:
 		Whc *= (AlphaHc / (double)(nrows));
 	}
 
-	void initialise_Whc1st()
+	void initialise_Whc_1st()
 	{
 		Whc = Matrix::Zero(nParam, nParam);
 		if (AlphaHc == 0) return;
-		if (nSoundings < 3) return;
+		if (nSoundings < 2) return;
 		if (solve_conductivity() == false) return;
 		Matrix L = Matrix::Zero((nSoundings - 1) * nLayers, nParam);
 		size_t nrows = 0;
@@ -814,7 +810,32 @@ public:
 		Whc *= (AlphaHc / (double)(nrows));
 	}
 
-	void initialise_Whg_1()
+	void initialise_Whc_homo()
+	{
+		Whc = Matrix::Zero(nParam, nParam);
+		if (AlphaHc == 0) return;
+		if (nSoundings < 2) return;
+		if (solve_conductivity() == false) return;
+		Matrix L = Matrix::Zero((nSoundings) * nLayers, nParam);
+		size_t nrows = 0;
+		for (size_t li = 0; li < nLayers; li++) {			
+			for (size_t si = 0; si < nSoundings; si++) {			
+				const int psi = cindex(si, li);
+				L(nrows, psi) = 1.0;
+				for (size_t ri = 0; ri < nSoundings; ri++) {															
+					if(ri != si) {
+						const int pri = cindex(ri, li);
+						L(nrows, pri) = -1.0 / (double)(nSoundings-1);
+					}
+				}
+				nrows++;
+			}
+		}
+		Whc = L.transpose() * L;
+		Whc *= (AlphaHc / (double)(nrows));
+	}
+
+	void initialise_Whg_2nd()
 	{
 		Whg = Matrix::Zero(nParam, nParam);
 		if (AlphaHg == 0) return;
@@ -840,7 +861,7 @@ public:
 		Whg *= (AlphaHg / (double)(nrows));
 	}
 
-	void initialise_Whg()
+	void initialise_Whg_3rd()
 	{
 		Whg = Matrix::Zero(nParam, nParam);
 		if (AlphaHg == 0) return;
@@ -917,8 +938,10 @@ public:
 	}
 
 	void initialise_Wm() {
-		initialise_Whc1st();
-		initialise_Whg();
+		//initialise_Whc_1st();
+		initialise_Whc_homo();
+
+		initialise_Whg_3rd();
 		initialise_Wq();		
 		initialise_Ws();
 		initialise_Wr();

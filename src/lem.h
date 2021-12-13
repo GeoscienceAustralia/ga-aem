@@ -586,7 +586,7 @@ public:
 		cdouble u = std::sqrt(cdouble(lambda2, gamma2));
 		cdouble y = u / imuzeroomega;
 
-		int i = NumLayers - 2;		
+		int i = (int)NumLayers - 2;
 		while (i >= 0) {
 			gamma2 = muzeroomega * Layer[i].Conductivity;
 			u = std::sqrt(cdouble(lambda2, gamma2));

@@ -111,8 +111,8 @@ public:
 				return xtol_ok(nextx);
 			}
 			else if (imin == trials.size() - 1) {
-				const double& x0 = trials.size() - 2;
-				const double& x1 = trials.size() - 1;
+				const double& x0 = trials[trials.size() - 2].first;
+				const double& x1 = trials[trials.size() - 1].first;								
 				const double dx = x1 - x0;
 				nextx = x1 + dx / 2.0;
 				return xtol_ok(nextx);
