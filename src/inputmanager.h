@@ -36,12 +36,13 @@ public:
 
 	virtual ~cInputManager() {};
 
-	void initialise(const cBlock& b) {		
+	void initialise(const cBlock& b) {
 		DataFileName = b.getstringvalue("DataFile");
 		fixseparator(DataFileName);
+	}
 
-		Subsample = b.getsizetvalue("Subsample");
-		if (!isdefined(Subsample)) { Subsample = 1; }
+	void set_subsample_rate(const size_t& subsamplerate) {
+		Subsample = subsamplerate;		
 	}
 
 	static bool isnetcdf(const cBlock& b) {
@@ -376,7 +377,7 @@ public:
 			return true;
 		}
 		else {
-			glog.errormsg("Could not find field");
+			glog.errormsg("Could not find field %s",fname.c_str());
 			return false;
 		}		
 	}

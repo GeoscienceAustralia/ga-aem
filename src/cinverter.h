@@ -32,9 +32,14 @@ Author: Ross C. Brodie, Geoscience Australia.
 	extern omp_lock_t fftw_thread_lock;
 #endif
 
+enum class eBracketResult { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
 enum class eNormType { L1, L2 };
 enum class eSmoothnessMethod { DERIVATIVE_1ST, DERIVATIVE_2ND };
-enum class eBracketResult { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
+enum class eGeometryConstraintType {
+	DERIVATIVE_2ND, 
+	DERIVATIVE_3RD,
+	SIMILARITY
+};
 
 class cInvertibleFieldDefinition {
 
@@ -268,10 +273,10 @@ public:
 	double phic = 0.0;
 	double phit = 0.0;
 	double phig = 0.0;
-	double phis = 0.0;
-	double phiq = 0.0;
-	double phihc = 0.0;
-	double phihg = 0.0;
+	double phivc = 0.0;
+	double phiqc = 0.0;
+	double philc = 0.0;
+	double philg = 0.0;
 	Vector pred;
 	Vector param;
 
@@ -285,10 +290,10 @@ public:
 		ss << "PhiC " << phic << std::endl;
 		ss << "PhiT " << phit << std::endl;
 		ss << "PhiG " << phig << std::endl;
-		ss << "PhiS " << phis << std::endl;
-		ss << "PhiQ " << phiq << std::endl;
-		ss << "PhiHc " << phihc << std::endl;
-		ss << "PhiHg " << phihg << std::endl;
+		ss << "PhiVC " << phivc << std::endl;
+		ss << "PhiQC " << phiqc << std::endl;
+		ss << "PhiLC " << philc << std::endl;
+		ss << "PhiLG " << philg << std::endl;
 		return ss.str();
 	};
 };
@@ -765,8 +770,7 @@ protected:
 	Matrix J;
 	Matrix Wd;
 	Matrix Wm;
-
-	eSmoothnessMethod SmoothnessMethod;
+	
 	eNormType  NormType;
 
 	double MinimumPhiD;//overall	
