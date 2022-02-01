@@ -172,7 +172,8 @@ public:
 	std::string field_name;
 	std::string field_description;
 	std::string matrix_name;
-
+	
+	//bookmark
 	cLinearConstraint() {};
 
 	cLinearConstraint(const cBlock& b) {
@@ -182,27 +183,56 @@ public:
 		status = b.getvalue("method", method);
 	}
 
-	bool verify_method(const std::vector<std::string> allowedvalues) {
-		for (size_t i = 0; i < allowedvalues.size(); i++) {
-			if (strcasecmp(method, allowedvalues[i]) == 0) {
+	cLinearConstraint(		
+		const std::string& _key,
+		const double& _alpha,
+		const std::string& _method,
+		const std::vector<std::string>& _allowed_methods,
+		const std::string& _field_name,
+		const std::string& _field_description,
+		const std::string& _matrix_name
+		) {		
+		key = _key;
+		alpha = _alpha;
+		method = _method;
+		field_name = _field_name;
+		field_description = _field_description;
+		matrix_name = _matrix_name;
+		verify_method(_allowed_methods);
+	};
+
+	static bool parse_control_string(const std::string& controlstring, std::string& key, double& alpha, std::string& method) {
+		bool status = false;
+		std::istringstream is(controlstring);
+		is >> key;
+		is >> alpha;
+		is >> method;
+		if (key[0] == '/') return false;
+		else return true;
+	}
+
+	bool verify_method(const std::vector<std::string> allowed_methods) {
+		if (allowed_methods.size() == 0 && method.size() == 0) return true;
+
+		for (size_t i = 0; i < allowed_methods.size(); i++) {
+			if (strcasecmp(method, allowed_methods[i]) == 0) {
 				return true;
 			}
 		}
-		glog.errormsg(_SRC_, "Unknown Linear Constraint %s for %s\n", method.c_str(), key.c_str());
+		glog.errormsg(_SRC_, "Unknown linear constraint method %s for %s\n", method.c_str(), key.c_str());
 	}
-
-	//operates on difference from reference model
-	const bool& oodfrm() const {	
+	
+	const bool& operates_on_difference_from_reference_model() const {
 		return refmodeldiff;
 	}
 
-	void set_oodfrm() {
+	void set_operates_on_difference_from_reference_model() {
 		refmodeldiff = true;
 	}
 	
 	double phi(const Vector& m, const Vector& m0) const {
 		if (alpha == 0) return 0.0;
-		if (oodfrm()){
+		if (operates_on_difference_from_reference_model()){
 			Vector p = m - m0;
 			return mtAm(p, W);
 		}
@@ -222,25 +252,15 @@ class cSBSInverter : public cInverter {
 	int    BeginGeometrySolveIteration = 0;
 	bool   FreeGeometry = false;
 	
-	Matrix Wc;
-	Matrix Wt;
-	Matrix Wg;
 	Matrix Wr;
-	//Matrix Ws;
-	//Matrix Wq;
-	//Matrix Whc;
-	//Matrix Whg;
 
-	double AlphaRC = 0.0;
-	double AlphaRT = 0.0;
-	double AlphaRG = 0.0;
-	//double AlphaVS = 0.0;
-	//double AlphaVQ = 0.0;
-	//double AlphaHS = 0.0;
-	//double AlphaHg = 0.0;
-	//eSmoothnessMethod VerticalConductivitySmoothnessMethod;
+	//Matrix Wc;
+	//Matrix Wt;
+	//Matrix Wg;	
+	//double AlphaRC = 0.0;
+	//double AlphaRT = 0.0;
+	//double AlphaRG = 0.0;
 	
-
 	size_t StartRecord = 0;
 	size_t Subsample = 0;
 	size_t nSoundings = 0;
@@ -316,10 +336,14 @@ private:
 
 public:			
 	
-	cLinearConstraint VC;
-	cLinearConstraint LC;
-	cLinearConstraint QC;
-	cLinearConstraint LG;
+	cLinearConstraint Qcref;//Conductivity reference model constraint
+	cLinearConstraint Qtref;//Thickness reference model constraint
+	cLinearConstraint Qgref;//Geometry reference model constraint
+
+	cLinearConstraint Qcv;//Vertical conductivity constraint
+	cLinearConstraint Qcl;//Lateral conductivity constraint
+	cLinearConstraint Qcsim;//Vertical Conductivity Similarity
+	cLinearConstraint Qgl;//Lateral geometry constraint
 
 	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline) 
 					: cInverter(controlfile, size, rank, usingopenmp, commandline)
@@ -370,7 +394,7 @@ public:
 		openlogfile(); //load this first to get outputlogfile opened
 
 		//Load control file
-		parseoptions();
+		parse_options();
 		initialise_systems();
 
 
@@ -523,7 +547,7 @@ public:
 		glog.flush();
 	}
 	
-	void parseoptions()
+	void parse_options()
 	{
 		cBlock b = Control.findblock("Options");				
 		if (b.getvalue("StartRecord", StartRecord) == false) {
@@ -541,43 +565,10 @@ public:
 		if (b.getvalue("BunchSubsample", nBunchSubsample) == false) {
 			nBunchSubsample = 1;
 		}
-
-		AlphaRC = b.getdoublevalue("AlphaConductivityReferenceModel");
-		AlphaRT = b.getdoublevalue("AlphaThicknessReferenceModel");
-		AlphaRG = b.getdoublevalue("AlphaGeometryReferenceModel");		
-
-		cBlock cb = b.findblock("VerticalConductivityConstraint");
-		VC = cLinearConstraint(cb);		
-		VC.verify_method({"Minimise1stDerivatives","Minimise2ndDerivatives"});
-		VC.field_name = "AlphaVC";
-		VC.field_description = "Vertical conductivity constraint Alpha parameter";
-		VC.matrix_name = "Wvs.dat";
-
-		cb = b.findblock("VerticalConductivitySimilarity");
-		QC = cLinearConstraint(cb);
-		QC.verify_method({ "Similarity" });
-		QC.field_name = "AlphaQC";
-		QC.field_description = "Vertical conductivity similarity constraint Alpha parameter";
-		QC.matrix_name = "Wqc.dat";
-
-		cb = b.findblock("LateralConductivityConstraint");
-		LC = cLinearConstraint(cb);
-		LC.verify_method({"Minimise2ndDerivatives","Similarity"});
-		LC.field_name = "AlphaLC";
-		LC.field_description = "Lateral conductivity constraint Alpha parameter";
-		LC.matrix_name = "Wlc.dat";
 		
-		cb = b.findblock("LateralGeometryConstraint");		
-		LG = cLinearConstraint(cb);
-		LG.verify_method({ "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives"});
-		LG.field_name = "AlphaLG";
-		LG.field_description = "Lateral geometry constraint Alpha parameter";
-		LG.matrix_name = "Wlg.dat";
-		if (LG.method == "Similarity") {
-			LG.set_oodfrm();
-		}
-
-
+		cBlock cb = b.findblock("Constraints");
+		parse_constraints(cb);
+				
 		BeginGeometrySolveIteration = b.getintvalue("BeginGeometrySolveIteration");						
 		if (!isdefined(BeginGeometrySolveIteration)) {
 			BeginGeometrySolveIteration = 0;
@@ -597,16 +588,58 @@ public:
 		else {
 			glog.errormsg("Unknown NormType %s\n", nt.c_str());
 		}
-
-
 		
-
-
 		MaxIterations = b.getsizetvalue("MaximumIterations");
 		MinimumPhiD = b.getdoublevalue("MinimumPhiD");
 		MinimumImprovement = b.getdoublevalue("MinimumPercentageImprovement");
 	}
 	
+	void parse_constraints(const cBlock& b) {
+		//bookmark
+		for (size_t i = 0; i < b.Entries.size(); i++) {			
+			std::string key; 
+			double alpha;
+			std::string method;
+
+			const std::string cstr = b.Entries[i];
+			bool status = cLinearConstraint::parse_control_string(b.Entries[i], key, alpha, method);
+			if (status) {
+				if (key == "ConductivityReferenceModel") {
+					Qcref = cLinearConstraint(key, alpha, method, { }, "AlphaRC", "Conductivity reference model constraint Alpha parameter", "Wcr.dat");
+					Qcref.set_operates_on_difference_from_reference_model();
+				}
+				else if (key == "ThicknessReferenceModel") {
+					Qtref = cLinearConstraint(key, alpha, method, { }, "AlphaRT", "Thickness reference model constraint Alpha parameter", "Wtr.dat");
+					Qtref.set_operates_on_difference_from_reference_model();
+				}
+				else if (key == "GeometryReferenceModel") {
+					Qgref = cLinearConstraint(key, alpha, method, { }, "AlphaRG", "Geometry reference model constraint Alpha parameter", "Wgr.dat");
+					Qgref.set_operates_on_difference_from_reference_model();
+				}
+				else if (key == "VerticalConductivity") {
+					Qcv = cLinearConstraint(key, alpha, method, { "Minimise1stDerivatives","Minimise2ndDerivatives" }, "AlphaVC", "Vertical conductivity constraint Alpha parameter", "Wvs.dat");
+				}
+				else if (key == "LateralConductivity") {
+					Qcl = cLinearConstraint(key, alpha, method, { "Minimise1stDerivatives", "Minimise2ndDerivatives","Similarity" }, "AlphaLC", "Lateral conductivity constraint Alpha parameter", "Wlc.dat");
+				}
+				else if (key == "VerticalConductivitySimilarity") {
+					Qcsim = cLinearConstraint(key, alpha, method, { }, "AlphaQC", "Vertical conductivity similarity constraint Alpha parameter", "Wcsim.dat");
+				}
+				else if (key == "LateralGeometry") {
+					Qgl = cLinearConstraint(key, alpha, method, { "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives" }, "AlphaLG", "Lateral geometry constraint Alpha parameter", "Wlg.dat");
+					if (Qgl.method == "Similarity") {
+						Qgl.set_operates_on_difference_from_reference_model();
+					}
+				}
+				else {
+					std::stringstream msg;
+					msg << "Unknown constraint method " << key;
+					glog.errormsg(msg.str());
+				}
+			}
+		}
+	}
+
 	void set_field_definitions()
 	{
 		cBlock b = Control.findblock("Input.AncillaryFields");
@@ -704,7 +737,7 @@ public:
 	}
 	
 	void initialise_Wc() {
-		Wc = Matrix::Zero(nParam, nParam);
+		Qcref.W = Matrix::Zero(nParam, nParam);
 		if (solve_conductivity() == false)return;
 
 		for (size_t si = 0; si < nSoundings; si++) {
@@ -728,51 +761,51 @@ public:
 			for (size_t li = 0; li < nLayers; li++)tsum += t[li];
 			double tavg = tsum / (double)nLayers;
 
-			double s = AlphaRC / (double)(nLayers * nSoundings);
+			double s = Qcref.alpha / (double)(nLayers * nSoundings);
 			for (size_t li = 0; li < nLayers; li++) {
 				int p = cindex(si, li);
-				Wc(p, p) = s * (t[li] / tavg) / (RefParamStd[p] * RefParamStd[p]);
+				Qcref.W(p, p) = s * (t[li] / tavg) / (RefParamStd[p] * RefParamStd[p]);
 			}
 		}
 	}
 
 	void initialise_Wt() {
-		Wt = Matrix::Zero(nParam, nParam);
+		Qtref.W = Matrix::Zero(nParam, nParam);
 		if (solve_thickness() == false)return;
 
-		const double s = AlphaRT / (double)((nLayers - 1) * nSoundings);
+		const double s = Qtref.alpha / (double)((nLayers - 1) * nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t li = 0; li < nLayers - 1; li++) {
 				const int pi = tindex(si, li);
-				Wt(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+				Qtref.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
 			}
 		}
 	}
 
 	void initialise_Wg() {
-		Wg = Matrix::Zero(nParam, nParam);
+		Qgref.W = Matrix::Zero(nParam, nParam);
 		if (nGeomParamPerSounding <= 0)return;
 
-		double s = AlphaRG / (double)(nGeomParamPerSounding * nSoundings);
+		double s = Qgref.alpha / (double)(nGeomParamPerSounding * nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
 				const int pi = gindex(si, gi);
 				if (pi >= 0) {
-					Wg(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+					Qgref.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
 				}
 			}
 		}
 	}
 
 	void initialise_VC() {
-		VC.W = Matrix::Zero(nParam, nParam);
+		Qcv.W = Matrix::Zero(nParam, nParam);
 		if (solve_conductivity() == false) return;
-		if (VC.alpha == 0 ) return;
-		if (VC.method == "Minimise1stDerivatives") {			
-			initialise_VC_1st_derivative(VC);
+		if (Qcv.alpha == 0 ) return;
+		if (Qcv.method == "Minimise1stDerivatives") {			
+			initialise_VC_1st_derivative(Qcv);
 		}
-		else if (VC.method == "Minimise2ndDerivatives") {
-			initialise_VC_2nd_derivative(VC);
+		else if (Qcv.method == "Minimise2ndDerivatives") {
+			initialise_VC_2nd_derivative(Qcv);
 		}		
 	}
 
@@ -831,18 +864,18 @@ public:
 	}
 
 	void initialise_LC() {
-		LC.W = Matrix::Zero(nParam, nParam);
+		Qcl.W = Matrix::Zero(nParam, nParam);
 		if (solve_conductivity() == false) return;
-		if (LC.alpha == 0) return;
+		if (Qcl.alpha == 0) return;
 
-		if (LC.method == "Minimise1stDerivatives") {
-			initialise_LC_1st_derivative(LC);
+		if (Qcl.method == "Minimise1stDerivatives") {
+			initialise_LC_1st_derivative(Qcl);
 		}
-		else if (LC.method == "Minimise2ndDerivatives") {
-			initialise_LC_2nd_derivative(LC);
+		else if (Qcl.method == "Minimise2ndDerivatives") {
+			initialise_LC_2nd_derivative(Qcl);
 		}
-		else if (LC.method == "Similarity") {
-			initialise_LC_similarity(LC);
+		else if (Qcl.method == "Similarity") {
+			initialise_LC_similarity(Qcl);
 		}
 	}
 
@@ -895,18 +928,19 @@ public:
 		for (size_t li = 0; li < nLayers; li++) {
 			for (size_t si = 0; si < nSoundings; si++) {
 				const int psi = cindex(si, li);
-				L(nrows, psi) = 1.0;
+				double std = RefParamStd[psi];
+				L(nrows, psi) = 1.0/std;
 				for (size_t ri = 0; ri < nSoundings; ri++) {
 					if (ri != si) {
 						const int pri = cindex(ri, li);
-						L(nrows, pri) = -1.0 / (double)(nSoundings - 1);
+						L(nrows, pri) = -1.0 / (std*(double)(nSoundings - 1));
 					}
 				}
 				nrows++;
 			}
 		}
 		C.W = L.transpose() * L;
-		C.W *= (C.alpha / (double)(nrows));
+		C.W *= C.alpha / (double)(nrows);
 	}
 
 	void initialise_QC(cLinearConstraint& C)
@@ -941,18 +975,18 @@ public:
 	}
 	
 	void initialise_LG() {
-		LG.W = Matrix::Zero(nParam, nParam);
+		Qgl.W = Matrix::Zero(nParam, nParam);
 		if (solve_geometry() == false) return;
-		if (LG.alpha == 0) return;
+		if (Qgl.alpha == 0) return;
 
-		if (LG.method == "MinimiseAccelerations") {
-			initialise_LG_accelerations(LG);
+		if (Qgl.method == "MinimiseAccelerations") {
+			initialise_LG_accelerations(Qgl);
 		}
-		else if (LG.method == "MinimiseAccelerationDerivatives") {
-			initialise_LG_acceleration_derivatives(LG);
+		else if (Qgl.method == "MinimiseAccelerationDerivatives") {
+			initialise_LG_acceleration_derivatives(Qgl);
 		}
-		else if (LG.method == "Similarity") {
-			initialise_LG_similarity(LG);
+		else if (Qgl.method == "Similarity") {
+			initialise_LG_similarity(Qgl);
 		}
 	}
 
@@ -1036,7 +1070,7 @@ public:
 			}
 		}		
 		C.W = L.transpose() * L;
-		C.W *= (C.alpha / (double)(nrows));
+		C.W *= C.alpha / (double)(nrows);
 	}
 
 	void initialise_Wr() {
@@ -1045,9 +1079,9 @@ public:
 		initialise_Wg();
 
 		Wr = Matrix::Zero(nParam, nParam);
-		if (AlphaRC > 0.0) Wr += Wc;
-		if (AlphaRT > 0.0) Wr += Wt;
-		if (AlphaRG > 0.0) Wr += Wg;
+		if (Qcref.alpha > 0.0) Wr += Qcref.W;
+		if (Qtref.alpha > 0.0) Wr += Qtref.W;
+		if (Qgref.alpha > 0.0) Wr += Qgref.W;
 	}
 
 	void initialise_Wm() {
@@ -1055,23 +1089,26 @@ public:
 		initialise_VC();
 		initialise_LC();				
 		initialise_LG();
-		initialise_QC(QC);
-		Wm = Wr + VC.W + QC.W + LC.W + LG.W;
+		initialise_QC(Qcsim);
+		Wm = Wr + Qcv.W + Qcsim.W + Qcl.W + Qgl.W;
 	}
 
 	void dump_W_matrices() {
 		if (OO.Dump) {						
 			const std::string dp = dumppath();			
 			makedirectorydeep(dp);
-			writetofile(Wd, dp + "Wd.dat");
-			writetofile(Wc, dp + "Wc.dat");
-			writetofile(Wt, dp + "Wt.dat");
-			writetofile(Wg, dp + "Wg.dat");
+			writetofile(Wd, dp + "Wd.dat");			
 			writetofile(Wr, dp + "Wr.dat");
-			writetofile(VC.W, dp + VC.matrix_name);
-			writetofile(QC.W, dp + QC.matrix_name);
-			writetofile(LC.W, dp + LC.matrix_name);
-			writetofile(LG.W, dp + LG.matrix_name);
+			
+
+			writetofile(Qcref.W, dp + Qcref.matrix_name);
+			writetofile(Qtref.W, dp + Qtref.matrix_name);
+			writetofile(Qgref.W, dp + Qgref.matrix_name);
+
+			writetofile(Qcv.W, dp + Qcv.matrix_name);
+			writetofile(Qcsim.W, dp + Qcsim.matrix_name);
+			writetofile(Qcl.W, dp + Qcl.matrix_name);
+			writetofile(Qgl.W, dp + Qgl.matrix_name);
 			writetofile(Wm, dp + "Wm.dat");			
 		}
 	}
@@ -1436,24 +1473,7 @@ public:
 			}
 		}				
 	}
-
-	/*
-	void set_predicted(const size_t si){
-		
-		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			cTDEmSystemInfo& S = SV[sysi];
-			cTDEmSystem& T = S.T;
-
-			cTDEmData& d = S.predicted;
-			d.xcomponent().Primary = T.PrimaryX;
-			d.ycomponent().Primary = T.PrimaryY;
-			d.zcomponent().Primary = T.PrimaryZ;
-			d.xcomponent().Secondary = T.X;
-			d.ycomponent().Secondary = T.Y;
-			d.zcomponent().Secondary = T.Z;
-		}
-	}
-	*/
+	
 	void forwardmodel(const Vector& parameters, Vector& predicted) {
 		Matrix dummy;	
 		nForwards++;
@@ -1867,21 +1887,14 @@ public:
 		}
 		
 
-		//Inversion parameters and norms
-		OM->writefield(pi, AlphaRC, "AlphaC", "AlphaConductivity inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, AlphaRT, "AlphaT", "AlphaThickness inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, AlphaRG, "AlphaG", "AlphaGeometry inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		//OM->writefield(pi, VC.alpha, "AlphaVS", "AlphaSmoothness inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		write_result(pi,VC);
-		
-		//OM->writefield(pi, AlphaVQ, "AlphaVQ", "AlphaHomogeneous inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		write_result(pi, QC);
-
-		//OM->writefield(pi, AlphaHS, "AlphaHS", "AlphaHorizontalConductivitySmoothness inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		write_result(pi, LC);
-
-		//OM->writefield(pi, AlphaHg, "AlphaHg", "AlphaHorizontalGeometrySmoothness inversion parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		write_result(pi, LG);
+		//Inversion parameters and norms		
+		write_result(pi, Qcref);		
+		write_result(pi, Qtref);		
+		write_result(pi, Qgref);		
+		write_result(pi, Qcv);				
+		write_result(pi, Qcsim);		
+		write_result(pi, Qcl);		
+		write_result(pi, Qgl);
 
 		OM->writefield(pi, S.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, S.phim, "PhiM", "Combined model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
@@ -2275,66 +2288,17 @@ public:
 
 	double phiModel(const Vector& m, double& phic, double& phit, double& phig, double& phivc, double& phiqc, double& philc, double& philg)
 	{
-		phic = phiC(m);
-		phit = phiT(m);
-		phig = phiG(m);
-		phivc = VC.phi(m, RefParam);
-		phiqc = QC.phi(m, RefParam);
-		philc = LC.phi(m, RefParam);
-		philg = LG.phi(m, RefParam);
+		phic  = Qcref.phi(m, RefParam);
+		phit  = Qtref.phi(m, RefParam);
+		phig  = Qgref.phi(m, RefParam);
+		phivc = Qcv.phi(m, RefParam);
+		phiqc = Qcsim.phi(m, RefParam);
+		philc = Qcl.phi(m, RefParam);
+		philg = Qgl.phi(m, RefParam);
 
 		double v = phic + phit + phig + phivc + phiqc + philc + philg;
 		return v;
 	}
-
-	double phiC(const Vector& p)
-	{
-		if (AlphaRC == 0.0) return 0.0;
-		Vector v = p - RefParam;
-		return mtDm(v, Wc);
-	}
-
-	double phiT(const Vector& p)
-	{
-		if (AlphaRT == 0.0)return 0.0;
-		if (solve_thickness() == false)return 0.0;
-		Vector v = p - RefParam;
-		return mtDm(v, Wt);
-	}
-
-	double phiG(const Vector& p)
-	{
-		if (AlphaRG == 0.0)return 0.0;
-		Vector v = p - RefParam;
-		return mtDm(v, Wg);
-	}
-
-	/*
-	double phiS(const Vector& p)
-	{
-		if (AlphaVS == 0)return 0.0;
-		else return mtAm(p, Ws);
-	}*/
-
-	/*
-	double phiHc(const Vector& p)
-	{
-		if (AlphaHS == 0)return 0.0;
-		else return mtAm(p, Whc);
-	}*/
-
-	/*
-	double phiHg(const Vector& p)
-	{
-		if (AlphaHg == 0)return 0.0;
-		else return mtAm(p, Whg);
-	}*/
-
-	//double phiQ(const Vector& p)
-	//{
-	//	if (AlphaVQ == 0)return 0.0;
-	//	else return mtAm(p, Wq);
-	//}
 
 	Vector solve_linear_system(const double& lambda, const Vector& param, const Vector& pred)
 	{
@@ -2366,7 +2330,9 @@ public:
 		Matrix A = JtVJ + lambda * Wm;
 		Vector b = JtV * (d - g + J * m);
 		b += lambda * (Wr * m0);
-		if (LG.oodfrm()) b += lambda * (LG.W * m0);
+		if (Qgl.operates_on_difference_from_reference_model()) {
+			b += lambda * (Qgl.W * m0);
+		}
 				
 		const Eigen::LLT<Matrix> lltOfA(A);										
 		if (lltOfA.info() == Eigen::NumericalIssue)

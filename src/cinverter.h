@@ -34,12 +34,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 enum class eBracketResult { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
 enum class eNormType { L1, L2 };
-enum class eSmoothnessMethod { DERIVATIVE_1ST, DERIVATIVE_2ND };
-enum class eGeometryConstraintType {
-	DERIVATIVE_2ND, 
-	DERIVATIVE_3RD,
-	SIMILARITY
-};
+//enum class eSmoothnessMethod { DERIVATIVE_1ST, DERIVATIVE_2ND };
+//enum class eGeometryConstraintType {DERIVATIVE_2ND, DERIVATIVE_3RD, SIMILARITY};
 
 class cInvertibleFieldDefinition {
 
@@ -308,8 +304,7 @@ private:
 		Vector p = CIS.param + stepfactor * dm;
 		Vector g(nData);
 		forwardmodel(p, g);
-		t.phid = phiData(g);
-		//t.phim = phiModel(p);
+		t.phid = phiData(g);		
 		t.lambda = lambda;
 		t.stepfactor = stepfactor;
 		return t;
