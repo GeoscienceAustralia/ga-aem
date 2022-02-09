@@ -203,7 +203,7 @@ void derivative(void* hS, int dtype, int dlayer,
 {		
 	cTDEmSystem& T = *(cTDEmSystem*)hS;		
 	T.LEM.calculation_type = (cLEM::CalculationType)dtype;
-	T.LEM.derivative_layer = dlayer-1;	//subtract one from the layer number for zero based indexing
+	T.LEM.derivative_layer = (size_t)((int)(dlayer-1));	//subtract one from the layer number for zero based indexing
 	T.setprimaryfields();	
 	T.setsecondaryfields();
 
