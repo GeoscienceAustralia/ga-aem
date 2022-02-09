@@ -114,7 +114,7 @@ public:
 		b.getvalue("rx_pitch", rx_pitch);
 		b.getvalue("rx_yaw", rx_yaw);
 	}
-
+	
 	inline static size_t size(){
 		return 10;
 	}
@@ -287,7 +287,19 @@ public:
 			ofs << element_name(i) << "\t" << (*this)[i] << std::endl;
 		}		
 	}
+	
+	double txrx_dh() const {
+		return std::hypot(txrx_dx, txrx_dy);
+	};
 
+	double txrx_dv() const {
+		return std::hypot(txrx_dx, txrx_dz);
+	};
+
+	double txrx_dr() const {
+		return std::sqrt(txrx_dx * txrx_dx + txrx_dy * txrx_dy + txrx_dz * txrx_dz);
+	};
+	
 };
 
 struct WindowSpecification{
