@@ -1990,7 +1990,7 @@ public:
 		cStopWatch sw;
 		cPetscDistVector gtrial = dobs;
 		cPetscDistVector mtrial = m;
-		cInversionLineSearcher LS(currentphid, targetphid);
+		cInversionLineSearcher LS(targetphid);
 
 		double sf;
 		while (LS.next_x(sf)){
@@ -1999,11 +1999,12 @@ public:
 			double phid = PhiD(gtrial);
 			LS.add_pair(sf, phid);
 		}
-		LS.nearest_index(bestsf, bestphid);
+		//size_t index = LS.nearest_index(bestsf, bestphid);		
+		auto best = LS.nearest();		
 		glog.logmsg(0,  "Find stepfactor time=%lf\n", sw.etimenow());
 		improvement = 100.0*(currentphid - bestphid) / currentphid;
-		glog.logmsg(0,  "Step factor = %.5lf\n", bestsf);
-		glog.logmsg(0,  "Found PhiD  = %.5lf\n", bestphid);
+		glog.logmsg(0,  "Step factor = %.5lf\n", best.first);
+		glog.logmsg(0,  "Found PhiD  = %.5lf\n", best.second);
 		glog.logmsg(0,  "Improvement = %.5lf%%\n", improvement);
 		
 		//if (mpirank == 0){
@@ -2011,8 +2012,12 @@ public:
 		//	LS.writetextfile(stepsfile);
 		//}
 
-		std::string stepsfile = strprint("output//steps//steps_%02llu.txt", mLastIteration);
-		if (mpirank == 0)LS.writetextfile(stepsfile);
+		
+		if (mpirank == 0) {
+			std::string stepsfile = strprint("output//steps//steps_%02llu.txt", mLastIteration);
+			std::ofstream of(stepsfile);
+			of << LS;
+		}
 
 		return;
 	}
