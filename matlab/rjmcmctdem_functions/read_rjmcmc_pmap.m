@@ -40,7 +40,10 @@ function P = read_rjmcmc_pmap(ncfilename)
     P.ar_birth       = ncread(ncfilename,'ar_birth')';
     P.ar_death       = ncread(ncfilename,'ar_death')';
     P.swap_histogram = ncread(ncfilename,'swap_histogram')';
-
+    
+    P.predicted = ncread(ncfilename,'predicted');
+    P.layer_depth_top = ncread(ncfilename,'layer_depth_top');
+    P.layer_value = ncread(ncfilename,'layer_value');
     
 end
 

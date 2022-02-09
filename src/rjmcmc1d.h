@@ -121,6 +121,11 @@ public:
 	double ptop;
 	double value;
 
+	rjMcMC1DLayer() {
+		ptop  = DBL_MAX;
+		value = DBL_MAX;
+	}
+
 	int operator==(const rjMcMC1DLayer& a){
 		if(ptop==a.ptop)return 1;
 		else return 0;
@@ -219,9 +224,10 @@ class rjMcMC1DModel{
 	double vmax;
 	double misfit;
 
+	std::vector<double> predicted;//the predicted data (forward model)
 	//parameters for noise inversion
 	//residual^2
-	std::vector<double> r2;
+	std::vector<double> residuals_squared;
 
 public:
 	//variance vector (assuming a diagonal
@@ -265,24 +271,30 @@ public:
 
 	double get_chi2() const {
 		double chi2 = 0.0;
-		for (size_t di = 0; di < r2.size(); di++) {
-			chi2 += r2[di]/nvar[di];
+		for (size_t di = 0; di < residuals_squared.size(); di++) {
+			chi2 += residuals_squared[di]/nvar[di];
 		}
 		return chi2;
-
 	}
 
-	void set_misfit(const double mfit) { misfit = mfit; }
-
-	void set_residuals(const std::vector<double>& resrat2) {
-		r2 = resrat2;
+	void set_misfit(const double mfit) {
+		misfit = mfit;
 	}
 
-	std::vector<double> get_residuals() const {
-		std::vector<double> v;
-		v.resize(r2.size());
-		for (size_t i = 0; i<r2.size(); i++)v[i] = r2[i];
-		return v;
+	void set_predicted(const std::vector<double>& _predicted) {
+		predicted = _predicted;
+	}
+
+	void set_residuals_squared(const std::vector<double>& _residuals_squared) {
+		residuals_squared = _residuals_squared;
+	}
+
+	const std::vector<double>& get_predicted() const {
+		return predicted;
+	}
+
+	const std::vector<double>& get_residuals_squared() const {
+		return residuals_squared;
 	}
 
 	double logppd() const { return -misfit / 2.0 - std::log((double)nparams()); }
@@ -427,6 +439,23 @@ public:
 		printf("\n");
 	}
 
+	void printmodelex1() const
+	{
+		std::vector<double> c = getvalues();
+		std::vector<double> t = getthicknesses();		
+		for (size_t li = 0; li < nlayers(); li++) {			
+			printf("%6.4lf ", pow10(c[li]));
+		}
+		printf("\n");
+		for (size_t li = 0; li < nlayers()-1; li++) {
+			printf("%6.4lf ", t[li]);
+		}		
+		printf("\n");
+		for (size_t ni = 0; ni < nnuisances(); ni++) {
+			printf(" %s = %.3lf\n", (nuisances[(int)ni]->typestring()).c_str(), (nuisances[ni]->value));
+		}
+		printf("\n");
+	}
 };
 
 class rjMcMC1DNoiseMap {
@@ -788,6 +817,7 @@ public:
 	std::vector<float> ar_death;
 	std::vector<float> ar_nuisancechange;
 	std::vector<float> ar_noisechange;
+	std::vector<rjMcMC1DModel> models;
 };
 
 class rjMcMC1DSampler;
@@ -816,6 +846,7 @@ class rjMcMC1DSampler{
 public:
 	size_t mpiRank;
 	size_t mpiSize;
+	bool   verbose = false;
 
 	//const double DEFAULTLOGSTDDECADES   = 0.05;
 	//const double DEFAULTMOVESTDFRACTION = 0.05;
@@ -879,6 +910,11 @@ public:
 		return m.get_misfit()/(double)ndata;
 	};
 
+	double get_normalised_misfit1(const rjMcMC1DModel& m) const
+	{
+		return m.get_misfit() / (double)ndata;
+	};
+
 	size_t nchains() const { return chains.size(); };
 
 	void addmodel(const rjMcMC1DModel& m)
@@ -926,43 +962,51 @@ public:
 	// 	return sum;
 	// }
 
-	// double computemisfit(const rjMcMC1DModel& m)
-	// {
-	// 	std::vector<double> pred = forwardmodel(m);
-	// 	return l2misfit(pred);
-	// }
+	double standard_l2misfit(const rjMcMC1DModel& m) const
+	{
+		std::vector<double> r2 = m.get_residuals_squared();
+	 	double sum = 0.0;
+	 	for (size_t di = 0; di < ndata; di++) {
+	 		double nr = r2[di] * (obs[di]*obs[di]) / (err[di]*err[di]);
+	 		sum += nr * nr;
+	 	}
+	 	return sum/ndata;
+	}
 
-	std::vector<double> computeresiduals(const rjMcMC1DModel& m) {
-		std::vector<double> pred = forwardmodel(m);
-
-		//squared residuals
-		std::vector<double> res(ndata);
-
+	void compute_predicted_and_residuals_squared(rjMcMC1DModel& m) {
+		//bookmark
+		std::vector<double> pred = forwardmodel(m);				
+		std::vector<double> res2(ndata);
 		for (size_t di = 0; di < ndata; di++){
-			double rd = (obs[di]-pred[di])/obs[di];
-			res[di] = rd*rd;
+			double rd = (obs[di]-pred[di])/obs[di];			
+			res2[di] = rd*rd;
 		}
-		return res;
+		m.set_predicted(pred);
+		m.set_residuals_squared(res2);		
 	}
 
 	void set_misfit(rjMcMC1DModel& m)
 	{
+		//bookmark
+		//Set to dummy constant for testing the the prior is returned
+		//std::vector<double> tmp(ndata,1.0);
+		//m.set_misfit(1);		
+		//m.set_predicted(tmp);
+		//m.set_residuals_squared(tmp);
+		//return;
+				
+		compute_predicted_and_residuals_squared(m);
 
-		std::vector<double> res = computeresiduals(m);
-		//double mfit = computemisfit(m);
-		//double mfit = (double)ndata;
-
+		const std::vector<double>& res2 = m.get_residuals_squared();
 		double negloglike = 0.0;
-		for (size_t di = 0; di < ndata; di++) {
-			negloglike += res[di]/(m.nvar[di]);
+		for (size_t di = 0; di < ndata; di++) {			
+			negloglike += res2[di]/(m.nvar[di]);
 			//prefactor term necessary for noise moves to work correctly
 			//see my (RT) notes for noise move with fixed additive floor
 			//to see how this works.
 			negloglike += std::log(m.nvar[di]);
 		}
-
-		m.set_misfit(negloglike);
-		m.set_residuals(res);
+		m.set_misfit(negloglike);		
 	}
 
 	void set_misfit_noisechange(rjMcMC1DModel& m, double nv, size_t ni) {
@@ -974,7 +1018,7 @@ public:
 
 		double var_old;
 		double negloglike = m.get_misfit();
-		std::vector<double> res = m.get_residuals();
+		std::vector<double> res = m.get_residuals_squared();
 		for (size_t di = bounds.first; di < bounds.second; di++) {
 			//reset this variance element
 			var_old = m.nvar[di];
@@ -1102,8 +1146,9 @@ public:
 			}
 			pqratio = 1.0 / ((vmax - vmin) * vcpdf);
 		}
+		
 		//Jefferies?
-		pqratio *= (double)(n) / double(n + 1);
+		//pqratio *= (double)(n) / double(n + 1);
 
 		bool isvalid = mpro.insert_interface(pos, vnew);
 		if (isvalid == false)return false;
@@ -1151,8 +1196,9 @@ public:
 			}
 			pqratio = (vmax - vmin) * vcpdf;
 		}
+		
 		//Jefferies?
-		pqratio *= (double)(n) / double(n - 1);
+		//pqratio *= (double)(n) / double(n - 1);
 
 		double logpqr = std::log(pqratio);
 		double loglr  = -(mpro.get_misfit() - mcur.get_misfit()) / 2.0 / temperature;
@@ -1171,11 +1217,16 @@ public:
 		chn.pnuisancechange.inc_np();
 
 		size_t ni = irand((size_t)0, mcur.nnuisances() - 1);
-		double delta = nrand<double>() * mcur.nuisances[ni]->sd_valuechange;
+
+		
+		double delta = nrand<double>() * mcur.nuisances[ni]->sd_valuechange;		
 		double nv = mcur.nuisances[ni]->value + delta;
+		
 		bool isvalid = isinbounds(mcur.nuisances[ni]->min, mcur.nuisances[ni]->max, nv);
 		if (isvalid == false)return false;
 
+		//std::cout << "Delta = " << delta << std::endl;
+		//std::cout << "nv    = " << nv << std::endl;
 		mpro.nuisances[ni]->value = nv;
 
 		set_misfit(mpro);
@@ -1363,7 +1414,9 @@ public:
 					}
 
 					// std::cout << &mcur << " " << &mpro << std::endl;
-					if (accept) mcur = mpro;
+					if (accept) {
+						mcur = mpro;
+					}
 				}
 
 				if (chn.temperature == 1.0) {
@@ -1375,7 +1428,10 @@ public:
 						if (mcur.logppd() > HighestLikelihood.logppd()) {
 							HighestLikelihood = mcur;
 						}
-						if (mcur.get_misfit() < LowestMisfit.get_misfit()) {
+						//if (mcur.get_misfit() < LowestMisfit.get_misfit()) {
+						double cnmf  = standard_l2misfit(mcur);
+						double lnmf = standard_l2misfit(LowestMisfit);
+						if (cnmf < lnmf) {
 							LowestMisfit = mcur;
 						}
 					}
@@ -1386,10 +1442,13 @@ public:
 						mnmap.addmodel(mcur);
 						ensemble.push_back(mcur);
 					}
-					print_report(si, ci, chn.temperature, mcur);
+					if (verbose) {
+						print_report(si, ci, chn.temperature, mcur);
+					}
 				}
 
 				if (should_save_convergence_record(si)) {
+					chn.history.models.push_back(mcur);
 					chn.history.temperature.push_back((float)chn.temperature);
 					chn.history.sample.push_back((uint32_t)si);
 					chn.history.nlayers.push_back((uint32_t)mcur.nlayers());
@@ -1399,12 +1458,11 @@ public:
 					chn.history.ar_move.push_back(chn.pmove.ar());
 					chn.history.ar_birth.push_back(chn.pbirth.ar());
 					chn.history.ar_death.push_back(chn.pdeath.ar());
-					chn.history.ar_nuisancechange.push_back(chn.pnuisancechange.ar());
+					chn.history.ar_nuisancechange.push_back(chn.pnuisancechange.ar());					
 					if (mcur.nnoises() > 0) {
 						chn.history.ar_noisechange.push_back(chn.pnoisechange.ar());
 					}
-				}
-				//print_report(si, ci, mcur);
+				}				
 			}
 
 			//Parallel Tempering
@@ -1442,8 +1500,12 @@ public:
 	void print_report(const size_t& si, const size_t& ci, const double& temperature, const rjMcMC1DModel& mcur) const
 	{
 		#ifdef _WIN32
-		if (mpiRank == 0 && is_sample_reportable(si)) {
-			printstats(si, ci, mcur.nlayers(), get_normalised_misfit(mcur), temperature);
+		if (mpiRank == 0 && is_sample_reportable(si)) {			
+			//printstats(si, ci, mcur.nlayers(), get_normalised_misfit1(mcur), temperature);
+			double nmf = standard_l2misfit(mcur);
+			printstats(si, ci, mcur.nlayers(), nmf, temperature);
+			//mcur.printmodel();
+			mcur.printmodelex1();
 		}
 		#endif
 	}
@@ -1460,9 +1522,9 @@ public:
 	void printstats(const size_t& si, const size_t& ci, const size_t& np, const double& nmf, const double& temperature) const
 	{
 		std::cout <<
-			"si=" << si <<
-			" ci=" << ci <<	std::fixed <<
-			" t="   << std::setprecision(1) << temperature <<
+			" si="   << si <<
+			" ci="  << ci <<	std::fixed <<
+			" temp="<< std::setprecision(1) << temperature <<
 			" np="  << std::setw(2) << np <<
 			" nmf=" << std::setw(8) << std::setprecision(2) << nmf <<
 			" vc="  << std::setprecision(2) << chains[ci].pvaluechange.ar() <<
@@ -1472,7 +1534,7 @@ public:
 			" n="   << std::setprecision(2) << chains[ci].pnuisancechange.ar() << std::endl;
 	}
 
-	void writemapstofile_netcdf(NcFile& nc) {
+	void writemapstofile_netcdf(NcFile& nc, const bool savechains=false) {
 
 		NcGroupAtt a;
 		a = nc.putAtt("ndata", NcType::nc_UINT, (unsigned int) ndata);
@@ -1545,7 +1607,7 @@ public:
 		std::vector<unsigned int> chn = increment(nchains(), 1U, 1U);
 		std::vector<NcDim> dims    = { chain_dim, cvs_dim };
 		std::vector<NcDim> dchnchn = { chain_dim, chain_dim };
-
+		
 		for (size_t ci = 0; ci < nchains(); ci++) {
 			cChain& chn = chains[ci];
 			write_chain_variable(ci, chn.history.temperature, "temperature", NcType::nc_FLOAT, nc, dims);
@@ -1563,6 +1625,14 @@ public:
 				write_chain_variable(ci, chn.history.ar_noisechange, "ar_noisechange", NcType::nc_FLOAT, nc, dims);
 			}
 			write_chain_variable(ci, chn.swap_histogram, "swap_histogram", NcType::nc_UINT, nc, dchnchn);
+
+			//bookmark
+			if (savechains){
+				std::vector<NcDim> dims_predicted = { chain_dim, cvs_dim, data_dim };
+				std::vector<NcDim> dims_partition = { chain_dim, cvs_dim, nl_dim };
+				write_chain_partitions(nc, ci, chn.history.models, dims_partition);
+				write_chain_predicted(nc, ci, chn.history.models, dims_predicted);
+			}
 		}
 
 		rjMcMC1DPPDMap::cSummaryModels s = pmap.get_summary_models();
@@ -1642,7 +1712,6 @@ public:
 				histvar.putVar(startp,countp,hist.count.data());
 			}
 		}
-
 	}
 
 	template<typename T>
@@ -1658,6 +1727,69 @@ public:
 			var = nc.getVar(name);
 		}
 		var.putVar(startp, countp, data.data());
+	}
+
+	void write_chain_partitions(NcFile& nc, const size_t& ci, const std::vector<rjMcMC1DModel>& models, std::vector<NcDim> dims)
+	{
+		//bookmark		
+		const std::string ptop_name = "layer_depth_top";
+		const std::string val_name = "layer_value";
+
+		NcType nctype = NC_FLOAT;
+		NcVar ptop_var,val_var;
+		if (ci == 0) {
+			ptop_var = nc.addVar(ptop_name, nctype, dims);
+			val_var = nc.addVar(val_name, nctype, dims);
+		}
+		else {
+			ptop_var = nc.getVar(ptop_name);
+			val_var = nc.getVar(val_name);
+		}
+
+		std::vector<float> ptop(nl_max);
+		std::vector<float> value(nl_max);
+		
+
+		std::vector<size_t> startp = { ci, 0, 0 };
+		std::vector<size_t> countp = { 1, 1, nl_max};
+		for (size_t mi = 0; mi < models.size(); mi++) {
+			const rjMcMC1DModel& m = models[mi];
+			for (size_t li = 0; li < m.layers.size(); li++) {
+				ptop[li]  = (float)m.layers[li].ptop;
+				value[li] = (float)m.layers[li].value;
+			}
+			for (size_t li = m.layers.size(); li < nl_max; li++) {
+				ptop[li]  = NC_FILL_FLOAT;
+				value[li] = NC_FILL_FLOAT;
+			}
+
+			startp[1] = mi;
+			ptop_var.putVar(startp, countp, ptop.data());
+			val_var.putVar(startp, countp, value.data());
+		}
+	}
+
+	void write_chain_predicted(NcFile& nc, const size_t& ci, const std::vector<rjMcMC1DModel>& models, std::vector<NcDim> dims)
+	{
+		//bookmark		
+		const std::string name = "predicted";
+		NcType nctype = NC_FLOAT;		
+		
+		
+		NcVar var;
+		if (ci == 0) {
+			var = nc.addVar(name, nctype, dims);
+		}
+		else {
+			var = nc.getVar(name);
+		}
+		
+		std::vector<size_t> startp = { ci, 0, 0 };
+		std::vector<size_t> countp = { 1, 1, models[0].get_predicted().size() };
+		for (size_t mi = 0; mi < models.size(); mi++) {
+			startp[1] = mi;			
+			var.putVar(startp, countp, models[mi].get_predicted().data());
+		}
 	}
 
 };
