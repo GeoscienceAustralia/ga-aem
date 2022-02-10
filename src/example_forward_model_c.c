@@ -14,8 +14,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 int main(int argc, char* argv[])
 {		
-	const char* systemfile = "..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm";
-	void* SysHandle = createhandle(systemfile);		
+	//const char* systemfile = "Skytem-LM.stm";
+	const char* systemfile = argv[1];
+
+	void* SysHandle = createhandle(systemfile);	
 
 	double tx_height = 35.0;
 	double tx_roll   = 0.0;
@@ -31,15 +33,15 @@ int main(int argc, char* argv[])
 	int  nw = nwindows(SysHandle);
 
 	int  nlayers = 3;
-	double *conductivity = malloc(nlayers * sizeof(double));
-	double *thickness = malloc((nlayers - 1) * sizeof(double));
+	double *conductivity = (double*)malloc(nlayers * sizeof(double));
+	double *thickness = (double*)malloc((nlayers - 1) * sizeof(double));
 
 	double PX;//X Primary field
 	double PY;//Y Primary field
 	double PZ;//Z Primary field
-	double* SX = malloc(nw*sizeof(double));//X Secondary field windows
-	double* SY = malloc(nw*sizeof(double));//Y Secondary field windows
-	double* SZ = malloc(nw*sizeof(double));//Z Secondary field windows
+	double* SX = (double*)malloc(nw*sizeof(double));//X Secondary field windows
+	double* SY = (double*)malloc(nw*sizeof(double));//Y Secondary field windows
+	double* SZ = (double*)malloc(nw*sizeof(double));//Z Secondary field windows
 
 	conductivity[0] = 0.05;
 	conductivity[1] = 0.20;

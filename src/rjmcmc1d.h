@@ -1499,7 +1499,6 @@ public:
 
 	void print_report(const size_t& si, const size_t& ci, const double& temperature, const rjMcMC1DModel& mcur) const
 	{
-		#ifdef _WIN32
 		if (mpiRank == 0 && is_sample_reportable(si)) {			
 			//printstats(si, ci, mcur.nlayers(), get_normalised_misfit1(mcur), temperature);
 			double nmf = standard_l2misfit(mcur);
@@ -1507,7 +1506,6 @@ public:
 			//mcur.printmodel();
 			mcur.printmodelex1();
 		}
-		#endif
 	}
 
 	bool is_sample_reportable(const size_t& si) const

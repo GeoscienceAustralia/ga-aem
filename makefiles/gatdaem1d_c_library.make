@@ -4,16 +4,18 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
+libdir   = ../lib
+
 includes   = -I$(srcdir) -I$(cpputilssrc)
 libs       = -L$(FFTW_DIR) -lfftw3
-executable = $(exedir)/example_forward_model.exe
+library    = $(libdir)/gatdaem1d_c_library.a
 
-all: compile link
-allclean: clean compile link
+all: compile bind
+allclean: clean compile bind
 
 objects += $(cpputilssrc)/general_utils.o
 objects += $(cpputilssrc)/file_utils.o
-objects += $(srcdir)/example_forward_model.o
+objects += $(srcdir)/gatdaem1d.o
 
 %.o : %.cpp
 	@echo ' '
@@ -22,16 +24,16 @@ objects += $(srcdir)/example_forward_model.o
 
 compile: $(objects)
 
-link: $(objects)
-	mkdir -p $(exedir)
+bind: $(objects)
+	mkdir -p $(libdir)
 	@echo ' '
-	@echo Linking
-	$(cxx) $(objects) $(libs) -o $(executable)
+	@echo Binding library
+	ar rvs $(library) $(objects)
 
 clean: 
 	@echo ' '
 	@echo Cleaning
 	rm -f $(objects)
-	rm -f $(executable)
+	rm -f $(library)
 
 

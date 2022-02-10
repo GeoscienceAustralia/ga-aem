@@ -15,12 +15,16 @@ if [ $compiler == 'intel' ] ; then
 	echo 'Building with Intel compiler'
 	module load intel-compiler
 	export cxx=icpc
+	export cc=icc
+	export ccflags='-O3 -Wall'
 	export cxxflags='-std=c++17 -O3 -Wall'
 	export exedir='../bin/gadi/intel'
 elif [ $compiler == 'gnu' ] ; then
 	echo 'Building with GCC compiler'
 	module load gcc/11.1.0
 	export cxx=g++
+	export cc=gcc
+	export ccflags='-O3 -Wall -Wno-unknown-pragmas'
 	export cxxflags='-std=c++17 -O3 -Wall -Wno-unknown-pragmas'
 	export exedir='../bin/gadi/gnu'
 else 
@@ -62,21 +66,26 @@ $mpicxx -showme
 
 echo ---------------------------------------
 
-#Compiled as shared libs
+#Compiled as shared libraries
 #make -f gatdaem1d_python.make $makemode
 #make -f gatdaem1d_matlab.make $makemode
 #make -f gatdaem1d_julia.make  $makemode
 
-#Compile without MPI
+#Compiled as static C-callable library
+make -f gatdaem1d_c_library.make $makemode
+#Compiled with C to use the C-callable library
+make -f example_forward_model_c.make $makemode
+
+#Compiled without MPI
 #make -f ctlinedata2sgrid.make $makemode
 #make -f ctlinedata2slicegrids.make $makemode
 #make -f removelog10conductivityfromsgrid.make $makemode
 #make -f example_forward_model.make $makemode
 #make -f gaforwardmodeltdem.make $makemode
 
-#Compile with MPI
+#Compiled with MPI
 make -f galeisbstdem.make $makemode
-#make -f garjmcmctdem.make $makemode
+make -f garjmcmctdem.make $makemode
 #make -f galeiallatonce.make $makemode
 #make -f galeisbsfdem.make $makemode
 
