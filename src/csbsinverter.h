@@ -285,7 +285,8 @@ class cSBSInverter : public cInverter {
 	bool   FreeGeometry = false;	
 	Matrix Wr;//Composite reference model matrix
 
-	size_t StartRecord = 0;
+	size_t StartRecord = 0; // 1-based first record to be inverted
+	size_t EndRecord = INT_MAX;// 1-based last record to be inverted
 	size_t Subsample = 0;
 	size_t nSoundings = 0;
 	size_t nBunchSubsample = 0;	
@@ -586,6 +587,10 @@ public:
 			StartRecord = 1;
 		}
 
+		if (b.getvalue("EndRecord", EndRecord) == false) {
+			EndRecord = INT_MAX;
+		}
+
 		if (b.getvalue("Subsample", Subsample) == false) {
 			Subsample = 1;
 		}
@@ -846,11 +851,11 @@ public:
 		for (size_t si  = 0; si < nSoundings; si++) {									
 			if (NLCcl.method == "Similarity") {
 				C.data[si] =  0.0;
-				C.err[si]  = 0.01;
+				C.err[si]  =  0.01;
 			}
 			else {
-				C.data[si] = 120.5;
-				C.err[si] = 0.25;
+				C.data[si] = 119.5;
+				C.err[si]  = 0.25;
 			}
 
 			
@@ -2383,8 +2388,9 @@ public:
 		_GSTITEM_				
 		bool readstatus = true;
 		int paralleljob = 0;			
-		do{										
+		do{												
 			int record = ((int)StartRecord-1) + paralleljob*(int)IM->subsamplerate();			
+			if (record > (EndRecord - 1))break;
 			if ((paralleljob % Size) == Rank) {					
 				std::ostringstream s;				
 				if (readstatus = read_bunch(record)) {
@@ -2409,8 +2415,7 @@ public:
 					}
 					glog.logmsg(s.str());
 				}								
-			}
-			//break;
+			}						
 			paralleljob++;
 		} while (readstatus == true);
 		glog.close();
