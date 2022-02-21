@@ -5,7 +5,7 @@ SHELL = /bin/sh
 .SUFFIXES: .c .o
 
 includes   = -I$(srcdir) 
-libs       = ../lib/gatdaem1d_c_library.a -L$(FFTW_DIR) -lfftw3
+libs       = ../lib/gatdaem1d_c_library.a -L$(FFTW_DIR) -lfftw3 -lstdc++ -lm
 executable = $(exedir)/example_forward_model_c.exe
 
 all: compile link

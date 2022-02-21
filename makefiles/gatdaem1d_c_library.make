@@ -7,7 +7,6 @@ SHELL = /bin/sh
 libdir   = ../lib
 
 includes   = -I$(srcdir) -I$(cpputilssrc)
-libs       = -L$(FFTW_DIR) -lfftw3
 library    = $(libdir)/gatdaem1d_c_library.a
 
 all: compile bind
