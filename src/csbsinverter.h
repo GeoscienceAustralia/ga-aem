@@ -253,16 +253,36 @@ public:
 class cNonLinearConstraint : public cConstraint {
 
 private:
+		
 
 public:
-	Matrix L;
-	Vector data;
-	Vector err;
+	double _sd_;//Holding value for err std from control file
+
+	Matrix J;//Jacobian of non-linear constraint
+	Vector data;//Data of non-linear constraint
+	Vector err;//Data error std of non-linear constraint
 					
 	cNonLinearConstraint() {};
 
-	cNonLinearConstraint(const std::string& _key, const double& _alpha, const std::string& _method, const std::vector<std::string>& _allowed_methods, const std::string& _field_name, const std::string& _field_description, const std::string& _matrix_name)
-		: cConstraint(_key, _alpha, _method, _allowed_methods, _field_name, _field_description, _matrix_name) {};
+	//cNonLinearConstraint(const std::string& _key, const double& _alpha, const std::string& _method, const std::vector<std::string>& _allowed_methods, const std::string& _field_name, const std::string& _field_description, const std::string& _matrix_name)
+	//	: cConstraint(_key, _alpha, _method, _allowed_methods, _field_name, _field_description, _matrix_name) {};
+
+	cNonLinearConstraint(const std::string& str) {
+		parse_control_string_nl(str);
+	}	
+
+	bool parse_control_string_nl(const std::string& controlstring) {
+		bool status = false;
+		std::istringstream is(controlstring);
+		is >> key;
+		if (key[0] == '/') return false;
+
+		is >> alpha;
+		is >> method;		
+		is >> _sd_;				
+		return true;
+	}
+
 
 	double phi(const Vector& predicted) const {
 		if (alpha == 0) return 0.0;
@@ -668,8 +688,12 @@ public:
 						LCgl.set_operates_on_difference_from_reference_model();
 					}
 				}
-				else if (key == "CableLength") {
-					NLCcl = cNonLinearConstraint(key, alpha, method, {"Reference","Similarity"}, "AlphaCabLen", "Cable length constraint Alpha parameter", "Wcablen.dat");					
+				else if (key == "CableLength") {					
+					NLCcl.parse_control_string_nl(cstr);
+					NLCcl.verify_method({ "Input","InputBunchMean","BunchSimilarity"});
+					NLCcl.field_name = "AlphaCabLen";
+					NLCcl.field_description = "Cable length constraint Alpha parameter";
+					NLCcl.matrix_name = "Wcablen.dat";
 				}
 				else {
 					std::stringstream msg;
@@ -840,7 +864,7 @@ public:
 	void initialise_CableLengthConstraint() {
 		cNonLinearConstraint& C = NLCcl;
 		C.W = Matrix::Zero(nSoundings, nSoundings);
-		C.L = Matrix::Zero(nSoundings, nParam);
+		C.J = Matrix::Zero(nSoundings, nParam);
 		C.err  = Vector::Zero(nSoundings);
 		C.data   = Vector::Zero(nSoundings);		
 		if (C.alpha == 0.0) return;
@@ -848,19 +872,33 @@ public:
 				
 		double s = C.alpha / (double)(nSoundings);
 		C.data.resize(nSoundings);
-		for (size_t si  = 0; si < nSoundings; si++) {									
-			if (NLCcl.method == "Similarity") {
-				C.data[si] =  0.0;
-				C.err[si]  =  0.01;
+		for (size_t si  = 0; si < nSoundings; si++) {
+			C.err[si] = C._sd_;
+			
+			if (NLCcl.method == "Input") {
+				C.data[si] = G[si].input.txrx_dr();
+			}
+			else if (NLCcl.method == "InputBunchMean") {
+				C.data[si] = G[si].input.txrx_dr();
+			}
+			else if (NLCcl.method == "BunchSimilarity") {
+				C.data[si] = 0.0;
 			}
 			else {
-				C.data[si] = 119.5;
-				C.err[si]  = 0.25;
-			}
-
-			
+				glog.errormsg("");
+			}			
 			C.W(si, si) = s / (C.err[si] * C.err[si]);
 		}
+
+		if(NLCcl.method == "InputBunchMean") {
+			double mn = C.data.mean();			
+			for (size_t si = 0; si < nSoundings; si++) {
+				C.data[si] = mn;
+			}
+		}
+
+		std::cout << C.data.transpose() << std::endl;
+		std::cout << C.err.transpose() << std::endl;
 	}
 
 	Vector CableLengths(const Vector& m) {
@@ -876,7 +914,7 @@ public:
 
 	Vector CableLengthConstraint_forward(const Vector& m) {
 		Vector predicted = CableLengths(m);
-		if (NLCcl.method == "Similarity") {
+		if (NLCcl.method == "BunchSimilarity") {
 			double clmean = predicted.mean();
 			for (size_t si = 0; si < nSoundings; si++) {
 				predicted[si] = predicted[si] - clmean;
@@ -900,18 +938,18 @@ public:
 			const int piz = gindex(si, "txrx_dz");
 			
 			double f = 1.0;
-			if (NLCcl.method == "Similarity") {
+			if (NLCcl.method == "BunchSimilarity") {
 				f = (double)(nSoundings - 1) / (double)nSoundings;
 			}
 
 			if (pix >= 0) {
-				C.L(si, pix) = f*g.txrx_dx / dr;
+				C.J(si, pix) = f*g.txrx_dx / dr;
 			}
 			if (piy >= 0) {
-				C.L(si, piy) = f*g.txrx_dy / dr;
+				C.J(si, piy) = f*g.txrx_dy / dr;
 			}
 			if (piz >= 0) {
-				C.L(si, piz) = f*g.txrx_dz / dr;
+				C.J(si, piz) = f*g.txrx_dz / dr;
 			}
 		}
 	}
@@ -1229,6 +1267,7 @@ public:
 			writetofile(LCcsim.W, dp + LCcsim.matrix_name);
 			writetofile(LCcl.W, dp + LCcl.matrix_name);
 			writetofile(LCgl.W, dp + LCgl.matrix_name);
+			writetofile(NLCcl.W, dp + NLCcl.matrix_name);
 			writetofile(Wm, dp + "Wm.dat");			
 		}
 	}
@@ -2438,13 +2477,6 @@ public:
 		philc = LCcl.phi(m, RefParam);
 		philg = LCgl.phi(m, RefParam);
 
-		//Vector cl    = CableLengths(m);	
-		//Vector clpredicted = CableLengthConstraint_forward(m);				
-		//double phicl = NLCcl.phi(clpredicted);
-		//std::cout << "Cable length " << cl.transpose() << std::endl;
-		//std::cout << "   predicted " << clpredicted.transpose() << std::endl;
-		//std::cout << "       phicl " << phicl << std::endl;
-
 		double v = phic + phit + phig + phivc + phiqc + philc + philg;
 		return v;
 	}
@@ -2488,8 +2520,8 @@ public:
 		if (C.alpha > 0) {		
 			CableLengthConstraint_jacobian(m);
 			Vector predicted = CableLengthConstraint_forward(m);
-			A += C.L.transpose() * C.W.transpose() * C.L;						
-			b += C.L.transpose() * C.W.transpose() * (C.data - predicted + C.L * m);
+			A += C.J.transpose() * C.W.transpose() * C.J;						
+			b += C.J.transpose() * C.W.transpose() * (C.data - predicted + C.J * m);
 		}
 				
 		const Eigen::LLT<Matrix> lltOfA(A);										
