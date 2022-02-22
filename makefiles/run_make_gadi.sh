@@ -8,6 +8,7 @@ export makemode=$2
 export srcdir='../src'
 export cpputilssrc='../submodules/cpp-utils/src'
 export geophysics_netcdf_include='../submodules/geophysics-netcdf/src'
+export eigen_include='../submodules/eigen'
 export marray_include='../submodules/geophysics-netcdf/submodules/marray/include/andres'
 export csv_include='../submodules/csv-parser/single_include'
 
@@ -38,7 +39,6 @@ export HAVE_GDAL=1
 export HAVE_CGAL=0
 module load openmpi/4.0.1
 module load fftw3/3.3.8
-module load eigen/3.3.7
 module load petsc/3.12.2
 
 if [ $HAVE_NETCDF == 1 ] ; then
@@ -72,9 +72,9 @@ echo ---------------------------------------
 #make -f gatdaem1d_julia.make  $makemode
 
 #Compiled as static C-callable library
-make -f gatdaem1d_c_library.make $makemode
+#make -f gatdaem1d_c_library.make $makemode
 #Compiled with C to use the C-callable library
-make -f example_forward_model_c.make $makemode
+#make -f example_forward_model_c.make $makemode
 
 #Compiled without MPI
 #make -f ctlinedata2sgrid.make $makemode
@@ -85,7 +85,7 @@ make -f example_forward_model_c.make $makemode
 
 #Compiled with MPI
 make -f galeisbstdem.make $makemode
-make -f garjmcmctdem.make $makemode
+#make -f garjmcmctdem.make $makemode
 #make -f galeiallatonce.make $makemode
 #make -f galeisbsfdem.make $makemode
 

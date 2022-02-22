@@ -19,7 +19,7 @@ cxxflags   += -D_MPI_ENABLED
 
 ifeq ($(HAVE_NETCDF),1)
     cxxflags += -DHAVE_NETCDF
-    includes +=  -I$(geophysics_netcdf_root)/src
+    includes += -I$(geophysics_netcdf_root)/src
     includes += -I$(geophysics_netcdf_root)/submodules/marray/include/andres
     libs     +=  -lnetcdf -lnetcdf_c++4
 endif
