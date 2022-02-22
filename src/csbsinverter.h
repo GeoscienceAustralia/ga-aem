@@ -294,6 +294,7 @@ public:
 
 class cSBSInverter : public cInverter {
 
+	double ErrorAddition = 0.0;
 	using cIFDMap = cKeyVec<std::string, cInvertibleFieldDefinition, caseinsensetiveequal<std::string>>;
 	const size_t XCOMP = 0;
 	const size_t YCOMP = 1;
@@ -622,6 +623,10 @@ public:
 		if (b.getvalue("BunchSubsample", nBunchSubsample) == false) {
 			nBunchSubsample = 1;
 		}
+
+		if (b.getvalue("ErrorAddition", ErrorAddition) == false) {
+			ErrorAddition = 0.0;
+		}
 		
 		cBlock cb = b.findblock("Constraints");
 		parse_constraints(cb);
@@ -897,8 +902,8 @@ public:
 			}
 		}
 
-		std::cout << C.data.transpose() << std::endl;
-		std::cout << C.err.transpose() << std::endl;
+		//std::cout << C.data.transpose() << std::endl;
+		//std::cout << C.err.transpose() << std::endl;
 	}
 
 	Vector CableLengths(const Vector& m) {
@@ -1404,6 +1409,10 @@ public:
 					}
 				}
 			}
+		}
+
+		if (ErrorAddition > 0.0) {
+			err = err + ErrorAddition;
 		}
 		
 		//Work out indices to be culled				

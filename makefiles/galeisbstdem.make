@@ -7,6 +7,7 @@ SHELL = /bin/sh
 executable = $(exedir)/galeisbstdem.exe
 includes   = -I$(srcdir)
 includes   += -I$(cpputilssrc)
+includes   += -I$(eigen_include)
 includes   += -I$(csv_include)
 includes   += -I$(geophysics_netcdf_include)
 includes   += -I$(marray_include)
