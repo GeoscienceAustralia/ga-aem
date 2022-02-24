@@ -744,12 +744,7 @@ public:
 				msg << "Unknown constraint " << key << std::endl;
 				glog.errormsg(msg.str());
 			}			
-		}		
-
-		if (nGeomParamPerSounding == 0) {
-			LCrefg.alpha = 0.0;
-			NLCcablen.alpha = 0.0;
-		}
+		}				
 	}
 
 	void set_field_definitions()
@@ -846,6 +841,17 @@ public:
 		nParam = nParamPerSounding*nSoundings;				
 		RefParam.resize(nParam);
 		RefParamStd.resize(nParam);
+
+		if (nGeomParamPerSounding == 0) {
+			LCrefg.alpha = 0.0;
+			NLCcablen.alpha = 0.0;
+		}
+		
+		if (nSoundings == 1) {
+			LClatc.alpha = 0.0;
+			LClatg.alpha = 0.0;
+		}
+
 	}
 	
 	void initialise_Wc() {
