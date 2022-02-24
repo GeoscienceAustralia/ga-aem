@@ -162,50 +162,64 @@ public:
 
 class cConstraint {
 
-private:
+private:	
 	bool refmodeldiff = false;
+	std::vector<std::string> allowed_methods;
 
 public:
+	bool alreadyparsed = false;
 	Matrix W;			
 	double alpha = 0.0;
 	std::string key;
 	std::string method;
-	std::string field_name;
-	std::string field_description;
-	std::string matrix_name;
+	std::string initials;
+	std::string description;
+	
+	std::string alpha_field_name() const {
+		return "Alpha_" + initials;
+	};
+
+	std::string phi_field_name() const {
+		return "Phi_" + initials;
+	};
+
+	std::string alpha_field_description() const {
+		return description + " constraint alpha parameter";
+	};
+
+	std::string phi_field_description() const {
+		return description + " constraint model norm";
+	};
+
+	std::string matrix_name() const {
+		return "W_" + initials;
+	};
+
+	
 
 	//bookmark
 	cConstraint() {};
 
 	cConstraint(
-		const std::string& _key,
-		const double& _alpha,
-		const std::string& _method,
+		const std::string& _key,		
 		const std::vector<std::string>& _allowed_methods,
-		const std::string& _field_name,
-		const std::string& _field_description,
-		const std::string& _matrix_name
+		const std::string& _initials,
+		const std::string& _field_description		
 	) {
-		key = _key;
-		alpha = _alpha;
-		method = _method;
-		field_name = _field_name;
-		field_description = _field_description;
-		matrix_name = _matrix_name;
-		verify_method(_allowed_methods);
+		key = _key;		
+		allowed_methods = _allowed_methods;
+		initials = _initials;
+		description = _field_description;		
 	};
 
-	static bool parse_control_string(const std::string& controlstring, std::string& key, double& alpha, std::string& method) {
-		bool status = false;
+	static std::string get_key(const std::string& controlstring) {		
 		std::istringstream is(controlstring);
-		is >> key;
-		is >> alpha;
-		is >> method;
-		if (key[0] == '/') return false;
-		else return true;
+		std::string k;
+		is >> k;		
+		return k;
 	}
 
-	bool verify_method(const std::vector<std::string> allowed_methods) {
+	bool verify_method() {		
 		if (allowed_methods.size() == 0 && method.size() == 0) return true;
 
 		for (size_t i = 0; i < allowed_methods.size(); i++) {
@@ -233,6 +247,10 @@ public:
 		}
 		else return mtAm(m, W);
 	}
+
+	void write_W_matrix(const std::string& dp) {
+		writetofile(W, dp + matrix_name());
+	}
 };
 
 class cLinearConstraint : public cConstraint {
@@ -244,9 +262,28 @@ public:
 	
 	cLinearConstraint() {};
 	
-	cLinearConstraint(const std::string& _key, const double& _alpha, const std::string& _method, 		const std::vector<std::string>& _allowed_methods, const std::string& _field_name, const std::string& _field_description, 		const std::string& _matrix_name) 
-		: cConstraint(_key, _alpha, _method, _allowed_methods, _field_name, _field_description, _matrix_name) {};
-	
+	cLinearConstraint(const std::string& _key, const std::vector<std::string>& _allowed_methods, const std::string& _initials, const std::string& _description)
+		: cConstraint(_key, _allowed_methods, _initials, _description) {};
+
+	bool parse(const std::string& controlstring) {
+		
+		std::istringstream is(controlstring);
+		std::string inputkey;
+		is >> inputkey;
+		if (key != inputkey) return false;
+
+		if (alreadyparsed == true) {
+			std::ostringstream msg;
+			msg << "Constraint has already been set: " << std::endl << controlstring << std::endl;
+			glog.errormsg(msg.str());
+		};
+
+		is >> alpha;
+		is >> method;
+		verify_method();
+		alreadyparsed = true;
+		return true;
+	}
 };
 
 
@@ -264,22 +301,26 @@ public:
 					
 	cNonLinearConstraint() {};
 
-	//cNonLinearConstraint(const std::string& _key, const double& _alpha, const std::string& _method, const std::vector<std::string>& _allowed_methods, const std::string& _field_name, const std::string& _field_description, const std::string& _matrix_name)
-	//	: cConstraint(_key, _alpha, _method, _allowed_methods, _field_name, _field_description, _matrix_name) {};
+	cNonLinearConstraint(const std::string& _key, const std::vector<std::string>& _allowed_methods, const std::string& _subscript, const std::string& _description)
+		: cConstraint(_key, _allowed_methods, _subscript, _description) {};
 
-	cNonLinearConstraint(const std::string& str) {
-		parse_control_string_nl(str);
-	}	
-
-	bool parse_control_string_nl(const std::string& controlstring) {
-		bool status = false;
+	bool parse(const std::string& controlstring) {
+		
 		std::istringstream is(controlstring);
-		is >> key;
-		if (key[0] == '/') return false;
+		std::string inputkey;
+		is >> inputkey;
+		if (key != inputkey) return false;
+		
+		if (alreadyparsed == true) {
+			std::ostringstream msg;
+			msg << "Constraint has already been set: " << std::endl << controlstring << std::endl;
+			glog.errormsg(msg.str());
+		};
 
 		is >> alpha;
 		is >> method;		
-		is >> _sd_;				
+		is >> _sd_;		
+		alreadyparsed = true;
 		return true;
 	}
 
@@ -388,16 +429,17 @@ public:
 		return nSoundings;
 	}
 
-	cLinearConstraint LCcref;//Conductivity reference model constraint
-	cLinearConstraint LCtref;//Thickness reference model constraint
-	cLinearConstraint LCgref;//Geometry reference model constraint
+	cLinearConstraint LCrefc;//Conductivity reference model constraint
+	cLinearConstraint LCreft;//Thickness reference model constraint
+	cLinearConstraint LCrefg;//Geometry reference model constraint
 
-	cLinearConstraint LCcv;//Vertical conductivity constraint
-	cLinearConstraint LCcl;//Lateral conductivity constraint
-	cLinearConstraint LCcsim;//Vertical Conductivity Similarity
-	cLinearConstraint LCgl;//Lateral geometry constraint
+	cLinearConstraint LCvcsmth;//Vertical conductivity smoothness constraint
+	cLinearConstraint LCvcsim;//Vertical Conductivity Similarity
 
-	cNonLinearConstraint NLCcl;//Cable length constraint
+	cLinearConstraint LClatc;//Lateral conductivity constraint	
+	cLinearConstraint LClatg;//Lateral geometry constraint
+
+	cNonLinearConstraint NLCcablen;//Cable length constraint
 
 	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline) 
 					: cInverter(controlfile, size, rank, usingopenmp, commandline)
@@ -658,54 +700,55 @@ public:
 	
 	void parse_constraints(const cBlock& b) {
 		//bookmark
+		LCrefc = cLinearConstraint("ConductivityReferenceModel", { }, "RefCon", "Conductivity reference model");
+		LCreft = cLinearConstraint("ThicknessReferenceModel", { }, "RefThk", "Thickness reference model");
+		LCrefg = cLinearConstraint("GeometryReferenceModel", { }, "RefGeom", "Geometry reference model");
+		LCvcsmth   = cLinearConstraint("VerticalConductivity", {"Minimise1stDerivatives","Minimise2ndDerivatives" }, "VCsmth", "Vertical conductivity smoothness");
+		LCvcsim = cLinearConstraint("VerticalConductivitySimilarity", { }, "VCsim", "Vertical conductivity similarity");
+		LClatc   = cLinearConstraint("LateralConductivity", {"Minimise1stDerivatives", "Minimise2ndDerivatives","Similarity" }, "LatCon", "Lateral conductivity smoothness");		
+		LClatg   = cLinearConstraint("LateralGeometry", { "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives" }, "LatGeom", "Lateral geometry smoothness");		
+		NLCcablen  = cNonLinearConstraint("CableLength", { "Input","InputBunchMean","BunchSimilarity" }, "CabLength", "Cable length");
+		
 		for (size_t i = 0; i < b.Entries.size(); i++) {			
-			std::string key; 
-			double alpha;
-			std::string method;
-
 			const std::string cstr = b.Entries[i];
-			bool status = cLinearConstraint::parse_control_string(b.Entries[i], key, alpha, method);
-			if (status) {
-				if (key == "ConductivityReferenceModel") {
-					LCcref = cLinearConstraint(key, alpha, method, { }, "AlphaRC", "Conductivity reference model constraint Alpha parameter", "Wcr.dat");
-					LCcref.set_operates_on_difference_from_reference_model();
-				}
-				else if (key == "ThicknessReferenceModel") {
-					LCtref = cLinearConstraint(key, alpha, method, { }, "AlphaRT", "Thickness reference model constraint Alpha parameter", "Wtr.dat");
-					LCtref.set_operates_on_difference_from_reference_model();
-				}
-				else if (key == "GeometryReferenceModel") {
-					LCgref = cLinearConstraint(key, alpha, method, { }, "AlphaRG", "Geometry reference model constraint Alpha parameter", "Wgr.dat");
-					LCgref.set_operates_on_difference_from_reference_model();
-				}
-				else if (key == "VerticalConductivity") {
-					LCcv = cLinearConstraint(key, alpha, method, { "Minimise1stDerivatives","Minimise2ndDerivatives" }, "AlphaVC", "Vertical conductivity constraint Alpha parameter", "Wvs.dat");
-				}
-				else if (key == "LateralConductivity") {
-					LCcl = cLinearConstraint(key, alpha, method, { "Minimise1stDerivatives", "Minimise2ndDerivatives","Similarity" }, "AlphaLC", "Lateral conductivity constraint Alpha parameter", "Wlc.dat");
-				}
-				else if (key == "VerticalConductivitySimilarity") {
-					LCcsim = cLinearConstraint(key, alpha, method, { }, "AlphaQC", "Vertical conductivity similarity constraint Alpha parameter", "Wcsim.dat");
-				}
-				else if (key == "LateralGeometry") {
-					LCgl = cLinearConstraint(key, alpha, method, { "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives" }, "AlphaLG", "Lateral geometry constraint Alpha parameter", "Wlg.dat");
-					if (LCgl.method == "Similarity") {
-						LCgl.set_operates_on_difference_from_reference_model();
-					}
-				}
-				else if (key == "CableLength") {					
-					NLCcl.parse_control_string_nl(cstr);
-					NLCcl.verify_method({ "Input","InputBunchMean","BunchSimilarity"});
-					NLCcl.field_name = "AlphaCabLen";
-					NLCcl.field_description = "Cable length constraint Alpha parameter";
-					NLCcl.matrix_name = "Wcablen.dat";
-				}
-				else {
-					std::stringstream msg;
-					msg << "Unknown constraint method " << key;
-					glog.errormsg(msg.str());
+			std::string key = cConstraint::get_key(cstr);
+			if (key[0] == '/')continue;
+			if (LCrefc.parse(cstr)){
+				LCrefc.set_operates_on_difference_from_reference_model();
+			}
+			else if (LCreft.parse(cstr)) {
+				LCreft.set_operates_on_difference_from_reference_model();
+			}
+			else if (LCrefg.parse(cstr)) {
+				LCrefg.set_operates_on_difference_from_reference_model();
+			}
+			else if (LCvcsmth.parse(cstr)) {
+				//nothing to do
+			}
+			else if (LCvcsim.parse(cstr)) {
+				//nothing to do
+			}
+			else if (LClatc.parse(cstr)) {
+				//nothing to do
+			}
+			else if (LClatg.parse(cstr)) {
+				if (LClatg.method == "Similarity") {
+					LClatg.set_operates_on_difference_from_reference_model();
 				}
 			}
+			else if(NLCcablen.parse(cstr)) {				
+				//nothing to do
+			}
+			else {
+				std::stringstream msg;
+				msg << "Unknown constraint " << key << std::endl;
+				glog.errormsg(msg.str());
+			}			
+		}		
+
+		if (nGeomParamPerSounding == 0) {
+			LCrefg.alpha = 0.0;
+			NLCcablen.alpha = 0.0;
 		}
 	}
 
@@ -806,7 +849,8 @@ public:
 	}
 	
 	void initialise_Wc() {
-		LCcref.W = Matrix::Zero(nParam, nParam);
+		cLinearConstraint& C = LCrefc;
+		C.W = Matrix::Zero(nParam, nParam);
 		if (solve_conductivity() == false)return;
 
 		for (size_t si = 0; si < nSoundings; si++) {
@@ -830,144 +874,54 @@ public:
 			for (size_t li = 0; li < nLayers; li++)tsum += t[li];
 			double tavg = tsum / (double)nLayers;
 
-			double s = LCcref.alpha / (double)(nLayers * nSoundings);
+			double s = C.alpha / (double)(nLayers * nSoundings);
 			for (size_t li = 0; li < nLayers; li++) {
 				int p = cindex(si, li);
-				LCcref.W(p, p) = s * (t[li] / tavg) / (RefParamStd[p] * RefParamStd[p]);
+				C.W(p, p) = s * (t[li] / tavg) / (RefParamStd[p] * RefParamStd[p]);
 			}
 		}
 	}
 
 	void initialise_Wt() {
-		LCtref.W = Matrix::Zero(nParam, nParam);
+		cLinearConstraint& C = LCreft;
+		C.W = Matrix::Zero(nParam, nParam);
 		if (solve_thickness() == false)return;
 
-		const double s = LCtref.alpha / (double)((nLayers - 1) * nSoundings);
+		const double s = C.alpha / (double)((nLayers - 1) * nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t li = 0; li < nLayers - 1; li++) {
 				const int pi = tindex(si, li);
-				LCtref.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+				C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
 			}
 		}
 	}
 
 	void initialise_Wg() {
-		LCgref.W = Matrix::Zero(nParam, nParam);
+		cLinearConstraint& C = LCrefg;
+		C.W = Matrix::Zero(nParam, nParam);
 		if (nGeomParamPerSounding <= 0)return;
 
-		double s = LCgref.alpha / (double)(nGeomParamPerSounding * nSoundings);
+		double s = C.alpha / (double)(nGeomParamPerSounding * nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
 				const int pi = gindex(si, gi);
 				if (pi >= 0) {
-					LCgref.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+					C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
 				}
 			}
 		}
 	}
 
-	void initialise_CableLengthConstraint() {
-		cNonLinearConstraint& C = NLCcl;
-		C.W = Matrix::Zero(nSoundings, nSoundings);
-		C.J = Matrix::Zero(nSoundings, nParam);
-		C.err  = Vector::Zero(nSoundings);
-		C.data   = Vector::Zero(nSoundings);		
-		if (C.alpha == 0.0) return;
-		if (nGeomParamPerSounding <= 0) return;		
-				
-		double s = C.alpha / (double)(nSoundings);
-		C.data.resize(nSoundings);
-		for (size_t si  = 0; si < nSoundings; si++) {
-			C.err[si] = C._sd_;
-			
-			if (NLCcl.method == "Input") {
-				C.data[si] = G[si].input.txrx_dr();
-			}
-			else if (NLCcl.method == "InputBunchMean") {
-				C.data[si] = G[si].input.txrx_dr();
-			}
-			else if (NLCcl.method == "BunchSimilarity") {
-				C.data[si] = 0.0;
-			}
-			else {
-				glog.errormsg("");
-			}			
-			C.W(si, si) = s / (C.err[si] * C.err[si]);
-		}
-
-		if(NLCcl.method == "InputBunchMean") {
-			double mn = C.data.mean();			
-			for (size_t si = 0; si < nSoundings; si++) {
-				C.data[si] = mn;
-			}
-		}
-
-		//std::cout << C.data.transpose() << std::endl;
-		//std::cout << C.err.transpose() << std::endl;
-	}
-
-	Vector CableLengths(const Vector& m) {
-		Vector cablelength(nSoundings);
-		const std::vector<cTDEmGeometry> gv = get_geometry(m);
-		for (size_t si = 0; si < nSoundings; si++) {
-			const cTDEmGeometry& g = gv[si];
-			const double dr = g.txrx_dr();
-			cablelength[si] = dr;
-		}
-		return cablelength;
-	}
-
-	Vector CableLengthConstraint_forward(const Vector& m) {
-		Vector predicted = CableLengths(m);
-		if (NLCcl.method == "BunchSimilarity") {
-			double clmean = predicted.mean();
-			for (size_t si = 0; si < nSoundings; si++) {
-				predicted[si] = predicted[si] - clmean;
-			}
-		}
-		return predicted;
-	}
-
-	void CableLengthConstraint_jacobian(const Vector& m) {
-		cNonLinearConstraint& C = NLCcl;
-		if (C.alpha == 0.0) return;
-		if (nGeomParamPerSounding <= 0) return;
-	
-		const std::vector<cTDEmGeometry> gv = get_geometry(m);
-		double s = C.alpha / (double)(nSoundings);
-		for (size_t si = 0; si < nSoundings; si++) {
-			const cTDEmGeometry& g = gv[si];
-			const double dr = g.txrx_dr();
-			const int pix = gindex(si, "txrx_dx");
-			const int piy = gindex(si, "txrx_dy");
-			const int piz = gindex(si, "txrx_dz");
-			
-			double f = 1.0;
-			if (NLCcl.method == "BunchSimilarity") {
-				f = (double)(nSoundings - 1) / (double)nSoundings;
-			}
-
-			if (pix >= 0) {
-				C.J(si, pix) = f*g.txrx_dx / dr;
-			}
-			if (piy >= 0) {
-				C.J(si, piy) = f*g.txrx_dy / dr;
-			}
-			if (piz >= 0) {
-				C.J(si, piz) = f*g.txrx_dz / dr;
-			}
-		}
-	}
-
 	void initialise_VC() {
-		LCcv.W = Matrix::Zero(nParam, nParam);
+		cLinearConstraint& C = LCvcsmth;
+		C.W = Matrix::Zero(nParam, nParam);
 		if (solve_conductivity() == false) return;
-		if (LCcv.alpha == 0 ) return;
-		if (LCcv.method == "Minimise1stDerivatives") {			
-			initialise_VC_1st_derivative(LCcv);
+		if (C.alpha == 0 ) return;
+		if (C.method == "Minimise1stDerivatives") {			
+			initialise_VC_1st_derivative(C);
 		}
-		else if (LCcv.method == "Minimise2ndDerivatives") {
-			initialise_VC_2nd_derivative(LCcv);
+		else if (C.method == "Minimise2ndDerivatives") {
+			initialise_VC_2nd_derivative(C);
 		}		
 	}
 
@@ -1026,18 +980,19 @@ public:
 	}
 
 	void initialise_LC() {
-		LCcl.W = Matrix::Zero(nParam, nParam);
+		cLinearConstraint& C = LClatc;
+		C.W = Matrix::Zero(nParam, nParam);
 		if (solve_conductivity() == false) return;
-		if (LCcl.alpha == 0) return;
+		if (C.alpha == 0) return;
 
-		if (LCcl.method == "Minimise1stDerivatives") {
-			initialise_LC_1st_derivative(LCcl);
+		if (C.method == "Minimise1stDerivatives") {
+			initialise_LC_1st_derivative(C);
 		}
-		else if (LCcl.method == "Minimise2ndDerivatives") {
-			initialise_LC_2nd_derivative(LCcl);
+		else if (C.method == "Minimise2ndDerivatives") {
+			initialise_LC_2nd_derivative(C);
 		}
-		else if (LCcl.method == "Similarity") {
-			initialise_LC_similarity(LCcl);
+		else if (C.method == "Similarity") {
+			initialise_LC_similarity(LClatc);
 		}
 	}
 
@@ -1137,18 +1092,19 @@ public:
 	}
 	
 	void initialise_LG() {
-		LCgl.W = Matrix::Zero(nParam, nParam);
+		cLinearConstraint& C = LClatg;
+		C.W = Matrix::Zero(nParam, nParam);
 		if (solve_geometry() == false) return;
-		if (LCgl.alpha == 0) return;
+		if (C.alpha == 0) return;
 
-		if (LCgl.method == "MinimiseAccelerations") {
-			initialise_LG_accelerations(LCgl);
+		if (C.method == "MinimiseAccelerations") {
+			initialise_LG_accelerations(C);
 		}
-		else if (LCgl.method == "MinimiseAccelerationDerivatives") {
-			initialise_LG_acceleration_derivatives(LCgl);
+		else if (C.method == "MinimiseAccelerationDerivatives") {
+			initialise_LG_acceleration_derivatives(C);
 		}
-		else if (LCgl.method == "Similarity") {
-			initialise_LG_similarity(LCgl);
+		else if (C.method == "Similarity") {
+			initialise_LG_similarity(C);
 		}
 	}
 
@@ -1235,15 +1191,108 @@ public:
 		C.W *= C.alpha / (double)(nrows);
 	}
 
+	void initialise_CableLengthConstraint() {
+		cNonLinearConstraint& C = NLCcablen;
+		C.W = Matrix::Zero(nSoundings, nSoundings);
+		C.J = Matrix::Zero(nSoundings, nParam);
+		C.err = Vector::Zero(nSoundings);
+		C.data = Vector::Zero(nSoundings);
+		if (C.alpha == 0.0) return;
+		if (nGeomParamPerSounding <= 0) return;
+
+		double s = C.alpha / (double)(nSoundings);
+		C.data.resize(nSoundings);
+		for (size_t si = 0; si < nSoundings; si++) {
+			C.err[si] = C._sd_;
+
+			if (NLCcablen.method == "Input") {
+				C.data[si] = G[si].input.txrx_dr();
+			}
+			else if (NLCcablen.method == "InputBunchMean") {
+				C.data[si] = G[si].input.txrx_dr();
+			}
+			else if (NLCcablen.method == "BunchSimilarity") {
+				C.data[si] = 0.0;
+			}
+			else {
+				glog.errormsg("");
+			}
+			C.W(si, si) = s / (C.err[si] * C.err[si]);
+		}
+
+		if (NLCcablen.method == "InputBunchMean") {
+			double mn = C.data.mean();
+			for (size_t si = 0; si < nSoundings; si++) {
+				C.data[si] = mn;
+			}
+		}
+
+		//std::cout << C.data.transpose() << std::endl;
+		//std::cout << C.err.transpose() << std::endl;
+	}
+
+	Vector CableLengths(const Vector& m) {
+		Vector cablelength(nSoundings);
+		const std::vector<cTDEmGeometry> gv = get_geometry(m);
+		for (size_t si = 0; si < nSoundings; si++) {
+			const cTDEmGeometry& g = gv[si];
+			const double dr = g.txrx_dr();
+			cablelength[si] = dr;
+		}
+		return cablelength;
+	}
+
+	Vector CableLengthConstraint_forward(const Vector& m) {
+		Vector predicted = CableLengths(m);
+		if (NLCcablen.method == "BunchSimilarity") {
+			double clmean = predicted.mean();
+			for (size_t si = 0; si < nSoundings; si++) {
+				predicted[si] = predicted[si] - clmean;
+			}
+		}
+		return predicted;
+	}
+
+	void CableLengthConstraint_jacobian(const Vector& m) {
+		cNonLinearConstraint& C = NLCcablen;
+		if (C.alpha == 0.0) return;
+		if (nGeomParamPerSounding <= 0) return;
+
+		const std::vector<cTDEmGeometry> gv = get_geometry(m);
+		double s = C.alpha / (double)(nSoundings);
+		for (size_t si = 0; si < nSoundings; si++) {
+			const cTDEmGeometry& g = gv[si];
+			const double dr = g.txrx_dr();
+			const int pix = gindex(si, "txrx_dx");
+			const int piy = gindex(si, "txrx_dy");
+			const int piz = gindex(si, "txrx_dz");
+
+			double f = 1.0;
+			if (NLCcablen.method == "BunchSimilarity") {
+				f = (double)(nSoundings - 1) / (double)nSoundings;
+			}
+
+			if (pix >= 0) {
+				C.J(si, pix) = f * g.txrx_dx / dr;
+			}
+			if (piy >= 0) {
+				C.J(si, piy) = f * g.txrx_dy / dr;
+			}
+			if (piz >= 0) {
+				C.J(si, piz) = f * g.txrx_dz / dr;
+			}
+		}
+	}
+
 	void initialise_Wr() {
 		initialise_Wc();
 		initialise_Wt();
 		initialise_Wg();
 
 		Wr = Matrix::Zero(nParam, nParam);
-		if (LCcref.alpha > 0.0) Wr += LCcref.W;
-		if (LCtref.alpha > 0.0) Wr += LCtref.W;
-		if (LCgref.alpha > 0.0) Wr += LCgref.W;
+		if (LCrefc.alpha > 0.0) Wr += LCrefc.W;
+		if (LCreft.alpha > 0.0) Wr += LCreft.W;
+		if (LCrefg.alpha > 0.0) Wr += LCrefg.W;
 	}
 
 	void initialise_Wm() {
@@ -1251,9 +1300,9 @@ public:
 		initialise_VC();
 		initialise_LC();				
 		initialise_LG();
-		initialise_QC(LCcsim);
+		initialise_QC(LCvcsim);
 		initialise_CableLengthConstraint();
-		Wm = Wr + LCcv.W + LCcsim.W + LCcl.W + LCgl.W;
+		Wm = Wr + LCvcsmth.W + LCvcsim.W + LClatc.W + LClatg.W;
 	}
 
 	void dump_W_matrices() {
@@ -1263,16 +1312,14 @@ public:
 			writetofile(Wd, dp + "Wd.dat");			
 			writetofile(Wr, dp + "Wr.dat");
 			
-
-			writetofile(LCcref.W, dp + LCcref.matrix_name);
-			writetofile(LCtref.W, dp + LCtref.matrix_name);
-			writetofile(LCgref.W, dp + LCgref.matrix_name);
-
-			writetofile(LCcv.W, dp + LCcv.matrix_name);
-			writetofile(LCcsim.W, dp + LCcsim.matrix_name);
-			writetofile(LCcl.W, dp + LCcl.matrix_name);
-			writetofile(LCgl.W, dp + LCgl.matrix_name);
-			writetofile(NLCcl.W, dp + NLCcl.matrix_name);
+			LCrefc.write_W_matrix(dp);			
+			LCreft.write_W_matrix(dp);
+			LCrefg.write_W_matrix(dp);
+			LCvcsmth.write_W_matrix(dp);
+			LCvcsim.write_W_matrix(dp);
+			LClatc.write_W_matrix(dp);
+			LClatg.write_W_matrix(dp);
+			NLCcablen.write_W_matrix(dp);
 			writetofile(Wm, dp + "Wm.dat");			
 		}
 	}
@@ -2053,26 +2100,23 @@ public:
 				}
 			}
 		}
-		
-
+				
 		//Inversion parameters and norms		
-		write_result(pi, LCcref);		
-		write_result(pi, LCtref);		
-		write_result(pi, LCgref);		
-		write_result(pi, LCcv);				
-		write_result(pi, LCcsim);		
-		write_result(pi, LCcl);		
-		write_result(pi, LCgl);
+		const Vector& m = S.param;
+		const Vector& m0 = RefParam;		
+		write_result(pi, LCrefc, m, m0);
+		write_result(pi, LCreft, m, m0);
+		write_result(pi, LCrefg, m, m0);
+		write_result(pi, LCvcsmth, m, m0);
+		write_result(pi, LCvcsim, m, m0);
+		write_result(pi, LClatc, m, m0);
+		write_result(pi, LClatg, m, m0);
+
+		Vector clfwd = CableLengthConstraint_forward(m);
+		write_result(pi, NLCcablen, clfwd);
 
 		OM->writefield(pi, S.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.phim, "PhiM", "Combined model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.phic, "PhiC", "Conductivity reference model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.phit, "PhiT", "Thickness reference model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.phig, "PhiG", "Geometry reference model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.phivc, "PhiVC", "Vertical conductivity smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.phiqc, "PhiVQ", "Vertical conductivity similarity model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.philc, "PhiLC", "Lateral conductivity smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.philg, "PhiLG", "Lateral geometry smoothness model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phim, "PhiM", "Combined model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);	
 		OM->writefield(pi, S.lambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, S.iteration, "Iterations", "Number of iterations", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 4, 0);
 				
@@ -2084,8 +2128,26 @@ public:
 		pointsoutput++;
 	};
 
-	void write_result(const int& pointindex, const cLinearConstraint& C) {
-		OM->writefield(pointindex, C.alpha, C.field_name, C.field_description, UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+	void write_result(const int& pointindex, const cLinearConstraint& C, const Vector& m, const Vector& m0) {		
+		if (C.alpha == 0.0) return;		
+		
+		double phi = 0.0;
+		if (C.alpha > 0.0) {
+			phi = C.phi(m, m0);
+		}
+
+		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.alpha_field_description(), UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+	}
+
+	void write_result(const int& pointindex, const cNonLinearConstraint& C, const Vector& predicted) {		
+		if (C.alpha == 0.0)return;
+		double phi = 0.0;
+		if (C.alpha > 0.0) {
+			phi = C.phi(predicted);
+		}
+		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.description, UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);				
+		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
 	}
 
 	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
@@ -2362,9 +2424,9 @@ public:
 		CIS.param = RefParam;		
 		forwardmodel(CIS.param, CIS.pred);
 		CIS.phid = phiData(CIS.pred);
-		CIS.targetphid = CIS.phid;
-		CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phivc, CIS.phiqc, CIS.philc, CIS.philg);
-		
+		CIS.targetphid = CIS.phid;		
+		CIS.phim = phiModel(CIS.param);
+
 		TerminationReason = "Has not terminated";
 
 		if (OO.Dump) {
@@ -2413,7 +2475,7 @@ public:
 					CIS.targetphid = targetphid;										
 					CIS.phid   = phid;
 					CIS.lambda = t.lambda;
-					CIS.phim = phiModel(CIS.param, CIS.phic, CIS.phit, CIS.phig, CIS.phivc, CIS.phiqc, CIS.philc, CIS.philg);
+					CIS.phim = phiModel(CIS.param);
 					if (OO.Dump) dump_iteration(CIS);
 				}						
 			}			
@@ -2470,23 +2532,19 @@ public:
 		return 0;
 	}	
 
-	double phiModel(const Vector& p)
+	double phiModel(const Vector& m)
 	{
-		double phic, phit, phig, phivc, phiqc, philc, philg;
-		return phiModel(p, phic, phit, phig, phivc, phiqc, philc, philg);
-	}
+		double v = 0.0;
+		v += LCrefc.phi(m, RefParam);
+		v += LCreft.phi(m, RefParam);
+		v += LCrefg.phi(m, RefParam);
+		v += LCvcsmth.phi(m, RefParam);
+		v += LCvcsim.phi(m, RefParam);
+		v += LClatc.phi(m, RefParam);
+		v += LClatg.phi(m, RefParam);
 
-	double phiModel(const Vector& m, double& phic, double& phit, double& phig, double& phivc, double& phiqc, double& philc, double& philg)
-	{
-		phic  = LCcref.phi(m, RefParam);
-		phit  = LCtref.phi(m, RefParam);
-		phig  = LCgref.phi(m, RefParam);
-		phivc = LCcv.phi(m, RefParam);
-		phiqc = LCcsim.phi(m, RefParam);
-		philc = LCcl.phi(m, RefParam);
-		philg = LCgl.phi(m, RefParam);
-
-		double v = phic + phit + phig + phivc + phiqc + philc + philg;
+		Vector clfwd = CableLengthConstraint_forward(m);
+		v += NLCcablen.phi(clfwd);
 		return v;
 	}
 
@@ -2521,11 +2579,11 @@ public:
 		Vector b = JtV * (d - g + J * m);
 		b += lambda * (Wr * m0);
 
-		if (LCgl.operates_on_difference_from_reference_model()) {
-			b += lambda * (LCgl.W * m0);
+		if (LClatg.operates_on_difference_from_reference_model()) {
+			b += lambda * (LClatg.W * m0);
 		}
 
-		cNonLinearConstraint& C = NLCcl;
+		cNonLinearConstraint& C = NLCcablen;
 		if (C.alpha > 0) {		
 			CableLengthConstraint_jacobian(m);
 			Vector predicted = CableLengthConstraint_forward(m);

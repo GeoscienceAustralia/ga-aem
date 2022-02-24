@@ -4,11 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.30717.126
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbstdem", "galeisbstdem.vcxproj", "{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}"
-	ProjectSection(ProjectDependencies) = postProject
-		{881E5465-4273-43A2-85B3-69B1C9AF0509} = {881E5465-4273-43A2-85B3-69B1C9AF0509}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libnetcdfcxx", "..\libnetcdfcxx\libnetcdfcxx.vcxproj", "{881E5465-4273-43A2-85B3-69B1C9AF0509}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,10 +15,6 @@ Global
 		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Debug|x64.Build.0 = Debug|x64
 		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Release|x64.ActiveCfg = Release|x64
 		{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}.Release|x64.Build.0 = Release|x64
-		{881E5465-4273-43A2-85B3-69B1C9AF0509}.Debug|x64.ActiveCfg = Debug|x64
-		{881E5465-4273-43A2-85B3-69B1C9AF0509}.Debug|x64.Build.0 = Debug|x64
-		{881E5465-4273-43A2-85B3-69B1C9AF0509}.Release|x64.ActiveCfg = Release|x64
-		{881E5465-4273-43A2-85B3-69B1C9AF0509}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

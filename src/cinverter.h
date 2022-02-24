@@ -264,13 +264,13 @@ public:
 	double targetphid = 0.0;
 	double phid = 0.0;
 	double phim = 0.0;
-	double phic = 0.0;
-	double phit = 0.0;
-	double phig = 0.0;
-	double phivc = 0.0;
-	double phiqc = 0.0;
-	double philc = 0.0;
-	double philg = 0.0;
+	//double phic = 0.0;
+	//double phit = 0.0;
+	//double phig = 0.0;
+	//double phivc = 0.0;
+	//double phiqc = 0.0;
+	//double philc = 0.0;
+	//double philg = 0.0;
 	Vector pred;
 	Vector param;
 
@@ -281,13 +281,13 @@ public:
 		ss << "PhiD " << phid << std::endl;
 		ss << "TargetPhiD " << targetphid << std::endl;		
 		ss << "PhiM " << phim << std::endl;
-		ss << "PhiC " << phic << std::endl;
-		ss << "PhiT " << phit << std::endl;
-		ss << "PhiG " << phig << std::endl;
-		ss << "PhiVC " << phivc << std::endl;
-		ss << "PhiQC " << phiqc << std::endl;
-		ss << "PhiLC " << philc << std::endl;
-		ss << "PhiLG " << philg << std::endl;
+		//ss << "PhiC " << phic << std::endl;
+		//ss << "PhiT " << phit << std::endl;
+		//ss << "PhiG " << phig << std::endl;
+		//ss << "PhiVC " << phivc << std::endl;
+		//ss << "PhiQC " << phiqc << std::endl;
+		//ss << "PhiLC " << philc << std::endl;
+		//ss << "PhiLG " << philg << std::endl;
 		return ss.str();
 	};
 };
@@ -874,7 +874,7 @@ public:
 		return phid;
 	}
 
-	virtual double phiModel(const Vector& p) = 0;
+	virtual double phiModel(const Vector& m) = 0;
 
 	virtual Vector solve_linear_system(const double& lambda, const Vector& param, const Vector& pred) = 0;
 
