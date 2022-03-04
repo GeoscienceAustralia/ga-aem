@@ -85,5 +85,8 @@
     <ClInclude Include="..\..\src\tdemsysteminfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -34,13 +34,17 @@ std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values)
 
 class cASCIIOutputManager;
 
+#if defined HAVE_NETCDF
 class cNetCDFOutputManager;
+#endif
 
 class cOutputManager;
 
 class cOutputField {
 	
-	public:				
+	public:		
+		enum class binarystoragetype { FLOAT, DOUBLE, INT, UINT };//binary storagetype
+
 		//Base
 		std::string name;//name		
 		size_t bands = 0;//number of bands
@@ -49,8 +53,22 @@ class cOutputField {
 		cKeyVecCiStr atts;
 		
 		//Netcdf
-		std::shared_ptr<cGeophysicsVar> var;
-		nc_type ncstoragetype = NC_DOUBLE;//binary storage tyrpe
+		#ifdef HAVE_NETCDF
+		std::shared_ptr<cGeophysicsVar> var;		
+		nc_type nctype() {
+			if (btype == binarystoragetype::FLOAT) return NC_FLOAT;
+			else if (btype == binarystoragetype::DOUBLE) return NC_DOUBLE;
+			else if (btype == binarystoragetype::INT) return NC_INT;
+			else if (btype == binarystoragetype::UINT) return NC_UINT;
+			else {
+				//Won't get here but silence the compiler warning
+				glog.errormsg(_SRC_,"Unknown binary storage tyep\n");
+			}
+			return NC_FLOAT;
+		}
+		#endif
+		
+		binarystoragetype btype = binarystoragetype::DOUBLE;// NC_DOUBLE;//binary storage tyrpe		
 		std::string ncdimname;//dimension names		
 		
 		//Ascii
@@ -58,7 +76,7 @@ class cOutputField {
 						
 		cOutputField() {};
 
-		cOutputField(const std::string& _name, const std::string& _description, const std::string& _units, const size_t& _bands, const nc_type& _ncstoragetype,			const std::string& _ncdimname, const char& _fmtchar, const size_t& _width, const size_t& _decimals){
+		cOutputField(const std::string& _name, const std::string& _description, const std::string& _units, const size_t& _bands, const cOutputField::binarystoragetype& _ncstoragetype,	const std::string& _ncdimname, const char& _fmtchar, const size_t& _width, const size_t& _decimals){
 			initialise(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
 		};
 
@@ -71,7 +89,7 @@ class cOutputField {
 			const std::string& _description,//description
 			const std::string& _units,//units	
 			const size_t& _bands,//number of bands
-			const nc_type& _ncstoragetype,//binary storage tyrpe
+			const binarystoragetype& _ncstoragetype,//binary storage tyrpe
 			const std::string& _ncdimname,//dimension names		
 			const char& _fmtchar,//ascii notation I, F, E
 			const size_t& _width,//ascii width
@@ -81,10 +99,9 @@ class cOutputField {
 			name = _name;
 			bands = _bands;
 			atts.add(cAsciiColumnField::DESC, _description);
-			atts.add(cAsciiColumnField::UNITS, _units);			
-			ncstoragetype = _ncstoragetype;
-			ncdimname = _ncdimname;
-
+			atts.add(cAsciiColumnField::UNITS, _units);									
+			btype = _ncstoragetype;
+			ncdimname = _ncdimname;			
 			acol.name = name;
 			acol.nbands = bands;
 			acol.atts = atts;
@@ -98,12 +115,18 @@ class cOutputField {
 			name = c.name;
 			atts = c.atts;
 			bands = c.nbands;
-			acol = c;			
-			ncstoragetype = NC_DOUBLE;
-			ncdimname = DN_NONE;
+			acol = c;					
+			btype = cOutputField::binarystoragetype::DOUBLE;
+			ncdimname = DN_NONE;			
 		}
 		
 };
+
+auto constexpr ST_INT = cOutputField::binarystoragetype::INT;
+auto constexpr ST_UINT = cOutputField::binarystoragetype::UINT;
+auto constexpr ST_FLOAT = cOutputField::binarystoragetype::FLOAT;
+auto constexpr ST_DOUBLE = cOutputField::binarystoragetype::DOUBLE;
+
 
 class cOutputManager {
 		
@@ -162,7 +185,7 @@ public:
 		const std::string& _description,//description
 		const std::string& _units,//units	
 		const size_t& _bands,//number of bands
-		const nc_type& _ncstoragetype,//binary storage tyrpe
+		const cOutputField::binarystoragetype& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
@@ -183,7 +206,7 @@ public:
 		const std::string& _description,//description
 		const std::string& _units,//units	
 		const size_t& _bands,//number of bands
-		const nc_type& _ncstoragetype,//binary storage tyrpe
+		const cOutputField::binarystoragetype& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E, A
 		const size_t& _width,//ascii width
@@ -313,7 +336,7 @@ public:
 		const std::string& _description,//description
 		const std::string& _units,//units	
 		const size_t& _bands,//number of bands
-		const nc_type& _ncstoragetype,//binary storage tyrpe
+		const cOutputField::binarystoragetype& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
@@ -561,7 +584,7 @@ public:
 		const std::string& _description,//description
 		const std::string& _units,//units	
 		const size_t& _bands,//number of bands
-		const nc_type& _ncstoragetype,//binary storage tyrpe
+		const cOutputField::binarystoragetype& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
@@ -583,7 +606,7 @@ public:
 		const std::string& _description,//description
 		const std::string& _units,//units	
 		const size_t& _bands,//number of bands
-		const nc_type& _ncstoragetype,//binary storage tyrpe
+		const cOutputField::binarystoragetype& _ncstoragetype,//binary storage tyrpe
 		const std::string& _ncdimname,//dimension names		
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
@@ -607,13 +630,13 @@ public:
 
 	void end_point_output() { };
 
-	bool addvar(cOutputField& of) {
+	bool addvar(cOutputField& of) {		
 		if (NC.hasVar(of.name) == false) {
 			NcDim dim;
 			if (of.ncdimname.size()) {
 				dim = NC.addDim(of.ncdimname, of.bands);
 			}
-			of.var = std::make_shared<cSampleVar>(NC.addSampleVar(of.name, of.ncstoragetype, dim));
+			of.var = std::make_shared<cSampleVar>(NC.addSampleVar(of.name, of.nctype(), dim));
 			
 			for (const auto& [key, value] : of.atts) {				
 				of.var->add_attribute(key,value);

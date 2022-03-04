@@ -89,7 +89,7 @@ int main1(int argc, char** argv)
 	if (argc<2){
 		printf("Executing %s\n", argv[0]);
 		printf("Usage: %s control_file_name number_of_threads\n", argv[0]);
-		printf("Version %s Compiled at %s on %s\n", VERSION, __TIME__, __DATE__);
+		printf("Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		return 0;
 	}
 	if (argc == 2){
@@ -106,8 +106,7 @@ int main1(int argc, char** argv)
 			printf("Warning: The number of requested threads (%d) is more than the processors available (%d)\n", Size, maxthreads);
 		}
 	}
-
-	omp_init_lock(&fftw_thread_lock);
+	
 #pragma omp parallel num_threads(Size)
 	{
 		int Rank = omp_get_thread_num();

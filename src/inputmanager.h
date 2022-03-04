@@ -16,10 +16,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 	#include "geophysics_netcdf.h"
 #endif
 
-class cASCIIInputManager;
-
-class cNetCDFInputManager;
-
 class cInputManager {
 
 public:
@@ -103,6 +99,7 @@ public:
 		return true;
 	}
 
+
 	template<typename T>
 	bool read(const cFieldDefinition& fd, T& v, const size_t n=1)
 	{
@@ -116,7 +113,7 @@ public:
 		}
 
 		std::vector<T> vec;
-		bool status = file_read(fd,vec,1);
+		file_read(fd,vec,1);
 		v = vec[0];
 
 		if (iotype != IOType::ASCII) {//Don't flip if ASCII reader as it already does this - to be fixed
@@ -163,23 +160,12 @@ public:
 		}
 		return true;
 	}
-		
-	template<typename T>
-	bool file_read(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n)
-	{				
-		if (iotype == IOType::ASCII) {
-			return ((cASCIIInputManager*)this)->file_read(fd, vec, n);
-		}
-		else if (iotype == IOType::NETCDF) {
-			((cNetCDFInputManager*)this)->file_read(fd, vec, n);
-		} 
-		else{
-			std::string msg = _SRC_;
-			msg += "\n\tUnsupported IOType\n";
-			throw(std::runtime_error(msg));
-		}
-		return false;
-	}
+	
+	//virtual template classes are not allowed - therefore repeated
+	virtual bool file_read(const cFieldDefinition& fd, std::vector<char>& vec, const size_t n) = 0;
+	virtual bool file_read(const cFieldDefinition& fd, std::vector<int>& vec, const size_t n) = 0;
+	virtual bool file_read(const cFieldDefinition& fd, std::vector<float>& vec, const size_t n) = 0;
+	virtual bool file_read(const cFieldDefinition& fd, std::vector<double>& vec, const size_t n) = 0;	
 };
 
 class cASCIIInputManager : public cInputManager {
@@ -348,18 +334,18 @@ public:
 
 	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
 	
+	bool file_read(const cFieldDefinition& fd, std::vector<char>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
+	bool file_read(const cFieldDefinition& fd, std::vector<int>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
+	bool file_read(const cFieldDefinition& fd, std::vector<float>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
+	bool file_read(const cFieldDefinition& fd, std::vector<double>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
+
 	template<typename T>
-	bool file_read(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n)
+	bool file_read_impl(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n)
 	{									
 		bool status = AF.getvec_fielddefinition(fd, vec, n);
 		return status;	
 	}	
-
-	//bool getfield(const std::string& fname) {
-	//	int findex  = AF.fieldindexbyname(fname);
-	//	cAsciiColumnField c = AF.fields[findex];
-	//}
-
+	
 	bool get_acsiicolumnfield(const std::string& fname, cAsciiColumnField& c) const {		
 		int findex = AF.fieldindexbyname(fname);
 		if (findex >= 0) {
@@ -415,13 +401,17 @@ public:
 		return true;
 	}
 
+	bool file_read(const cFieldDefinition& fd, std::vector<char>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
+	bool file_read(const cFieldDefinition& fd, std::vector<int>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
+	bool file_read(const cFieldDefinition& fd, std::vector<float>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
+	bool file_read(const cFieldDefinition& fd, std::vector<double>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
+
 	template<typename T>
-	bool file_read(const cFieldDefinition& fd, std::vector<T>& v, const size_t n)
+	bool file_read_impl(const cFieldDefinition& fd, std::vector<T>& v, const size_t n)
 	{
 		NC.getDataByPointIndex(fd.varname, Record, v);
 		return true;
-	}
-
+	}	
 };
 #endif
 

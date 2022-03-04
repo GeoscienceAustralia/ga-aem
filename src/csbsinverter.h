@@ -495,10 +495,11 @@ public:
 
 
 		if (cInputManager::isnetcdf(ib)) {
-			#if !defined HAVE_NETCDF
+			#if defined HAVE_NETCDF
+				IM = std::make_unique<cNetCDFInputManager>(ib);
+			#else
 				glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
 			#endif			
-			IM = std::make_unique<cNetCDFInputManager>(ib);
 			//std::string s = IM->datafilename();
 		}
 		else {
@@ -507,10 +508,11 @@ public:
 		IM->set_subsample_rate(Subsample);
 
 		if (cOutputManager::isnetcdf(ob)) {
-			#if !defined HAVE_NETCDF
+			#if defined HAVE_NETCDF
+				OM = std::make_unique<cNetCDFOutputManager>(ob, Size, Rank);
+			#else
 				glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
-			#endif			
-			OM = std::make_unique<cNetCDFOutputManager>(ob, Size, Rank);
+			#endif						
 		}
 		else {
 			OM = std::make_unique<cASCIIOutputManager>(ob, Size, Rank);
@@ -1919,7 +1921,7 @@ public:
 		OM->begin_point_output();
 		
 		//Ancillary	
-		OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 12, 0);
+		OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 12, 0);
 		for (size_t fi = 0; fi<AncFld[si].size(); fi++) {
 			cFdVrnt& fdv = AncFld[si][fi].second;
 			cAsciiColumnField c;
@@ -1932,7 +1934,7 @@ public:
 		bool invertedfieldsonly = false;
 		for (size_t i = 0; i < G[si].input.size(); i++) {
 			if (invertedfieldsonly && solve_geometry_index(i) == false)continue;
-			OM->writefield(pi, G[si].input[i], "input_" + G[si].input.element_name(i), "Input " + G[si].input.description(i), G[si].input.units(i), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
+			OM->writefield(pi, G[si].input[i], "input_" + G[si].input.element_name(i), "Input " + G[si].input.description(i), G[si].input.units(i), 1, ST_FLOAT, DN_NONE, 'F', 9, 2);
 		}
 
 		//Geometry Modelled		
@@ -1940,23 +1942,23 @@ public:
 		invertedfieldsonly = true;
 		for (size_t gi = 0; gi < g.size(); gi++) {
 			if (invertedfieldsonly && solve_geometry_index(gi) == false)continue;
-			OM->writefield(pi, g[gi], "inverted_" + g.element_name(gi), "Inverted " + g.description(gi), g.units(gi), 1, NC_FLOAT, DN_NONE, 'F', 9, 2);
+			OM->writefield(pi, g[gi], "inverted_" + g.element_name(gi), "Inverted " + g.description(gi), g.units(gi), 1, cOutputField::binarystoragetype::FLOAT, DN_NONE, 'F', 9, 2);
 		}
 				
 		//ndata
 		OM->writefield(pi,
 			nData, "ndata", "Number of data in inversion", UNITLESS,
-			1, NC_UINT, DN_NONE, 'I', 4, 0);
+			1, ST_UINT, DN_NONE, 'I', 4, 0);
 
 		//Earth	
 		const cEarth1D& e = E[si].invmodel;
 		OM->writefield(pi,
 			nLayers,"nlayers","Number of layers ", UNITLESS,
-			1, NC_UINT, DN_NONE, 'I', 4, 0);
+			1, ST_UINT, DN_NONE, 'I', 4, 0);
 		
 		OM->writefield(pi,
 			e.conductivity, "conductivity", "Layer conductivity", "S/m",
-			e.conductivity.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
+			e.conductivity.size(), cOutputField::binarystoragetype::FLOAT, DN_LAYER, 'E', 15, 6);
 		
 		double bottomlayerthickness = 100.0;
 		if (solve_thickness() == false && nLayers > 1) {
@@ -1967,35 +1969,35 @@ public:
 
 		OM->writefield(pi,
 			thickness, "thickness", "Layer thickness", "m",
-			thickness.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
+			thickness.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
 					
 				
 		if (OO.PositiveLayerTopDepths) {			
 			std::vector<double> dtop = e.layer_top_depth();
 			OM->writefield(pi,
 				dtop, "depth_top", "Depth to top of layer", "m",
-				dtop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
+				dtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.NegativeLayerTopDepths) {
 			std::vector<double> ndtop = -1.0*e.layer_top_depth();
 			OM->writefield(pi,
 				ndtop, "depth_top_negative", "Negative of depth to top of layer", "m",
-				ndtop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
+				ndtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 		
 		if (OO.PositiveLayerBottomDepths) {
 			std::vector<double> dbot = e.layer_bottom_depth();
 			OM->writefield(pi,
 				dbot, "depth_bottom", "Depth to bottom of layer", "m",
-				dbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
+				dbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.NegativeLayerBottomDepths) {
 			std::vector<double> ndbot = -1.0 * e.layer_bottom_depth();
 			OM->writefield(pi,
 				ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
-				ndbot.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
+				ndbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 
 		if (OO.InterfaceElevations) {			
@@ -2003,7 +2005,7 @@ public:
 			etop += Id[si].elevation;
 			OM->writefield(pi,
 				etop, "elevation_interface", "Elevation of interface", "m",
-				etop.size(), NC_FLOAT, DN_LAYER, 'F', 9, 2);
+				etop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
 		}
 				
 		if (OO.ParameterSensitivity) {
@@ -2012,7 +2014,7 @@ public:
 				std::vector<double> v(ps.begin() + cindex(si,0), ps.begin() + cindex(si,0) + nLayers);
 				OM->writefield(pi,
 					v, "conductivity_sensitivity", "Conductivity parameter sensitivity", UNITLESS,
-					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
+					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 			
 			if (solve_thickness()) {
@@ -2020,7 +2022,7 @@ public:
 				v.push_back(0.0);//halfspace layer not a parameter
 				OM->writefield(pi,
 					v, "thickness_sensitivity", "Thickness parameter sensitivity", UNITLESS,
-					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
+					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 
 			const cTDEmGeometry& g = G[si].input;
@@ -2031,7 +2033,7 @@ public:
 					std::string desc = g.description(gi) + " parameter sensitivity";
 					OM->writefield(pi,
 						ps[gindex(si,gname)], name, desc, UNITLESS,
-						1, NC_FLOAT, DN_NONE, 'E', 15, 6);					
+						1, ST_FLOAT, DN_NONE, 'E', 15, 6);					
 				}
 			}
 		}
@@ -2042,7 +2044,7 @@ public:
 				std::vector<double> v(pu.begin() + cindex(si,0), pu.begin() + cindex(si,0) + nLayers);
 				OM->writefield(pi,
 					v, "conductivity_uncertainty", "Conductivity parameter uncertainty", "log10(S/m)",
-					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
+					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 
 			if (solve_thickness()) {
@@ -2050,7 +2052,7 @@ public:
 				v.push_back(0.0);//halfspace layer not a parameter
 				OM->writefield(pi,
 					v, "thickness_uncertainty", "Thickness parameter uncertainty", "log10(m)",
-					v.size(), NC_FLOAT, DN_LAYER, 'E', 15, 6);
+					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 			
 			const cTDEmGeometry& g = G[si].input;
@@ -2061,7 +2063,7 @@ public:
 				std::string desc = g.description(gi) + " parameter uncertainty";
 				OM->writefield(pi,
 					pu[gindex(si,gname)], name, desc, g.units(gi),
-					1, NC_FLOAT, DN_NONE, 'E', 15, 6);				
+					1, ST_FLOAT, DN_NONE, 'E', 15, 6);				
 			}
 		}
 
@@ -2121,10 +2123,10 @@ public:
 		Vector clfwd = CableLengthConstraint_forward(m);
 		write_result(pi, NLCcablen, clfwd);
 
-		OM->writefield(pi, S.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.phim, "PhiM", "Combined model norm", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);	
-		OM->writefield(pi, S.lambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.iteration, "Iterations", "Number of iterations", UNITLESS, 1, NC_UINT, DN_NONE, 'I', 4, 0);
+		OM->writefield(pi, S.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.phim, "PhiM", "Combined model norm", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);	
+		OM->writefield(pi, S.lambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, S.iteration, "Iterations", "Number of iterations", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 4, 0);
 				
 		//End of record book keeping
 		OM->end_point_output();		
@@ -2142,8 +2144,8 @@ public:
 			phi = C.phi(m, m0);
 		}
 
-		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.alpha_field_description(), UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.alpha_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
 	}
 
 	void write_result(const int& pointindex, const cNonLinearConstraint& C, const Vector& predicted) {		
@@ -2152,8 +2154,8 @@ public:
 		if (C.alpha > 0.0) {
 			phi = C.phi(predicted);
 		}
-		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.description, UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);				
-		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, NC_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.description, UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);				
+		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
 	}
 
 	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
@@ -2166,7 +2168,7 @@ public:
 			std::string desc = sysdesc + comp + "-component primary field";			
 			OM->writefield(pointindex,
 				p, name, desc, UNITLESS,
-				1, NC_FLOAT, DN_NONE, form, width, decimals);			
+				1, ST_FLOAT, DN_NONE, form, width, decimals);			
 		}
 
 		{
@@ -2174,7 +2176,7 @@ public:
 			std::string desc = sysdesc + comp + "-component secondary field";
 			OM->writefield(pointindex,
 				s, name, desc, UNITLESS,
-				s.size(), NC_FLOAT, DN_WINDOW, form, width, decimals);
+				s.size(), ST_FLOAT, DN_WINDOW, form, width, decimals);
 		}
 	}
 
@@ -2509,7 +2511,7 @@ public:
 			if (record > (EndRecord - 1))break;
 			if ((paralleljob % Size) == Rank) {					
 				std::ostringstream s;				
-				if (readstatus = read_bunch(record)) {
+				if ((readstatus = read_bunch(record))) {
 					//std::cout << " Sz " << Size 
 					//	      << " Rn " << Rank 
 					//	      << " Rc " << record << std::endl;

@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 		printf("Geoscience Australia's Airborne Electromagnetic Layered Earth Forward Modelling\n\n");
 		printf("Working directory: %s\n", getcurrentdirectory().c_str());
 		printf("%s\n", commandlinestring(argc, argv).c_str());
-		printf("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());		
+		printf("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());				
 		std::string controlfilename = argv[1];
 		process(controlfilename);
 		return EXIT_SUCCESS;
