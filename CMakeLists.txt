@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 # Set project name
 project(ga-aem)
 
-message(Vuild Type = ${CMAKE_BUILD_TYPE})
+message(STATUS Build Type = ${CMAKE_BUILD_TYPE})
 
 # Set options
 option(USE_MPI "Use MPI" ON)
@@ -11,10 +11,10 @@ option(USE_NETCDF "Use NetCDF" ON)
 option(USE_GDAL "Use GDAL" ON)
 option(USE_PETSC "Use PETSC" ON)
 
-message(USE_MPI = ${USE_MPI})
-message(USE_NETCDF = ${USE_NETCDF})
-message(USE_GDAL = ${USE_GDAL})
-message(USE_PETSC = ${USE_PETSC})
+message(STATUS USE_MPI = ${USE_MPI})
+message(STATUS USE_NETCDF = ${USE_NETCDF})
+message(STATUS USE_GDAL = ${USE_GDAL})
+message(STATUS USE_PETSC = ${USE_PETSC})
 
 # Set the C++ standard to C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -22,30 +22,56 @@ set(CMAKE_CXX_STANDARD 17)
 # Configure find package
 find_package(PkgConfig REQUIRED)
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unknown-pragmas -Wno-unused-variable -Wno-unused-but-set-variable -Wno-sign-compare -Wno-unused-result -Wno-format-security -Wno-date-time")
-SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -Wno-unknown-pragmas -Wno-unused-variable -Wno-unused-but-set-variable -Wno-sign-compare -Wno-unused-result -Wno-format-security -Wno-date-time")
-#On GCC, even with -Wno-date-time, still get warings of the form: warning: macro "__DATE__" might prevent reproducible builds [-Wdate-time]
-
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-	message("OpenMP was found")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unknown-pragmas -Wno-unused-variable -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security")
+SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -Wno-unknown-pragmas -Wno-unused-variable -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security")
+if(CMAKE_COMPILER_IS_GNUCC)
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Wno-date-time")
+	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wno-unused-result -Wno-date-time")
+	#On GCC, even with -Wno-date-time, still get warings of the form: warning: macro "__DATE__" might prevent reproducible builds [-Wdate-time]
 endif()
+
+# Adding filesystem library
+link_libraries(-lstdc++fs)
 
 # Configure FFTW
 pkg_search_module(FFTW REQUIRED fftw3 IMPORTED_TARGET)
 include_directories(PkgConfig::FFTW)
 link_libraries     (PkgConfig::FFTW)
 if(FFTW_FOUND)
-	message("FFTW was found")
+	message(STATUS "FFTW ${FFTW_VERSION} was found")
+endif()
+
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+	message(STATUS "OpenMP was found")
 endif()
 
 # Configure MPI if opted for
 if(${USE_MPI})
-	pkg_search_module(MPI REQUIRED mpi IMPORTED_TARGET)
+	find_package(MPI)
 	if(MPI_FOUND)
-		message("MPI was found")
-		include_directories(PkgConfig::MPI)
-		link_libraries     (PkgConfig::MPI)
+		message(STATUS "MPI was found")
+		include_directories(SYSTEM ${MPI_INCLUDE_PATH})
+		add_definitions(-DOMPI_SKIP_MPICXX)
+	endif()
+
+	#pkg_search_module(MPI REQUIRED mpi IMPORTED_TARGET)
+	#if(MPI_FOUND)
+		#message("MPI was found")
+		#include_directories(PkgConfig::MPI)
+		#link_libraries     (PkgConfig::MPI)
+	#endif()
+endif()
+
+
+# Configure GDAL
+if(${USE_GDAL})
+	pkg_search_module(GDAL gdal IMPORTED_TARGET) 
+	if(GDAL_FOUND)
+		message(STATUS "GDAL ${GDAL_VERSION} was found")
+		include_directories(PkgConfig::GDAL)
+		link_libraries     (PkgConfig::GDAL)
+		add_definitions(-DHAVE_GDAL)
 	endif()
 endif()
 
@@ -53,32 +79,28 @@ endif()
 if(${USE_NETCDF})
 	pkg_search_module(NETCDFCXX REQUIRED netcdf-cxx4 IMPORTED_TARGET) 
 	if(NETCDFCXX_FOUND)
-		message("NETCDFCXX was found")
+		message(STATUS "NETCDFCXX ${NETCDFCXX_VERSION} was found")
 		include_directories(PkgConfig::NETCDFCXX)
 		link_libraries     (PkgConfig::NETCDFCXX)
 	    add_definitions(-DHAVE_NETCDF)
-        add_definitions(-D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
-	endif()
-endif()
-
-# Configure GDAL
-if(${USE_GDAL})
-	pkg_search_module(GDAL gdal IMPORTED_TARGET) 
-	if(GDAL_FOUND)
-		message("GDAL was found")
-		include_directories(PkgConfig::GDAL)
-		link_libraries     (PkgConfig::GDAL)
-		add_definitions(-DHAVE_GDAL)
 	endif()
 endif()
 
 # Configure PETSc
 if(${USE_PETSC})
-	pkg_search_module(PETSC PETSc REQUIRED IMPORTED_TARGET) 
-	if(PETSC_FOUND)
-		message("PETSC was found")
-		include_directories(PkgConfig::PETSC)
-		link_libraries     (PkgConfig::PETSC)
+	pkg_search_module(PETSC PETSc IMPORTED_TARGET) 
+	#find_package(PETSc)
+	if(PETSC_FOUND)		
+		set(PETSC_LIBDIR /apps/petsc/3.12.2/lib/ompi3/Intel)
+		set(PETSC_LDFLAGS "${PETSC_LDFLAGS} -L/apps/intel-ct/2019.5.281/mkl/lib/intel64 -L/apps/intel-ct/2019.5.281/mkl/../compiler/lib/intel64 -L/usr/lib/gcc/x86_64-redhat-linux/8 -L/apps/netcdf/4.7.1p/lib -L/apps/hdf5/1.10.5p/lib -L/apps/fftw3/3.3.8/lib -lHYPRE -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lsuperlu -lsuperlu_dist -lml -lfftw3 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lirc -lptesmumps -lptscotchparmetis -lptscotch -lptscotcherr -lesmumps -lscotch -lscotcherr -lnetcdf -lparmetis -lmetis -ltriangle -lm -lz -lX11 -lctetgen -lstdc++ -ldl -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi -lgfortran -lm -lgfortran -lm -lgcc_s -lquadmath -lpthread -lrt -lquadmath -lstdc++ -ldl")
+		#message(STATUS "PETSc ${PETSC_VERSION} was found")		
+		#message(STATUS "PETSc VERSION ${PETSC_VERSION}")		
+		#message(STATUS "PETSC_LIBDIR=${PETSC_LIBDIR}")	
+		#message(STATUS "PETSC_LDFLAGS=${PETSC_LDFLAGS}")	
+		#include_directories(PkgConfig::PETSc)
+		#link_libraries     (PkgConfig::PETSc)
+	else()
+		message(STATUS "PETSc was NOT found")
 	endif()
 endif()
 
@@ -114,7 +136,7 @@ link_libraries(cpp-utils-static)
 # Add the NON-MPI executables
 add_executable(ctlinedata2sgrid.exe src/ctlinedata2sgrid.cpp)
 target_link_libraries(ctlinedata2sgrid.exe PUBLIC ticpp)
-if(${USE_PETSC})
+if(${USE_GDAL})
 	add_executable(ctlinedata2slicegrids.exe src/ctlinedata2slicegrids.cpp)
 	install(TARGETS ctlinedata2slicegrids.exe DESTINATION bin)
 endif()
@@ -134,22 +156,28 @@ if(${USE_NETCDF})
 endif()
 add_executable(galeisbsfdem.exe src/galeisbsfdem.cpp)
 
+
+# Add OpenMP 
 if(OpenMP_CXX_FOUND) 
 	target_link_libraries(galeisbstdem.exe  PUBLIC OpenMP::OpenMP_CXX)
 	target_link_libraries(galeisbsfdem.exe  PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
-if(${USE_PETSC})
-	if(${USE_MPI}) 
-		add_executable(galeiallatonce.exe src/galeiallatonce.cpp)
-		target_compile_definitions(galeiallatonce.exe PRIVATE _MPI_ENABLED OMPI_SKIP_MPICXX)
-		install(TARGETS galeiallatonce.exe DESTINATION bin)
-	else()
-		message("galeiallatonce.exe requires PETSC and MPI")
-	endif()
+if(MPI_FOUND AND PETSC_FOUND) 
+	add_executable(galeiallatonce.exe src/galeiallatonce.cpp)
+	target_link_libraries(galeiallatonce.exe PUBLIC  ${MPI_C_LIBRARIES})
+	target_link_libraries(galeiallatonce.exe PRIVATE "-L${PETSC_LIBDIR} ${PETSC_LDFLAGS}")
+	install(TARGETS galeiallatonce.exe DESTINATION bin)	
 else()
-	message("galeiallatonce.exe requires PETSC and MPI")
+	message(WARNING "galeiallatonce.exe requires PETSc and MPI -- will not be built")
 endif()
+
+if(${USE_MPI} AND MPI_FOUND) 
+	target_link_libraries(galeisbstdem.exe PUBLIC ${MPI_C_LIBRARIES})
+	target_link_libraries(galeisbsfdem.exe PUBLIC ${MPI_C_LIBRARIES})
+	target_link_libraries(garjmcmctdem.exe PUBLIC ${MPI_C_LIBRARIES})	
+endif()
+
 
 install(TARGETS galeisbstdem.exe DESTINATION bin)
 
