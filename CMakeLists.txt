@@ -41,10 +41,6 @@ if(FFTW_FOUND)
 	message(STATUS "FFTW ${FFTW_VERSION} was found")
 endif()
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-	message(STATUS "OpenMP was found")
-endif()
 
 # Configure MPI if opted for
 if(${USE_MPI})
@@ -52,7 +48,8 @@ if(${USE_MPI})
 	if(MPI_FOUND)
 		message(STATUS "MPI was found")
 		include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-		add_definitions(-DOMPI_SKIP_MPICXX)
+		add_definitions(-D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
+		link_libraries(${MPI_C_LIBRARIES})
 	endif()
 endif()
 
@@ -109,6 +106,9 @@ if(${USE_NETCDF})
 	include_directories(submodules/geophysics-netcdf/submodules/marray/include/andres/)
 endif()
 
+
+### Add the targets
+
 # Add the TICPP library submodule
 add_subdirectory(submodules/ticpp)
 
@@ -117,51 +117,80 @@ add_subdirectory(submodules/cpp-utils)
 
 # Add the gatdaem1d shared library
 add_library(gatdaem1d-shared SHARED src/gatdaem1d.cpp)
-target_link_libraries(gatdaem1d-shared PUBLIC cpp-utils-shared)
 set_target_properties(gatdaem1d-shared PROPERTIES OUTPUT_NAME gatdaem1d)
+target_link_libraries(gatdaem1d-shared PRIVATE cpp-utils-shared)
+install(TARGETS gatdaem1d-shared DESTINATION bin)
+install(TARGETS gatdaem1d-shared DESTINATION python)
+install(TARGETS gatdaem1d-shared DESTINATION matlab)
+#Install the include files
+install(FILES   src/gatdaem1d.h TYPE INCLUDE)
 
 # Add the gatdaem1d static library
 add_library(gatdaem1d-static STATIC src/gatdaem1d.cpp)
-target_link_libraries(gatdaem1d-static PUBLIC cpp-utils-static)
 set_target_properties(gatdaem1d-static PROPERTIES OUTPUT_NAME gatdaem1d)
+target_link_libraries(gatdaem1d-static PRIVATE cpp-utils-static)
+install(TARGETS gatdaem1d-static DESTINATION lib)
 
-# Link cpp-utils against all targets
-link_libraries(cpp-utils-static)
-
-# Add the NON-MPI executables
+# Add ctlinedata2sgrid.exe
 add_executable(ctlinedata2sgrid.exe src/ctlinedata2sgrid.cpp)
-target_link_libraries(ctlinedata2sgrid.exe PUBLIC ticpp)
+target_link_libraries(ctlinedata2sgrid.exe PRIVATE cpp-utils-static ticpp)
+install(TARGETS ctlinedata2sgrid.exe DESTINATION bin)
+
+# Add ctlinedata2slicegrids.exe
 if(${USE_GDAL})
 	add_executable(ctlinedata2slicegrids.exe src/ctlinedata2slicegrids.cpp)
+	target_link_libraries(ctlinedata2slicegrids.exe PRIVATE cpp-utils-static)
 	install(TARGETS ctlinedata2slicegrids.exe DESTINATION bin)
 endif()
 
+# Add gaforwardmodeltdem.exe
 add_executable(gaforwardmodeltdem.exe src/gaforwardmodeltdem.cpp)
-add_executable(example_forward_model.exe src/example_forward_model.cpp)
-add_executable(removelog10conductivityfromsgrid.exe src/removelog10conductivityfromsgrid.cpp)
+target_link_libraries(gaforwardmodeltdem.exe PRIVATE cpp-utils-static)
+install(TARGETS gaforwardmodeltdem.exe DESTINATION bin)
 
-# Add the NON-MPI pure C example executable
+# Add example_forward_model.exe
+add_executable(example_forward_model.exe src/example_forward_model.cpp)
+target_link_libraries(example_forward_model.exe PRIVATE cpp-utils-static)
+install(TARGETS example_forward_model.exe DESTINATION bin)
+
+# Add removelog10conductivityfromsgrid.exe
+add_executable(removelog10conductivityfromsgrid.exe src/removelog10conductivityfromsgrid.cpp)
+target_link_libraries(removelog10conductivityfromsgrid.exe PRIVATE cpp-utils-static)
+install(TARGETS removelog10conductivityfromsgrid.exe DESTINATION bin)
+
+# Add the pure C example executable
 add_executable(example_forward_model_c.exe src/example_forward_model_c.c)
-target_link_libraries(example_forward_model_c.exe PUBLIC gatdaem1d-static)
+target_link_libraries(example_forward_model_c.exe PRIVATE gatdaem1d-static)
+install(TARGETS example_forward_model_c.exe DESTINATION bin)
 
 # Add the MPI executables
 add_executable(galeisbstdem.exe src/galeisbstdem.cpp)
-if(${USE_NETCDF})
-	add_executable(garjmcmctdem.exe src/garjmcmctdem.cpp)
-endif()
-add_executable(galeisbsfdem.exe src/galeisbsfdem.cpp)
+target_link_libraries(galeisbstdem.exe PRIVATE cpp-utils-static)
+install(TARGETS galeisbstdem.exe DESTINATION bin)
 
+add_executable(galeisbsfdem.exe src/galeisbsfdem.cpp)
+target_link_libraries(galeisbsfdem.exe PRIVATE cpp-utils-static)
+install(TARGETS galeisbsfdem.exe DESTINATION bin)
+
+if(${USE_NETCDF} AND NETCDFCXX_FOUND)
+	add_executable(garjmcmctdem.exe src/garjmcmctdem.cpp)
+	target_link_libraries(garjmcmctdem.exe PRIVATE cpp-utils-static)
+	install(TARGETS garjmcmctdem.exe DESTINATION bin)
+else()
+	message(WARNING "garjmcmctdem.exe requires NETCDF - will not be built")
+endif()
 
 # Add OpenMP 
+find_package(OpenMP)
 if(OpenMP_CXX_FOUND) 
-	target_link_libraries(galeisbstdem.exe  PUBLIC OpenMP::OpenMP_CXX)
-	target_link_libraries(galeisbsfdem.exe  PUBLIC OpenMP::OpenMP_CXX)
+	message(STATUS "OpenMP was found")
+	target_link_libraries(galeisbstdem.exe PRIVATE OpenMP::OpenMP_CXX)
+	target_link_libraries(galeisbsfdem.exe PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 if(MPI_FOUND AND PETSC_FOUND) 
 	add_executable(galeiallatonce.exe src/galeiallatonce.cpp)
-	target_link_libraries(galeiallatonce.exe PUBLIC  ${MPI_C_LIBRARIES})
-
+	target_link_libraries(galeiallatonce.exe PRIVATE cpp-utils-static)
 	target_include_directories(galeiallatonce.exe PRIVATE ${PETSC_INCLUDE_DIRS})
 	target_link_libraries(galeiallatonce.exe PRIVATE ${PETSC_LDFLAGS})
 	install(TARGETS galeiallatonce.exe DESTINATION bin)	
@@ -169,28 +198,3 @@ else()
 	message(WARNING "galeiallatonce.exe requires PETSc and MPI -- will not be built")
 endif()
 
-if(${USE_MPI} AND MPI_FOUND) 
-	target_link_libraries(galeisbstdem.exe PUBLIC ${MPI_C_LIBRARIES})
-	target_link_libraries(galeisbsfdem.exe PUBLIC ${MPI_C_LIBRARIES})
-	target_link_libraries(garjmcmctdem.exe PUBLIC ${MPI_C_LIBRARIES})	
-endif()
-
-
-install(TARGETS galeisbstdem.exe DESTINATION bin)
-
-if(${USE_NETCDF})
-	install(TARGETS garjmcmctdem.exe DESTINATION bin)
-endif()
-
-install(TARGETS galeisbsfdem.exe DESTINATION bin)
-install(TARGETS ctlinedata2sgrid.exe DESTINATION bin)
-install(TARGETS example_forward_model.exe DESTINATION bin)
-install(TARGETS example_forward_model_c.exe DESTINATION bin)
-install(TARGETS gaforwardmodeltdem.exe DESTINATION bin)
-install(TARGETS removelog10conductivityfromsgrid.exe DESTINATION bin)
-
-install(TARGETS gatdaem1d-shared DESTINATION bin)
-install(TARGETS gatdaem1d-shared DESTINATION python)
-install(TARGETS gatdaem1d-shared DESTINATION matlab)
-install(TARGETS gatdaem1d-static DESTINATION lib)
-install(FILES   src/gatdaem1d.h TYPE INCLUDE)
