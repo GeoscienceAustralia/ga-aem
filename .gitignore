@@ -1,5 +1,8 @@
 #File patterns that are ignored
 
+# Ignore gadi specific files
+*gadi*
+
 # Ignore build and install directories
 build/
 build-intel/

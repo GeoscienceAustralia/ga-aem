@@ -14,6 +14,8 @@
 # BUILD_DIR is a temporary directory for building (compiling and linking)
 export BUILD_DIR=$PWD/build-gnu
 export INSTALL_DIR=$PWD/install-gnu
+mkdir $BUILD_DIR
+cd $BUILD_DIR
 
 #eg for the GNU compilers
 cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release ..
@@ -21,9 +23,6 @@ cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release
 
 #eg for the Intel compilers
 #cmake -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DCMAKE_BUILD_TYPE=Release  ..
-
-mkdir $BUILD_DIR
-cd $BUILD_DIR
 
 # Build all (cmake --build .)
 cmake --build . --target all
