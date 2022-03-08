@@ -771,6 +771,7 @@ public:
 		for (size_t i = 0; i < b.Entries.size(); i++) {
 			std::string key   = b.key(i);
 			std::string value = b.value(i);
+			if (key[0] == '/') continue;//Skip commented out fields
 			cFieldDefinition fd(parent, key);						
 			cFdVrnt fdvrnt(fd,cVrnt());						
 			IM->set_variant_type(fd.varname, fdvrnt.vnt);
