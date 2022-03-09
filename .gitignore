@@ -1,15 +1,12 @@
 #File patterns that are ignored
 
-# Ignore gadi specific files
+# Ignore gadi specific scripts/files
 *gadi*
 
 # Ignore build and install directories
-build/
-build-intel/
-build-gnu/
-install/
-install-intel/
-install-gnu/
+build*/
+install*/
+cmake_build_script_ubuntu.sh
 
 # Ignore output files from the examples
 examples/**/output
