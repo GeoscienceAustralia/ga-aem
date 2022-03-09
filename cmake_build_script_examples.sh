@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#Load modules if required
+# On some systems you may have to load modules similar to this
 #module load cmake/3.16.2
 #module load fftw3/3.3.8
 #module load netcdf/4.8.0
@@ -19,7 +19,7 @@ cd $BUILD_DIR
 
 #eg for the GNU compilers
 cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release ..
-#cmake -DUSE_PETSC=off -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release ..
+#cmake -DUSE_PETSC=off -DUSE_MPI=on -DUSE_NETCDF=on -DUSE_GDAL=off -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release ..
 
 #eg for the Intel compilers
 #cmake -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DCMAKE_BUILD_TYPE=Release  ..

@@ -53,15 +53,11 @@ if(${USE_MPI})
 	endif()
 endif()
 
-
 # Configure GDAL
 if(${USE_GDAL})
 	pkg_search_module(GDAL gdal IMPORTED_TARGET) 
 	if(GDAL_FOUND)
 		message(STATUS "GDAL ${GDAL_VERSION} was found")
-		include_directories(PkgConfig::GDAL)
-		link_libraries     (PkgConfig::GDAL)
-		add_definitions(-DHAVE_GDAL)
 	endif()
 endif()
 
@@ -70,8 +66,6 @@ if(${USE_NETCDF})
 	pkg_search_module(NETCDFCXX REQUIRED netcdf-cxx4 IMPORTED_TARGET) 
 	if(NETCDFCXX_FOUND)
 		message(STATUS "NETCDFCXX ${NETCDFCXX_VERSION} was found")
-		include_directories(PkgConfig::NETCDFCXX)
-		link_libraries     (PkgConfig::NETCDFCXX)
 	    add_definitions(-DHAVE_NETCDF)
 	endif()
 endif()
@@ -101,7 +95,7 @@ include_directories(src/)
 include_directories(submodules/cpp-utils/src/)
 include_directories(submodules/csv-parser/single_include/)
 include_directories(submodules/eigen/)
-if(${USE_NETCDF})
+if(${USE_NETCDF} AND NETCDFCXX_FOUND)
 	include_directories(submodules/geophysics-netcdf/src/)
 	include_directories(submodules/geophysics-netcdf/submodules/marray/include/andres/)
 endif()
@@ -137,10 +131,15 @@ target_link_libraries(ctlinedata2sgrid.exe PRIVATE cpp-utils-static ticpp)
 install(TARGETS ctlinedata2sgrid.exe DESTINATION bin)
 
 # Add ctlinedata2slicegrids.exe
-if(${USE_GDAL})
+if(${USE_GDAL} AND GDAL_FOUND) 
 	add_executable(ctlinedata2slicegrids.exe src/ctlinedata2slicegrids.cpp)
+	target_compile_definitions(ctlinedata2slicegrids.exe PRIVATE -DHAVE_GDAL)	
+	target_include_directories(ctlinedata2slicegrids.exe PRIVATE PkgConfig::GDAL)
+	target_link_libraries(ctlinedata2slicegrids.exe PRIVATE PkgConfig::GDAL)
 	target_link_libraries(ctlinedata2slicegrids.exe PRIVATE cpp-utils-static)
 	install(TARGETS ctlinedata2slicegrids.exe DESTINATION bin)
+else()
+	message(WARNING "ctlinedata2slicegrids.exe requires GDAL - will not be built")
 endif()
 
 # Add gaforwardmodeltdem.exe
@@ -163,31 +162,32 @@ add_executable(example_forward_model_c.exe src/example_forward_model_c.c)
 target_link_libraries(example_forward_model_c.exe PRIVATE gatdaem1d-static)
 install(TARGETS example_forward_model_c.exe DESTINATION bin)
 
-# Add the MPI executables
+# Add galeisbstdem executable
 add_executable(galeisbstdem.exe src/galeisbstdem.cpp)
 target_link_libraries(galeisbstdem.exe PRIVATE cpp-utils-static)
+if(${USE_NETCDF} AND NETCDFCXX_FOUND)
+	target_include_directories(galeisbstdem.exe PRIVATE PkgConfig::NETCDFCXX)
+	target_link_libraries(galeisbstdem.exe PRIVATE PkgConfig::NETCDFCXX)
+endif()
 install(TARGETS galeisbstdem.exe DESTINATION bin)
 
+# Add galeisbsfdem executable
 add_executable(galeisbsfdem.exe src/galeisbsfdem.cpp)
 target_link_libraries(galeisbsfdem.exe PRIVATE cpp-utils-static)
 install(TARGETS galeisbsfdem.exe DESTINATION bin)
 
+# Add garjmcmctdem executable
 if(${USE_NETCDF} AND NETCDFCXX_FOUND)
 	add_executable(garjmcmctdem.exe src/garjmcmctdem.cpp)
+	target_include_directories(garjmcmctdem.exe PRIVATE PkgConfig::NETCDFCXX)
 	target_link_libraries(garjmcmctdem.exe PRIVATE cpp-utils-static)
+	target_link_libraries(garjmcmctdem.exe PRIVATE PkgConfig::NETCDFCXX)
 	install(TARGETS garjmcmctdem.exe DESTINATION bin)
 else()
 	message(WARNING "garjmcmctdem.exe requires NETCDF - will not be built")
 endif()
 
-# Add OpenMP 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND) 
-	message(STATUS "OpenMP was found")
-	target_link_libraries(galeisbstdem.exe PRIVATE OpenMP::OpenMP_CXX)
-	target_link_libraries(galeisbsfdem.exe PRIVATE OpenMP::OpenMP_CXX)
-endif()
-
+# Add galeiallatonce.exe executable
 if(MPI_FOUND AND PETSC_FOUND) 
 	add_executable(galeiallatonce.exe src/galeiallatonce.cpp)
 	target_link_libraries(galeiallatonce.exe PRIVATE cpp-utils-static)
@@ -198,3 +198,10 @@ else()
 	message(WARNING "galeiallatonce.exe requires PETSc and MPI -- will not be built")
 endif()
 
+# Add OpenMP support
+find_package(OpenMP QUIET)
+if(OpenMP_CXX_FOUND) 
+	message(STATUS "OpenMP was found")
+	target_link_libraries(galeisbstdem.exe PRIVATE OpenMP::OpenMP_CXX)
+	target_link_libraries(galeisbsfdem.exe PRIVATE OpenMP::OpenMP_CXX)
+endif()

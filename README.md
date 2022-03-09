@@ -13,9 +13,9 @@
 
 When initially cloning the repository in git it is convenient to use the "--recursive" option so that all the submodules and their respective submodules are initialised and populated with code.
 
-``````script
->> git clone --recursive git@github.com:rcb547/ga-aem-csiro.git
-``````
+```bash
+> git clone --recursive git@github.com:rcb547/ga-aem-csiro.git
+```
 
 ## Creation Notes
 - This repo was duplicated from https://github.com/GeoscienceAustralia/ga-aem.git on 20210706 
@@ -48,21 +48,75 @@ When initially cloning the repository in git it is convenient to use the "--recu
 - [User Manual](docs/GA-AEM_Programs_User_Manual.pdf)
 - [Theoretical details for GALEISBSTDEM](docs/GALEISBSTDEM_Inversion_Algorithm_Theoretical_Details.pdf)
 
-## Building on Linux
-- cd makefiles
-- edit the file run_make.sh to setup for your compiler
-	- set the C++ compiler (e.g., cxx=g++)
+## Building on linux
+
+- Note that Windows 10 users can build and run the code easily on the *[Ubuntu 20.04](https://www.microsoft.com/en-au/p/ubuntu-2004/9n6svws3rx71#activetab=pivot:overviewtab)* emulator app.
+
+### 1. Prerequisites
+
+- You are likely to need to install the following or later packages on your linux system using "sudo apt install"
+
+```bash
+> sudo apt install cmake
+> sudo apt install gcc-9
+> sudo apt install libfftw3-dev
+> sudo apt install libnetcdf-c++4-dev
+> sudo apt install libopenmpi-dev
+> sudo apt install libgdal-dev
+> sudo apt install libpetsc-real-dev
+```
+
+### 2. Building using cmake  
+
+1. The cmake program uses the file [*CMakeLists.txt*](CMakeLists.txt) to build the executables and libraries.
+1. The simplest form of cmake
+```bash
+> cd [directory where ga-aem repo is]  
+> mkdir my-build-dir                            // my-build-dir is a temporary directory for building
+> cd my-build-dir                               // change to the build-dir
+> cmake ..                                      // configure and generate using ../CMakeLists.txt in the directory above
+> cmake --build all                             // build all targets
+> cmake --install . --prefix my-install-dir     // install the executables, libraries and headers in my-install-dir 
+```
+1. To choose a specific compiler
+	- Replace  the line 
+```bash
+> cmake ..
+```
+	- with, for example, one of these lines
+```bash
+> cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ ..
+> cmake -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc ..
+```
+
+1. Other hints
+
+- See [*cmake_build_script_examples.sh*](cmake_build_script_examples.sh) for example
+- You may disable PETSc, MPI, GDAL, NETCDF by using the following cmake command line, if for example, you do not have them installed or want to use them. 
+```bash
+> cmake -DUSE_PETSC=off -DUSE_MPI=off -DUSE_GDAL=off -DUSE_NETCDF=off etc etc ..
+```
+
+### 3. Building using makefiles
+
+- Edit the file [makefiles/run_make.sh](makefiles/run_make.sh) to setup for your particular system and compiler
+	- set the C compiler (e.g., cc=gcc or cc=icc)
+	- set the C++ compiler (e.g., cxx=g++ or cxx=icpc)
 	- set the MPI C++ compiler (e.g., mpicxx=mpiCC)
-	- set the C++ compiler flags (e.g. cxxflags='-std=c++11 -O3 -Wall')
-	- set the executable directory (e.g., exedir='../bin/raijin/gnu')
-- run_make.sh
+	- set the C++ compiler flags (e.g. cxxflags='-std=c++17 -O3 -Wall')
+	- set the executable directory (e.g., exedir='../bin/gnu')
+- Then to build 
+```bash
+> cd makefiles                              // change to makefile directory 
+> run_make.sh gnu allclean                  // build with gnu compiler with allclean 
+```
 - Matlab shared library should go into ga-aem/matlab/bin/linux (.dll on Windows or .so on linux)
 - Python shared library should go into ga-aem/python/gatdaem1d (.dll on Windows or .so on linux)
 
 ## Building on Windows
-- You can build the programs with the free Microsoft Visual Studion 2013 Express.
+- You can build the programs with the free Microsoft Visual Studio Community 2019.
 - Visual Studio solution and project files are supplied.
-- Open ga-aem\vs2013\ga-aem-all\ga-aem-all.sln to compile all programs plus the matlab and python shared libraries.
+- Open ga-aem\visualstudio\ga-aem-all\ga-aem-all.sln to compile all programs plus the matlab and python shared libraries.
 - Alternatively open individual program solutions files in their respective directories.
 
 ## Additional source code and library dependencies
