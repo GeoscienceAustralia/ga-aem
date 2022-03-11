@@ -315,9 +315,14 @@ private:
 		s.set_ytol(target * 0.01);
 		s.add_pair(0.0,CIS.phid);
 				
-		//cTrial t = stepfactor_trial(lambda, dm, GOLDENRATIO);
-		cTrial t = stepfactor_trial(lambda, dm, 0.5);		
+		cTrial t;
+		t = stepfactor_trial(lambda, dm, 0.01);//Tiny step or safety
 		s.add_pair(t.stepfactor, t.phid);
+
+		//cTrial t = stepfactor_trial(lambda, dm, GOLDENRATIO);
+		t = stepfactor_trial(lambda, dm, 0.5);		
+		s.add_pair(t.stepfactor, t.phid);
+
 		t = stepfactor_trial(lambda, dm, 1.0);
 		s.add_pair(t.stepfactor, t.phid);
 		
@@ -331,8 +336,8 @@ private:
 		if (Verbose) {			
 			std::cerr << s << std::endl;
 			std::cout << s << std::endl;
-			//std::cout << dm.transpose();
-			//std::cerr << dm.transpose();
+			std::cout << dm.transpose();
+			std::cerr << dm.transpose();
 		};
 		
 		DoublePair p = s.nearest();		
@@ -580,7 +585,7 @@ private:
 		std::vector<double> xlist;		
 		if (CIS.iteration == 0) {
 			s.set_maxtrials(20);
-			xlist = increment<double>(6, 7.0, -1.0);
+			xlist = increment<double>(8, 7.0, -1.0);
 		}
 		else {			
 			s.set_maxtrials(10);
