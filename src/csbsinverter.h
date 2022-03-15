@@ -249,7 +249,7 @@ public:
 	}
 
 	void write_W_matrix(const std::string& dp) {
-		writetofile(W, dp + matrix_name());
+		writetofile(W, dp + matrix_name() + ".dat");
 	}
 };
 
@@ -761,8 +761,17 @@ public:
 		fdG = set_field_definitions_geometry(b);
 
 		b = Control.findblock("Input.Earth");
+		bool status = b.getvalue("NumberOfLayers", nLayers);
+		if (status == false) {
+			std::stringstream msg;
+			msg << "The NumberOfLayers must be specified in Input.Earth\n";
+			glog.errormsg(msg.str());
+		}
+
 		fdC = cInvertibleFieldDefinition(b, "Conductivity");
-		fdT = cInvertibleFieldDefinition(b, "Thickness");
+		if (nLayers > 1) {
+			fdT = cInvertibleFieldDefinition(b, "Thickness");
+		}
 	}
 
 	void set_field_definitions_ancillary(const cBlock& parent) {
@@ -801,13 +810,6 @@ public:
 		Id.resize(nSoundings);
 		E.resize(nSoundings);
 		G.resize(nSoundings);
-
-		bool status = Control.getvalue("Input.Earth.Conductivity.NumberOfLayers",nLayers);
-		if (status == false) {
-			std::stringstream msg;
-			msg << "The NumberOfLayers must be specified in Input.Columns.Conductivity\n";
-			glog.errormsg(msg.str());
-		}
 
 		nParamPerSounding = 0;
 		nGeomParamPerSounding = 0;
@@ -930,7 +932,7 @@ public:
 			initialise_VC_1st_derivative(C);
 		}
 		else if (C.method == "Minimise2ndDerivatives") {
-			initialise_VC_2nd_derivative(C);
+			initialise_VC_2nd_derivative(C);			
 		}		
 	}
 
@@ -962,7 +964,7 @@ public:
 	void initialise_VC_2nd_derivative(cLinearConstraint& C)
 	{		
 		if (nLayers < 3) return;		
-		Matrix L = Matrix::Zero(nSoundings * (nLayers - 2), nParam);
+		Matrix L = Matrix::Zero(nSoundings * nLayers, nParam);
 		size_t nrows = 0;
 		for (size_t si = 0; si < nSoundings; si++) {
 			const cEarthStruct& e = E[si];
@@ -983,11 +985,27 @@ public:
 				L(nrows, pi2) = s / d23;
 				nrows++;
 			}
+
+			//Minimise 1st deriv on first interface
+			int pi0 = cindex(si, 0);
+			int pi1 = cindex(si, 1);
+			double s = std::sqrt(t[0] / tavg);
+			L(nrows, pi0) = -1.0 * s / t[0];
+			L(nrows, pi1) =  1.0 * s / t[0];
+			nrows++;
+
+			//Minimise 1st deriv on last interface
+			pi0 = cindex(si, nLayers-2);
+			pi1 = cindex(si, nLayers-1);
+			s = std::sqrt(t[nLayers-2] / tavg);
+			L(nrows, pi0) = -1.0 * s / t[nLayers-1];
+			L(nrows, pi1) =  1.0 * s / t[nLayers-1];
+			nrows++;			
 		}
 		C.W = L.transpose() * L;
 		C.W *= (C.alpha / (double)(nrows));
 	}
-
+	
 	void initialise_LC() {
 		cLinearConstraint& C = LClatc;
 		C.W = Matrix::Zero(nParam, nParam);
@@ -1961,52 +1979,54 @@ public:
 			e.conductivity, "conductivity", "Layer conductivity", "S/m",
 			e.conductivity.size(), cOutputField::binarystoragetype::FLOAT, DN_LAYER, 'E', 15, 6);
 		
-		double bottomlayerthickness = 100.0;
-		if (solve_thickness() == false && nLayers > 1) {
-			bottomlayerthickness = e.thickness[nLayers - 2];
-		}
-		std::vector<double> thickness = e.thickness;
-		thickness.push_back(bottomlayerthickness);
+		if (nLayers > 1) {
+			double bottomlayerthickness = 100.0;
+			if (solve_thickness() == false && nLayers > 1) {
+				bottomlayerthickness = e.thickness[nLayers - 2];
+			}
+			std::vector<double> thickness = e.thickness;
+			thickness.push_back(bottomlayerthickness);
 
-		OM->writefield(pi,
-			thickness, "thickness", "Layer thickness", "m",
-			thickness.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-					
-				
-		if (OO.PositiveLayerTopDepths) {			
-			std::vector<double> dtop = e.layer_top_depth();
 			OM->writefield(pi,
-				dtop, "depth_top", "Depth to top of layer", "m",
-				dtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-		}
+				thickness, "thickness", "Layer thickness", "m",
+				thickness.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
 
-		if (OO.NegativeLayerTopDepths) {
-			std::vector<double> ndtop = -1.0*e.layer_top_depth();
-			OM->writefield(pi,
-				ndtop, "depth_top_negative", "Negative of depth to top of layer", "m",
-				ndtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-		}
-		
-		if (OO.PositiveLayerBottomDepths) {
-			std::vector<double> dbot = e.layer_bottom_depth();
-			OM->writefield(pi,
-				dbot, "depth_bottom", "Depth to bottom of layer", "m",
-				dbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-		}
 
-		if (OO.NegativeLayerBottomDepths) {
-			std::vector<double> ndbot = -1.0 * e.layer_bottom_depth();
-			OM->writefield(pi,
-				ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
-				ndbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-		}
+			if (OO.PositiveLayerTopDepths) {
+				std::vector<double> dtop = e.layer_top_depth();
+				OM->writefield(pi,
+					dtop, "depth_top", "Depth to top of layer", "m",
+					dtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
 
-		if (OO.InterfaceElevations) {			
-			std::vector<double> etop = e.layer_top_depth();
-			etop += Id[si].elevation;
-			OM->writefield(pi,
-				etop, "elevation_interface", "Elevation of interface", "m",
-				etop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			if (OO.NegativeLayerTopDepths) {
+				std::vector<double> ndtop = -1.0 * e.layer_top_depth();
+				OM->writefield(pi,
+					ndtop, "depth_top_negative", "Negative of depth to top of layer", "m",
+					ndtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
+
+			if (OO.PositiveLayerBottomDepths) {
+				std::vector<double> dbot = e.layer_bottom_depth();
+				OM->writefield(pi,
+					dbot, "depth_bottom", "Depth to bottom of layer", "m",
+					dbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
+
+			if (OO.NegativeLayerBottomDepths) {
+				std::vector<double> ndbot = -1.0 * e.layer_bottom_depth();
+				OM->writefield(pi,
+					ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
+					ndbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
+
+			if (OO.InterfaceElevations) {
+				std::vector<double> etop = e.layer_top_depth();
+				etop += Id[si].elevation;
+				OM->writefield(pi,
+					etop, "elevation_interface", "Elevation of interface", "m",
+					etop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
 		}
 				
 		if (OO.ParameterSensitivity) {
@@ -2450,7 +2470,7 @@ public:
 				keepiterating = false;
 				TerminationReason = "Too many iterations";
 			}
-			else if (CIS.phid <= MinimumPhiD) {
+			else if (CIS.iteration>0 && CIS.phid <= MinimumPhiD) {
 				keepiterating = false;
 				TerminationReason = "Reached minimum";
 			}

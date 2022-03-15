@@ -336,8 +336,8 @@ private:
 		if (Verbose) {			
 			std::cerr << s << std::endl;
 			std::cout << s << std::endl;
-			std::cout << dm.transpose();
-			std::cerr << dm.transpose();
+			std::cout << dm.transpose() << std::endl;
+			std::cerr << dm.transpose() << std::endl;
 		};
 		
 		DoublePair p = s.nearest();		
