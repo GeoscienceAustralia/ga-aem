@@ -195,9 +195,7 @@ public:
 		return "W_" + initials;
 	};
 
-	
-
-	//bookmark
+		
 	cConstraint() {};
 
 	cConstraint(
@@ -701,7 +699,7 @@ public:
 	}
 	
 	void parse_constraints(const cBlock& b) {
-		//bookmark
+		
 		LCrefc = cLinearConstraint("ConductivityReferenceModel", { }, "RefCon", "Conductivity reference model");
 		LCreft = cLinearConstraint("ThicknessReferenceModel", { }, "RefThk", "Thickness reference model");
 		LCrefg = cLinearConstraint("GeometryReferenceModel", { }, "RefGeom", "Geometry reference model");
@@ -2270,6 +2268,7 @@ public:
 		}
 		return readstatus;
 	}
+	
 
 	bool read_ancillary_fields(const size_t& bunchindex) {
 		const size_t& si = bunchindex;
@@ -2278,12 +2277,13 @@ public:
 		for (size_t fi = 0; fi < AncFld[si].size(); fi++) {
 			IM->readfdvnt(AncFld[si][fi].second);
 		}
-
+		
+		//Bookmark		
 		set_ancillary_id(si, "Survey", id.survey);
 		set_ancillary_id(si, "Date", id.date);
 		set_ancillary_id(si, "Flight", id.flight);
 		set_ancillary_id(si, "Line", id.line);
-		set_ancillary_id(si, "Fiducial", id.fiducial);
+		set_ancillary_id(si, "Fiducial", id.fiducial);		
 		set_ancillary_id(si, "X", id.x);
 		set_ancillary_id(si, "Y", id.y);
 		set_ancillary_id(si, "GroundElevation", id.elevation);
@@ -2294,7 +2294,21 @@ public:
 	bool set_ancillary_id(const size_t& si, const std::string key, T& value) {
 		int ki = AncFld[si].keyindex(key);
 		if (ki >= 0) {
-			value = std::get<T>(AncFld[si][ki].second.vnt);
+			//value = std::get<T>(AncFld[si][ki].second.vnt);						
+			const cVrnt& v = AncFld[si][ki].second.vnt;						
+			if (v.index() == 0) {
+				value = std::get<double>(v);
+			}
+			else if (v.index() == 1) {
+				value = std::get<int>(v);
+			}
+			else if (v.index() == 2) {
+				value = std::get<float>(v);
+			}
+			else {
+				glog.errormsg(_SRC_,"Bad variant type\n");
+			}
+			
 			return true;
 		}
 		return false;
