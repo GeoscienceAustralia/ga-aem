@@ -364,6 +364,7 @@ public:
   NormalizationType Normalisation;
   
   size_t NumberOfWindows;
+  double WindowsTimeShift=0.0;
   std::string WindowWeightingScheme;
 
   double BaseFrequency = 0.0;
@@ -935,6 +936,9 @@ public:
   void initialise_windows()
   {
 	  NumberOfWindows = (size_t)STM.getintvalue("Receiver.NumberOfWindows");
+	  if(STM.getvalue("Receiver.TimeShift", WindowsTimeShift)==false){
+		  WindowsTimeShift = 0.0;
+	  }
 
 	  WinSpec.resize(NumberOfWindows);
 	  X.resize(NumberOfWindows);
@@ -951,8 +955,8 @@ public:
 		  if (wt[i].size() != 2) {
 			  glog.errormsg(_SRC_, "The number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
 		  }
-		  WinSpec[i].TimeLow = wt[i][0];
-		  WinSpec[i].TimeHigh = wt[i][1];
+		  WinSpec[i].TimeLow = wt[i][0] + WindowsTimeShift;
+		  WinSpec[i].TimeHigh = wt[i][1] + WindowsTimeShift;
 	  }
 
 	  WindowWeightingScheme = STM.getstringvalue("Receiver.WindowWeightingScheme");
@@ -1449,10 +1453,7 @@ public:
 		  if (Normalisation == NormalizationType::PPM) {
 			  s *= 1.0e6;
 		  }
-		  else if (Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
-			  //PrimaryX *= 2.0;
-			  //PrimaryY *= 2.0;
-			  //PrimaryZ *= 2.0;
+		  else if (Normalisation == NormalizationType::PPM_PEAKTOPEAK) {			  
 			  s *= 1.0e6;
 		  }
 
