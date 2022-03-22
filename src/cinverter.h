@@ -316,10 +316,13 @@ private:
 		s.add_pair(0.0,CIS.phid);
 				
 		cTrial t;
-		t = stepfactor_trial(lambda, dm, 0.01);//Tiny step or safety
+
+		t = stepfactor_trial(lambda, dm, 0.001);//Tiny step for safety
 		s.add_pair(t.stepfactor, t.phid);
 
-		//cTrial t = stepfactor_trial(lambda, dm, GOLDENRATIO);
+		t = stepfactor_trial(lambda, dm, 0.01);
+		s.add_pair(t.stepfactor, t.phid);
+		
 		t = stepfactor_trial(lambda, dm, 0.5);		
 		s.add_pair(t.stepfactor, t.phid);
 
@@ -328,22 +331,40 @@ private:
 		
 		double sf;
 		while(s.next_x(sf)) {
-			if (sf >= 1.0  || sf <= 0.0 )break;//only search in the range 0 - 1
+			if (sf >= 1.0 || sf <= 0.0) {
+				if (Verbose) {
+					std::ostringstream msg;
+					msg << "Auto step factor " << sf << " outside range 0.0-1.0" << std::endl;
+					std::cout << msg.str();
+					std::cerr << msg.str();
+				}
+				break;//only search in the range 0 - 1
+			}
 			t = stepfactor_trial(lambda, dm, sf);
 			s.add_pair(t.stepfactor, t.phid);
 		}
 
-		if (Verbose) {			
-			std::cerr << s << std::endl;
-			std::cout << s << std::endl;
-			std::cout << dm.transpose() << std::endl;
-			std::cerr << dm.transpose() << std::endl;
-		};
-		
+				
 		DoublePair p = s.nearest();		
 		t.lambda = lambda;
 		t.stepfactor = p.first;
 		t.phid = p.second;
+
+		if (Verbose) {
+			std::ostringstream msg;
+			msg << "Trial Lambda=" << lambda << std::endl;			
+			msg << s << std::endl;			
+			msg << "Found ";
+			msg << "  Lambda: " << t.lambda;
+			msg << "  Step Factor: " << t.stepfactor;
+			msg << "  Phid: " << t.phid << std::endl;
+			std::cout << msg.str();	
+			std::cerr << msg.str();
+
+			//std::cout << dm.transpose() << std::endl;
+			//std::cerr << dm.transpose() << std::endl;
+		};
+
 		return t;
 	}
 	
