@@ -306,16 +306,16 @@ private:
 		t.lambda = lambda;
 		t.stepfactor = stepfactor;
 
-		if (Verbose) {
-			std::ostringstream msg;
-			msg << " sf=" << t.stepfactor;
-			msg << " phid=" << t.phid << std::endl;
-			msg << "   m  " << CIS.param.transpose() << std::endl;
-			msg << "   dm " << dm.transpose() << std::endl;
-			msg << "   p  " << p.transpose() << std::endl;
-			std::cout << msg.str();
-			std::cerr << msg.str();
-		}
+		//if (Verbose) {
+		//	std::ostringstream msg;
+		//	msg << " sf=" << t.stepfactor;
+		//	msg << " phid=" << t.phid << std::endl;
+		//	msg << "   m  " << CIS.param.transpose() << std::endl;
+		//	msg << "   dm " << dm.transpose() << std::endl;
+		//	msg << "   p  " << p.transpose() << std::endl;
+		//	std::cout << msg.str();
+		//	std::cerr << msg.str();
+		//}
 
 		return t;
 	}
@@ -339,7 +339,7 @@ private:
 			t = stepfactor_trial(lambda, dm, 0.10);
 			s.add_pair(t.stepfactor, t.phid);
 		}
-
+		
 		if (t.phid <= CIS.phid && t.phid > target) {
 			t = stepfactor_trial(lambda, dm, 0.25);
 			s.add_pair(t.stepfactor, t.phid);
@@ -401,54 +401,8 @@ private:
 		t.insert_order = T.trial.size();
 		T.trial.push_back(t);
 		return t.phid;
-	}
+	}	
 
-	double lambda_trial_function_old(cTrialCache& T, const double& lambda)
-	{
-		Vector dm(nParam);
-		Vector p(nParam);
-		Vector g(nData);
-		
-		dm = parameter_change(lambda, CIS.param, CIS.pred);
-
-		cTrialCache cache;
-		cache.target = T.target;
-
-		cTrial t0;
-		t0.phid = CIS.phid;
-		//t0.phim = CIS.phim;
-		t0.stepfactor = 0.0;
-		t0.lambda = lambda;
-		t0.insert_order = cache.trial.size();
-		cache.trial.push_back(t0);
-
-		cTrial t1 = stepfactor_trial(lambda, dm, 1.0);		
-		t1.insert_order = cache.trial.size();
-		cache.trial.push_back(t1);
-
-		double pcdiff = 100 * (t1.phid - t0.phid) / t0.phid;
-		if (pcdiff > 0.0 || pcdiff < -1.0) {		
-			//ie dont do not do golden search
-			//if only tiny improvement				
-			double xtol = 0.1;
-			double gsf = goldensearch(0.0, GOLDENRATIO, 1.0, xtol, lambda, CIS.param, dm, g, cache);
-			
-			cTrial t3 = stepfactor_trial(lambda, dm, gsf);			
-			t3.insert_order = cache.trial.size();
-			cache.trial.push_back(t3);
-		}
-
-		if (Verbose){
-			//cache.print(CIS.lambda, CIS.phid);
-		}
-
-		size_t minindex = cache.minphidindex();
-		cTrial t = cache.trial[minindex];
-		t.insert_order = T.trial.size();
-		T.trial.push_back(t);
-		return t.phid;
-	}
-	
 	double goldensearch(double a, double b, double c, double xtol, const double lambda, const Vector& m, const Vector& dm, Vector& g, cTrialCache& cache)
 	{
 		//adapted from http://en.wikipedia.org/wiki/Golden_section_search	
@@ -527,10 +481,11 @@ private:
 		}
 		else {			
 			s.set_maxtrials(10);
-			double x1 = std::log10(currentlambda * 0.5);
+			double x1 = std::log10(currentlambda * 2.0);
 			double x2 = std::log10(currentlambda);
-			double x3 = std::log10(currentlambda * 2.0);
-			xlist = { x1, x2, x3 };
+			double x3 = std::log10(currentlambda * 0.5);
+			double x4 = std::log10(currentlambda * 0.25);
+			xlist = { x1, x2, x3, x4 };			
 		}
 		
 		double x;
