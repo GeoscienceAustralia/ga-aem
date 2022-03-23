@@ -336,6 +336,11 @@ private:
 		s.add_pair(t.stepfactor, t.phid);
 		
 		if (t.phid <= CIS.phid && t.phid > target) {
+			t = stepfactor_trial(lambda, dm, 0.10);
+			s.add_pair(t.stepfactor, t.phid);
+		}
+
+		if (t.phid <= CIS.phid && t.phid > target) {
 			t = stepfactor_trial(lambda, dm, 0.25);
 			s.add_pair(t.stepfactor, t.phid);
 		}
