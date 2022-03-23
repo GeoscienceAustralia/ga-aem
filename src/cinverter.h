@@ -305,36 +305,57 @@ private:
 		t.phid = phiData(g);		
 		t.lambda = lambda;
 		t.stepfactor = stepfactor;
+
+		if (Verbose) {
+			std::ostringstream msg;
+			msg << " sf=" << t.stepfactor;
+			msg << " phid=" << t.phid << std::endl;
+			msg << "   m  " << CIS.param.transpose() << std::endl;
+			msg << "   dm " << dm.transpose() << std::endl;
+			msg << "   p  " << p.transpose() << std::endl;
+			std::cout << msg.str();
+			std::cerr << msg.str();
+		}
+
 		return t;
 	}
 
 	cTrial stepfactor_search(const double& lambda, const Vector& dm, const double& target)
 	{								
 		cInversionLineSearcher s(target);
-		s.set_maxtrials(10);
+		s.set_maxtrials(20);		
 		s.set_ytol(target * 0.01);
 		s.add_pair(0.0,CIS.phid);
 				
 		cTrial t;
 
-		t = stepfactor_trial(lambda, dm, 0.001);//Tiny step for safety
-		s.add_pair(t.stepfactor, t.phid);
+		//bookmark
+		double maxsf = 1.0;
 
 		t = stepfactor_trial(lambda, dm, 0.01);
 		s.add_pair(t.stepfactor, t.phid);
 		
-		t = stepfactor_trial(lambda, dm, 0.5);		
-		s.add_pair(t.stepfactor, t.phid);
-
-		t = stepfactor_trial(lambda, dm, 1.0);
-		s.add_pair(t.stepfactor, t.phid);
+		if (t.phid <= CIS.phid && t.phid > target) {
+			t = stepfactor_trial(lambda, dm, 0.25);
+			s.add_pair(t.stepfactor, t.phid);
+		}
 		
+		if (t.phid <= CIS.phid  && t.phid > target) {
+			t = stepfactor_trial(lambda, dm, 0.5);
+			s.add_pair(t.stepfactor, t.phid);
+		}
+		
+		if (t.phid <= CIS.phid && t.phid > target) {
+			t = stepfactor_trial(lambda, dm, maxsf);
+			s.add_pair(t.stepfactor, t.phid);
+		}
+				
 		double sf;
 		while(s.next_x(sf)) {
-			if (sf >= 1.0 || sf <= 0.0) {
+			if (sf >= maxsf || sf <= 0.0) {
 				if (Verbose) {
 					std::ostringstream msg;
-					msg << "Auto step factor " << sf << " outside range 0.0-1.0" << std::endl;
+					msg << "\nAuto step factor " << sf << " outside range 0.0 to " << maxsf << std::endl;
 					std::cout << msg.str();
 					std::cerr << msg.str();
 				}
@@ -487,117 +508,8 @@ private:
 				return goldensearch(x, b, c, xtol, lambda, m, dm, g, cache);
 			}
 		}
-	}
-
-	eBracketResult brackettarget_old(cTrialCache& T, const double target, const double currentlambda)
-	{
-		double startx = std::log10(currentlambda);
-		if (CIS.iteration == 0) {
-			std::vector<double> x;
-			x.push_back(8); x.push_back(6);
-			x.push_back(4); x.push_back(2);
-			x.push_back(1); x.push_back(0);
-			for (size_t k = 0; k < x.size(); k++) {
-				lambda_trial_function(T, pow10(x[k]));				
-				if (T.is_target_braketed()) {
-					return eBracketResult::BRACKETED;//target bracketed		
-				}
-			}
-
-			double minv = DBL_MAX;
-			for (size_t k = 0; k < T.trial.size(); k++) {
-				if (fabs(T.trial[k].phid - target) < minv) {
-					minv = fabs(T.trial[k].phid - target);
-					startx = std::log10(T.trial[k].lambda);
-				}
-			}
-		}
-		else {
-			lambda_trial_function(T, pow10(startx));
-		}
-
-		std::vector<double> x;
-		x.push_back(+1); x.push_back(-1);
-		x.push_back(+2); x.push_back(-2);
-		x.push_back(+3); x.push_back(-3);
-		for (size_t k = 0; k < x.size(); k++) {
-			lambda_trial_function(T, pow10(startx + x[k]));			
-			if (T.is_target_braketed()) {
-				return eBracketResult::BRACKETED;//target bracketed		
-			}
-		}
-
-		if (T.maxphid() < target) {
-			return eBracketResult::ALLBELOW;//all below target	
-		}
-		else if (T.is_min_braketed()) {
-			return eBracketResult::MINBRACKETED;//min bracketed											
-		}
-		else return eBracketResult::ALLABOVE;//all above target
-	}
-
-	eBracketResult brackettarget_old1(cTrialCache& T, const double target, const double currentlambda)
-	{					
-		cInversionLineSearcher s(target);
-		s.set_ytol(target * 0.01);
-		s.set_maxtrials(10);
-		std::vector<double> fraclist;
-
-		double x0, x1;
-		if (CIS.iteration == 0) {
-			x0 = 8.0;
-			x1 = 0.0;
-			s.set_maxtrials(20);
-			double f1 = (std::log10(1e8) - x0) / (x1 - x0);
-			double f2 = (std::log10(1e7) - x0) / (x1 - x0);
-			double f3 = (std::log10(1e6) - x0) / (x1 - x0);
-			double f4 = (std::log10(1e5) - x0) / (x1 - x0);
-			double f5 = (std::log10(1e4) - x0) / (x1 - x0);
-			double f6 = (std::log10(1e3) - x0) / (x1 - x0);
-			double f7 = (std::log10(1e2) - x0) / (x1 - x0);
-			double f8 = (std::log10(1e1) - x0) / (x1 - x0);
-			double f9 = (std::log10(1e0) - x0) / (x1 - x0);
-			fraclist = { f1, f2, f3, f4, f5, f6, f7, f8, f9 };
-		}
-		else {			
-			x0 = std::log10(currentlambda);
-			x1 = x0-4;
-			s.set_maxtrials(10);
-			double f1 = (std::log10(currentlambda * 0.5) - x0) / (x1 - x0);
-			double f2 = (std::log10(currentlambda) - x0) / (x1 - x0);
-			double f3 = (std::log10(currentlambda * 2.0) - x0) / (x1 - x0);
-			fraclist = { f1, f2, f3 };
-		}
-				
-		double frac;
-		for (size_t i = 0; i < fraclist.size(); i++) {
-			frac = fraclist[i];
-			double loglambda = x0 + (x1 - x0) * frac;			
-			double phid = lambda_trial_function(T, pow10(loglambda));
-			s.add_pair(frac, phid);						
-			if (T.is_target_braketed()) {				
-				return eBracketResult::BRACKETED;//target bracketed		
-			}
-		}
-
-		while (s.next_x(frac)) {						
-			double loglambda = x0 + (x1 - x0) * frac;
-			double phid = lambda_trial_function(T, pow10(loglambda));
-			s.add_pair(frac, phid);
-			if (T.is_target_braketed()) {
-				return eBracketResult::BRACKETED;//target bracketed		
-			}						
-		}						
-
-		if (T.maxphid() < target) {
-			return eBracketResult::ALLBELOW;//all below target	
-		}
-		else if(T.is_min_braketed()) {
-			return eBracketResult::MINBRACKETED;//min bracketed											
-		}
-		else return eBracketResult::ALLABOVE;//all above target
-	}
-
+	}	
+	
 	eBracketResult brackettarget(cTrialCache& T, const double target, const double currentlambda)
 	{		
 		cInversionLineSearcher s(target);

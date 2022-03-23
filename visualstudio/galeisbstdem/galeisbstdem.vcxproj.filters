@@ -88,5 +88,8 @@
     <ClInclude Include="..\..\submodules\cpp-utils\src\general_constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\inversion_line_searcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

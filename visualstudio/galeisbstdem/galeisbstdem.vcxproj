@@ -110,6 +110,7 @@
     <ClInclude Include="..\..\src\csbsinverter.h" />
     <ClInclude Include="..\..\src\gaaem_version.h" />
     <ClInclude Include="..\..\src\inputmanager.h" />
+    <ClInclude Include="..\..\src\inversion_line_searcher.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\outputmanager.h" />
     <ClInclude Include="..\..\src\tdemcomponentinfo.h" />
