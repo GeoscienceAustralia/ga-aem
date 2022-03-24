@@ -48,7 +48,7 @@
 
 2. The Fastest Fourier Transform in the West (FFTW)
 	- see http://www.fftw.org
-	- Windows binaries (dlls) are include in the repository.
+	- Windows binaries (dlls) are included in the repository.
 	- Linux users will need to install a suitable FFTW for your system.
 
 3. Message Passing Interface (MPI)
