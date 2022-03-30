@@ -1454,7 +1454,12 @@ public:
 
 						const double& Xerr = S.CompInfo[XCOMP].data[si].E[wi];
 						const double& Zerr = S.CompInfo[ZCOMP].data[si].E[wi];
-						err[di] = std::hypot(X * Xerr, Z * Zerr) / obs[di];
+						if (obs[di] == 0.0) {
+							err[di] = std::hypot(Xerr, Zerr);							
+						}
+						else {
+							err[di] = std::hypot(X * Xerr, Z * Zerr) / obs[di];
+						}
 
 						//Y Comp
 						if (S.CompInfo[YCOMP].Use) {
