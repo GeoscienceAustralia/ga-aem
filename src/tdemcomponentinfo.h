@@ -15,6 +15,17 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "inputmanager.h"
 #include "fielddefinition.h"
 
+class cScaleFactorsStruct {
+
+public:
+	double input;
+	double ref;
+	double std;
+	double min;
+	double max;
+	double invmodel;
+};
+
 class cTDEmComponentInfo {
 
 private:
@@ -39,6 +50,9 @@ public:
 	bool EstimateNoiseFromModel = false;
 	std::vector<double> mn;
 	std::vector<double> an;
+	
+	cInvertibleFieldDefinition fdSF;
+	cScaleFactorsStruct SF;
 	
 	cTDEmComponentInfo() {};
 	void initialise(const cBlock& b, const std::string& name, const size_t& nwindows, const size_t& nsoundings) {
@@ -73,7 +87,8 @@ public:
 		fdP.initialise(b, "Primary");
 		fdS.initialise(b, "Secondary");
 		fdE.initialise(b, "Noise");
-
+		fdSF.initialise(b, "ScaleFactor");
+		
 		nSoundings = nsoundings;
 		nWindows = nwindows;
 		data.resize(nSoundings);

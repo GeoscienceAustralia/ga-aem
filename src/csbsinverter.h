@@ -32,7 +32,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 class cGeomStruct {
 
-public:
+public:		
 	cTDEmGeometry input;
 	cTDEmGeometry ref;
 	cTDEmGeometry std;
@@ -354,23 +354,25 @@ class cSBSInverter : public cInverter {
 	size_t nAllData = 0;			
 	size_t nLayers = 0;
 	size_t nParamPerSounding = 0;
-	size_t nGeomParamPerSounding = 0;	
+	size_t nGeomParamPerSounding = 0;
+	size_t nScalingParam = 0;
 	size_t cOffset = 0;//Offset within sample of conductivity parameters
 	size_t tOffset = 0;//Offset within sample of thickness parameters
-	size_t gOffset = 0;//Offset within sample of geometry parameters
+	//size_t gOffset = 0;//Offset within sample of geometry parameters
+	//size_t sOffset = 0;//Offset within whole inversion
 
 	size_t nSystems = 0;
 	size_t pointsoutput = 0;
 	std::vector<cGeomStruct> G;
-	std::vector<cEarthStruct> E;	
+	std::vector<cEarthStruct> E;		
 	cOutputOptions OO;
 	std::vector<cTDEmSystemInfo> SV;
 
 	//Column definitions		
 	cInvertibleFieldDefinition fdC;
-	cInvertibleFieldDefinition fdT;
+	cInvertibleFieldDefinition fdT;	
 	cIFDMap fdG;
-
+	
 	//Sample instances
 	struct SampleId {
 		int uniqueid = -1;
@@ -430,6 +432,7 @@ public:
 	cLinearConstraint LCrefc;//Conductivity reference model constraint
 	cLinearConstraint LCreft;//Thickness reference model constraint
 	cLinearConstraint LCrefg;//Geometry reference model constraint
+	cLinearConstraint LCrefs;//Scaling factor reference model constraint
 
 	cLinearConstraint LCvcsmth;//Vertical conductivity smoothness constraint
 	cLinearConstraint LCvcsim;//Vertical Conductivity Similarity
@@ -549,6 +552,15 @@ public:
 		return true;
 	};
 
+	bool solve_scalingfactors(const size_t sysi, const size_t ci) {
+		return SV[sysi].CompInfo[ci].fdSF.solve;
+	}
+
+	bool solve_scalingfactors() {
+		if (nScalingParam > 0) return true;
+		else return false;
+	}
+
 	std::string bunch_id() {
 		const size_t si = Bunch.master_index();
 		const size_t& record = Bunch.master_record();
@@ -599,11 +611,7 @@ public:
 		return (int) (si*nParamPerSounding + tOffset + li);
 	}
 	
-	int gindex(const size_t& si, const std::string& gname) const {
-		//if (solve_geometry() == false) {
-		//	glog.errormsg("Out of boundes in gindex\n");
-		//}
-		
+	int gindex(const size_t& si, const std::string& gname) const {				
 		cInvertibleFieldDefinition val;
 		bool status = fdG.get(gname,val);
 		if (status) {
@@ -612,13 +620,16 @@ public:
 		return -1;
 	}
 
-    int gindex(const size_t& si, const size_t& gi) const {
-		//if (solve_geometry() == false) {
-		//	glog.errormsg("Out of boundes in gindex\n");
-		//}
+    int gindex(const size_t& si, const size_t& gi) const {		
 		int goff = fdG[gi].second.offset;
 		if (goff < 0) return -1;
 		return (int)(si*nParamPerSounding + goff);
+	}
+
+	int sfindex(const size_t& sysi, const size_t& ci) const {		
+		int pi = SV[sysi].CompInfo[ci].fdSF.offset;
+		if (pi < 0) return -1;		
+		return pi;
 	}
 	
 	void openlogfile()
@@ -703,6 +714,8 @@ public:
 		LCrefc = cLinearConstraint("ConductivityReferenceModel", { }, "RefCon", "Conductivity reference model");
 		LCreft = cLinearConstraint("ThicknessReferenceModel", { }, "RefThk", "Thickness reference model");
 		LCrefg = cLinearConstraint("GeometryReferenceModel", { }, "RefGeom", "Geometry reference model");
+		LCrefs = cLinearConstraint("ScalingFactorsReferenceModel", { }, "RefScalingFactors", "ScalingFactors reference model");
+
 		LCvcsmth   = cLinearConstraint("VerticalConductivity", {"Minimise1stDerivatives","Minimise2ndDerivatives" }, "VCsmth", "Vertical conductivity smoothness");
 		LCvcsim = cLinearConstraint("VerticalConductivitySimilarity", { }, "VCsim", "Vertical conductivity similarity");
 		LClatc   = cLinearConstraint("LateralConductivity", {"Minimise1stDerivatives", "Minimise2ndDerivatives","Similarity" }, "LatCon", "Lateral conductivity smoothness");		
@@ -721,6 +734,9 @@ public:
 			}
 			else if (LCrefg.parse(cstr)) {
 				LCrefg.set_operates_on_difference_from_reference_model();
+			}
+			else if (LCrefs.parse(cstr)) {
+				LCrefs.set_operates_on_difference_from_reference_model();
 			}
 			else if (LCvcsmth.parse(cstr)) {
 				//nothing to do
@@ -813,19 +829,20 @@ public:
 		nGeomParamPerSounding = 0;
 		cOffset = 0;
 		tOffset = 0;
-		gOffset = 0;		
+		//gOffset = 0;		
+		//sOffset = 0;
 
-		if (solve_conductivity()) {			
+		if (solve_conductivity()) {
 			fdC.offset = 0;
 			tOffset += nLayers;
-			gOffset += nLayers;
+			//gOffset += nLayers;
 			nParamPerSounding += nLayers;
 		}
 
 		if (solve_thickness()) {
 			fdT.offset = (int)tOffset;
-			gOffset += nLayers-1;
-			nParamPerSounding += nLayers-1;
+			//gOffset += nLayers-1;
+			nParamPerSounding += nLayers - 1;
 		}
 
 		//Geometry params			
@@ -840,8 +857,19 @@ public:
 			else {
 				g.offset = -1;
 			}
-		}		
-		nParam = nParamPerSounding*nSoundings;				
+		}
+
+		//Scaling params
+		for (size_t sysi = 0; sysi < SV.size(); sysi++){
+			for (size_t ci = 0; ci < 3; ci++) {
+				if (solve_scalingfactors(sysi, ci)){
+					SV[sysi].CompInfo[ci].fdSF.offset = nParamPerSounding * nSoundings + nScalingParam;
+					nScalingParam++;
+				}
+			}
+		}
+
+		nParam = nParamPerSounding*nSoundings + nScalingParam;				
 		RefParam.resize(nParam);
 		RefParamStd.resize(nParam);
 
@@ -849,12 +877,15 @@ public:
 			LCrefg.alpha = 0.0;
 			NLCcablen.alpha = 0.0;
 		}
+
+		if (nScalingParam == 0) {
+			LCrefs.alpha = 0.0;			
+		}
 		
 		if (nSoundings == 1) {
 			LClatc.alpha = 0.0;
 			LClatg.alpha = 0.0;
 		}
-
 	}
 	
 	void initialise_Wc() {
@@ -914,6 +945,22 @@ public:
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
 				const int pi = gindex(si, gi);
+				if (pi >= 0) {
+					C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+				}
+			}
+		}
+	}
+
+	void initialise_Ws() {
+		cLinearConstraint& C = LCrefs;
+		C.W = Matrix::Zero(nParam, nParam);
+		if (solve_scalingfactors() == false)return;
+
+		double s = C.alpha / (double)(nScalingParam);
+		for (size_t sysi = 0; sysi < SV.size(); sysi++) {
+			for (size_t ci = 0; ci < 3; ci++) {
+				const int pi = sfindex(sysi, ci);
 				if (pi >= 0) {
 					C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
 				}
@@ -1313,11 +1360,13 @@ public:
 		initialise_Wc();
 		initialise_Wt();
 		initialise_Wg();
+		initialise_Ws();
 
 		Wr = Matrix::Zero(nParam, nParam);
 		if (LCrefc.alpha > 0.0) Wr += LCrefc.W;
 		if (LCreft.alpha > 0.0) Wr += LCreft.W;
 		if (LCrefg.alpha > 0.0) Wr += LCrefg.W;
+		if (LCrefs.alpha > 0.0) Wr += LCrefs.W;
 	}
 
 	void initialise_Wm() {
@@ -1340,6 +1389,7 @@ public:
 			LCrefc.write_W_matrix(dp);			
 			LCreft.write_W_matrix(dp);
 			LCrefg.write_W_matrix(dp);
+			LCrefs.write_W_matrix(dp);
 			LCvcsmth.write_W_matrix(dp);
 			LCvcsim.write_W_matrix(dp);
 			LClatc.write_W_matrix(dp);
@@ -1362,11 +1412,12 @@ public:
 		set_fftw_lock();
 		std::vector<cBlock> B = Control.findblocks("EMSystem");
 		nSystems = B.size();
-		SV.resize(nSystems);
+		SV.resize(nSystems);		
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			SV[sysi].initialise(B[sysi], nSoundings);
+			SV[sysi].initialise(B[sysi], nSoundings);			
 		}
 		unset_fftw_lock();
+		
 	}
 
 	void setup_data()
@@ -1546,6 +1597,21 @@ public:
 					RefParamStd[pi] = g.std[gname];
 				}
 			}
+
+			//Scaling params				
+			for (size_t sysi = 0; sysi < SV.size(); sysi++) {
+				for (size_t ci = 0; ci < 3; ci++) {
+					const int pi = sfindex(sysi,ci);
+					if (pi >= 0) {		
+						double ref = SV[sysi].CompInfo[ci].SF.ref;
+						double std = SV[sysi].CompInfo[ci].SF.std;
+						RefParam[pi]    = SV[sysi].CompInfo[ci].SF.ref;
+						RefParamStd[pi] = SV[sysi].CompInfo[ci].SF.std;
+					}					
+				}
+			}
+
+
 		}
 	}
 		
@@ -1685,6 +1751,22 @@ public:
 	}
 
 	
+	std::vector<double> get_scalefactors(const size_t sysi, const Vector& parameters)
+	{
+		std::vector<double> sf(3);		
+		const cTDEmSystemInfo& S = SV[sysi];								
+		//bookmark
+		for (int ci = 0; ci < 3; ci++) {
+			sf[ci] = 1.0;
+			const int pi = sfindex(sysi, ci);
+			if (pi >= 0) {
+				sf[ci] = parameters[pi];
+			}
+		}		
+		return sf;
+	}
+	
+	
 	void set_predicted(const Vector& parameters)
 	{				
 		std::vector<cEarth1D> ev = get_earth(parameters);
@@ -1741,10 +1823,13 @@ public:
 		}
 
 		std::vector<cEarth1D> ev = get_earth(parameters);
-		std::vector<cTDEmGeometry> gv = get_geometry(parameters);		
+		std::vector<cTDEmGeometry> gv = get_geometry(parameters);				
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {			
 			cTDEmSystemInfo& S = SV[sysi];
 			cTDEmSystem& T = S.T;
+
+			std::vector<double> scalefactors = get_scalefactors(sysi, parameters);
+
 			const size_t nw = T.NumberOfWindows;
 			for (size_t si = 0; si < nSoundings; si++) {
 				const cEarth1D& e = ev[si];
@@ -1759,14 +1844,14 @@ public:
 				T.setprimaryfields();
 				T.setsecondaryfields();
 
-				std::vector<double> xfm = T.X;
-				std::vector<double> yfm = T.Y;
-				std::vector<double> zfm = T.Z;
+				std::vector<double> xfm = T.X * scalefactors[XCOMP];
+				std::vector<double> yfm = T.Y * scalefactors[YCOMP];
+				std::vector<double> zfm = T.Z * scalefactors[ZCOMP];
 				std::vector<double> xzfm;
 				if (S.invertPrimaryPlusSecondary) {
-					xfm += T.PrimaryX;
-					yfm += T.PrimaryY;
-					zfm += T.PrimaryZ;
+					xfm += T.PrimaryX * scalefactors[XCOMP];
+					yfm += T.PrimaryY * scalefactors[YCOMP];
+					zfm += T.PrimaryZ * scalefactors[ZCOMP];
 				}
 
 				if (S.invertXPlusZ) {
@@ -1797,6 +1882,28 @@ public:
 					std::vector<double> xdrv(nw);
 					std::vector<double> ydrv(nw);
 					std::vector<double> zdrv(nw);
+					
+					//bookmark
+					for (size_t ci = 0; ci < 3; ci++) {
+						if (S.CompInfo[ci].Use) {
+							const int pindex = sfindex(sysi, ci);
+							if (pindex >= 0) {
+								//Here filling with the forward itself as no new computations
+								fillDerivativeVectors(S, xdrv, ydrv, zdrv);
+								if (ci != XCOMP) {
+									xdrv *= 0.0;
+								}
+								if (ci != YCOMP) {
+									ydrv *= 0.0;
+								}
+								if (ci != ZCOMP) {
+									zdrv *= 0.0;
+								}
+								fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
+							}
+						}
+					}		
+
 					if (solve_conductivity()) {
 						for (size_t li = 0; li < nLayers; li++) {
 							const int pindex = cindex(si,li);
@@ -1807,8 +1914,8 @@ public:
 
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
 							//multiply by natural log(10) as parameters are in logbase10 units
-							double sf = log(10.0) * e.conductivity[li];
-							xdrv *= sf; ydrv *= sf; zdrv *= sf;
+							const double f = log(10.0) * e.conductivity[li];
+							xdrv *= f; ydrv *= f; zdrv *= f;
 							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 						}
 					}
@@ -1895,6 +2002,13 @@ public:
 			//std::cerr << J_all;			
 			//std::cerr << "\n-----------------\n";
 		}
+
+		if (OO.Dump && computederivatives) {
+			const std::string dp = dumppath();
+			writetofile(J_all, dp + "J" + ".dat");
+			std::ofstream of(dp + "J1" + ".dat");
+			of << J_all;
+		}
 	}
 
 	void fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv)
@@ -1936,274 +2050,6 @@ public:
 		ofs << S.info_string();
 	};
 	
-	void write_result(const int& pointindex, const cIterationState& S)
-	{		
-		const int& pi = (int)Bunch.master_record();
-		const int& si = (int)Bunch.master_index();
-		OM->begin_point_output();
-		
-		//Ancillary	
-		OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 12, 0);
-		for (size_t fi = 0; fi<AncFld[si].size(); fi++) {
-			cFdVrnt& fdv = AncFld[si][fi].second;
-			cAsciiColumnField c;
-			std::string fname = fdv.fd.varname;
-			IM->get_acsiicolumnfield(fname, c);
-			OM->writevrnt(pi, fdv.vnt, c);
-		}
-
-		//Geometry Input
-		bool invertedfieldsonly = false;
-		for (size_t i = 0; i < G[si].input.size(); i++) {
-			if (invertedfieldsonly && solve_geometry_index(i) == false)continue;
-			OM->writefield(pi, G[si].input[i], "input_" + G[si].input.element_name(i), "Input " + G[si].input.description(i), G[si].input.units(i), 1, ST_FLOAT, DN_NONE, 'F', 9, 2);
-		}
-
-		//Geometry Modelled		
-		const cTDEmGeometry& g = G[si].invmodel;
-		invertedfieldsonly = true;
-		for (size_t gi = 0; gi < g.size(); gi++) {
-			if (invertedfieldsonly && solve_geometry_index(gi) == false)continue;
-			OM->writefield(pi, g[gi], "inverted_" + g.element_name(gi), "Inverted " + g.description(gi), g.units(gi), 1, cOutputField::binarystoragetype::FLOAT, DN_NONE, 'F', 9, 2);
-		}
-				
-		//ndata
-		OM->writefield(pi,
-			nData, "ndata", "Number of data in inversion", UNITLESS,
-			1, ST_UINT, DN_NONE, 'I', 4, 0);
-
-		//Earth	
-		const cEarth1D& e = E[si].invmodel;
-		OM->writefield(pi,
-			nLayers,"nlayers","Number of layers ", UNITLESS,
-			1, ST_UINT, DN_NONE, 'I', 4, 0);
-		
-		OM->writefield(pi,
-			e.conductivity, "conductivity", "Layer conductivity", "S/m",
-			e.conductivity.size(), cOutputField::binarystoragetype::FLOAT, DN_LAYER, 'E', 15, 6);
-		
-		if (nLayers > 1) {
-			double bottomlayerthickness = 100.0;
-			if (solve_thickness() == false && nLayers > 1) {
-				bottomlayerthickness = e.thickness[nLayers - 2];
-			}
-			std::vector<double> thickness = e.thickness;
-			thickness.push_back(bottomlayerthickness);
-
-			OM->writefield(pi,
-				thickness, "thickness", "Layer thickness", "m",
-				thickness.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-
-
-			if (OO.PositiveLayerTopDepths) {
-				std::vector<double> dtop = e.layer_top_depth();
-				OM->writefield(pi,
-					dtop, "depth_top", "Depth to top of layer", "m",
-					dtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-			}
-
-			if (OO.NegativeLayerTopDepths) {
-				std::vector<double> ndtop = -1.0 * e.layer_top_depth();
-				OM->writefield(pi,
-					ndtop, "depth_top_negative", "Negative of depth to top of layer", "m",
-					ndtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-			}
-
-			if (OO.PositiveLayerBottomDepths) {
-				std::vector<double> dbot = e.layer_bottom_depth();
-				OM->writefield(pi,
-					dbot, "depth_bottom", "Depth to bottom of layer", "m",
-					dbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-			}
-
-			if (OO.NegativeLayerBottomDepths) {
-				std::vector<double> ndbot = -1.0 * e.layer_bottom_depth();
-				OM->writefield(pi,
-					ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
-					ndbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-			}
-
-			if (OO.InterfaceElevations) {
-				std::vector<double> etop = e.layer_top_depth();
-				etop += Id[si].elevation;
-				OM->writefield(pi,
-					etop, "elevation_interface", "Elevation of interface", "m",
-					etop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
-			}
-		}
-				
-		if (OO.ParameterSensitivity) {
-			std::vector<double> ps = copy(ParameterSensitivity);
-			if (solve_conductivity()) {
-				std::vector<double> v(ps.begin() + cindex(si,0), ps.begin() + cindex(si,0) + nLayers);
-				OM->writefield(pi,
-					v, "conductivity_sensitivity", "Conductivity parameter sensitivity", UNITLESS,
-					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
-			}
-			
-			if (solve_thickness()) {
-				std::vector<double> v(ps.begin() + tindex(si,0), ps.begin() + tindex(si,0) + nLayers-1);
-				v.push_back(0.0);//halfspace layer not a parameter
-				OM->writefield(pi,
-					v, "thickness_sensitivity", "Thickness parameter sensitivity", UNITLESS,
-					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
-			}
-
-			const cTDEmGeometry& g = G[si].input;
-			for (size_t gi = 0; gi < g.size(); gi++) {
-				if (solve_geometry_index(gi) == true) {
-					const std::string& gname = g.element_name(gi);
-					std::string name = "inverted_" + gname + "_sensitivity";
-					std::string desc = g.description(gi) + " parameter sensitivity";
-					OM->writefield(pi,
-						ps[gindex(si,gname)], name, desc, UNITLESS,
-						1, ST_FLOAT, DN_NONE, 'E', 15, 6);					
-				}
-			}
-		}
-
-		if (OO.ParameterUncertainty) {
-			std::vector<double> pu = copy(ParameterUncertainty);
-			if (solve_conductivity()) {
-				std::vector<double> v(pu.begin() + cindex(si,0), pu.begin() + cindex(si,0) + nLayers);
-				OM->writefield(pi,
-					v, "conductivity_uncertainty", "Conductivity parameter uncertainty", "log10(S/m)",
-					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
-			}
-
-			if (solve_thickness()) {
-				std::vector<double> v(pu.begin() + tindex(si,0), pu.begin() + tindex(si,0) + nLayers - 1);
-				v.push_back(0.0);//halfspace layer not a parameter
-				OM->writefield(pi,
-					v, "thickness_uncertainty", "Thickness parameter uncertainty", "log10(m)",
-					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
-			}
-			
-			const cTDEmGeometry& g = G[si].input;
-			for (size_t gi = 0; gi < g.size(); gi++) {
-				if (solve_geometry_index(gi) == false) continue;
-				const std::string& gname = g.element_name(gi);
-				std::string name = "inverted_" + gname + "_uncertainty";
-				std::string desc = g.description(gi) + " parameter uncertainty";
-				OM->writefield(pi,
-					pu[gindex(si,gname)], name, desc, g.units(gi),
-					1, ST_FLOAT, DN_NONE, 'E', 15, 6);				
-			}
-		}
-
-				
-		//ObservedData
-		if (OO.ObservedData) {			
-			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				cTDEmSystemInfo& S = SV[sysi];
-				for (size_t ci = 0; ci < 3; ci++) {
-					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
-						si, S.CompInfo[ci].Name,
-						"observed", "Observed",
-						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary);
-				}
-			}
-		}
-
-		
-		//Noise Estimates
-		if (OO.NoiseEstimates) {
-			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				cTDEmSystemInfo& S = SV[sysi];
-				for (size_t ci = 0; ci < 3; ci++) {
-					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
-						sysi, S.CompInfo[ci].Name,
-						"noise", "Estimated noise",						
-						'E', 15, 6, 0.0, S.CompInfo[ci].data[si].E, false);
-				}
-			}
-		}
-		
-		//PredictedData
-		if (OO.PredictedData) {
-			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				cTDEmSystemInfo& S = SV[sysi];
-				for (size_t ci = 0; ci < 3; ci++) {
-					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
-						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
-						S.predicted[si].component(ci).Primary,
-						S.predicted[si].component(ci).Secondary,
-						S.invertPrimaryPlusSecondary);
-				}
-			}
-		}
-				
-		//Inversion parameters and norms		
-		const Vector& m = S.param;
-		const Vector& m0 = RefParam;		
-		write_result(pi, LCrefc, m, m0);
-		write_result(pi, LCreft, m, m0);
-		write_result(pi, LCrefg, m, m0);
-		write_result(pi, LCvcsmth, m, m0);
-		write_result(pi, LCvcsim, m, m0);
-		write_result(pi, LClatc, m, m0);
-		write_result(pi, LClatg, m, m0);
-
-		Vector clfwd = CableLengthConstraint_forward(m);
-		write_result(pi, NLCcablen, clfwd);
-
-		OM->writefield(pi, S.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.phim, "PhiM", "Combined model norm", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);	
-		OM->writefield(pi, S.lambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pi, S.iteration, "Iterations", "Number of iterations", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 4, 0);
-				
-		//End of record book keeping
-		OM->end_point_output();		
-		if (pointsoutput == 0) {			
-			OM->end_first_record();//only do this once		
-		}
-		pointsoutput++;
-	};
-
-	void write_result(const int& pointindex, const cLinearConstraint& C, const Vector& m, const Vector& m0) {		
-		if (C.alpha == 0.0) return;		
-		
-		double phi = 0.0;
-		if (C.alpha > 0.0) {
-			phi = C.phi(m, m0);
-		}
-
-		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.alpha_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
-		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
-	}
-
-	void write_result(const int& pointindex, const cNonLinearConstraint& C, const Vector& predicted) {		
-		if (C.alpha == 0.0)return;
-		double phi = 0.0;
-		if (C.alpha > 0.0) {
-			phi = C.phi(predicted);
-		}
-		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.description, UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);				
-		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
-	}
-
-	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
-	{
-		std::string DN_WINDOW = "em_window";
-		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
-		std::string sysdesc = descprefix + strprint(" EMSystem %d ", (int)sysnum + 1);
-		if (includeprimary) {
-			std::string name = sysname + comp + "P";
-			std::string desc = sysdesc + comp + "-component primary field";			
-			OM->writefield(pointindex,
-				p, name, desc, UNITLESS,
-				1, ST_FLOAT, DN_NONE, form, width, decimals);			
-		}
-
-		{
-			std::string name = sysname + comp + "S";
-			std::string desc = sysdesc + comp + "-component secondary field";
-			OM->writefield(pointindex,
-				s, name, desc, UNITLESS,
-				s.size(), ST_FLOAT, DN_WINDOW, form, width, decimals);
-		}
-	}
-
 	bool read_bunch(const size_t& record) {
 		_GSTITEM_
 
@@ -2233,6 +2079,21 @@ public:
 				return false;
 			}
 		}
+
+		//bookmark
+		for (size_t sysi = 0; sysi < SV.size(); sysi++) {
+			cTDEmSystemInfo& S = SV[sysi];
+			for (size_t ci = 0; ci < 3; ci++) {
+				cTDEmComponentInfo& C = S.CompInfo[ci];
+				if (C.fdSF.solve) {
+					IM->read(C.fdSF.ref, C.SF.ref);
+					IM->read(C.fdSF.std, C.SF.std);
+					IM->read(C.fdSF.min, C.SF.min);
+					IM->read(C.fdSF.max, C.SF.max);
+				}
+			}
+		}
+
 		return true;			
 	}
 
@@ -2268,13 +2129,14 @@ public:
 		}
 		e.sanity_check();
 
+		status = IM->read(fdT.max, e.max.thickness, nLayers - 1); if (status == false) readstatus = false;
+
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			read_system_data(sysi, si);
+			read_system_data(sysi, si);			
 		}
 		return readstatus;
 	}
 	
-
 	bool read_ancillary_fields(const size_t& bunchindex) {
 		const size_t& si = bunchindex;
 		SampleId& id = Id[si];
@@ -2282,8 +2144,7 @@ public:
 		for (size_t fi = 0; fi < AncFld[si].size(); fi++) {
 			IM->readfdvnt(AncFld[si][fi].second);
 		}
-		
-		//Bookmark		
+				
 		set_ancillary_id(si, "Survey", id.survey);
 		set_ancillary_id(si, "Date", id.date);
 		set_ancillary_id(si, "Flight", id.flight);
@@ -2484,7 +2345,16 @@ public:
 					
 		double percentchange = 100.0;
 		bool   keepiterating = true;
-		while (keepiterating == true) {
+		while (keepiterating == true) {			
+			if (Verbose && nScalingParam >0) {			
+				std::vector<double> scalefactors = get_scalefactors(0, CIS.param);
+				std::cout << "Scaling Factors ";
+				for (size_t ci = 0; ci < 3; ci++) {
+					std::cout << scalefactors[ci] << " ";
+				}
+				std::cout << std::endl;
+			}
+
 			if (CIS.iteration >= MaxIterations) {
 				keepiterating = false;
 				TerminationReason = "Too many iterations";
@@ -2561,7 +2431,7 @@ public:
 						iterate();
 						double t2 = gettime();
 						double etime = t2 - t1;
-						write_result(record, CIS);						
+						write_result(record);						
 						s << bunch_result(etime);																		
 					}
 					else {
@@ -2586,6 +2456,7 @@ public:
 		v += LCrefc.phi(m, RefParam);
 		v += LCreft.phi(m, RefParam);
 		v += LCrefg.phi(m, RefParam);
+		v += LCrefs.phi(m, RefParam);
 		v += LCvcsmth.phi(m, RefParam);
 		v += LCvcsim.phi(m, RefParam);
 		v += LClatc.phi(m, RefParam);
@@ -2646,6 +2517,296 @@ public:
 		}
 		Vector x = lltOfA.solve(b);		
 		return x;
+	}
+
+	//void write_result(const int& pointindex, const cIterationState& S)	
+	void write_result(const int& pointindex)
+	{
+		const Vector& m = CIS.param;
+		const Vector& m0 = RefParam;
+
+		const int& pi = (int)Bunch.master_record();
+		const int& si = (int)Bunch.master_index();
+		OM->begin_point_output();
+
+		//Ancillary	
+		OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 12, 0);
+		for (size_t fi = 0; fi < AncFld[si].size(); fi++) {
+			cFdVrnt& fdv = AncFld[si][fi].second;
+			cAsciiColumnField c;
+			std::string fname = fdv.fd.varname;
+			IM->get_acsiicolumnfield(fname, c);
+			OM->writevrnt(pi, fdv.vnt, c);
+		}
+
+		//Geometry Input
+		bool invertedfieldsonly = false;
+		for (size_t i = 0; i < G[si].input.size(); i++) {
+			if (invertedfieldsonly && solve_geometry_index(i) == false)continue;
+			OM->writefield(pi, G[si].input[i], "input_" + G[si].input.element_name(i), "Input " + G[si].input.description(i), G[si].input.units(i), 1, ST_FLOAT, DN_NONE, 'F', 9, 2);
+		}
+
+		//Geometry Modelled		
+		const cTDEmGeometry& g = G[si].invmodel;
+		invertedfieldsonly = true;
+		for (size_t gi = 0; gi < g.size(); gi++) {
+			if (invertedfieldsonly && solve_geometry_index(gi) == false)continue;
+			OM->writefield(pi, g[gi], "inverted_" + g.element_name(gi), "Inverted " + g.description(gi), g.units(gi), 1, cOutputField::binarystoragetype::FLOAT, DN_NONE, 'F', 9, 2);
+		}
+
+		//ndata
+		OM->writefield(pi,
+			nData, "ndata", "Number of data in inversion", UNITLESS,
+			1, ST_UINT, DN_NONE, 'I', 4, 0);
+
+		//Scaling factors
+		if (solve_scalingfactors()) {
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
+				std::vector<double> sf = get_scalefactors(sysi, m);
+				for (size_t ci = 0; ci < 3; ci++) {					
+					if (S.CompInfo[ci].Use) {
+						std::string comp = S.CompInfo[ci].Name;						
+						std::string fname = "scalingfactor" + strprint("_EMSystem_%d_", (int)sysi + 1) + comp;
+						std::string fdesc = "Scaling factor" + strprint(" EMSystem %d ", (int)sysi + 1) + comp +"-component";
+											
+						OM->writefield(pi,
+							sf[ci], fname, fdesc, UNITLESS,
+							1, ST_FLOAT, DN_NONE, 'F', 6, 3);						
+					}
+				}
+			}
+		}
+
+		//Earth	
+		const cEarth1D& e = E[si].invmodel;
+		OM->writefield(pi,
+			nLayers, "nlayers", "Number of layers ", UNITLESS,
+			1, ST_UINT, DN_NONE, 'I', 4, 0);
+
+		OM->writefield(pi,
+			e.conductivity, "conductivity", "Layer conductivity", "S/m",
+			e.conductivity.size(), cOutputField::binarystoragetype::FLOAT, DN_LAYER, 'E', 15, 6);
+
+		if (nLayers > 1) {
+			double bottomlayerthickness = 100.0;
+			if (solve_thickness() == false && nLayers > 1) {
+				bottomlayerthickness = e.thickness[nLayers - 2];
+			}
+			std::vector<double> thickness = e.thickness;
+			thickness.push_back(bottomlayerthickness);
+
+			OM->writefield(pi,
+				thickness, "thickness", "Layer thickness", "m",
+				thickness.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+
+
+			if (OO.PositiveLayerTopDepths) {
+				std::vector<double> dtop = e.layer_top_depth();
+				OM->writefield(pi,
+					dtop, "depth_top", "Depth to top of layer", "m",
+					dtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
+
+			if (OO.NegativeLayerTopDepths) {
+				std::vector<double> ndtop = -1.0 * e.layer_top_depth();
+				OM->writefield(pi,
+					ndtop, "depth_top_negative", "Negative of depth to top of layer", "m",
+					ndtop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
+
+			if (OO.PositiveLayerBottomDepths) {
+				std::vector<double> dbot = e.layer_bottom_depth();
+				OM->writefield(pi,
+					dbot, "depth_bottom", "Depth to bottom of layer", "m",
+					dbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
+
+			if (OO.NegativeLayerBottomDepths) {
+				std::vector<double> ndbot = -1.0 * e.layer_bottom_depth();
+				OM->writefield(pi,
+					ndbot, "depth_bottom_negative", "Negative of depth to bottom of layer", "m",
+					ndbot.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
+
+			if (OO.InterfaceElevations) {
+				std::vector<double> etop = e.layer_top_depth();
+				etop += Id[si].elevation;
+				OM->writefield(pi,
+					etop, "elevation_interface", "Elevation of interface", "m",
+					etop.size(), ST_FLOAT, DN_LAYER, 'F', 9, 2);
+			}
+		}
+
+		if (OO.ParameterSensitivity) {
+			std::vector<double> ps = copy(ParameterSensitivity);
+			if (solve_conductivity()) {
+				std::vector<double> v(ps.begin() + cindex(si, 0), ps.begin() + cindex(si, 0) + nLayers);
+				OM->writefield(pi,
+					v, "conductivity_sensitivity", "Conductivity parameter sensitivity", UNITLESS,
+					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
+			}
+
+			if (solve_thickness()) {
+				std::vector<double> v(ps.begin() + tindex(si, 0), ps.begin() + tindex(si, 0) + nLayers - 1);
+				v.push_back(0.0);//halfspace layer not a parameter
+				OM->writefield(pi,
+					v, "thickness_sensitivity", "Thickness parameter sensitivity", UNITLESS,
+					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
+			}
+
+			const cTDEmGeometry& g = G[si].input;
+			for (size_t gi = 0; gi < g.size(); gi++) {
+				if (solve_geometry_index(gi) == true) {
+					const std::string& gname = g.element_name(gi);
+					std::string name = "inverted_" + gname + "_sensitivity";
+					std::string desc = g.description(gi) + " parameter sensitivity";
+					OM->writefield(pi,
+						ps[gindex(si, gname)], name, desc, UNITLESS,
+						1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+				}
+			}
+		}
+
+		if (OO.ParameterUncertainty) {
+			std::vector<double> pu = copy(ParameterUncertainty);
+			if (solve_conductivity()) {
+				std::vector<double> v(pu.begin() + cindex(si, 0), pu.begin() + cindex(si, 0) + nLayers);
+				OM->writefield(pi,
+					v, "conductivity_uncertainty", "Conductivity parameter uncertainty", "log10(S/m)",
+					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
+			}
+
+			if (solve_thickness()) {
+				std::vector<double> v(pu.begin() + tindex(si, 0), pu.begin() + tindex(si, 0) + nLayers - 1);
+				v.push_back(0.0);//halfspace layer not a parameter
+				OM->writefield(pi,
+					v, "thickness_uncertainty", "Thickness parameter uncertainty", "log10(m)",
+					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
+			}
+
+			const cTDEmGeometry& g = G[si].input;
+			for (size_t gi = 0; gi < g.size(); gi++) {
+				if (solve_geometry_index(gi) == false) continue;
+				const std::string& gname = g.element_name(gi);
+				std::string name = "inverted_" + gname + "_uncertainty";
+				std::string desc = g.description(gi) + " parameter uncertainty";
+				OM->writefield(pi,
+					pu[gindex(si, gname)], name, desc, g.units(gi),
+					1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+			}
+		}
+
+
+		//ObservedData
+		if (OO.ObservedData) {
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
+				for (size_t ci = 0; ci < 3; ci++) {
+					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
+						si, S.CompInfo[ci].Name,
+						"observed", "Observed",
+						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary);
+				}
+			}
+		}
+
+
+		//Noise Estimates
+		if (OO.NoiseEstimates) {
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
+				for (size_t ci = 0; ci < 3; ci++) {
+					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
+						sysi, S.CompInfo[ci].Name,
+						"noise", "Estimated noise",
+						'E', 15, 6, 0.0, S.CompInfo[ci].data[si].E, false);
+				}
+			}
+		}
+
+		//PredictedData
+		if (OO.PredictedData) {
+			for (size_t sysi = 0; sysi < nSystems; sysi++) {
+				cTDEmSystemInfo& S = SV[sysi];
+				for (size_t ci = 0; ci < 3; ci++) {
+					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
+						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
+						S.predicted[si].component(ci).Primary,
+						S.predicted[si].component(ci).Secondary,
+						S.invertPrimaryPlusSecondary);
+				}
+			}
+		}
+
+		//Inversion parameters and norms				
+		write_result(pi, LCrefc, m, m0);
+		write_result(pi, LCreft, m, m0);
+		write_result(pi, LCrefg, m, m0);
+		write_result(pi, LCrefs, m, m0);
+		write_result(pi, LCvcsmth, m, m0);
+		write_result(pi, LCvcsim, m, m0);
+		write_result(pi, LClatc, m, m0);
+		write_result(pi, LClatg, m, m0);
+
+		Vector clfwd = CableLengthConstraint_forward(m);
+		write_result(pi, NLCcablen, clfwd);
+
+		OM->writefield(pi, CIS.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, CIS.phim, "PhiM", "Combined model norm", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, CIS.lambda, "Lambda", "Lambda regularization parameter", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pi, CIS.iteration, "Iterations", "Number of iterations", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 4, 0);
+
+		//End of record book keeping
+		OM->end_point_output();
+		if (pointsoutput == 0) {
+			OM->end_first_record();//only do this once		
+		}
+		pointsoutput++;
+	};
+
+	void write_result(const int& pointindex, const cLinearConstraint& C, const Vector& m, const Vector& m0) {
+		if (C.alpha == 0.0) return;
+
+		double phi = 0.0;
+		if (C.alpha > 0.0) {
+			phi = C.phi(m, m0);
+		}
+
+		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.alpha_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+	}
+
+	void write_result(const int& pointindex, const cNonLinearConstraint& C, const Vector& predicted) {
+		if (C.alpha == 0.0)return;
+		double phi = 0.0;
+		if (C.alpha > 0.0) {
+			phi = C.phi(predicted);
+		}
+		OM->writefield(pointindex, C.alpha, C.alpha_field_name(), C.description, UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
+	}
+
+	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
+	{
+		std::string DN_WINDOW = "em_window";
+		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
+		std::string sysdesc = descprefix + strprint(" EMSystem %d ", (int)sysnum + 1);
+		if (includeprimary) {
+			std::string name = sysname + comp + "P";
+			std::string desc = sysdesc + comp + "-component primary field";
+			OM->writefield(pointindex,
+				p, name, desc, UNITLESS,
+				1, ST_FLOAT, DN_NONE, form, width, decimals);
+		}
+
+		{
+			std::string name = sysname + comp + "S";
+			std::string desc = sysdesc + comp + "-component secondary field";
+			OM->writefield(pointindex,
+				s, name, desc, UNITLESS,
+				s.size(), ST_FLOAT, DN_WINDOW, form, width, decimals);
+		}
 	}
 };
 
