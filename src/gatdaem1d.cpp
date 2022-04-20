@@ -270,3 +270,25 @@ void fm_dlogc(void* hS,
 	}
 }
 
+void derivative_rx_pitch(void* hS, int n, double rx_pitch, double* xb, double* zb, double* dxbdp, double* dzbdp)
+{
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
+	//T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	//T.LEM.derivative_layer = -1;
+	//T.setprimaryfields();
+	//T.setsecondaryfields();
+	
+	size_t sz = sizeof(double)*n;
+	
+	std::vector<double> dxbdpvec(n);	
+	std::vector<double> dzbdpvec(n);
+	std::vector<double> xbvec(xb,xb + n);
+	std::vector<double> zbvec(zb,zb + n);
+
+	T.drx_pitch(xbvec, zbvec, rx_pitch, dxbdpvec, dzbdpvec);
+
+	memcpy(dxbdp, dxbdpvec.data(), sz);	
+	memcpy(dzbdp, dzbdpvec.data(), sz);
+}
+
+
