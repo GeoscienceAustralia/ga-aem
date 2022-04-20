@@ -417,15 +417,16 @@ public:
   double XScale = 0.0;
   double YScale = 0.0;
   double ZScale = 0.0;
-
-  //cTDEmData data;
+  
   std::vector<double> X; //Secondary X field
   std::vector<double> Y; //Secondary Y field 
   std::vector<double> Z; //Secondary Z field 
   double PrimaryX = 0.0;  //Primary X field
   double PrimaryY = 0.0;  //Primary Y field
   double PrimaryZ = 0.0;  //Primary Z field
-      
+  double RefGeomPrimaryX = 0.0;  //Primary X ref field for PPM normalisation
+  double RefGeomPrimaryY = 0.0;  //Primary Y ref field for PPM normalisation
+  double RefGeomPrimaryZ = 0.0;  //Primary Z ref field for PPM normalisation
  
   std::vector<WindowSpecification> WinSpec;
     
@@ -1208,6 +1209,12 @@ public:
 	  //zi = ( -xb*sinp  + zb*cosp);
 	  //xb = (  xi*cosp  - zi*sinp);As bird sees it
 	  //zb = (  xi*sinp  + zi*cosp);						
+	  
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Must work with true field vector directions, not the PPM scaled versinn
+		  xb *= RefGeomPrimaryX;
+		  zb *= RefGeomPrimaryZ;
+	  }
 
 	  double cosp = cos(D2R*p);
 	  double sinp = sin(D2R*p);
@@ -1218,13 +1225,56 @@ public:
 	  dxbdp = D2R * (-xi * sinp - zi * cosp);
 	  dzbdp = D2R * (+xi * cosp - zi * sinp);
 
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Convert back to PPMS
+		  dxbdp /= RefGeomPrimaryX;
+		  dzbdp /= RefGeomPrimaryZ;
+	  }
   }
+
+  void drx_pitch(std::vector<double> xb, std::vector<double> zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp)
+  {
+	  //xi = (  xb*cosp  + zb*sinp);Inertial
+	  //zi = ( -xb*sinp  + zb*cosp);
+	  //xb = (  xi*cosp  - zi*sinp);As bird sees it
+	  //zb = (  xi*sinp  + zi*cosp);						
+
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Must work with true field vector directions, not the PPM scaled versinn
+		  xb *= RefGeomPrimaryX;
+		  zb *= RefGeomPrimaryZ;
+	  }
+	  
+
+	  double cosp = cos(D2R * p);
+	  double sinp = sin(D2R * p);
+
+	  //convert back to real coordinate system
+	  std::vector<double> xi = (xb * cosp + zb * sinp);
+	  std::vector<double> zi = (xb * -sinp + zb * cosp);
+
+	  dxbdp = (xi * -sinp - zi * cosp) * D2R;
+	  dzbdp = (xi * cosp - zi * sinp) * D2R;
+	  
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Convert back to PPMS
+		  dxbdp /= RefGeomPrimaryX;
+		  dzbdp /= RefGeomPrimaryZ;
+	  }
+  }
+
   void drx_roll(double yb, double zb, double r, double& dybdr, double& dzbdr)
   {
 	  //yi = (  yb*cosr  - zb*sinr);Inertial
 	  //zi = (  yb*sinr  + zb*cosr);
 	  //yb = (  yi*cosr  + zi*sinr);As bird sees it
 	  //zb = ( -yi*sinr  + zi*cosr);						
+
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Must work with true field vector directions, not the PPM scaled versinn
+		  yb *= RefGeomPrimaryY;
+		  zb *= RefGeomPrimaryZ;
+	  }
 
 	  double cosr = cos(D2R*r);
 	  double sinr = sin(D2R*r);
@@ -1235,32 +1285,25 @@ public:
 	  dybdr = D2R * (-yi * sinr + zi * cosr);
 	  dzbdr = D2R * (-yi * cosr - zi * sinr);
 
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Convert back to PPMS
+		  dybdr /= RefGeomPrimaryY;
+		  dzbdr /= RefGeomPrimaryZ;
+	  }
   }
 
-  void drx_pitch(const std::vector<double>& xb, const std::vector<double>& zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp)
-  {
-	  //xi = (  xb*cosp  + zb*sinp);Inertial
-	  //zi = ( -xb*sinp  + zb*cosp);
-	  //xb = (  xi*cosp  - zi*sinp);As bird sees it
-	  //zb = (  xi*sinp  + zi*cosp);						
-
-	  double cosp = cos(D2R*p);
-	  double sinp = sin(D2R*p);
-
-	  //convert back to real coordinate system
-	  std::vector<double> xi = (xb *  cosp + zb * sinp);
-	  std::vector<double> zi = (xb * -sinp + zb * cosp);
-
-	  dxbdp = (xi * -sinp - zi * cosp)*D2R;
-	  dzbdp = (xi * cosp - zi * sinp)*D2R;
-
-  }
-  void  drx_roll(const std::vector<double>& yb, const std::vector<double>& zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr)
+  void  drx_roll(std::vector<double> yb, std::vector<double> zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr)
   {
 	  //yi = (  yb*cosr  - zb*sinr);Inertial
 	  //zi = (  yb*sinr  + zb*cosr);
 	  //yb = (  yi*cosr  + zi*sinr);As bird sees it
 	  //zb = ( -yi*sinr  + zi*cosr);						
+
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Must work with true field vector directions, not the PPM scaled versinn
+		  yb *= RefGeomPrimaryY;
+		  zb *= RefGeomPrimaryZ;
+	  }
 
 	  double cosr = cos(D2R*r);
 	  double sinr = sin(D2R*r);
@@ -1272,6 +1315,11 @@ public:
 	  dybdr = (yi * -sinr + zi * cosr)*D2R;
 	  dzbdr = (yi * -cosr - zi * sinr)*D2R;
 
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Convert back to PPMS
+		  dybdr /= RefGeomPrimaryY;
+		  dzbdr /= RefGeomPrimaryZ;
+	  }
   }
 
   void readsystemdescriptorfile(std::string systemdescriptorfile)
@@ -1457,14 +1505,18 @@ public:
 			  s *= 1.0e6;
 		  }
 
-		  if (PrimaryX == 0.0) XScale = 0.0;
-		  else XScale *= (s / PrimaryX);
+		  RefGeomPrimaryX = PrimaryX;
+		  RefGeomPrimaryY = PrimaryY;
+		  RefGeomPrimaryZ = PrimaryZ;
 
-		  if (PrimaryY == 0.0) YScale = 0.0;
-		  else YScale *= (s / PrimaryY);
+		  if (RefGeomPrimaryX == 0.0) XScale = 0.0;
+		  else XScale *= (s / RefGeomPrimaryX);
 
-		  if (PrimaryZ == 0.0) ZScale = 0.0;
-		  else ZScale *= (s / PrimaryZ);
+		  if (RefGeomPrimaryY == 0.0) YScale = 0.0;
+		  else YScale *= (s / RefGeomPrimaryY);
+
+		  if (RefGeomPrimaryZ == 0.0) ZScale = 0.0;
+		  else ZScale *= (s / RefGeomPrimaryZ);
 	  }
 
   }
