@@ -2329,7 +2329,7 @@ public:
 	void iterate() {
 		_GSTITEM_				
 		CIS.iteration = 0;
-		CIS.lambda = 1e8;
+		CIS.lambda = 1e8;		
 		CIS.param = RefParam;		
 		forwardmodel(CIS.param, CIS.pred);
 		CIS.phid = phiData(CIS.pred);
@@ -2376,7 +2376,11 @@ public:
 								
 				Vector g;
 				forwardmodel_and_jacobian(CIS.param, g, J);
-				
+				//if (CIS.iteration == 0) {
+				//	CIS.lambda = estimate_initial_lambda();
+				//	std::cerr << "Initial lambda = " << CIS.lambda << std::endl;
+				//}
+
 				double targetphid = std::max(CIS.phid*0.7, MinimumPhiD);
 				cTrial t  = lambda_search_target(CIS.lambda, targetphid);
 				Vector dm = parameter_change(t.lambda, CIS.param, CIS.pred);
@@ -2467,6 +2471,24 @@ public:
 		return v;
 	}
 
+	double estimate_initial_lambda()
+	{				
+		Matrix JtWdJ = J.transpose() * Wd * J;
+		
+		Eigen::JacobiSVD<Matrix> svd0(JtWdJ);
+		Vector s0 = svd0.singularValues();
+		//std::cerr << "s0" << std::endl << s0 << std::endl;
+
+		Eigen::JacobiSVD<Matrix> svd1(Wm);
+		Vector s1 = svd1.singularValues();
+		//std::cerr << "s1" << std::endl << s1 << std::endl;
+
+		//std::cerr << "ratio " << s0[0]/s1[0] << std::endl;		
+
+		double elambda = s0[0] / s1[0] * 1.0e4;
+		return elambda;
+	}
+
 	Vector solve_linear_system(const double& lambda, const Vector& param, const Vector& pred)
 	{
 		// Phi = (d-g(m)+Jm) Wd (d-g(m)+Jm) + lambda ( (m-m0)' Wr (m-m0) + m' Ws m) )
@@ -2493,7 +2515,7 @@ public:
 
 		Matrix JtV = J.transpose() * V;
 		Matrix JtVJ = JtV * J;
-
+		
 		Matrix A = JtVJ + lambda * Wm;
 		Vector b = JtV * (d - g + J * m);
 		b += lambda * (Wr * m0);

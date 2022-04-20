@@ -332,12 +332,16 @@ private:
 		//bookmark
 		double maxsf = 1.0;
 
-		t = stepfactor_trial(lambda, dm, 0.01);
+		t = stepfactor_trial(lambda, dm, 0.10);
 		s.add_pair(t.stepfactor, t.phid);
-		
-		if (t.phid <= CIS.phid && t.phid > target) {
-			t = stepfactor_trial(lambda, dm, 0.10);
-			s.add_pair(t.stepfactor, t.phid);
+
+		if (t.phid > CIS.phid) {
+			t = stepfactor_trial(lambda, dm, 0.01);
+			s.add_pair(t.stepfactor, t.phid);					
+			if (t.phid > CIS.phid) {
+				t = stepfactor_trial(lambda, dm, 0.001);
+				s.add_pair(t.stepfactor, t.phid);
+			}
 		}
 		
 		if (t.phid <= CIS.phid && t.phid > target) {
@@ -349,7 +353,7 @@ private:
 			t = stepfactor_trial(lambda, dm, 0.5);
 			s.add_pair(t.stepfactor, t.phid);
 		}
-		
+
 		if (t.phid <= CIS.phid && t.phid > target) {
 			t = stepfactor_trial(lambda, dm, maxsf);
 			s.add_pair(t.stepfactor, t.phid);
