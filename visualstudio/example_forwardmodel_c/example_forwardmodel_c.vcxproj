@@ -47,11 +47,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>C:\Users\rossc\work\code\repos\ga-aem-csiro\visualstudio\gatdaem1d_c_library\x64\Debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\gatdaem1d_c_library\x64\$(CONFIGURATION);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>C:\Users\rossc\work\code\repos\ga-aem-csiro\visualstudio\gatdaem1d_c_library\x64\Release;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\gatdaem1d_c_library\x64\$(CONFIGURATION);$(LibraryPath)</LibraryPath>
     <CopyCppRuntimeToOutputDir>false</CopyCppRuntimeToOutputDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

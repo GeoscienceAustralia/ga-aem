@@ -87,7 +87,11 @@ public:
 		fdP.initialise(b, "Primary");
 		fdS.initialise(b, "Secondary");
 		fdE.initialise(b, "Noise");
-		fdSF.initialise(b, "ScaleFactor");
+
+		cBlock sfb = b.findblock("ScaleFactor");
+		if (sfb.empty() == false) {
+			fdSF.initialise(b, "ScaleFactor");
+		}
 		
 		nSoundings = nsoundings;
 		nWindows = nwindows;
