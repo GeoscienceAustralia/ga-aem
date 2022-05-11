@@ -1,6 +1,6 @@
 [submodule "submodules/cpp-utils"]
 	path = submodules/cpp-utils
-	url = https://github.com/rcb547/cpp-utils.git
+	url = git@github.com:rcb547/cpp-utils.git
 [submodule "submodules/ticpp"]
 	path = submodules/ticpp
 	url = https://github.com/wxFormBuilder/ticpp.git
@@ -8,13 +8,9 @@
 	path = submodules/eigen
 	url = https://github.com/eigenteam/eigen-git-mirror.git
 [submodule "submodules/csv-parser"]
-
 	path = submodules/csv-parser
-	
 	url = https://github.com/vincentlaucsb/csv-parser.git
-
 [submodule "submodules/geophysics-netcdf"]
-
 	path = submodules/geophysics-netcdf
 	url = git@github.com:GeoscienceAustralia/geophysics-netcdf.git
 [submodule "submodules/netcdf-cxx4"]
