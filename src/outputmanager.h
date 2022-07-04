@@ -479,8 +479,7 @@ public:
 			std::string s = f->acol.aseggdf_header_record();
 			ofs << s;
 		}
-		//ofs << "DEFN " << flist.size()+1 << " ST=RECD,RT=;END DEFN" << std::endl;		
-		ofs << "END DEFN" << std::endl;
+		ofs << "DEFN " << flist.size()+1 << " ST=RECD,RT=; END DEFN" << std::endl;				
 	};
 
 	void write_simple_header(const std::string pathname) {
