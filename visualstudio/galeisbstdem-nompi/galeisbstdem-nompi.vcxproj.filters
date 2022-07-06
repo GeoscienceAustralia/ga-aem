@@ -41,6 +41,9 @@
     <ClInclude Include="..\..\src\tdemsystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\outputmanager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">

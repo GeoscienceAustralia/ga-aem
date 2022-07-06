@@ -2726,7 +2726,7 @@ public:
 				cTDEmSystemInfo& S = SV[sysi];
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
-						si, S.CompInfo[ci].Name,
+						sysi, S.CompInfo[ci].Name,
 						"observed", "Observed",
 						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary);
 				}
