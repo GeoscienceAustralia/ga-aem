@@ -113,20 +113,20 @@ private:
 	const cCTLineData& D;	
 	size_t sequence_number = 0;
 	
-	int nhpixels;
-	int nvpixels;	
-	double h0;//Centre of left pixel column
-	double h1;//Centre of right pixel column
-	double dh;//Horizontal pixel size
-	double v0;//Centre of bottom pixel row
-	double v1;//Centre of top pixel row
-	double dv;//Vertical pixel size
+	int nhpixels = 0;
+	int nvpixels = 0;	
+	double h0 = 0.0;//Centre of left pixel column
+	double h1 = 0.0;//Centre of right pixel column
+	double dh = 0.0;//Horizontal pixel size
+	double v0 = 0.0;//Centre of bottom pixel row
+	double v1 = 0.0;//Centre of top pixel row
+	double dv = 0.0;//Vertical pixel size
 	std::vector<double> imagefid;
 	std::vector<double> imagex;
 	std::vector<double> imagey;	
 	std::vector<double> imageelevation;
 
-	double gratdiv;
+	double gratdiv = 0.0;
 
 	std::string outdir;
 	std::string prefix;
@@ -136,25 +136,31 @@ private:
 	cStretch stretch;
 	std::vector<double> cbarticks;
 
+	Color BkgColor;
+	Color AirColor;
+	Color NullsColor;
+	
 	bool autozsectiontop=true;
 	bool autozsectionbot=true;
 
-	bool   spreadfade;
-	double spreadfadelowclip;
-	double spreadfadehighclip;
-	double lowspreadfade;
-	double highspreadfade;
+	bool   spreadfade = 0.0;
+	double spreadfadelowclip = 0.0;
+	double spreadfadehighclip = 0.0;
+	double lowspreadfade = 0.0;
+	double highspreadfade = 0.0;
 
-	double geometrytolerance;
-	int    tilesize;
+	double geometrytolerance = 0.0;
+	int    tilesize = 0.0;
 	std::string datasetname;
 	std::string datacachename;
 
 public:
 	
 	cCurtainImageSection(const cCTLineData& _D) : D(_D)
-	{
-
+	{		
+		BkgColor = Color(0, 255, 255, 255);
+		AirColor = Color(0, 255, 255, 255);
+		NullsColor = Color(255, 128, 128, 128);
 	}
 
 	void set_sequence_number(const size_t& seqn){
@@ -199,7 +205,15 @@ public:
 		cmap      = cColorMap(cs);
 		stretch   = cStretch(cs);
 		cbarticks = cs.getdoublevector("ColourBarTicks");
-		
+
+		std::vector<int> bkgclr = cs.getintvector("BackgroundColour");
+		std::vector<int> airclr = cs.getintvector("AirColour");
+		std::vector<int> nullsclr = cs.getintvector("NullsColour");
+
+		if (bkgclr.size() == 4) BkgColor = Color(bkgclr[0], bkgclr[1], bkgclr[2], bkgclr[3]);
+		if (airclr.size() == 4) AirColor = Color(airclr[0], airclr[1], airclr[2], airclr[3]);
+		if (nullsclr.size() == 4) NullsColor = Color(nullsclr[0], nullsclr[1], nullsclr[2], nullsclr[3]);
+				
 		gratdiv = b.getdoublevalue("ElevationGridDivision");
 
 		geometrytolerance = b.getdoublevalue("GeometryTolerance");
@@ -289,10 +303,6 @@ public:
 
 	void generatesectiondata(Bitmap& bm){
 
-		Color BkgColor(255,128,128,128);
-		Color AirColor(0,255,255,255);
-		Color NullsColor(255,128,128,128);
-		
 		int vp0 = wv2iy(v0);
 		int vp1 = wv2iy(v1);
 
