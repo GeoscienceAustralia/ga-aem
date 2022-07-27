@@ -188,6 +188,10 @@ private:
 	bool SavePNG;
 	bool SaveEMF;
 
+	Color BkgColor;
+	Color AirColor;
+	Color NullsColor;
+
 	double elevation_median;
 	bool autozsectiontop;
 	bool autozsectionbot;
@@ -264,7 +268,20 @@ public:
 		SaveJPG = b.getboolvalue("SaveJPG");
 		SavePNG = b.getboolvalue("SavePNG");
 		SaveEMF = b.getboolvalue("SaveEMF");
-	}
+
+		BkgColor = Color(0, 255, 255, 255);
+		AirColor = Color(0, 255, 255, 255);
+		NullsColor = Color(255, 128, 128, 128);
+		
+		std::vector<int> bkgclr = b.getintvector("BackgroundColour");
+		std::vector<int> airclr = b.getintvector("AirColour");
+		std::vector<int> nullsclr = b.getintvector("NullsColour");
+
+		if (bkgclr.size() == 4) BkgColor = Color(bkgclr[0], bkgclr[1], bkgclr[2], bkgclr[3]);
+		if (airclr.size() == 4) AirColor = Color(airclr[0], airclr[1], airclr[2], airclr[3]);
+		if (nullsclr.size() == 4) NullsColor = Color(nullsclr[0], nullsclr[1], nullsclr[2], nullsclr[3]);
+
+	}	
 
 	void readdatafile(const cBlock& input, const std::string filename)
 	{
@@ -552,9 +569,9 @@ public:
 
 	void generatesectiondata(){
 
-		Color BkgColor(255,128,128,128);
-		Color AirColor(0,255,255,255);
-		Color NullsColor(255,128,128,128);
+		//Color BkgColor(255,128,128,128);
+		//Color AirColor(0,255,255,255);
+		//Color NullsColor(255,128,128,128);
 
 		//Unit vec in section direction
 		cVec u(dx, dy, 0.0);
