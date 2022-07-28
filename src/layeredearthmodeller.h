@@ -563,8 +563,8 @@ public:
 			A.Lambda3 = A.Lambda2 * lambda;
 			A.Lambda4 = A.Lambda3 * lambda;
 			A.Lambda_r = A.Lambda * r;			
-			A.j0Lambda_r = j0(A.Lambda_r);
-			A.j1Lambda_r = j1(A.Lambda_r);
+			A.j0Lambda_r = std::cyl_bessel_j(0,A.Lambda_r);
+			A.j1Lambda_r = std::cyl_bessel_j(1,A.Lambda_r);
 			loglambda += AbscissaSpacing;
 		}
 	}

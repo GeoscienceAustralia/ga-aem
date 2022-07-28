@@ -9,15 +9,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #ifndef _lem_H_
 #define _lem_H_
 
-#if defined _WIN32
-	//Microsoft Visual Studio seems to have underscore (_j0, _j1) in Bessel function names
-	#define besselj0 _j0
-	#define besselj1 _j1
-#else
-	#define besselj0 j0
-	#define besselj1 j1
-#endif
-
+#include <cmath>
 #include <complex>
 #include <vector>
 #include "geometry3d.h"
@@ -840,8 +832,8 @@ public:
 			A.Lambda3 = A.Lambda2 * lambda;
 			A.Lambda4 = A.Lambda3 * lambda;
 			A.LambdaR = A.Lambda * R;
-			A.j0LambdaR = besselj0(A.LambdaR);
-			A.j1LambdaR = besselj1(A.LambdaR);
+			A.j0LambdaR = std::cyl_bessel_j(0,A.LambdaR);
+			A.j1LambdaR = std::cyl_bessel_j(1,A.LambdaR);
 			loglambda += F.AbscissaSpacing;
 		}
 	}
@@ -939,7 +931,7 @@ public:
 		double loopfactor = 1.0;
 		if (ModellingLoopRadius > 0.0){
 			double lambda_a = A.Lambda*ModellingLoopRadius;
-			loopfactor = 2.0 * besselj1(lambda_a) / lambda_a;
+			loopfactor = 2.0 *  std::cyl_bessel_j(1,lambda_a) / lambda_a;
 		}
 
 		double& lambdar = A.LambdaR;
