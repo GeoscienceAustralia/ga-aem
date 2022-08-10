@@ -154,6 +154,11 @@ private:
 	std::string datasetname;
 	std::string datacachename;
 
+	//std::string imageformat = "png";
+	//std::string worldfileextension = "pngw";
+
+	std::string imageformat = "jpg";
+	std::string worldfileextension = "jgw";
 public:
 	
 	cCurtainImageSection(const cCTLineData& _D) : D(_D)
@@ -161,6 +166,14 @@ public:
 		BkgColor = Color(0, 255, 255, 255);
 		AirColor = Color(0, 255, 255, 255);
 		NullsColor = Color(255, 128, 128, 128);
+	}
+
+	std::string image_format() {
+		return imageformat;
+	}
+
+	std::string worldfile_extension() {
+		return worldfileextension;
 	}
 
 	void set_sequence_number(const size_t& seqn){
@@ -522,23 +535,23 @@ public:
 		return s;
 	}
 
-	std::string jpegfile_nod(){
-		std::string s = "jpeg\\" + basename() + ".jpg";
+	std::string imagefile_nod(){
+		std::string s = image_format() + "\\" + basename() + "." + image_format();
+		return s;
+	}
+	
+	std::string imagefile(){
+		std::string s = outdir + imagefile_nod();
+		return s;
+	}
+		
+	std::string worldfile_nod() {
+		std::string s = image_format() + "\\" + basename() + "." + worldfile_extension();
 		return s;
 	}
 
-	std::string jpegfile(){
-		std::string s = outdir + jpegfile_nod();
-		return s;
-	}
-
-	std::string jgwfile_nod() {
-		std::string s = "jpeg\\" + basename() + ".jgw";
-		return s;
-	}
-
-	std::string jgwfile() {
-		std::string s = outdir + jgwfile_nod();
+	std::string worldfile() {
+		std::string s = outdir + worldfile_nod();
 		return s;
 	}
 
@@ -578,17 +591,17 @@ public:
 	}
 
 	std::string colorbarfile(){
-		std::string s = tilesetdir() + "colourbar.jpg";
+		std::string s = tilesetdir() + "colourbar." + image_format();
 		return s;
 	}
 
 	std::string colorbarfile_nod(){
-		std::string s = "colourbar.jpg";
+		std::string s = "colourbar." + image_format();
 		return s;
 	}
 	
-	void saveimage(Bitmap& bm){
-		cGDIplusHelper::saveimage(&bm, jpegfile());
+	void saveimage(Bitmap& bm){		
+		cGDIplusHelper::saveimage(&bm, imagefile());
 	}
 
 	template<typename T>
@@ -690,7 +703,7 @@ public:
 		//Line 4 : E : pixel size in the y - direction in map units, almost always negative[3]
 		//Line 5 : C : x - coordinate of the center of the upper left pixel
 		//Line 6 : F : y - coordinate of the center of the upper left pixel		
-		std::ofstream ofs(jgwfile());
+		std::ofstream ofs(worldfile());
 		ofs << dh  << std::endl;
 		ofs << 0.0 << std::endl;
 		ofs << 0.0 << std::endl;
@@ -752,11 +765,11 @@ public:
 			l.InsertEndChild(Element("DataCacheName", dc));
 			
 			//Image formats
-			l.InsertEndChild(Element("ImageFormat", "image/jpg"));			
-			l.InsertEndChild(Element("FormatSuffix", ".jpg"));
+			l.InsertEndChild(Element("ImageFormat", "image/" + image_format()));
+			l.InsertEndChild(Element("FormatSuffix", "." + image_format()));
 			
 			a = Element("AvailableImageFormats");
-			a.InsertEndChild(Element("ImageFormat", "image/jpg"));			
+			a.InsertEndChild(Element("ImageFormat", "image/" + image_format()));
 			l.InsertEndChild(a);
 
 			a = Element("NumLevels");
@@ -840,10 +853,11 @@ public:
 		std::string s;
 		if (sequence_number == 0) s += strprint("@echo off\n\n");
 		
-		s += strprint("call ribbon.bat");
-		s += strprint(" -tilesize %d",tilesize);		
+		s += strprint("call ribbon.bat");		
+		s += strprint(" -tilesize %d",tilesize);
 		s += strprint(" -noLayerDef");
-		s += strprint(" -source %s", jpegfile_nod().c_str());
+		s += strprint(" -format %s", image_format().c_str());
+		s += strprint(" -source %s", imagefile_nod().c_str());
 		s += strprint(" -output %s", tilesetdir_nod().c_str());
 		s += strprint("\n");				
 		file << s.c_str();		
