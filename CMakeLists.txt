@@ -1,9 +1,24 @@
 cmake_minimum_required(VERSION 3.12)
 
+cmake_policy(SET CMP0076 NEW)
+
+function(reportvar var)
+  message(STATUS "${ARGVN}${var}=${${var}}")
+endfunction()
+
+function(reportallvars)
+	get_cmake_property(_variableNames VARIABLES)
+	list (SORT _variableNames)
+	foreach (_variableName ${_variableNames})
+		message(STATUS "${_variableName}=${${_variableName}}")
+	endforeach()
+endfunction()
+
 # Set project name
 project(ga-aem)
 
-message(STATUS Build Type = ${CMAKE_BUILD_TYPE})
+reportvar(CMAKE_SYSTEM_NAME)
+reportvar(CMAKE_BUILD_TYPE)
 
 # Set options
 option(WITH_MPI "WITH_MPI" ON)
@@ -11,10 +26,10 @@ option(WITH_NETCDF "WITH_NETCDF" ON)
 option(WITH_GDAL "WITH_GDAL" ON)
 option(WITH_PETSC "WITH_PETSC" ON)
 
-message(STATUS WITH_MPI = ${WITH_MPI})
-message(STATUS WITH_NETCDF = ${WITH_NETCDF})
-message(STATUS WITH_GDAL = ${WITH_GDAL})
-message(STATUS WITH_PETSC = ${WITH_PETSC})
+reportvar(WITH_MPI)
+reportvar(WITH_NETCDF)
+reportvar(WITH_GDAL)
+reportvar(WITH_PETSC)
 
 # Set the C++ standard to C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -38,46 +53,45 @@ if(CMAKE_COMPILER_IS_GNUCC)
 	#On GCC, even with -Wno-date-time, still get warings of the form: warning: macro "__DATE__" might prevent reproducible builds [-Wdate-time]
 endif()
 
+# Find PkgConfig
+find_package(PkgConfig QUIET)
 
+# Add the project include directories
+include_directories(src/)
+include_directories(submodules/cpp-utils/src/)
+include_directories(submodules/csv-parser/single_include/)
+include_directories(submodules/eigen/)
 
 # Configure FFTW
-#find_package(FFTW REQUIRED fftw3 IMPORTED_TARGET)
-#include_directories(PkgConfig::FFTW)
-#link_libraries     (PkgConfig::FFTW)
-#if(FFTW_FOUND)
-#	message(STATUS "FFTW ${FFTW_VERSION} was found")
-#endif()
+if(PkgConfig_FOUND)
+	message(STATUS "FFTW package was found")
+	pkg_search_module(FFTW REQUIRED fftw3 IMPORTED_TARGET)
+endif()
+if(NOT FFTW_FOUND)
+	message(STATUS "FFTW package was not found - manual setup")
+	set(FFTW_DIR $ENV{FFTW_DIR})
+	find_path(FFTW_INCLUDE_DIRS NAMES "fftw3.h" PATHS ${FFTW_DIR} PATH_SUFFIXES "include" NO_DEFAULT_PATH)
+	find_library(FFTW_LINK_LIBRARIES "fftw3-3" libfftw3-3 PATHS ${FFTW_DIR} PATH_SUFFIXES "lib" "lib64" NO_DEFAULT_PATH)
+	set(FFTW_FOUND 1)
+endif()
+
+if(FFTW_FOUND)
+	reportvar(FFTW_VERSION "	")
+	reportvar(FFTW_INCLUDE_DIRS "	")
+	reportvar(FFTW_LINK_LIBRARIES "	")
+	reportvar(FFTW_LIBDIR "	")
+	reportvar(FFTW_LIBRARIES "	")
+	reportvar(FFTW_LDFLAGS "	")
+endif()
 
 #$find_package(FFTW IMPORTED_TARGET)
 #if(FFTW_FOUND)
 #	message(STATUS "FFTW ${FFTW_VERSION} was found")
 #else()
-#	set (FFTW_INCLUDE_DIRS ${FFTW_ROOT})
-#	set (FFTW_LIBRARIES ${FFTW_ROOT})
+#	set (FFTW_INCLUDE_DIRS ${FFTW_DIR})
+#	set (FFTW_LIBRARIES ${FFTW_DIR})
 #endif()
 
-set(FFTW_ROOT $ENV{FFTW_ROOT})
-#set(FFTW_INCLUDE_DIR $ENV{FFTW_INCLUDE_DIR})
-#set(FFTW_LIBRARY_DIR $ENV{FFTW_LIBRARY_DIR})
-#message(STATUS "FFTW include dir: ${FFTW_INCLUDE_DIR}")
-#message(STATUS "FFTW library dir: ${FFTW_LIBRARY_DIR}")
-
-find_path(FFTW_INCLUDE_DIRS
-        NAMES "fftw3.h"
-        PATHS ${FFTW_ROOT}
-        PATH_SUFFIXES "include"
-        NO_DEFAULT_PATH)
-
-find_library(
-        FFTW_LIB
-        NAMES "fftw3-3" libfftw3-3
-        PATHS ${FFTW_ROOT}
-        PATH_SUFFIXES "lib" "lib64"
-        NO_DEFAULT_PATH)
-
-
-message(STATUS "FFTW include dirs: ${FFTW_INCLUDE_DIRS}")
-message(STATUS "FFTW library: ${FFTW_LIB}")
 
 # Configure MPI if opted for
 if(${WITH_MPI})
@@ -101,47 +115,36 @@ if(${WITH_GDAL})
 	find_package(GDAL REQUIRED)
 	if(GDAL_FOUND)
 		message(STATUS "GDAL ${GDAL_VERSION} was found")
-		message(STATUS "GDAL_INCLUDE_DIRS ${GDAL_INCLUDE_DIRS}")
-		message(STATUS "GDAL_LIBRARIES ${GDAL_LIBRARIES}")
+		reportvar(GDAL_INCLUDE_DIRS "	")
+		reportvar(GDAL_LIBRARIES "	")
 	endif()
-endif()
-
-# Configure NETCDFCXX if opted for
-if(${WITH_NETCDF_OLD})
-	find_package(NETCDF REQUIRED) 
-	if(NETCDF_FOUND)
-		message(STATUS "NETCDF was found")
-		message(STATUS "${netCDF_INSTALL_PREFIX}")
-		message(STATUS "NETCDF install dir: ${netCDF_INSTALL_PREFIX}")
-		message(STATUS "NETCDF include dir: ${netCDF_INCLUDE_DIR}")
-		message(STATUS "NETCDF lib dir: ${netCDF_LIB_DIR}")
-		set(netCDF_LIBRARIES netcdf hdf5 hdf5_hl curl_imp)
-		#set(netCDF_LIBRARIES netcdf)
-		message(STATUS "NETCDF libraries: ${netCDF_LIBRARIES}")
-		#add_definitions(-DHAVE_NETCDF)
-	endif()
-endif()
-
-if(${WITH_NETCDF})
-	set(netCDF_INSTALL_PREFIX "C:/Program Files/netCDF 4.6.1")
-	set(netCDF_INCLUDE_DIR ${netCDF_INSTALL_PREFIX}/include)
-	set(netCDF_LIB_DIR ${netCDF_INSTALL_PREFIX}/lib)
-	set(netCDF_LIBRARIES 
-		${netCDF_LIB_DIR}/netcdf.lib 
-		${netCDF_LIB_DIR}/hdf5.lib 
-		${netCDF_LIB_DIR}/hdf5_hl.lib 
-		${netCDF_LIB_DIR}/libcurl_imp.lib)
-
-	#add_definitions(-DHAVE_NETCDF)
-
-	message(STATUS "NETCDF install dir: ${netCDF_INSTALL_PREFIX}")
-	message(STATUS "NETCDF include dir: ${netCDF_INCLUDE_DIR}")
-	message(STATUS "NETCDF lib dir: ${netCDF_LIB_DIR}")
-	message(STATUS "NETCDF libraries: ${netCDF_LIBRARIES}")
 endif()
 
 # Configure PETSc (only used for galeiallatonce)
 if(${WITH_PETSC})	
+	SET(PETSC_FOUND 1)
+	set(PETSC_DIR $ENV{PETSC_DIR})
+	set(PETSC_INCLUDE_DIRS $ENV{PETSC_INCLUDE_DIRS})
+	set(PETSC_LIB_DIR $ENV{PETSC_LIB_DIR})
+	set(PETSC_LIBRARIES $ENV{PETSC_LIBRARIES})
+	set(PETSC_LDFLAGS $ENV{PETSC_LDFLAGS})
+
+	foreach (lib_name ${PETSC_LIBRARIES})
+		set(full_lib_name ${PETSC_LIB_DIR}/${lib_name})
+		cmake_path(SET full_lib_name NORMALIZE "${full_lib_name}")
+		list(APPEND PETSC_LINK_LIBRARIES ${full_lib_name})
+	endforeach()
+
+	message(STATUS "PETSC was found")	
+	reportvar(PETSC_DIR "	")	
+	reportvar(PETSC_INCLUDE_DIRS "	")	
+	reportvar(PETSC_LIB_DIR "	")	
+	reportvar(PETSC_LIBRARIES "	")
+	reportvar(PETSC_LINK_LIBRARIES "	")
+	reportvar(PETSC_LDFLAGS "	")
+endif()
+
+if(${WITH_PETSC_ZZZ})
 	find_package(PETSC)
 	if(PETSC_FOUND)		
 		message(STATUS "PETSc was found")
@@ -154,7 +157,7 @@ if(${WITH_PETSC})
 			message(STATUS "    PETSC_LDFLAGS=${PETSC_LDFLAGS}")	
 		endif()		
 	else()
-		message(STATUS "PETSc was NOT found -- will not build ${target}")
+		message(STATUS "PETSc was NOT found")
 	endif()
 endif()
 
@@ -176,37 +179,66 @@ if(${WITH_PETSC_OLD})
 endif()
 
 
-
-
-# Add the include directories
-include_directories(src/)
-include_directories(submodules/cpp-utils/src/)
-include_directories(submodules/csv-parser/single_include/)
-include_directories(submodules/eigen/)
+# Configure NETCDF if opted for
 if(${WITH_NETCDF})
-	include_directories(libnetcdfcxx INTERFACE ${netCDF_INCLUDE_DIR})
-	include_directories(submodules/geophysics-netcdf/src/)
-	include_directories(submodules/geophysics-netcdf/submodules/marray/include/andres/)
+	pkg_search_module(NETCDFCXX netcdf-cxx4 IMPORTED_TARGET) 
+	if(NETCDFCXX_FOUND)
+		message(STATUS "NETCDFCXX package was found")
+		set(NETCDFCXX_PACKAGE_FOUND 1)
+	else()
+		message(STATUS "NETCDFCXX package was not found - building our own")
+		set(NETCDF_DIR $ENV{NETCDF_DIR})
+		set(NETCDF_INCLUDE_DIR $ENV{NETCDF_INCLUDE_DIR})
+		set(NETCDF_LIB_DIR $ENV{NETCDF_LIB_DIR})
+		set(NETCDF_LIBRARIES $ENV{NETCDF_LIBRARIES})
+
+		foreach (lib_name ${NETCDF_LIBRARIES})
+			set(full_lib_name ${NETCDF_LIB_DIR}/${lib_name})
+			cmake_path(SET full_lib_name NORMALIZE "${full_lib_name}")
+			list(APPEND NETCDF_LINK_LIBRARIES ${full_lib_name})
+		endforeach()
+
+		reportvar(NETCDF_DIR "	")
+		reportvar(NETCDF_INCLUDE_DIR "	")
+		reportvar(NETCDF_LIB_DIR "	")
+		reportvar(NETCDF_LIBRARIES "	")
+		reportvar(NETCDF_LINK_LIBRARIES "	")
+
+		#set(NETCDF_LINK_LIBRARIES 
+		#	${NETCDF_LIB_DIR}/netcdf.lib 
+		#	${NETCDF_LIB_DIR}/hdf5.lib 
+		#	${NETCDF_LIB_DIR}/hdf5_hl.lib 
+		#	${NETCDF_LIB_DIR}/libcurl_imp.lib)
+		set(NETCDFCXX_SRC_DIR submodules/netcdf-cxx4/cxx4)
+		set(NETCDFCXX_INCLUDE_DIRS ${NETCDFCXX_SRC_DIR} ${NETCDF_INCLUDE_DIR})
+		set(NETCDFCXX_PACKAGE_FOUND 0)
+
+
+		file(GLOB NC_CXX_HEADERS ${NETCDFCXX_SRC_DIR}/*.h)
+		file(GLOB NC_CXX_SOURCES ${NETCDFCXX_SRC_DIR}/nc*.cpp)
+		add_library(libnetcdfcxx STATIC ${NC_CXX_SOURCES})
+		target_include_directories(libnetcdfcxx PUBLIC ${NETCDFCXX_INCLUDE_DIRS})
+		target_link_libraries(libnetcdfcxx PUBLIC ${NETCDF_LINK_LIBRARIES}) 
+		#include_directories(libnetcdfcxx INTERFACE ${netCDF_INCLUDE_DIR})
+		#include_directories(submodules/geophysics-netcdf/src/)
+		#include_directories(submodules/geophysics-netcdf/submodules/marray/include/andres/)
+		reportvar(NETCDFCXX_INCLUDE_DIRS "	")
+		reportvar(NETCDFCXX_LIBRARY_DIRS "	")	
+		reportvar(NETCDFCXX_LIBRARIES "	")
+		reportvar(NETCDFCXX_LINK_LIBRARIES "	")
+		reportvar(NETCDFCXX_LD_FLAGS "	")
+	endif()
+
 endif()
 
-
 ### Add the targets
-
 # Add the NetCDF CXX library
-file(GLOB NC_CXX_HEADERS submodules/netcdf-cxx4/cxx4/*.h)
-file(GLOB NC_CXX_SOURCES submodules/netcdf-cxx4/cxx4/nc*.cpp)
-add_library(libnetcdfcxx STATIC ${NC_CXX_SOURCES})
-target_include_directories(libnetcdfcxx PUBLIC submodules/netcdf-cxx4/cxx4)
-target_include_directories(libnetcdfcxx PUBLIC ${netCDF_INCLUDE_DIR})
-target_link_directories(libnetcdfcxx PUBLIC ${netCDF_LIB_DIR})
-target_link_libraries(libnetcdfcxx PUBLIC ${netCDF_LIBRARIES}) 
-set(NETCDFCXX_INCLUDE_DIRS submodules/netcdf-cxx4/cxx4 ${netCDF_INCLUDE_DIR})
-message(STATUS "NETCDFCXX_INCLUDE_DIRS ${NETCDFCXX_INCLUDE_DIRS}")
+if(${WITH_NETCDFZZZ})	
+
+endif()
 
 # Add the TICPP library submodule
 add_subdirectory(submodules/ticpp)
-
-
 
 
 #################
@@ -219,7 +251,7 @@ add_library(${target} STATIC src/gatdaem1d.cpp)
 set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
 target_sources(${target} PRIVATE submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
-target_link_libraries(${target} PRIVATE ${FFTW_LIB})
+target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
 install(TARGETS ${target} DESTINATION lib)
 
 # Add the gatdaem1d shared library
@@ -228,7 +260,7 @@ add_library(${target} SHARED src/gatdaem1d.cpp)
 set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
 target_sources(${target} PRIVATE submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
-target_link_libraries(${target} PRIVATE ${FFTW_LIB})
+target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
 #Install the libs
 install(TARGETS ${target} DESTINATION bin)
 install(TARGETS ${target} DESTINATION python)
@@ -241,7 +273,7 @@ set(target gaforwardmodeltdem)
 add_executable(${target} src/gaforwardmodeltdem.cpp)
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
-target_link_libraries(${target} PRIVATE ${FFTW_LIB})
+target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
 install(TARGETS ${target} DESTINATION bin)
 
 # Add example_forward_model executable
@@ -249,7 +281,7 @@ set(target example_forward_model)
 add_executable(${target} src/example_forward_model.cpp)
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
-target_link_libraries(${target} PRIVATE ${FFTW_LIB})
+target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
 #target_link_libraries(${target} PRIVATE cpp-utils-static)
 install(TARGETS ${target} DESTINATION bin)
 
@@ -266,15 +298,22 @@ set(target galeisbstdem)
 add_executable(${target} src/galeisbstdem.cpp)
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
-target_link_libraries(${target} PRIVATE ${FFTW_LIB})
+target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})
 if(${WITH_MPI})
 	target_compile_definitions(${target} PRIVATE -D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
 	target_include_directories(${target} PRIVATE SYSTEM ${MPI_INCLUDE_PATH})
 	target_link_libraries(${target} PRIVATE ${MPI_C_LIBRARIES})
 endif()
 if(${WITH_NETCDF})
+	target_compile_definitions(${target} PRIVATE -DHAVE_NETCDF)
+	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/src/)
+	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/submodules/marray/include/andres/)	
 	target_include_directories(${target} PRIVATE ${NETCDFCXX_INCLUDE_DIRS})
-	target_link_libraries(${target} PRIVATE libnetcdfcxx)
+
+	target_link_libraries(${target} PRIVATE ${NETCDFCXX_LINK_LIBRARIES})
+	if(NOT ${NETCDFCXX_PACKAGE_FOUND})
+		target_link_libraries(${target} PRIVATE libnetcdfcxx)
+	endif()
 endif()
 if(OpenMP_CXX_FOUND) 
 	target_link_libraries(${target} PRIVATE OpenMP::OpenMP_CXX)	
@@ -287,9 +326,15 @@ if(${WITH_NETCDF})
 	add_executable(${target} src/garjmcmctdem.cpp)
 	target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 	target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
-	target_link_libraries(${target} PRIVATE ${FFTW_LIB})
+	target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
+
+	target_compile_definitions(${target} PRIVATE -DHAVE_NETCDF)
 	target_include_directories(${target} PRIVATE ${NETCDFCXX_INCLUDE_DIRS})
-	target_link_libraries(${target} PRIVATE libnetcdfcxx)
+	target_link_libraries(${target} PRIVATE ${NETCDFCXX_LINK_LIBRARIES})
+	if(NOT ${NETCDFCXX_PACKAGE_FOUND})
+		target_link_libraries(${target} PRIVATE libnetcdfcxx)
+	endif()	
+
 	if(${WITH_MPI})
 		target_compile_definitions(${target} PRIVATE -D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
 		target_include_directories(${target} PRIVATE SYSTEM ${MPI_INCLUDE_PATH})
@@ -306,9 +351,18 @@ if(MPI_FOUND AND PETSC_FOUND)
 	add_executable(${target} src/galeiallatonce.cpp)
 	target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 	target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
-	target_link_libraries(${target} PRIVATE ${FFTW_LIB})	
+	target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
+
+	target_compile_definitions(${target} PRIVATE -D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
+	target_include_directories(${target} PRIVATE SYSTEM ${MPI_INCLUDE_PATH})
+	target_link_libraries(${target} PRIVATE ${MPI_C_LIBRARIES})
+
 	target_include_directories(${target} PRIVATE ${PETSC_INCLUDE_DIRS})
-	target_link_libraries(${target} PRIVATE ${PETSC_LDFLAGS})
+	#target_link_libraries(${target} PRIVATE ${PETSC_LINK_LIBRARIES})	
+	target_link_directories(${target} PRIVATE ${PETSC_LIB_DIR})
+	target_link_libraries(${target} PRIVATE ${PETSC_LIBRARIES})
+	target_link_options(${target} PRIVATE ${PETSC_LDFLAGS})
+
 	install(TARGETS ${target} DESTINATION bin)
 else()
 	message(WARNING "${target} requires PETSc and MPI -- will not be built")
