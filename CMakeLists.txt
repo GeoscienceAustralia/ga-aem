@@ -51,9 +51,9 @@ else()
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Wno-date-time")
-	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wno-unused-result -Wno-date-time")
-	#On GCC, even with -Wno-date-time, still get warings of the form: warning: macro "__DATE__" might prevent reproducible builds [-Wdate-time]
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Wno-date-time -Wno-error=date-time")
+	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wno-unused-result -Wno-date-time -Wno-error=date-time")
+	#On GCC, even with -Wno-date-time, still get warings of the form: warning: macro "__DATE__" might prevent reproducible builds [-Wdate-time]	
 endif()
 
 # Find PkgConfig
@@ -293,12 +293,14 @@ set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
 target_sources(${target} PRIVATE submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
-#Install the libs
+# Install the shared library
 install(TARGETS ${target} DESTINATION bin)
-install(TARGETS ${target} DESTINATION python)
-install(TARGETS ${target} DESTINATION matlab)
-#Install the include files
-install(FILES   src/gatdaem1d.h TYPE INCLUDE)
+# Install the include files
+install(FILES src/gatdaem1d.h TYPE INCLUDE)
+
+# Install the lib for Matlab and Python as well
+install(TARGETS ${target} RUNTIME DESTINATION python/gatdaem1d)
+install(TARGETS ${target} RUNTIME DESTINATION matlab/bin)
 
 # Add gaforwardmodeltdem executable
 set(target gaforwardmodeltdem)
@@ -470,3 +472,30 @@ set(target removelog10conductivityfromsgrid)
 add_executable(${target} src/removelog10conductivityfromsgrid.cpp)
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 install(TARGETS ${target} DESTINATION bin)
+
+# Install the documentation
+install(DIRECTORY docs/ DESTINATION docs)
+
+# Install the examples 
+install(DIRECTORY examples/ DESTINATION examples)
+
+# Install the python library and examples and code, excluding rubbish from the development environment
+install(DIRECTORY python/ DESTINATION python
+		PATTERN "*.ilk" EXCLUDE
+		PATTERN "*.pdb" EXCLUDE
+		PATTERN "*.ipdb" EXCLUDE
+		PATTERN "*.iobj" EXCLUDE
+		PATTERN "gatdaem1d_debug.dll" EXCLUDE
+		PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
+
+# Install the matlab library and examples and functions, excluding rubbish from the development environment
+install(DIRECTORY matlab/ DESTINATION matlab
+		PATTERN "bin" EXCLUDE
+		PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
+if(MSVC)
+	#On Windows rename matlab .dll file to .mexw64 (because thats the way matlab wants it :( )
+	install (SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall_dll_to_mexw64.cmake")
+endif()
+
+
+

@@ -17,10 +17,11 @@ export PKG_CONFIG_PATH=$PETSC_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
 export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/Intel
 #export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/GNU
 
+# BUILD_DIR is a temporary directory for building (compiling and linking)
 export BUILD_DIR=$PWD/build-intel
+# INSTALL_DIR is the directory for installing the build package
 export INSTALL_DIR=$PWD/install-intel
 
-# build is a temporary directory for building (compiling and linking)
 mkdir $BUILD_DIR
 cd $BUILD_DIR
 
@@ -44,6 +45,5 @@ cmake --build . --target all
 ## Windows only ctlinedata2georefimage
 ## Windows only ctlinedata2curtainimage
 
-#cmake --build .
 #cmake --install . --prefix $INSTALL_DIR
 
