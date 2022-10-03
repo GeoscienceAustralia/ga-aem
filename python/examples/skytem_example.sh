@@ -9,10 +9,10 @@
 #This will fail: "export PYTHONPATH='blah/blah/ga-aem/python/gatdaem1d"
 #This will work: "export PYTHONPATH='blah/blah/ga-aem/python"
 
-module load gcc/5.2.0
-module load fftw3/3.3.3
-module load python3/3.3.0
-module load python3/3.3.0-matplotlib
+#module load gcc/5.2.0
+#module load fftw3/3.3.3
+#module load python3/3.3.0
+#module load python3/3.3.0-matplotlib
 
 
 export PYTHONPATH='../../python'

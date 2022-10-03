@@ -298,9 +298,6 @@ install(TARGETS ${target} DESTINATION bin)
 # Install the include files
 install(FILES src/gatdaem1d.h TYPE INCLUDE)
 
-# Install the lib for Matlab and Python as well
-install(TARGETS ${target} RUNTIME DESTINATION python/gatdaem1d)
-install(TARGETS ${target} RUNTIME DESTINATION matlab/bin)
 
 # Add gaforwardmodeltdem executable
 set(target gaforwardmodeltdem)
@@ -492,10 +489,7 @@ install(DIRECTORY python/ DESTINATION python
 install(DIRECTORY matlab/ DESTINATION matlab
 		PATTERN "bin" EXCLUDE
 		PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
-if(MSVC)
-	#On Windows rename matlab .dll file to .mexw64 (because thats the way matlab wants it :( )
-	install (SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall_dll_to_mexw64.cmake")
-endif()
 
-
-
+#On Windows copy and rename matlab .dll file to .mexw64 
+# and on linux copy and rename python libgatdaem1d.so to gatdaem1d.so
+install (SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")
