@@ -474,7 +474,8 @@ install(TARGETS ${target} DESTINATION bin)
 install(DIRECTORY docs/ DESTINATION docs)
 
 # Install the examples 
-install(DIRECTORY examples/ DESTINATION examples)
+install(DIRECTORY examples/ DESTINATION examples
+		PATTERN "*.sh" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
 
 # Install the python library and examples and code, excluding rubbish from the development environment
 install(DIRECTORY python/ DESTINATION python
@@ -483,12 +484,11 @@ install(DIRECTORY python/ DESTINATION python
 		PATTERN "*.ipdb" EXCLUDE
 		PATTERN "*.iobj" EXCLUDE
 		PATTERN "gatdaem1d_debug.dll" EXCLUDE
-		PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
+		PATTERN "*.sh" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
 
 # Install the matlab library and examples and functions, excluding rubbish from the development environment
 install(DIRECTORY matlab/ DESTINATION matlab
-		PATTERN "bin" EXCLUDE
-		PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
+		PATTERN "bin" EXCLUDE)
 
 #On Windows copy and rename matlab .dll file to .mexw64 
 # and on linux copy and rename python libgatdaem1d.so to gatdaem1d.so

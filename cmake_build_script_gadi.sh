@@ -27,6 +27,7 @@ cd $BUILD_DIR
 
 cmake -Wno-dev -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DCMAKE_BUILD_TYPE=Release  ..
 cmake --build . --target all
+cmake --install . --prefix $INSTALL_DIR
 
 #cmake --build . --target galeisbstdem
 #cmake --build . --target garjmcmctdem
