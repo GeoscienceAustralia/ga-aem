@@ -1,7 +1,6 @@
 #!/bin/sh
 
-module load intel-compiler
-#module load gcc/11.1.0
+module load gcc/11.1.0
 module load cmake/3.16.2
 module load fftw3/3.3.8
 module load netcdf/4.8.0
@@ -18,14 +17,14 @@ export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/Intel
 #export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/GNU
 
 # BUILD_DIR is a temporary directory for building (compiling and linking)
-export BUILD_DIR=$PWD/build-intel
+export BUILD_DIR=$PWD/build-gnu
 # INSTALL_DIR is the directory for installing the build package
-export INSTALL_DIR=$PWD/install-intel
+export INSTALL_DIR=$PWD/install-gnu
 
 mkdir $BUILD_DIR
 cd $BUILD_DIR
 
-cmake -Wno-dev -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DCMAKE_BUILD_TYPE=Release  ..
+cmake -Wno-dev -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ ..
 cmake --build . --target all
 cmake --install . --prefix $INSTALL_DIR
 
@@ -45,6 +44,4 @@ cmake --install . --prefix $INSTALL_DIR
 #cmake --build . --target removelog10conductivityfromsgrid
 ## Windows only ctlinedata2georefimage
 ## Windows only ctlinedata2curtainimage
-
-#cmake --install . --prefix $INSTALL_DIR
 
