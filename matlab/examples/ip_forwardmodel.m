@@ -3,7 +3,7 @@ clear all;
 clear mex;
 
 %Add path to the gatdaem1d wrapper .m files and the shared library
-addpath('..\bin\x64');
+addpath('..\bin');
 addpath('..\gatdaem1d_functions');
 
 %Load the shared library

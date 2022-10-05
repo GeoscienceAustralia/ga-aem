@@ -8,7 +8,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 /* Example C (not C++) driver program for simple forward model*/
 
-
+#include "stdio.h"
 #include "malloc.h"
 #include "gatdaem1d.h"
 
