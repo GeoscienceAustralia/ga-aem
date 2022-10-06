@@ -6,7 +6,6 @@
 # Ignore build and install directories
 build*/
 install*/
-cmake_build_script_ubuntu.sh
 
 # Ignore output files from the examples
 examples/**/output
