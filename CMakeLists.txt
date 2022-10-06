@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.17)
 
 cmake_policy(SET CMP0076 NEW)
 
@@ -93,23 +93,11 @@ if(FFTW_FOUND)
 	reportvar(FFTW_LDFLAGS)
 endif()
 
-#$find_package(FFTW IMPORTED_TARGET)
-#if(FFTW_FOUND)
-#	message(STATUS "FFTW ${FFTW_VERSION} was found")
-#else()
-#	set (FFTW_INCLUDE_DIRS ${FFTW_DIR})
-#	set (FFTW_LIBRARIES ${FFTW_DIR})
-#endif()
-
-
 # Configure MPI if opted for
 if(${WITH_MPI})
 	find_package(MPI)
 	if(MPI_FOUND)
 		message(STATUS "MPI was found")
-		#include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-		#add_definitions(-D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
-		#link_libraries(${MPI_C_LIBRARIES})
 	endif()
 endif()
 
@@ -128,8 +116,6 @@ if(${WITH_GDAL})
 		reportvar(GDAL_LIBRARIES "	")
 	endif()
 endif()
-
-
 
 # Configure PETSc (only used for galeiallatonce)
 if(${WITH_PETSC})
@@ -176,41 +162,6 @@ if(${WITH_PETSC})
 	endif()
 endif()
 
-if(${WITH_PETSC_ZZZ})
-	find_package(PETSC)
-	if(PETSC_FOUND)
-		message(STATUS "PETSc was found")
-		if (PETSC_INCLUDE_DIRS STREQUAL "")
-			# If PETSc is not set up properly try a manual approach
-			message(STATUS "PETSC pkg-config not set up properly -- resorting to manual setup of PETSC_INCLUDE_DIRS and PETSC_LDFLAGS")
-			set(PETSC_INCLUDE_DIRS /apps/petsc/3.12.2/include)		
-			set(PETSC_LDFLAGS "-L/apps/petsc/3.12.2/lib/ompi3/Intel -lpetsc -L/apps/intel-ct/2019.5.281/mkl/lib/intel64 -L/apps/intel-ct/2019.5.281/mkl/../compiler/lib/intel64 -L/usr/lib/gcc/x86_64-redhat-linux/8 -L/apps/netcdf/4.7.1p/lib -L/apps/hdf5/1.10.5p/lib -L/apps/fftw3/3.3.8/lib -lHYPRE -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lsuperlu -lsuperlu_dist -lml -lfftw3 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lirc -lptesmumps -lptscotchparmetis -lptscotch -lptscotcherr -lesmumps -lscotch -lscotcherr -lnetcdf -lparmetis -lmetis -ltriangle -lm -lz -lX11 -lctetgen -lstdc++ -ldl -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi -lgfortran -lm -lgfortran -lm -lgcc_s -lquadmath -lpthread -lrt -lquadmath -lstdc++ -ldl")
-			message(STATUS "    PETSC_INCLUDE_DIRS=${PETSC_INCLUDE_DIRS}")	
-			message(STATUS "    PETSC_LDFLAGS=${PETSC_LDFLAGS}")	
-		endif()		
-	else()
-		message(STATUS "PETSc was NOT found")
-	endif()
-endif()
-
-if(${WITH_PETSC_OLD})	
-	pkg_search_module(PETSC PETSc IMPORTED_TARGET) 
-	if(PETSC_FOUND)		
-		message(STATUS "PETSc was found")
-		if (PETSC_INCLUDE_DIRS STREQUAL "")
-			# If PETSc is not set up properly try a manual approach
-			message(STATUS "PETSC pkg-config not set up properly -- resorting to manual setup of PETSC_INCLUDE_DIRS and PETSC_LDFLAGS")
-			set(PETSC_INCLUDE_DIRS /apps/petsc/3.12.2/include)		
-			set(PETSC_LDFLAGS "-L/apps/petsc/3.12.2/lib/ompi3/Intel -lpetsc -L/apps/intel-ct/2019.5.281/mkl/lib/intel64 -L/apps/intel-ct/2019.5.281/mkl/../compiler/lib/intel64 -L/usr/lib/gcc/x86_64-redhat-linux/8 -L/apps/netcdf/4.7.1p/lib -L/apps/hdf5/1.10.5p/lib -L/apps/fftw3/3.3.8/lib -lHYPRE -lcmumps -ldmumps -lsmumps -lzmumps -lmumps_common -lpord -lmkl_scalapack_lp64 -lmkl_blacs_openmpi_lp64 -lsuperlu -lsuperlu_dist -lml -lfftw3 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lirc -lptesmumps -lptscotchparmetis -lptscotch -lptscotcherr -lesmumps -lscotch -lscotcherr -lnetcdf -lparmetis -lmetis -ltriangle -lm -lz -lX11 -lctetgen -lstdc++ -ldl -lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi -lgfortran -lm -lgfortran -lm -lgcc_s -lquadmath -lpthread -lrt -lquadmath -lstdc++ -ldl")
-			message(STATUS "    PETSC_INCLUDE_DIRS=${PETSC_INCLUDE_DIRS}")	
-			message(STATUS "    PETSC_LDFLAGS=${PETSC_LDFLAGS}")	
-		endif()		
-	else()
-		message(STATUS "PETSc was NOT found -- will not build ${target}")
-	endif()
-endif()
-
-
 # Configure NETCDF if opted for
 if(${WITH_NETCDF})
 	pkg_search_module(NETCDFCXX netcdf-cxx4 IMPORTED_TARGET) 
@@ -236,11 +187,6 @@ if(${WITH_NETCDF})
 		reportvar(NETCDF_LIBRARIES)
 		reportvar(NETCDF_LINK_LIBRARIES)
 
-		#set(NETCDF_LINK_LIBRARIES 
-		#	${NETCDF_LIB_DIR}/netcdf.lib 
-		#	${NETCDF_LIB_DIR}/hdf5.lib 
-		#	${NETCDF_LIB_DIR}/hdf5_hl.lib 
-		#	${NETCDF_LIB_DIR}/libcurl_imp.lib)
 		set(NETCDFCXX_SRC_DIR submodules/netcdf-cxx4/cxx4)
 		set(NETCDFCXX_INCLUDE_DIRS ${NETCDFCXX_SRC_DIR} ${NETCDF_INCLUDE_DIR})
 		set(NETCDFCXX_PACKAGE_FOUND 0)
@@ -251,9 +197,6 @@ if(${WITH_NETCDF})
 		add_library(libnetcdfcxx STATIC ${NC_CXX_SOURCES})
 		target_include_directories(libnetcdfcxx PUBLIC ${NETCDFCXX_INCLUDE_DIRS})
 		target_link_libraries(libnetcdfcxx PUBLIC ${NETCDF_LINK_LIBRARIES}) 
-		#include_directories(libnetcdfcxx INTERFACE ${netCDF_INCLUDE_DIR})
-		#include_directories(submodules/geophysics-netcdf/src/)
-		#include_directories(submodules/geophysics-netcdf/submodules/marray/include/andres/)
 		reportvar(NETCDFCXX_INCLUDE_DIRS)
 		reportvar(NETCDFCXX_LIBRARY_DIRS)	
 		reportvar(NETCDFCXX_LIBRARIES)
@@ -264,14 +207,9 @@ if(${WITH_NETCDF})
 endif()
 
 ### Add the targets
-# Add the NetCDF CXX library
-if(${WITH_NETCDFZZZ})	
-
-endif()
 
 # Add the TICPP library submodule
 add_subdirectory(submodules/ticpp)
-
 
 #################
 #################
@@ -284,7 +222,7 @@ set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
 target_sources(${target} PRIVATE submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
-install(TARGETS ${target} DESTINATION lib)
+install(TARGETS ${target} ARCHIVE DESTINATION lib OPTIONAL)
 
 # Add the gatdaem1d shared library
 set(target gatdaem1d-shared)
@@ -294,7 +232,7 @@ target_sources(${target} PRIVATE submodules/cpp-utils/src/file_utils.cpp submodu
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
 # Install the shared library
-install(TARGETS ${target} DESTINATION bin)
+install(TARGETS ${target} RUNTIME DESTINATION bin OPTIONAL)
 # Install the include files
 install(FILES src/gatdaem1d.h TYPE INCLUDE)
 
@@ -305,7 +243,7 @@ add_executable(${target} src/gaforwardmodeltdem.cpp)
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
-install(TARGETS ${target} DESTINATION bin)
+install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Add example_forward_model executable
 set(target example_forward_model)
@@ -314,7 +252,7 @@ target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodul
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
 #target_link_libraries(${target} PRIVATE cpp-utils-static)
-install(TARGETS ${target} DESTINATION bin)
+install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 
 # Add the pure C example executable
@@ -322,7 +260,7 @@ set(target example_forward_model_c)
 add_executable(${target} src/example_forward_model_c.c)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE gatdaem1d-static)
-install(TARGETS ${target} DESTINATION bin)
+install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Add galeisbstdem executable
 set(target galeisbstdem)
@@ -349,7 +287,7 @@ endif()
 if(OpenMP_CXX_FOUND) 
 	target_link_libraries(${target} PRIVATE OpenMP::OpenMP_CXX)	
 endif()
-install(TARGETS ${target} DESTINATION bin)
+install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Add garjmcmctdem executable
 set(target garjmcmctdem)
@@ -371,7 +309,7 @@ if(${WITH_NETCDF})
 		target_include_directories(${target} PRIVATE SYSTEM ${MPI_INCLUDE_PATH})
 		target_link_libraries(${target} PRIVATE ${MPI_C_LIBRARIES})
 	endif()
-	install(TARGETS ${target} DESTINATION bin)
+	install(TARGETS ${target} DESTINATION bin OPTIONAL)
 else()
 	message(WARNING "${target} requires NETCDF - will not be built")
 endif()
@@ -399,7 +337,7 @@ if(MPI_FOUND AND PETSC_FOUND)
 		target_link_options(${target} PRIVATE ${PETSC_LDFLAGS})
 	endif()
 
-	install(TARGETS ${target} DESTINATION bin)
+	install(TARGETS ${target} DESTINATION bin OPTIONAL)
 else()
 	message(WARNING "${target} requires PETSc and MPI -- will not be built")
 endif()
@@ -416,14 +354,14 @@ endif()
 if(OpenMP_CXX_FOUND) 
 	target_link_libraries(${target} PRIVATE OpenMP::OpenMP_CXX)	
 endif()
-install(TARGETS ${target} DESTINATION bin)
+install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Add ctlinedata2sgrid executable
 set(target ctlinedata2sgrid)
 add_executable(${target} src/ctlinedata2sgrid.cpp)
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp) 
 target_link_libraries(${target} PRIVATE ticpp)
-install(TARGETS ${target} DESTINATION bin)
+install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Add ctlinedata2slicegrids executable
 if(${WITH_GDAL} AND GDAL_FOUND) 
@@ -433,7 +371,7 @@ if(${WITH_GDAL} AND GDAL_FOUND)
 	target_compile_definitions(${target} PRIVATE -DHAVE_GDAL)	
 	target_include_directories(${target} PRIVATE ${GDAL_INCLUDE_DIRS})
 	target_link_libraries(${target} PRIVATE ${GDAL_LIBRARIES})
-	install(TARGETS ${target} DESTINATION bin)
+	install(TARGETS ${target} DESTINATION bin OPTIONAL)
 else()
 	message(WARNING "${target} requires GDAL - will not be built")
 endif()
@@ -444,7 +382,7 @@ if (MSVC)
 	set(target ctlinedata2georefimage)
 	add_executable(${target} src/ctlinedata2georefimage.cpp)
 	target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
-	install(TARGETS ${target} DESTINATION bin)
+	install(TARGETS ${target} DESTINATION bin OPTIONAL)
 endif()
 
 # Add ctlinedata2curtainimage executable
@@ -458,7 +396,7 @@ if (MSVC)
 		target_include_directories(${target} PRIVATE ${GDAL_INCLUDE_DIRS})
 		target_link_libraries(${target} PRIVATE ${GDAL_LIBRARIES})
 		target_link_libraries(${target} PRIVATE ticpp)
-		install(TARGETS ${target} DESTINATION bin)	
+		install(TARGETS ${target} DESTINATION bin OPTIONAL)	
 	else()
 		message(WARNING "${target} requires GDAL - will not be built")
 	endif()
@@ -468,7 +406,7 @@ endif()
 set(target removelog10conductivityfromsgrid)
 add_executable(${target} src/removelog10conductivityfromsgrid.cpp)
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
-install(TARGETS ${target} DESTINATION bin)
+install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Install the documentation
 install(DIRECTORY docs/ DESTINATION docs)
@@ -490,6 +428,6 @@ install(DIRECTORY python/ DESTINATION python
 install(DIRECTORY matlab/ DESTINATION matlab
 		PATTERN "bin" EXCLUDE)
 
-#On Windows copy and rename matlab .dll file to .mexw64 
-# and on linux copy and rename python libgatdaem1d.so to gatdaem1d.so
+#On Windows copy and rename Matlab .dll file to .mexw64 
+# and on linux copy and rename Python libgatdaem1d.so to gatdaem1d.so 
 install (SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")
