@@ -1,21 +1,23 @@
 @ECHO off
 
-REM Run this script from the "X64 Native Tools Command Prompt for VS 2019 or 2022" so that all the compiler stuff is set up
+REM Run this script from the "X64 Native Tools Command Prompt for VS 2019 (or VS 2022)" so that all the compiler stuff is set up
 
 rem BUILD_DIR is a temporary directory for building (compiling and linking)
-set BUILD_DIR=%cd%\build-win10-vs2022
+set BUILD_DIR=%cd%\build-windows-vs2022
 rem INSTALL_DIR is the directory for installing the built package and examples (e.g. c:\myprograms\ga-aem)
-set INSTALL_DIR=%cd%\install-win10-vs2022
+set INSTALL_DIR=%cd%\install-windows-vs2022
 
-
+rem Set the FFTW path if necesary
 SET FFTW_DIR=C:\Users\rossc\work\code\third_party\fftw3.2.2.dlls\64bit
 
+rem Set the PETSc path if necesary
 SET PETSC_DIR=C:\Users\rossc\work\code\third_party\petsc-installed\3.9.4\vs2017
 SET PETSC_INCLUDE_DIRS=%PETSC_DIR%\include;%PETSC_DIR%\win64_release\include
 SET PETSC_LIB_DIR=%PETSC_DIR%\win64_release\lib
 SET PETSC_LIBRARIES=libf2cblas.lib;libf2clapack.lib;libpetsc.lib
 SET PETSC_LDFLAGS=
 
+rem Set the NetCDF path if necesary
 SET NETCDF_DIR=C:\Program Files\netCDF 4.6.1
 SET NETCDF_INCLUDE_DIR=%NETCDF_DIR%\include
 SET NETCDF_LIB_DIR=%NETCDF_DIR%\lib
@@ -29,15 +31,15 @@ mkdir %BUILD_DIR%
 cd    %BUILD_DIR%
 
 rem First generate the build cache first
-cmake -Wno-dev -G "Visual Studio 16 2019" -A x64 -DCMAKE_CXX_COMPILER=msvc ..
+rem cmake -Wno-dev -G "Visual Studio 16 2019" -A x64 -DCMAKE_CXX_COMPILER=msvc ..
 cmake -Wno-dev -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc ..
 
-rem Possible options for turning off certain dependencies if not available
-rem	WITH_MPI=ON/OFF
-rem	WITH_NETCDF=ON/OFF
-rem	WITH_GDAL=ON/OFF
-rem	WITH_PETSC=ON/OFF
-rem e.g. cmake -Wno-dev -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc -DWITH_PETSC=OFF ..
+rem Switches for turning off certain dependencies if they are not wanted or available
+rem	-DWITH_MPI=OFF
+rem	-DWITH_NETCDF=OFF
+rem	-DWITH_GDAL=OFF
+rem	-DWITH_PETSC=OFF
+rem cmake -Wno-dev -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc -DWITH_MPI=OFF -DWITH_NETCDF=OFF -DWITH_GDAL=OFF -DWITH_PETSC=OFF ..
 
 rem Build and install everything
 cmake --build . --config=Release
@@ -45,7 +47,7 @@ cmake --install . --prefix %INSTALL_DIR%
 
 rem Or alternatively ...
 
-rem Build only particular programs/targets
+rem Build only particular targets
 rem cmake --build . --target galeisbstdem --config=Release
 rem cmake --build . --target garjmcmctdem --config=Release
 rem cmake --build . --target galeisbsfdem --config=Release
