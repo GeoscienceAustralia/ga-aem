@@ -28,9 +28,16 @@ rem Create and cd to the BUILD_DIR
 mkdir %BUILD_DIR%
 cd    %BUILD_DIR%
 
-rem Generate the build cache first
-rem cmake -Wno-dev -G "Visual Studio 16 2019" -A x64 -DCMAKE_CXX_COMPILER=msvc ..
+rem First generate the build cache first
+cmake -Wno-dev -G "Visual Studio 16 2019" -A x64 -DCMAKE_CXX_COMPILER=msvc ..
 cmake -Wno-dev -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc ..
+
+rem Possible options for turning off certain dependencies if not available
+rem	WITH_MPI=ON/OFF
+rem	WITH_NETCDF=ON/OFF
+rem	WITH_GDAL=ON/OFF
+rem	WITH_PETSC=ON/OFF
+rem e.g. cmake -Wno-dev -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc -DWITH_PETSC=OFF ..
 
 rem Build and install everything
 cmake --build . --config=Release
