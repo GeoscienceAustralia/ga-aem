@@ -405,14 +405,16 @@ target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodul
 install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Install the documentation
-install(DIRECTORY docs/ DESTINATION docs)
+install(DIRECTORY docs/ DESTINATION docs MESSAGE_NEVER)
 
 # Install the examples 
 install(DIRECTORY examples/ DESTINATION examples
+		MESSAGE_NEVER
 		PATTERN "*.sh" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
 
 # Install the python library and examples and code, excluding rubbish from the development environment
 install(DIRECTORY python/ DESTINATION python
+		MESSAGE_NEVER
 		PATTERN "*.ilk" EXCLUDE
 		PATTERN "*.pdb" EXCLUDE
 		PATTERN "*.ipdb" EXCLUDE
@@ -422,6 +424,7 @@ install(DIRECTORY python/ DESTINATION python
 
 # Install the matlab library and examples and functions, excluding rubbish from the development environment
 install(DIRECTORY matlab/ DESTINATION matlab
+		MESSAGE_NEVER
 		PATTERN "bin" EXCLUDE)
 
 #On Windows copy and rename Matlab .dll file to .mexw64 
