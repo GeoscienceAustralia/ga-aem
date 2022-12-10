@@ -2362,8 +2362,8 @@ public:
 			else if (CIS.iteration>0 && CIS.phid <= MinimumPhiD) {
 				keepiterating = false;
 				TerminationReason = "Reached minimum";
-			}
-			else if (CIS.iteration > 4  && percentchange < MinimumImprovement) {
+			}			
+			else if (CIS.phid < 50.0 && CIS.iteration > 10 && percentchange < MinimumImprovement) {
 				keepiterating = false;
 				TerminationReason = "Small % improvement";
 			}
