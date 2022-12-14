@@ -301,7 +301,7 @@ public:
 							c0  = NullOutputProperty;							
 						}
 						else if(c0 <= 0.0){
-							c0  = 1e-6;							
+							c0  = NullOutputProperty;
 						}
 						else{
 							c0  = c[si][li];							
