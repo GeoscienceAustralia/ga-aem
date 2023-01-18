@@ -85,6 +85,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\cinverter.h" />
+    <ClInclude Include="..\..\src\csbsinverter.h" />
     <ClInclude Include="..\..\src\large_loop.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\outputmanager.h" />
