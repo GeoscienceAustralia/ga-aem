@@ -56,18 +56,18 @@ echo HAVE_GDAL = $HAVE_GDAL
 echo ---------------------------------------
 
 #Compiled as shared libs
-make -f gatdaem1d_python.make $makemode
-make -f gatdaem1d_matlab.make $makemode
+#make -f gatdaem1d_python.make $makemode
+#make -f gatdaem1d_matlab.make $makemode
 
 #Compile without MPI
-make -f ctlinedata2sgrid.make $makemode
-make -f ctlinedata2slicegrids.make $makemode
-make -f example_forward_model.make $makemode
+#make -f ctlinedata2sgrid.make $makemode
+#make -f ctlinedata2slicegrids.make $makemode
+#make -f example_forward_model.make $makemode
 make -f gaforwardmodeltdem.make $makemode
 
 #Compile with MPI
 make -f galeisbstdem.make $makemode
-make -f garjmcmctdem.make $makemode
-make -f galeiallatonce.make $makemode
-make -f galeisbsfdem.make $makemode
+#make -f garjmcmctdem.make $makemode
+#make -f galeiallatonce.make $makemode
+#make -f galeisbsfdem.make $makemode
 

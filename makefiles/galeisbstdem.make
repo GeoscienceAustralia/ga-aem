@@ -17,7 +17,7 @@ cxxflags   += -D_MPI_ENABLED
 #cxxflags   += -DUSEGLOBALSTACKTRACE
 
 ifeq ($(HAVE_NETCDF),1)
-    cxxflags += -DHAVE_NETCDF
+    cxxflags +=  -DHAVE_NETCDF
     includes +=  -I$(geophysics_netcdf_include)
     includes +=  -I$(marray_include)
     libs     +=  -lnetcdf -lnetcdf_c++4
