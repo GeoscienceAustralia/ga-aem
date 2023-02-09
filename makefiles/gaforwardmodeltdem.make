@@ -4,7 +4,7 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
+includes   = -I$(srcdir) -I$(cpputilssrc) -I$(csv_include)
 libs       = -L$(FFTW_DIR) -lfftw3
 executable = $(exedir)/gaforwardmodeltdem.exe
 

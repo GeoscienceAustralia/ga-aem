@@ -337,7 +337,7 @@ class cSBSInverter{
 
 	public:
 	
-	cBlock  Control;
+	cBlock Control;
 	int Size;
 	int Rank;
 	bool UsingOpenMP;
@@ -405,25 +405,25 @@ class cSBSInverter{
 	size_t nparam;
 	size_t ngeomparam;	
 	
-	VectorDouble Obs;
-	VectorDouble Err;
-	VectorDouble Pred;
+	Vector Obs;
+	Vector Err;
+	Vector Pred;
 
-	VectorDouble Param;
-	VectorDouble RefParam;
-	VectorDouble RefParamStd;
+	Vector Param;
+	Vector RefParam;
+	Vector RefParamStd;
 
-	VectorDouble ParameterSensitivity;
-	VectorDouble ParameterUncertainty;
+	Vector ParameterSensitivity;
+	Vector ParameterUncertainty;
 	
-	MatrixDouble J;		
-	MatrixDouble Wd;
-	MatrixDouble Wc;
-	MatrixDouble Wt;
-	MatrixDouble Wg;
-	MatrixDouble Wr;	
-	MatrixDouble Ws;
-	MatrixDouble Wm;
+	Matrix J;		
+	Matrix Wd;
+	Matrix Wc;
+	Matrix Wt;
+	Matrix Wg;
+	Matrix Wr;	
+	Matrix Ws;
+	Matrix Wm;
 		
 	double MinimumPhiD;//overall	
 	double MinimumImprovement;//			
@@ -806,7 +806,7 @@ class cSBSInverter{
 
 	void resize_matrices()
 	{
-		J = MatrixDouble(ndata, nparam);
+		J = Matrix(ndata, nparam);
 	}
 
 	bool parserecord()
@@ -1013,7 +1013,7 @@ class cSBSInverter{
 
 	void initialise_Wd()
 	{		
-		Wd = MatrixDouble::Zero(ndata, ndata);		
+		Wd = Matrix::Zero(ndata, ndata);		
 		double s = 1.0 / (double)ndata;
 		for (size_t i = 0; i < ndata; i++) {
 			Wd(i,i) = s / (Err[i] * Err[i]);
@@ -1023,7 +1023,7 @@ class cSBSInverter{
 
 	void initialise_Wc()
 	{
-		Wc = MatrixDouble::Zero(nparam, nparam);		
+		Wc = Matrix::Zero(nparam, nparam);		
 		if (solve_conductivity == false)return;
 
 		std::vector<double> t(nlayers);
@@ -1055,7 +1055,7 @@ class cSBSInverter{
 
 	void initialise_Wt()
 	{
-		Wt = MatrixDouble::Zero(nparam, nparam);
+		Wt = Matrix::Zero(nparam, nparam);
 		if (solve_thickness == false)return;
 
 		double s = AlphaT / (double)(nlayers - 1);
@@ -1068,7 +1068,7 @@ class cSBSInverter{
 
 	void initialise_Wg()
 	{
-		Wg = MatrixDouble::Zero(nparam, nparam);
+		Wg = Matrix::Zero(nparam, nparam);
 		if (ngeomparam <= 0)return;
 
 		double s = AlphaG / (double)ngeomparam;
@@ -1080,7 +1080,7 @@ class cSBSInverter{
 
 	void initialise_L_Ws_1st_derivative()
 	{
-		Ws = MatrixDouble::Zero(nparam, nparam);
+		Ws = Matrix::Zero(nparam, nparam);
 		if (AlphaS == 0 || nlayers < 3) return;
 		if (solve_conductivity == false) return;
 
@@ -1095,7 +1095,7 @@ class cSBSInverter{
 		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
 		double tavg = tsum / (double)nlayers;
 
-		MatrixDouble L = MatrixDouble::Zero(nlayers - 1, nparam);
+		Matrix L = Matrix::Zero(nlayers - 1, nparam);
 		size_t neqn = 0;
 		for (size_t li = 1; li < nlayers; li++) {
 			size_t pindex = cIndex + li;
@@ -1113,7 +1113,7 @@ class cSBSInverter{
 
 	void initialise_L_Ws_2nd_derivative()
 	{
-		Ws = MatrixDouble::Zero(nparam, nparam);
+		Ws = Matrix::Zero(nparam, nparam);
 		if (AlphaS == 0 || nlayers < 3) return;
 		if (solve_conductivity == false) return;
 
@@ -1132,7 +1132,7 @@ class cSBSInverter{
 		for (size_t i = 0; i < nlayers; i++)tsum += t[i];
 		double tavg = tsum / (double)nlayers;
 
-		MatrixDouble L = MatrixDouble::Zero(nlayers - 2, nparam);
+		Matrix L = Matrix::Zero(nlayers - 2, nparam);
 		size_t neqn = 0;
 		for (size_t li = 1; li < nlayers - 1; li++) {
 			size_t pindex = cIndex + li;
@@ -1153,7 +1153,7 @@ class cSBSInverter{
 
 	void initialise_Wr_Wm()
 	{
-		Wr = MatrixDouble::Zero(nparam, nparam);
+		Wr = Matrix::Zero(nparam, nparam);
 		if (AlphaC > 0.0) Wr += Wc;
 		if (AlphaT > 0.0) Wr += Wt;
 		if (AlphaG > 0.0) Wr += Wg;
@@ -1171,10 +1171,10 @@ class cSBSInverter{
 
 	}
 
-	VectorDouble parameterchange(const double lambda)
+	Vector parameterchange(const double lambda)
 	{
-		VectorDouble x  = solve(lambda);
-		VectorDouble dm = x - Param;
+		Vector x  = solve(lambda);
+		Vector dm = x - Param;
 
 		if (solve_conductivity) {
 			for (size_t li = 0; li < nlayers; li++) {
@@ -1225,7 +1225,7 @@ class cSBSInverter{
 		return dm;
 	}
 
-	VectorDouble solve(const double lambda)
+	Vector solve(const double lambda)
 	{
 		// Phi = (d-g(m)+Jm) Wd (d-g(m)+Jm) + lambda ( (m-m0)' Wr (m-m0) + m' Ws m) )
 		//Ax = b
@@ -1234,14 +1234,14 @@ class cSBSInverter{
 		//b = J'Wd(d - g(m) + Jm) + lambda*Wr*m0
 		//dm = m(n+1) - m = x - m
 
-		const VectorDouble& m = Param;
-		const VectorDouble& d = Obs;
-		const VectorDouble& g = Pred;
-		const VectorDouble& e = Err;
-		const VectorDouble& m0 = RefParam;
+		const Vector& m = Param;
+		const Vector& d = Obs;
+		const Vector& g = Pred;
+		const Vector& e = Err;
+		const Vector& m0 = RefParam;
 
 
-		MatrixDouble V = Wd;
+		Matrix V = Wd;
 		if (NormType == L2) {
 
 		}
@@ -1252,16 +1252,16 @@ class cSBSInverter{
 			}
 		}
 
-		MatrixDouble JtV = J.transpose() * V;
-		MatrixDouble JtVJ = JtV * J;
+		Matrix JtV = J.transpose() * V;
+		Matrix JtVJ = JtV * J;
 
-		VectorDouble b = JtV * (d - g + J * m) + lambda * (Wr * m0);
-		MatrixDouble A = JtVJ + lambda * Wm;
-		VectorDouble x = pseudoInverse(A)*b;
+		Vector b = JtV * (d - g + J * m) + lambda * (Wr * m0);
+		Matrix A = JtVJ + lambda * Wm;
+		Vector x = pseudoInverse(A)*b;
 		return x;
 	}
 
-	double l1_norm(const VectorDouble& g)
+	double l1_norm(const Vector& g)
 	{
 		double l1 = 0.0;
 		for (size_t i = 0; i < ndata; i++) {
@@ -1270,15 +1270,15 @@ class cSBSInverter{
 		return l1 / ndata;
 	}
 
-	double l2_norm(const VectorDouble& g)
+	double l2_norm(const Vector& g)
 	{
-		VectorDouble v = Obs - g;
-		VectorDouble a = Wd * v;
+		Vector v = Obs - g;
+		Vector a = Wd * v;
 		double l2 = mtDm(v, Wd);
 		return l2;
 	}
 
-	double phiData(const VectorDouble& g)
+	double phiData(const Vector& g)
 	{
 		double phid;
 		if (NormType == L1) {
@@ -1295,13 +1295,13 @@ class cSBSInverter{
 		return phid;
 	}
 
-	double phiModel(const VectorDouble& p)
+	double phiModel(const Vector& p)
 	{
 		double phic, phit, phig, phis;
 		return phiModel(p, phic, phit, phig, phis);
 	}
 
-	double phiModel(const VectorDouble& p, double& phic, double& phit, double& phig, double& phis)
+	double phiModel(const Vector& p, double& phic, double& phit, double& phig, double& phis)
 	{
 		phic = phiC(p);
 		phit = phiT(p);
@@ -1312,37 +1312,37 @@ class cSBSInverter{
 		return v;
 	}
 
-	double phiC(const VectorDouble& p)
+	double phiC(const Vector& p)
 	{
 		if (AlphaC == 0.0)return 0.0;
 		if (solve_conductivity == false)return 0.0;
-		VectorDouble v = p - RefParam;
+		Vector v = p - RefParam;
 		return mtDm(v, Wc);
 	}
 
-	double phiT(const VectorDouble& p)
+	double phiT(const Vector& p)
 	{
 		if (AlphaT == 0.0)return 0.0;
 		if (solve_thickness == false)return 0.0;
-		VectorDouble v = p - RefParam;
+		Vector v = p - RefParam;
 		return mtDm(v, Wt);
 	}
 
-	double phiG(const VectorDouble& p)
+	double phiG(const Vector& p)
 	{
 		if (AlphaG == 0.0)return 0.0;
 		if (ngeomparam == 0)return 0.0;
-		VectorDouble v = p - RefParam;
+		Vector v = p - RefParam;
 		return mtDm(v, Wg);
 	}
 
-	double phiS(const VectorDouble& p)
+	double phiS(const Vector& p)
 	{
 		if (AlphaS == 0)return 0.0;
 		else return mtAm(p, Ws);
 	}
 
-	cEarth1D get_earth(const VectorDouble& parameters)
+	cEarth1D get_earth(const Vector& parameters)
 	{
 		cEarth1D e = ER;
 		if (solve_conductivity) {
@@ -1359,7 +1359,7 @@ class cSBSInverter{
 		return e;
 	}
 
-	cTDEmGeometry get_geometry(const VectorDouble& parameters)
+	cTDEmGeometry get_geometry(const Vector& parameters)
 	{
 		cTDEmGeometry g = GI;
 		if (solve_tx_height)g.tx_height = parameters[tx_heightIndex];
@@ -1387,7 +1387,7 @@ class cSBSInverter{
 		}
 	}
 
-	void forwardmodel(const VectorDouble& parameters, VectorDouble& predicted, bool computederivatives)
+	void forwardmodel(const Vector& parameters, Vector& predicted, bool computederivatives)
 	{
 		cEarth1D      e = get_earth(parameters);
 		cTDEmGeometry g = get_geometry(parameters);
@@ -1562,9 +1562,9 @@ class cSBSInverter{
 		}
 	}
 
-	VectorDouble compute_parameter_sensitivity()
+	Vector compute_parameter_sensitivity()
 	{
-		VectorDouble s = VectorDouble::Zero(nparam);
+		Vector s = Vector::Zero(nparam);
 		for (size_t pi = 0; pi < nparam; pi++) {
 			for (size_t di = 0; di < ndata; di++) {
 				s[pi] += (std::fabs(J(di,pi)) * std::sqrt((double)ndata*Wd(di,di)));
@@ -1573,16 +1573,16 @@ class cSBSInverter{
 		return s;
 	}
 
-	VectorDouble compute_parameter_uncertainty()
+	Vector compute_parameter_uncertainty()
 	{
-		MatrixDouble JtWdJ = J.transpose()*Wd*J;
-		MatrixDouble iCm = MatrixDouble::Zero(nparam, nparam);
+		Matrix JtWdJ = J.transpose()*Wd*J;
+		Matrix iCm = Matrix::Zero(nparam, nparam);
 		for (size_t i = 0; i < nparam; i++) {
 			iCm(i,i) = 1.0 / (RefParamStd[i] * RefParamStd[i]);
 		}
-		MatrixDouble X = (double)ndata*JtWdJ + iCm;		
-		MatrixDouble pinvX = pseudoInverse(X);
-		VectorDouble s(nparam);
+		Matrix X = (double)ndata*JtWdJ + iCm;		
+		Matrix pinvX = pseudoInverse(X);
+		Vector s(nparam);
 		for (size_t i = 0; i < nparam; i++) {
 			s[i] = std::sqrt(pinvX(i,i));
 		}
@@ -1634,9 +1634,9 @@ class cSBSInverter{
 			}
 			else {
 				cTrial t = targetsearch(LastLambda, TargetPhiD);
-				VectorDouble dm = parameterchange(t.lambda);
-				VectorDouble mtemp = Param + (t.stepfactor*dm);
-				VectorDouble gtemp(ndata);
+				Vector dm = parameterchange(t.lambda);
+				Vector mtemp = Param + (t.stepfactor*dm);
+				Vector gtemp(ndata);
 				forwardmodel(mtemp, gtemp, false);
 				double phidtemp = phiData(gtemp);
 				percentchange = 100.0*(LastPhiD - phidtemp) / (LastPhiD);
@@ -1904,7 +1904,7 @@ class cSBSInverter{
 		}
 	}
 
-	double goldensearch(double a, double b, double c, double xtol, const double lambda, const VectorDouble& m, const VectorDouble& dm, VectorDouble& g, cTrialCache& cache)
+	double goldensearch(double a, double b, double c, double xtol, const double lambda, const Vector& m, const Vector& dm, Vector& g, cTrialCache& cache)
 	{
 		//adapted from http://en.wikipedia.org/wiki/Golden_section_search	
 		const double resphi = 2 - ((1 + sqrt(5.0)) / 2.0);
@@ -1926,7 +1926,7 @@ class cSBSInverter{
 		double fx = cache.sfsearch(x);
 		if (fx < 0) {
 			cTrial t;
-			VectorDouble p = m + x * dm;
+			Vector p = m + x * dm;
 			forwardmodel(p, g, false);
 			fx = phiData(g);
 			t.stepfactor = x;
@@ -1941,7 +1941,7 @@ class cSBSInverter{
 		double fb = cache.sfsearch(b);
 		if (fb < 0) {
 			cTrial t;
-			VectorDouble p = m + b * dm;
+			Vector p = m + b * dm;
 			forwardmodel(p, g, false);
 			fb = phiData(g);
 			t.stepfactor = b;
@@ -1974,9 +1974,9 @@ class cSBSInverter{
 
 	double trialfunction(cTrialCache& T, const double triallambda)
 	{
-		VectorDouble dm(nparam);
-		VectorDouble p(nparam);
-		VectorDouble g(ndata);
+		Vector dm(nparam);
+		Vector p(nparam);
+		Vector g(ndata);
 		dm = parameterchange(triallambda);
 		cTrialCache cache;
 		cTrial t0;
@@ -2237,7 +2237,7 @@ class cSBSInverter{
 		pointsoutput++;		
 	};
 
-	std::vector<double> copy(const VectorDouble& d) const {
+	std::vector<double> copy(const Vector& d) const {
 		std::vector<double> v((double*)(d.data()), (double*)(d.data() + d.size()));
 		return v;
 	};
@@ -2309,7 +2309,7 @@ class cSBSInverter{
 		return status;
 	}
 	
-	void write(const VectorDouble& v, std::string path) const 
+	void write(const Vector& v, std::string path) const 
 	{
 		FILE* fp = fileopen(path, "w");
 		for (auto  i = 0; i < v.rows(); i++) {

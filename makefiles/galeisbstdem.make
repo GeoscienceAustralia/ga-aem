@@ -7,28 +7,27 @@ SHELL = /bin/sh
 executable  = $(exedir)/galeisbstdem.exe
 includes    = -I$(srcdir)
 includes   += -I$(cpputilssrc)
-libs        = -fopenmp -L$(FFTW_DIR) -lfftw3
+includes   += -I$(csv_include)
+includes   += -I$(eigen_include)
+
+libs       = $(if $(FFTW_DIR),-L$(FFTW_DIR) -lfftw3,-lfftw3) 
+libs       += -fopenmp
 cxxflags   += -fopenmp
 cxxflags   += -D_MPI_ENABLED
 #cxxflags   += -DUSEGLOBALSTACKTRACE
 
 ifeq ($(HAVE_NETCDF),1)
     cxxflags += -DHAVE_NETCDF
-    includes +=  -I$(geophysics_netcdf_root)/src
-    includes += -I$(geophysics_netcdf_root)/submodules/marray/include/andres
+    includes +=  -I$(geophysics_netcdf_include)
+    includes +=  -I$(marray_include)
     libs     +=  -lnetcdf -lnetcdf_c++4
 endif
 
 ifeq ($(HAVE_GDAL),1)
     cxxflags += -DHAVE_GDAL
+    includes += -I$(gdal_include)
     libs     += -lgdal
     objects  += $(cpputilssrc)/gdal_utils.o
-endif
-
-ifeq ($(HAVE_CGAL),1)
-    cxxflags += -DHAVE_CGAL
-    libs     += -lCGAL_Core
-    objects  += $(cpputilssrc)/cgal_utils.o
 endif
 
 all: compile link

@@ -15,9 +15,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 	#include "geophysics_netcdf.h"
 #endif
 
-class cASCIIInputManager;
-class cNetCDFInputManager;
-
 class cInputManager {
 
 public:
@@ -113,13 +110,20 @@ public:
 		return true;
 	}
 
+	virtual bool file_read_impl(const cFieldDefinition& cd, std::vector<char>& vec, const size_t n) = 0;
+	virtual bool file_read_impl(const cFieldDefinition& cd, std::vector<int>& vec, const size_t n) = 0;
+	virtual bool file_read_impl(const cFieldDefinition& cd, std::vector<size_t>& vec, const size_t n) = 0;
+	virtual bool file_read_impl(const cFieldDefinition& cd, std::vector<float>& vec, const size_t n) = 0;
+	virtual bool file_read_impl(const cFieldDefinition& cd, std::vector<double>& vec, const size_t n) = 0;
+
 	template<typename T>
 	bool file_read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
 	{		
-		if (iotype == IOType::ASCII) {
-			return ((cASCIIInputManager*)this)->file_read(cd, vec, n);
-		}
-		return ((cNetCDFInputManager*)this)->file_read(cd, vec, n);
+		return file_read_impl(cd, vec, n);
+		//if (iotype == IOType::ASCII) {
+		//	return ((cASCIIInputManager*)this)->file_read(cd, vec, n);
+		//}
+		//return ((cNetCDFInputManager*)this)->file_read(cd, vec, n);
 	}	
 };
 
@@ -160,7 +164,7 @@ public:
 		size_t headerlines = b.getsizetvalue("Headerlines");
 		if (!isdefined(headerlines)) { headerlines = 0; }
 		for (size_t k = 0; k < headerlines; k++) {
-			AF.readnextrecord();
+			AF.load_next_record();
 		}				
 	}
 
@@ -177,15 +181,16 @@ public:
 	bool readnextrecord()
 	{
 		bool status = true;
-		if (AtStart == true) {
-			status = AF.readnextrecord();
+		if (AtStart == true) {			
+			//status = AF.readnextrecord();
+			status = AF.load_next_record();
 			if (status == false)return false;
 			AtStart = false;
 			Record = 0;
 		}
 		else {
 			AF.skiprecords(Subsample - 1);
-			status = AF.readnextrecord();
+			status = AF.load_next_record();
 			if (status == false) return false;
 			Record += Subsample;
 		}		
@@ -193,7 +198,7 @@ public:
 	}
 
 	bool parserecord() {
-		size_t n = AF.parserecord();
+		size_t n = AF.parse_record();
 		if (n <= 1) return false;
 		return true;		
 	}
@@ -202,8 +207,33 @@ public:
 
 	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
 
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<char>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<int>& vec, const size_t n)
+	{
+		return file_read_template(cd,vec,n);
+	};
+
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<size_t>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<float>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<double>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
 	template<typename T>
-	bool file_read(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
+	bool file_read_template(const cFieldDefinition& cd, std::vector<T>& vec, const size_t n)
 	{		
 		//bool status  = cd.getvalue(AF, vec, n);		
 		bool status = AF.getvec_fielddefinition(cd, vec, n);
@@ -249,8 +279,33 @@ public:
 		return true;
 	}
 
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<char>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<int>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<size_t>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<float>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
+	bool file_read_impl(const cFieldDefinition& cd, std::vector<double>& vec, const size_t n)
+	{
+		return file_read_template(cd, vec, n);
+	};
+
 	template<typename T>
-	bool file_read(const cFieldDefinition& cd, std::vector<T>& v, const size_t n)
+	bool file_read_template(const cFieldDefinition& cd, std::vector<T>& v, const size_t n)
 	{
 		NC.getDataByPointIndex(cd.varname, Record, v);
 		return true;

@@ -7,7 +7,7 @@ SHELL = /bin/sh
 cxxflags   += -fPIC
 ldflags    = -shared
 bindir     = ../matlab/bin/linux
-includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
+includes   = -I$(srcdir) -I$(cpputilssrc)
 libs       = -L$(FFTW_DIR) -lfftw3
 library    = $(bindir)/gatdaem1d.so
 

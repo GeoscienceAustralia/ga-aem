@@ -4,7 +4,7 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-includes   = -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
+includes   = -I$(srcdir) -I$(cpputilssrc)
 libs       = -L$(FFTW_DIR) -lfftw3
 executable = $(exedir)/example_forward_model.exe
 

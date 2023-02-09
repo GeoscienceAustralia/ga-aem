@@ -5,7 +5,13 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 
 cxxflags   += -D_MPI_ENABLED
-includes   = -I/usr/include/petsc -I$(srcdir) -I$(cpputilssrc) -I$(tntdir)
+includes = -I$(srcdir)
+includes += -I$(cpputilssrc)
+includes += -I$(csv_include)
+includes += -I$(petsc_include)
+includes += -I$(geophysics_netcdf_include)
+includes += -I$(marray_include)
+
 libs       = -L$(FFTW_DIR) -lfftw3 -lpetsc
 executable = $(exedir)/galeiallatonce.exe
 

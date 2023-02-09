@@ -7,8 +7,10 @@ SHELL = /bin/sh
 executable  = $(exedir)/galeisbsfdem.exe
 includes    = -I$(srcdir)
 includes   += -I$(cpputilssrc)
+includes   += -I$(eigen_include)
+includes   += -I$(csv_include)
 libs        = -fopenmp
-cxxflags    = -fopenmp
+cxxflags   += -fopenmp
 cxxflags   += -D_MPI_ENABLED
 #cxxflags   += -DUSEGLOBALSTACKTRACE
 

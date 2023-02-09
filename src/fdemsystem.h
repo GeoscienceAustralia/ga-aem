@@ -352,7 +352,7 @@ public:
 	void test_derivatives(const std::string& stmfile, cEarth1D e, cFDEmGeometry g, cLayeredEarthModeller::CalculationType dtype, int dlayer=-1)
 	{		
 		cvector fm, fm1, fm2, dfma, dfmn;
-		double delta;
+		double delta=0;
 		std::string suffix;
 		setgeometry(g);
 		setearth(e);

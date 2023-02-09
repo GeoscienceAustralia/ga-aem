@@ -4,7 +4,7 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-includes   = -I$(srcdir) -I$(cpputilssrc)
+includes   = -I$(srcdir) -I$(cpputilssrc) -I$(csv_include) -I$(gdal_include)
 libs       = -lgdal
 executable = $(exedir)/ctlinedata2slicegrids.exe
 
