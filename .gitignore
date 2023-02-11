@@ -5,6 +5,10 @@
 !run_make_raijin.sh
 !run_install_raijin.sh
 
+# Ignore build and install directories
+build*/
+install*/
+
 # Ignore output files from the examples
 examples/**/output
 examples/**/*.out
