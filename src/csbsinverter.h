@@ -2382,6 +2382,7 @@ public:
 				//}
 
 				double targetphid = std::max(CIS.phid*0.7, MinimumPhiD);
+
 				cTrial t  = lambda_search_target(CIS.lambda, targetphid);
 				Vector dm = parameter_change(t.lambda, CIS.param, CIS.pred);
 				Vector m = CIS.param + (t.stepfactor * dm);

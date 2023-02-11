@@ -480,8 +480,10 @@ private:
 		s.set_maxtrials(10);
 		std::vector<double> xlist;		
 		if (CIS.iteration == 0) {
-			s.set_maxtrials(20);
-			xlist = increment<double>(8, 7.0, -1.0);
+			//s.set_maxtrials(20);
+			//xlist = increment<double>(8, 7.0, -1.0);
+			s.set_maxtrials(40);
+			xlist = increment<double>(10, 8.0, -0.5);
 		}
 		else {			
 			s.set_maxtrials(10);
