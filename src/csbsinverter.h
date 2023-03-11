@@ -719,7 +719,7 @@ public:
 		LCvcsmth   = cLinearConstraint("VerticalConductivity", {"Minimise1stDerivatives","Minimise2ndDerivatives" }, "VCsmth", "Vertical conductivity smoothness");
 		LCvcsim = cLinearConstraint("VerticalConductivitySimilarity", { }, "VCsim", "Vertical conductivity similarity");
 		LClatc   = cLinearConstraint("LateralConductivity", {"Minimise1stDerivatives", "Minimise2ndDerivatives","Similarity" }, "LatCon", "Lateral conductivity smoothness");		
-		LClatg   = cLinearConstraint("LateralGeometry", { "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives" }, "LatGeom", "Lateral geometry smoothness");		
+		LClatg   = cLinearConstraint("LateralGeometry", { "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives","Minimise2ndDerivativesOfDifferenceFromReferenceModel" }, "LatGeom", "Lateral geometry smoothness");		
 		NLCcablen  = cNonLinearConstraint("CableLength", { "Input","InputBunchMean","BunchSimilarity" }, "CabLength", "Cable length");
 		
 		for (size_t i = 0; i < b.Entries.size(); i++) {			
@@ -749,6 +749,9 @@ public:
 			}
 			else if (LClatg.parse(cstr)) {
 				if (LClatg.method == "Similarity") {
+					LClatg.set_operates_on_difference_from_reference_model();
+				}
+				if (LClatg.method == "Minimise2ndDerivativesOfDifferenceFromReferenceModel") {
 					LClatg.set_operates_on_difference_from_reference_model();
 				}
 			}
@@ -1178,6 +1181,10 @@ public:
 		else if (C.method == "Similarity") {
 			initialise_LG_similarity(C);
 		}
+		else if (C.method == "Minimise2ndDerivativesOfDifferenceFromReferenceModel") {
+			initialise_LG_accelerations(C);
+		}
+		
 	}
 
 	void initialise_LG_accelerations(cLinearConstraint& C)
