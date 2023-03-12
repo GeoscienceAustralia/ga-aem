@@ -479,11 +479,9 @@ private:
 		s.set_ytol(target * 0.01);
 		s.set_maxtrials(10);
 		std::vector<double> xlist;		
-		if (CIS.iteration == 0) {
-			//s.set_maxtrials(20);
-			//xlist = increment<double>(8, 7.0, -1.0);
-			s.set_maxtrials(40);
-			xlist = increment<double>(10, 8.0, -0.5);
+		if (CIS.iteration == 0) {			
+			xlist = increment<double>(32, 8.0, -0.25);
+			s.set_maxtrials(xlist.size()*2);
 		}
 		else {			
 			s.set_maxtrials(10);
