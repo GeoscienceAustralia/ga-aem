@@ -275,11 +275,16 @@ public:
 	
 	template<typename T>
 	bool get_one(const cFieldDefinition& fd, const size_t& pointindex, T& val) {
-		if (load_record(pointindex)) {
+		if (load_record(pointindex)) {			
 			if (parse_record()) {
-				if (read(fd, val)) {
+				if (fd.isinitialised()) {
+					if (read(fd, val)) {
+						return true;
+					};
+				}
+				else{
 					return true;
-				};
+				}
 			}
 		}
 		return false;
@@ -287,8 +292,9 @@ public:
 	
 	bool get_bunch(cSampleBunch& bunch, const cFieldDefinition& fd, const int& pointindex, const int& bunchsize, const int& bunchsubsample)
 	{							
-		int line;
-		bool status = get_one(fd, pointindex, line);
+		int line;		
+		bool status = get_one(fd, pointindex, line);		
+
 		if (status == false) return false;
 
 		int pn = pointindex;

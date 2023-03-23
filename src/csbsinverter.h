@@ -770,8 +770,11 @@ public:
 	{
 		cBlock b = Control.findblock("Input.AncillaryFields");
 		set_field_definitions_ancillary(b);
-		if (AncFld[0].keyindex("line") < 0) {
-			glog.errormsg("Must specify a linenumber field\n");
+
+		if (nSoundings > 1) {
+			if (AncFld[0].keyindex("line") < 0) {
+				glog.errormsg("Must specify a linenumber field\n");
+			}
 		}
 
 		b = Control.findblock("Input.Geometry");
@@ -2060,9 +2063,17 @@ public:
 	bool read_bunch(const size_t& record) {
 		_GSTITEM_
 
+		bool bunchstatus=false;
 		int fi = AncFld[0].keyindex("line");
-		cFieldDefinition& fdline = AncFld[0][fi].second.fd;
-		bool bunchstatus = IM->get_bunch(Bunch, fdline, (int)record, (int)nSoundings, (int)nBunchSubsample);
+		if (fi > 0) {
+			//only if linenumber is specified
+			cFieldDefinition& fdline = AncFld[0][fi].second.fd;
+			bunchstatus = IM->get_bunch(Bunch, fdline, (int)record, (int)nSoundings, (int)nBunchSubsample);
+		}
+		else {
+			cFieldDefinition fdnone;
+			bunchstatus = IM->get_bunch(Bunch, fdnone, (int)record, (int)nSoundings, (int)nBunchSubsample);
+		}
 
 		if (bunchstatus == false) {
 			return bunchstatus;
