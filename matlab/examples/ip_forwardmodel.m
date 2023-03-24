@@ -24,16 +24,16 @@ S.wfm = gatdaem1d_waveform(S.hS);
 for k=1:1:1    
     %Setup geometry
     %Eg. for Skytem
-    G.tx_height = 45;
-    G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
-    G.txrx_dx   = -12.62;  G.txrx_dy   = 0; G.txrx_dz   = +2.16;
-    G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
+    %G.tx_height = 45;
+    %G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
+    %G.txrx_dx   = -12.62;  G.txrx_dy   = 0; G.txrx_dz   = +2.16;
+    %G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
     
     %Eg. for Tempest
-    %G.tx_height = 120;
-    %G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
-    %G.txrx_dx   = -120;    G.txrx_dy   = 0; G.txrx_dz   = -40;
-    %G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
+    G.tx_height = 120;
+    G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
+    G.txrx_dx   = -120;    G.txrx_dy   = 0; G.txrx_dz   = -40;
+    G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
     
     %Setup earth
     E.thickness           = [20     20];        
@@ -77,7 +77,7 @@ set(gca,'yscale','linear');
 set(gca,'xlim',[min(S.wt.low)/1.1 1.1*max(S.wt.high)]);
 
 %set(gca,'ylim',1e-12*[-0.5 3]);%Skytem
-set(gca,'ylim',[-0.5 1.1]);%Tempest
+set(gca,'ylim',[-0.15 1.5]);%Tempest
 
 xlabel('Time (s)');
 ylabel('Response (V/A.m^4)');
