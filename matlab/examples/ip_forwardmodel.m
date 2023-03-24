@@ -24,16 +24,16 @@ S.wfm = gatdaem1d_waveform(S.hS);
 for k=1:1:1    
     %Setup geometry
     %Eg. for Skytem
-    %G.tx_height = 45;
-    %G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
-    %G.txrx_dx   = -12.62;  G.txrx_dy   = 0; G.txrx_dz   = +2.16;
-    %G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
-    
-    %Eg. for VTEM
-    G.tx_height = 120;
+    G.tx_height = 45;
     G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
-    G.txrx_dx   = -120;    G.txrx_dy   = 0; G.txrx_dz   = -40;
+    G.txrx_dx   = -12.62;  G.txrx_dy   = 0; G.txrx_dz   = +2.16;
     G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
+    
+    %Eg. for Tempest
+    %G.tx_height = 120;
+    %G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
+    %G.txrx_dx   = -120;    G.txrx_dy   = 0; G.txrx_dz   = -40;
+    %G.rx_roll   = 0;       G.rx_pitch  = 0; G.rx_yaw    = 0;    
     
     %Setup earth
     E.thickness           = [20     20];        
@@ -51,23 +51,22 @@ gatdaem1d_freesystemhandle(S.hS);
 gatdaem1d_unloadlibrary();
 
 %% Plotting
-figure();
+dark_figure();
 set(gcf,'position',[123 1 1558 955]);
 
 subplot(1,2,1)
 hold on;
 set(gca,'xscale','log');
 set(gca,'yscale','log');
-set(gca,'xlim',[min(S.wt.centre)/1.1 1.1*max(S.wt.centre)]);
-%set(gca,'ylim',[1e-15 1e-7]);
+set(gca,'xlim',[min(S.wt.low)/1.1 1.1*max(S.wt.high)]);
 xlabel('Time (s)');
 ylabel('Response (V/A.m^4)');
 box on;
-h1=plot(S.wt.centre,-R1.SZ,'-k.','linewidth',2);
-h2=plot(S.wt.centre,-R2.SZ,'-b.','linewidth',2);
-plot(S.wt.centre,R2.SZ,'-b','linewidth',2);
-h3=plot(S.wt.centre,-R3.SZ,'-r.','linewidth',2);
-plot(S.wt.centre,R3.SZ,'-r','linewidth',2);
+h1=plot(S.wt.centre,-R1.SZ,'-g.','linewidth',2);
+h2=plot(S.wt.centre,-R2.SZ,'-bo','linewidth',2);
+plot(S.wt.centre,R2.SZ,'--bo','linewidth',2);
+h3=plot(S.wt.centre,-R3.SZ,'-ro','linewidth',2);
+plot(S.wt.centre,R3.SZ,'--ro','linewidth',2);
 lh=legend([h1 h2 h3],'Z','Z (pelton-IP)', 'Z (colecole-IP)');
 set(lh,'fontsize',8);
 
@@ -75,12 +74,15 @@ subplot(1,2,2)
 hold on;
 set(gca,'xscale','log');
 set(gca,'yscale','linear');
-set(gca,'xlim',[min(S.wt.centre)/1.1 1.1*max(S.wt.centre)]);
-set(gca,'ylim',[-0.5 3]);
+set(gca,'xlim',[min(S.wt.low)/1.1 1.1*max(S.wt.high)]);
+
+%set(gca,'ylim',1e-12*[-0.5 3]);%Skytem
+set(gca,'ylim',[-0.5 1.1]);%Tempest
+
 xlabel('Time (s)');
 ylabel('Response (V/A.m^4)');
 box on;
-h1=plot(S.wt.centre,-R1.SZ,'-k.','linewidth',2);
+h1=plot(S.wt.centre,-R1.SZ,'-g.','linewidth',2);
 h2=plot(S.wt.centre,-R2.SZ,'-b.','linewidth',2);
 h3=plot(S.wt.centre,-R3.SZ,'-r.','linewidth',2);
 lh=legend([h1 h2 h3],'Z','Z (pelton-IP)', 'Z (colecole-IP)');

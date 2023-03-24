@@ -13,8 +13,8 @@ Control Begin
 		ZComponent Begin
 			Use = yes
 			EstimateNoiseFromModel = no
-			Secondary              = -LMZ
-			Noise                  =  LMZ_NOISE
+			Secondary              = -Column 33
+			Noise                  =  Column 72
 		ZComponent End
 	EMSystem End
 	
@@ -31,8 +31,8 @@ Control Begin
 		ZComponent Begin
 			Use = yes
 			EstimateNoiseFromModel = no
-			Secondary              = -HMZ
-			Noise                  =  HMZ_NOISE
+			Secondary              = -Column 51
+			Noise                  =  Column 90
 		ZComponent End
 	EMSystem End
 
@@ -74,41 +74,41 @@ Control Begin
 	Options End
 
 	Input Begin
-		DataFile  = ..\data\bhmar-skytem.dat
-		DfnFile   = ..\data\bhmar-skytem.dfn
+		DataFile   = ..\data\bhmar-skytem.dat
 		HeaderLines = 0
+
 		//Line is required if SoundingsPerBunch > 1
 		AncillaryFields Begin
-			Survey    = Project_GA
-			Date      = Date
-			Flight    = Flight
-			Line      = Line
-			Fiducial  = Fiducial
-			Easting
-			Northing
-			Longitude
-			Latitude
-			Ground_Elevation_Laser
+			Column 6
+			Column 12
+			//Survey    = Column 1
+			//Date      = Column 4
+			//Flight    = Column 5
+			//Line      = Column 6
+			//Fiducial  = Column 7
+			//X         = Column 12
+			//Y         = Column 13
+			//GroundElevation = Column 21
 		AncillaryFields End
 
 		Geometry Begin
 			TX_Height Begin
 				Solve = no
-				Ref   = Frame_Height_Lidar
+				Ref   = Column 19
 				Std   = 1
-				Min   = Frame_Height_Lidar - 5
-				Max   = Frame_Height_Lidar + 5
+				Min   = Column 19 - 5
+				Max   = Column 19 + 5
 			TX_Height End
 
-			TX_Roll         = Frame_Roll
-			TX_Pitch        = Frame_Pitch
-			TX_Yaw          = Frame_Yaw
-			TXRX_DX         = TxRx_Dx
-			TXRX_DY         = TxRx_Dy
-			TXRX_DZ         = TxRx_Dz
-			RX_Roll         = Frame_Roll
-			RX_Pitch        = Frame_Pitch
-			RX_Yaw          = Frame_Yaw
+			TX_Roll         = Column 24
+			TX_Pitch        = Column 25
+			TX_Yaw          = Column 26
+			TXRX_DX         = Column 27
+			TXRX_DY         = Column 28
+			TXRX_DZ         = Column 29
+			RX_Roll         = Column 24
+			RX_Pitch        = Column 25
+			RX_Yaw          = Column 26
 		Geometry End
 
 		Earth Begin
@@ -127,15 +127,23 @@ Control Begin
 	Output Begin
 		DataFile = output/inversion.output.asc
 		LogFile  = output/inversion.output.log
+		PositiveLayerBottomDepths = no
+		NegativeLayerBottomDepths = no
+		InterfaceElevations       = no
+		ParameterSensitivity      = no
+		ParameterUncertainty      = no
+		PredictedData             = yes
+		ObservedData              = yes
+		NoiseEstimates            = yes
 
 		SaveDFNHeader = yes
 		SaveCSVHeader = yes
 		SaveHDRHeader = yes
 
-		PositiveLayerTopDepths    = yes
-		PositiveLayerBottomDepths = yes
-		NegativeLayerBottomDepths = yes
-		InterfaceElevations       = yes
+		PositiveLayerTopDepths    = no
+		PositiveLayerBottomDepths = no
+		NegativeLayerBottomDepths = no
+		InterfaceElevations       = no
 		ParameterSensitivity      = yes
 		ParameterUncertainty      = yes
 		ObservedData              = yes

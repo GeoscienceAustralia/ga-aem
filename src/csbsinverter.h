@@ -2115,13 +2115,11 @@ public:
 		return true;			
 	}
 
-	bool read_record(const size_t& bunchsoundingindex)
-	{
+	bool read_record(const size_t& bunchsoundingindex){
 		const size_t& si = bunchsoundingindex;
 		bool readstatus = true;
 		cEarthStruct& e = E[si];
 		cGeomStruct& g = G[si];
-
 
 		if (IM->parse_record() == false) return false;
 
