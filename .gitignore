@@ -145,3 +145,11 @@ Desktop.ini
 
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
+
+diag_discretefrequencies.txt
+diag_frequencydomainwaveform.txt
+diag_splinedfrequencies.txt
+diag_windows.txt
+diag_xtimeseries.txt
+diag_ytimeseries.txt
+diag_ztimeseries.txt

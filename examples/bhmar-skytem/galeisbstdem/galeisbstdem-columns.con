@@ -79,8 +79,8 @@ Control Begin
 
 		//Line is required if SoundingsPerBunch > 1
 		AncillaryFields Begin
-			Column 6
-			Column 12
+			//Column 6
+			//Column 12
 			//Survey    = Column 1
 			//Date      = Column 4
 			//Flight    = Column 5
@@ -124,26 +124,18 @@ Control Begin
 		Earth End
 	Input End
 
-	Output Begin
+Output Begin
 		DataFile = output/inversion.output.asc
 		LogFile  = output/inversion.output.log
-		PositiveLayerBottomDepths = no
-		NegativeLayerBottomDepths = no
-		InterfaceElevations       = no
-		ParameterSensitivity      = no
-		ParameterUncertainty      = no
-		PredictedData             = yes
-		ObservedData              = yes
-		NoiseEstimates            = yes
 
 		SaveDFNHeader = yes
 		SaveCSVHeader = yes
 		SaveHDRHeader = yes
 
-		PositiveLayerTopDepths    = no
-		PositiveLayerBottomDepths = no
-		NegativeLayerBottomDepths = no
-		InterfaceElevations       = no
+		PositiveLayerTopDepths    = yes
+		PositiveLayerBottomDepths = yes
+		NegativeLayerBottomDepths = yes
+		InterfaceElevations       = yes
 		ParameterSensitivity      = yes
 		ParameterUncertainty      = yes
 		ObservedData              = yes
@@ -154,5 +146,4 @@ Control Begin
 		//Dump     = no
 		//DumpPath = output\dump
 	Output End
-
 Control End
