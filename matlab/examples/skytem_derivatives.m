@@ -24,11 +24,11 @@ HM.wt  = gatdaem1d_windowtimes(HM.hS);
 HM.wfm = gatdaem1d_waveform(HM.hS);
 
 dtype = gatdaem1d_derivativestruct();    
-dlayer=1;
-    
+   
 
 %Compute responses (put in loop change G and E as required)
-for k=1:1:10
+n=1;
+for k=1:1:n
     %Setup geometry
     G.tx_height = 30;
     G.tx_roll   = 0;       G.tx_pitch  = 0; G.tx_yaw    = 0;
@@ -40,7 +40,8 @@ for k=1:1:10
     E.thickness    = [20   50  20];        
             
     %LR = gatdaem1d_forwardmodel(LM.hS,G,E);
-    %HR = gatdaem1d_forwardmodel(HM.hS,G,E);                        
+    %HR = gatdaem1d_forwardmodel(HM.hS,G,E);  
+    %dlayer=1;
     %LD = gatdaem1d_derivative(LM.hS,dtype.dC,dlayer);
     %HD = gatdaem1d_derivative(HM.hS,dtype.dC,dlayer);       
     L = gatdaem1d_fm_dlogc(LM.hS,G,E);
@@ -58,7 +59,7 @@ gatdaem1d_unloadlibrary();
 %[num2str(H.FM.SX,'%18.6e')  num2str(H.FM.SZ,'%18.6e')]
 
 %%Plotting
-figure
+dark_figure(1);
 hold on;
 set(gca,'xscale','log');
 set(gca,'yscale','log');
@@ -72,7 +73,7 @@ h2=plot(HM.wt.centre,-H.FM.SZ,'-b.','linewidth',2);
 legend([h1 h2],'LM Z','HM Z');
 
 %%
-figure
+dark_figure(2);
 hold on;
 set(gca,'xscale','log');
 set(gca,'yscale','linear');
@@ -87,7 +88,7 @@ end
 legend([h1 h2],'d(LM Z)/dlogC','d(HM Z)/dC');
 
 %%
-figure;
+dark_figure(3);
 subplot(2,1,1);
 hold on;box on;
 plot(LM.wfm.time,LM.wfm.current,'-r','linewidth',2);

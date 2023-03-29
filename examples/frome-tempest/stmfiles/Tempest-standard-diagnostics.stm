@@ -16,7 +16,7 @@ System Begin
 			 0.0199933333333   -1.0
 			 0.0200000000000    0.0
 		WaveFormCurrent End
-		WaveformDigitisingFrequency = 75000
+		WaveformDigitisingFrequency = 300000
 	Transmitter End
 
 	Receiver Begin
@@ -54,7 +54,7 @@ System Begin
 		SecondaryFieldNormalisation  =  none
 
 		FrequenciesPerDecade = 6
-		NumberOfAbsiccaInHankelTransformEvaluation = 21
+		NumberOfAbsiccaInHankelTransformEvaluation = 41
 		SaveDiagnosticFiles = yes
 
 	ForwardModelling End
