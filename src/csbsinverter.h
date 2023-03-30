@@ -802,8 +802,8 @@ public:
 			std::string value = b.value(i);
 			if (key[0] == '/') continue;//Skip commented out fields
 			cFieldDefinition fd(parent, key);						
-			cFdVrnt fdvrnt(fd,cVrnt());						
-			IM->set_variant_type(fd.varname, fdvrnt.vnt);
+			cFdVrnt fdvrnt(fd,cVrnt());			
+			IM->set_variant_type(fd, fdvrnt.vnt);
 			for (size_t si = 0; si < nSoundings; si++) {
 				AncFld[si].add(key, fdvrnt);
 			}

@@ -69,7 +69,7 @@ public:
 		return true;
 	}
 
-	virtual bool set_variant_type(const std::string& fname, cVrnt& vnt) const {
+	virtual bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {
 		glog.errormsg("set_variant_type() not yet implemented\n");
 		return true;
 	}
@@ -361,15 +361,15 @@ public:
 		return false;		
 	}
 
-	bool set_variant_type(const std::string& fname, cVrnt& vnt) const {
-		cAsciiColumnField c;
-		bool status = get_acsiicolumnfield(fname, c);
+	bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {		
+		cAsciiColumnField c;				
+		bool status = get_acsiicolumnfield(fd.varname, c);
 		if (status) {			
 			c.set_variant_type(vnt);
 			return true;
 		}
 		else {
-			glog.errormsg("Could not find field %s",fname.c_str());
+			glog.errormsg("Could not find field %s",fd.varname.c_str());
 			return false;
 		}		
 	}
