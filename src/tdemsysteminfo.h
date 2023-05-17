@@ -10,6 +10,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #define _tdemsysteminfo_H
 
 #include "tdemcomponentinfo.h"
+#include "inputmanager.h"
 
 class cTDEmSystemInfo {
 
@@ -26,12 +27,12 @@ public:
 	size_t nchans = 0;
 	cTDEmComponentInfo CompInfo[3];
 	std::vector<cTDEmData> predicted;
+	std::string units;
 	
 	bool invertXPlusZ = false;
 	bool invertPrimaryPlusSecondary = false;
 	bool reconstructPrimary = false;
 	
-
 	void initialise(const cBlock& b, const size_t nsoundings) {
 		std::string dummy;
 		if (b.getvalue("InvertTotalField", dummy)) {
@@ -67,6 +68,26 @@ public:
 		}
 		nchans = nwindows * ncomps;
 	}
+
+	void set_units(cInputManager* IM) {
+		for (size_t ci = 0; ci < 3; ci++) {
+			cFieldDefinition& fd = CompInfo[ci].fdS;
+			if (fd.varname.size() > 0) {
+				cAsciiColumnField c;
+				IM->get_acsiicolumnfield(fd, c);
+				std::string u = c.get_att("units");
+				if (units.size() > 0){
+					if (ciequal(u,units) == false) {
+						std::ostringstream msg;
+						msg << "Error: units must be the same on all EM system/components. " << units << "does niot match " << u << "." << std::endl;
+						glog.errormsg(msg.str());
+					}
+				}
+				else units = u;
+			}
+		}
+	}
+	
 };
 
 #endif

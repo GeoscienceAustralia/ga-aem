@@ -64,13 +64,13 @@ public:
 
 	virtual bool parse_record() { return true; }
 	
-	virtual bool get_acsiicolumnfield(const std::string& fname, cAsciiColumnField& c) const {
-		glog.errormsg("get_acsiicolumnfield() not yet implemented\n");
+	virtual bool get_acsiicolumnfield(const cFieldDefinition& fd, cAsciiColumnField& c) const {
+		glog.errormsg(_SRC_,"get_acsiicolumnfield() not yet implemented\n");
 		return true;
 	}
 
 	virtual bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {
-		glog.errormsg("set_variant_type() not yet implemented\n");
+		glog.errormsg(_SRC_,"set_variant_type() not yet implemented\n");
 		return true;
 	}
 		
@@ -133,7 +133,7 @@ public:
 			if (deflen != 1 && deflen != n) {
 				std::ostringstream oss;
 				oss << "Mismatch in field sizes for '<" << fd.keyname << ">' : expected " << n << " but got " << deflen << std::endl;
-				glog.errormsg(oss.str());
+				glog.errormsg(_SRC_,oss.str().c_str());
 			}
 			
 
@@ -215,7 +215,7 @@ public:
 			glog.logmsg(0, "Parsing input HeaderFile %s\n", HeaderFileName.c_str());
 			std::string ext = extractfileextension(HeaderFileName);
 			if (strcasecmp(ext,".dfn")==0){
-				AF.read_dfn(HeaderFileName);
+				AF.parse_dfn_header(HeaderFileName);
 				AF.headertype = cAsciiColumnFile::HeaderType::DFN;
 				AF.parsetype  = cAsciiColumnFile::ParseType::FIXEDWIDTH;
 			}
@@ -229,15 +229,21 @@ public:
 				AF.headertype = cAsciiColumnFile::HeaderType::CSV;
 				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
 			}
+			else if (strcasecmp(ext, ".hdr") == 0) {
+				AF.parse_hdr_header(HeaderFileName);
+				AF.headertype = cAsciiColumnFile::HeaderType::HDR;
+				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
+			}
 			else {
 				std::string msg = _SRC_;
-				msg += strprint("\n\tD'oh! the specified header file (%s) is not .dfn or .csv or .csvh\n", HeaderFileName.c_str());
+				msg += strprint("\n\tD'oh! the specified header file (%s) is not .dfn or .csv or .csvh or .hdr\n", HeaderFileName.c_str());
 				throw(std::runtime_error(msg));
 			}
 		}
 		else{
 			AF.headertype = cAsciiColumnFile::HeaderType::NONE;
 			AF.parsetype  = cAsciiColumnFile::ParseType::DELIMITED;
+			AF.set_fields_noheader();
 		}
 
 		size_t headerlines = b.getsizetvalue("Headerlines");
@@ -352,8 +358,15 @@ public:
 		return status;	
 	}	
 	
-	bool get_acsiicolumnfield(const std::string& fname, cAsciiColumnField& c) const {		
-		int findex = AF.fieldindexbyname(fname);
+	bool get_acsiicolumnfield(const cFieldDefinition& fd, cAsciiColumnField& c) const {
+		int findex=-1;
+		if (fd.type == cFieldDefinition::TYPE::VARIABLENAME) {
+			findex = AF.fieldindexbyname(fd.varname);
+		}
+		else if(fd.type == cFieldDefinition::TYPE::COLUMNNUMBER) {
+			findex = fd.column - 1;
+		}
+
 		if (findex >= 0) {
 			c = AF.fields[findex];
 			return true;
@@ -363,13 +376,13 @@ public:
 
 	bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {		
 		cAsciiColumnField c;				
-		bool status = get_acsiicolumnfield(fd.varname, c);
+		bool status = get_acsiicolumnfield(fd, c);
 		if (status) {			
 			c.set_variant_type(vnt);
 			return true;
 		}
 		else {
-			glog.errormsg("Could not find field %s",fd.varname.c_str());
+			glog.errormsg(_SRC_,"Could not find field %s\n",fd.varname.c_str());
 			return false;
 		}		
 	}

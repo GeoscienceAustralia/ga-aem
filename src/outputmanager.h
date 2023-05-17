@@ -286,6 +286,7 @@ private:
 	bool SaveDFNHeader = true;
 	bool SaveCSVHeader = true;
 	bool SaveHDRHeader = true;
+	bool SaveI3Header  = true;
 
 public:
 
@@ -310,6 +311,10 @@ public:
 		if (b.getvalue("SaveHDRHeader", status)) {
 			SaveHDRHeader = status;
 		};
+
+		if (b.getvalue("SaveI3Header", status)) {
+			SaveHDRHeader = status;
+		};
 	}
 
 	bool opendatafile(const std::string& srcfile, const size_t& subsample) {
@@ -325,8 +330,9 @@ public:
 		if (flist.size() > 0) {
 			f.acol.startcolumn = 1+flist.back()->acol.endcol();
 			f.acol.startchar = 1+flist.back()->acol.endchar();
-		}				
-		addvar(f);		
+		}			
+		
+		addvar(f);	
 		flist.push_back(std::make_shared<cOutputField>(f));
 		return flist.back();
 	}
@@ -386,14 +392,19 @@ public:
 		}
 
 		if (SaveCSVHeader) {
-			std::string csvfile = fpp.directory + fpp.prefix + ".csvh";
+			std::string csvfile = fpp.directory + fpp.prefix + ".csv";
 			write_csv_header(csvfile);
 		}
 
 		if (SaveHDRHeader) {
 			std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
-			write_simple_header(hdrfile);
+			write_simple_header(hdrfile);			
 		}		
+
+		if (SaveI3Header) {
+			std::string i3file = fpp.directory + fpp.prefix + ".i3";
+			write_i3_header(i3file);
+		}
 	};
 	
 	
@@ -490,16 +501,17 @@ public:
 		}		
 	};
 
-	cKeyVecCiStr collect_all_att_names() {
-		cKeyVecCiStr v;
+	void write_i3_header(const std::string pathname) {
+		std::ofstream ofs(pathname);		
+		ofs << "[IMPORT ARCHIVE]" << std::endl;
+		ofs << "FILEHEADER\t0" << std::endl;
+		ofs << "RECORDFORM\tFIXED" << std::endl; 				
 		for (const auto& f : flist) {
-			for (const auto& [key, value] : f->atts) {
-				v.add(key, std::string());
-			}
+			std::string s = f->acol.i3_header_record();
+			ofs << s;
 		}
-		return v;
-	}
-
+	};
+	
 	void write_csv_header(const std::string pathname) {
 
 		cKeyVecCiStr v = collect_all_att_names();
@@ -528,6 +540,15 @@ public:
 		}
 	};
 
+	cKeyVecCiStr collect_all_att_names() {
+		cKeyVecCiStr v;
+		for (const auto& f : flist) {
+			for (const auto& [key, value] : f->atts) {
+				v.add(key, std::string());
+			}
+		}
+		return v;
+	}
 };
 
 #if defined HAVE_NETCDF
@@ -588,7 +609,7 @@ public:
 		const char& _fmtchar,//ascii form I, F, E
 		const size_t& _width,//ascii width
 		const size_t& _decimals//ascii number of decimals places			
-	) {	
+	) {			
 		spcOutputField of = getfield(_name);
 		if (!of) {
 			cOutputField f(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);

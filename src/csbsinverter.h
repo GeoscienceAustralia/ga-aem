@@ -492,9 +492,8 @@ public:
 
 		//Load control file
 		parse_options();
-		initialise_systems();
-
-
+		
+		//Setup InputManager
 		if (cInputManager::isnetcdf(ib)) {
 			#if defined HAVE_NETCDF
 				IM = std::make_unique<cNetCDFInputManager>(ib);
@@ -507,7 +506,10 @@ public:
 			IM = std::make_unique<cASCIIInputManager>(ib);
 		}
 		IM->set_subsample_rate(Subsample);
+		
+		initialise_systems();		
 
+		//Setup OutputManager
 		if (cOutputManager::isnetcdf(ob)) {
 			#if defined HAVE_NETCDF
 				OM = std::make_unique<cNetCDFOutputManager>(ob, Size, Rank);
@@ -566,9 +568,9 @@ public:
 		const size_t& record = Bunch.master_record();
 		std::ostringstream s;
 		s << "Rec " << ixd(6) << 1 + record;
-		s << " Fl " << ixd(3) << Id[si].flight;
-		s << " Ln " << ixd(7) << Id[si].line;
-		s << " Fd " << fxd(10, 2) << Id[si].fiducial;
+		s << " Flt " << ixd(3) << Id[si].flight;
+		s << " Line " << ixd(7) << Id[si].line;
+		s << " Fid " << fxd(10, 2) << Id[si].fiducial;
 		return s.str();
 	}
 
@@ -579,8 +581,8 @@ public:
 		s << " Time=" << fxd(4, 1) << etime;
 		s << " " << TerminationReason;
 		s << " " << OutputMessage;
-		s << " nF= " << nForwards / CIS.iteration;
-		s << " nJ= " << nJacobians;
+		//s << " nF= " << nForwards / CIS.iteration;
+		//s << " nJ= " << nJacobians;
 		return s.str();
 	}
 
@@ -1424,14 +1426,14 @@ public:
 		nSystems = B.size();
 		SV.resize(nSystems);		
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			SV[sysi].initialise(B[sysi], nSoundings);			
+			SV[sysi].initialise(B[sysi], nSoundings);				
+			SV[sysi].set_units(IM.get());
 		}
-		unset_fftw_lock();
-		
+		unset_fftw_lock();		
 	}
-
+	
 	void setup_data()
-	{
+	{		
 		nAllData = 0;
 		_dindex_.resize(nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
@@ -1445,12 +1447,12 @@ public:
 					}
 				}
 			}
-		}
+		}		
 
 		int di = 0;
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				cTDEmSystemInfo& S = SV[sysi];
+				cTDEmSystemInfo& S = SV[sysi];				
 				if (S.invertXPlusZ) {
 					nAllData += S.nwindows;
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
@@ -2442,10 +2444,7 @@ public:
 			if (record > (EndRecord - 1))break;
 			if ((paralleljob % Size) == Rank) {					
 				std::ostringstream s;				
-				if ((readstatus = read_bunch(record))) {
-					//std::cout << " Sz " << Size 
-					//	      << " Rn " << Rank 
-					//	      << " Rc " << record << std::endl;
+				if ((readstatus = read_bunch(record))) {					
 					s << bunch_id();
 					if (initialise_bunch()) {
 						double t1 = gettime();
@@ -2572,9 +2571,8 @@ public:
 		OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 12, 0);
 		for (size_t fi = 0; fi < AncFld[si].size(); fi++) {
 			cFdVrnt& fdv = AncFld[si][fi].second;
-			cAsciiColumnField c;
-			std::string fname = fdv.fd.varname;
-			IM->get_acsiicolumnfield(fname, c);
+			cAsciiColumnField c;			
+			IM->get_acsiicolumnfield(fdv.fd, c);
 			OM->writevrnt(pi, fdv.vnt, c);
 		}
 
@@ -2740,12 +2738,12 @@ public:
 		//ObservedData
 		if (OO.ObservedData) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				cTDEmSystemInfo& S = SV[sysi];
-				for (size_t ci = 0; ci < 3; ci++) {
+				cTDEmSystemInfo& S = SV[sysi];		
+				for (size_t ci = 0; ci < 3; ci++) {					
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name,
 						"observed", "Observed",
-						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary);
+						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary,S.units);
 				}
 			}
 		}
@@ -2759,7 +2757,7 @@ public:
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name,
 						"noise", "Estimated noise",
-						'E', 15, 6, 0.0, S.CompInfo[ci].data[si].E, false);
+						'E', 15, 6, 0.0, S.CompInfo[ci].data[si].E, false, S.units);
 				}
 			}
 		}
@@ -2773,7 +2771,7 @@ public:
 						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
 						S.predicted[si].component(ci).Primary,
 						S.predicted[si].component(ci).Secondary,
-						S.invertPrimaryPlusSecondary);
+						S.invertPrimaryPlusSecondary,S.units);
 				}
 			}
 		}
@@ -2826,16 +2824,16 @@ public:
 		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
 	}
 
-	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary)
+	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary, const std::string& units)
 	{
 		std::string DN_WINDOW = "em_window";
 		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
-		std::string sysdesc = descprefix + strprint(" EMSystem %d ", (int)sysnum + 1);
+		std::string sysdesc = descprefix + strprint(" EMSystem %d ", (int)sysnum + 1);		
 		if (includeprimary) {
 			std::string name = sysname + comp + "P";
 			std::string desc = sysdesc + comp + "-component primary field";
 			OM->writefield(pointindex,
-				p, name, desc, UNITLESS,
+				p, name, desc,units,
 				1, ST_FLOAT, DN_NONE, form, width, decimals);
 		}
 
@@ -2843,7 +2841,7 @@ public:
 			std::string name = sysname + comp + "S";
 			std::string desc = sysdesc + comp + "-component secondary field";
 			OM->writefield(pointindex,
-				s, name, desc, UNITLESS,
+				s, name, desc, units,
 				s.size(), ST_FLOAT, DN_WINDOW, form, width, decimals);
 		}
 	}

@@ -5,7 +5,7 @@
 5	Flight
 6	Line
 7	Fiducial
-8	DateTime
+8	TimeOfDay
 9	UTC_DateTime
 10	UTC_Date
 11	UTC_Time

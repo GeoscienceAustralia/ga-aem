@@ -7,10 +7,10 @@ set path=..\..\..\third_party\fftw3.2.2.dlls\64bit;%path%
 
 REM Standalone
 rem galeisbstdem.exe galeisbstdem.con
-galeisbstdem.exe galeisbstdem-columns.con
+REM galeisbstdem.exe galeisbstdem-columns.con
 
 REM Use 4 MPI processes
-REM mpiexec -np 4 galeisbstdem.exe galeisbstdem.con
+mpiexec -np 4 galeisbstdem.exe galeisbstdem.con
 
 REM Use 4 OpenMP threads
 REM galeisbstdem.exe galeisbstdem.con 4
