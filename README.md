@@ -172,7 +172,7 @@ The programs required additional code or libraries as described below.
 	- PETSc is only required for compiling galeiallatonce.exe, not executing it.
 	- PETSc is not required for executing the precompiled Windows programs.
 	- Linux users will need to install PETSc on your system.
-	- Windows users can obtain the header files and precompiled libraries from the GitHub, here
-		- https://github.com/rcb547/petsc-3.4.3-vs2013, or
-		- git clone git@github.com:rcb547/petsc-3.4.3-vs2013.git.
+	- Windows users can obtain the header files and precompiled libraries from GitHub, here
+		- https://github.com/rcb547/petsc-3.9.4-vs2017-win64-libraries, or
+		- git clone git@github.com:rcb547/petsc-3.9.4-vs2017-win64-libraries.git.
 
