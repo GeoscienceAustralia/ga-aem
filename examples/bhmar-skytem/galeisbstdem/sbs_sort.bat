@@ -1,4 +1,6 @@
+@ECHO off
 REM batch file for sorting outputs from different processors into one file
+
 cd output
 copy inversion.output.0000.log inversion.output.log
 copy inversion.output.0000.hdr inversion.output.hdr

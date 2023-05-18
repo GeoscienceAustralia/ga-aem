@@ -1,3 +1,4 @@
+@ECHO off
 REM batch file for deleting output from different processors
 REM DO NOT run this until you have run sbs_sort.bat
 cd output
