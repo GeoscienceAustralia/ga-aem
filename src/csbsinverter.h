@@ -1498,9 +1498,10 @@ public:
 					T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 					T.LEM.derivative_layer = INT_MAX;
 					T.setprimaryfields();
-					S.CompInfo[XCOMP].data[si].P = T.PrimaryX;
-					S.CompInfo[YCOMP].data[si].P = T.PrimaryY;
-					S.CompInfo[ZCOMP].data[si].P = T.PrimaryZ;
+					
+					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PrimaryX;
+					if (S.CompInfo[YCOMP].Use) S.CompInfo[YCOMP].data[si].P = T.PrimaryY;
+					if (S.CompInfo[ZCOMP].Use) S.CompInfo[ZCOMP].data[si].P = T.PrimaryZ;
 				}
 
 				if (S.invertXPlusZ) {
@@ -2556,8 +2557,7 @@ public:
 		Vector x = lltOfA.solve(b);		
 		return x;
 	}
-
-	//void write_result(const int& pointindex, const cIterationState& S)	
+	
 	void write_result(const int& pointindex)
 	{
 		const Vector& m = CIS.param;

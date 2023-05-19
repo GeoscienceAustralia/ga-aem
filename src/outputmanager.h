@@ -130,6 +130,9 @@ auto constexpr ST_DOUBLE = cOutputField::binarystoragetype::DOUBLE;
 
 class cOutputManager {
 		
+protected:
+	bool firstpointwritten = false;
+
 public:
 	int Size = 1;
 	int Rank = 0;
@@ -172,8 +175,7 @@ public:
 	spcOutputField getfield(const std::string& name) {
 		spcOutputField f;
 		for(auto it = flist.begin(); it != flist.end(); it++) {												
-			if (strcasecmp((*it)->name, name) == 0) {
-				//f = std::make_shared<cOutputField>(*it);				
+			if (strcasecmp((*it)->name, name) == 0) {				
 				return *it;
 			}
 		}
@@ -194,7 +196,7 @@ public:
 
 	virtual bool writevrnt(const int& pointindex, const cVrnt& vrnt, const cAsciiColumnField& c)
 	{
-		glog.errormsg("Not yet implmented\n");
+		glog.errormsg(_SRC_,"Not yet implmented\n");
 		return false;
 	};
 		
@@ -213,10 +215,15 @@ public:
 		const size_t& _decimals//ascii number of decimals places					
 	) 
 	{
-		spcOutputField f = getfield(_name);
-		if (!f) {
-			f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
-		};
+		spcOutputField f;
+		if (firstpointwritten == false) {
+			if (!f) {
+				f = addfield(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
+			};
+		}
+		else {
+			f = getfield(_name);
+		}
 		write(vals, f, pointindex);
 		return true;
 	}
@@ -235,7 +242,7 @@ public:
 	virtual bool write(const float& val, const spcOutputField& of, const int& pointindex) = 0;
 	virtual bool write(const double& val, const spcOutputField& of, const int& pointindex) = 0;
 	bool write(const char& val, const spcOutputField& of, const int& pointindex) {
-		glog.errormsg("Not yet implmented\n");
+		glog.errormsg(_SRC_,"Not yet implmented\n");
 		return false;
 	}
 	
@@ -244,7 +251,7 @@ public:
 	virtual bool write(const std::vector<float>& vals, const spcOutputField& of, const int& pointindex) = 0;
 	virtual bool write(const std::vector<double>& vals, const spcOutputField& of, const int& pointindex) = 0;
 	bool write(const std::vector<char>& vals, const spcOutputField& of, const int& pointindex) {
-		glog.errormsg("Not yet implmented\n");
+		glog.errormsg(_SRC_,"Not yet implmented\n");
 		return false;
 	}
 
@@ -348,20 +355,34 @@ public:
 		const size_t& _width,//ascii width
 		const size_t& _decimals//ascii number of decimals places			
 	) {		
+		//todo
 		spcOutputField sp = getfield(_name);
 		if (!sp) {
 			cOutputField f(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
 			sp = add_smartptr(f);									
 		}		
+		else {
+			//Already exists and on firts record so must be duplicate
+			if (firstpointwritten == false){
+				glog.errormsg(_SRC_, "Conflict in output field names. Field %s has already been added to the output file\n", _name.c_str());
+			}
+		}
 		return sp;
 	}
 	
 	virtual spcOutputField addfield(cAsciiColumnField c)
 	{		
-		spcOutputField sp = getfield(c.name);
-		if (!sp) {		
+		//todo
+		spcOutputField sp = getfield(c.name);		
+		if (!sp) {
 			cOutputField f(c);			
 			sp = add_smartptr(f);			
+		}
+		else {
+			//Already exists and on firts record so must be duplicate
+			if (firstpointwritten == false) {
+				glog.errormsg(_SRC_, "Conflict in output field names. Field %s has already been added to the output file\n", c.name.c_str());
+			}
 		}
 		return sp;
 	}
@@ -371,7 +392,6 @@ public:
 	};
 
 	void end_point_output() {
-
 		buffer << std::endl; //Carriage return		
 		filestream << buffer.str() << std::flush; // Write to file
 	};
@@ -380,6 +400,7 @@ public:
 		if(Rank == 0) {
 			write_headers();
 		}
+		firstpointwritten = true;
 		return true;
 	}
 
@@ -469,10 +490,10 @@ public:
 	}
 	
 	bool writevrnt(const int& pointindex, const cVrnt& vrnt, const cAsciiColumnField& c){
-		spcOutputField sp = getfield(c.name);
-		if (!sp) {
+		spcOutputField sp = getfield(c.name);		
+		if (!sp) {			
 			sp = addfield(c);
-		}		
+		}				
 
 		auto WriteVisitor = [&](auto& vals) {
 			write(vals, sp, pointindex);

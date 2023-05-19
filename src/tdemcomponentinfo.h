@@ -35,10 +35,10 @@ private:
 public:
 
 	class SoundingData {
-	public:
-		double  P = 0.0;
-		std::vector<double> S;
-		std::vector<double> E;
+		public:
+			double  P = 0.0;
+			std::vector<double> S;
+			std::vector<double> E;
 	};
 	std::vector<SoundingData> data;
 
@@ -94,7 +94,7 @@ public:
 		}
 		
 		nSoundings = nsoundings;
-		nWindows = nwindows;
+		nWindows   = nwindows;
 		data.resize(nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
 			data[si].S.resize(nWindows);

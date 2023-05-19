@@ -21,7 +21,7 @@ except ImportError:
 setup(name='gatdaem1d',
       packages=['gatdaem1d'],
       package_dir={'gatdaem1d':'gatdaem1d'},
-      package_data={'gatdaem1d':['gatdaem1d.so']},
+      package_data={'gatdaem1d':['gatdaem1d.so','gatdaem1d.dll']},
       scripts=[],
       version=1.0,
       description='Time-domain airborne electromagnetic forward modelling.',

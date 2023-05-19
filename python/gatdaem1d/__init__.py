@@ -16,8 +16,8 @@ def load_library():
         ext = '.dll'
     else:
         ext = '.so'
-    libname = os.path.join(os.path.dirname(os.path.realpath(__file__)),"gatdaem1d"+ext)
-    lib = ctypes.CDLL(libname)
+    libname = os.path.join(os.path.dirname(os.path.realpath(__file__)),"gatdaem1d"+ext)    
+    lib = ctypes.CDLL(libname, winmode=0)
     return lib;
 
 #Load the shared library

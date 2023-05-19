@@ -80,7 +80,7 @@ public:
 					if (ciequal(u,units) == false) {
 						std::ostringstream msg;
 						msg << "Error: units must be the same on all EM system/components. " << units << "does niot match " << u << "." << std::endl;
-						glog.errormsg(msg.str());
+						glog.errormsg(_SRC_,msg.str().c_str());
 					}
 				}
 				else units = u;
