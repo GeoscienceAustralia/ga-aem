@@ -1,0 +1,6 @@
+Control Begin
+	SystemFile        = ../stmfiles/Geotem3-GSQ823.stm
+	InputModelFile    = input_model_Geotem3-GSQ823.txt
+	OutputDataFile    = output_Geotem3-GSQ823.asc
+	OutputDataHeader  = output_Geotem3-GSQ823.hdr
+Control End

@@ -1,17 +1,17 @@
 #!/bin/tcsh
 
-#Standalone
-#galeisbstdem.exe galeisbstdem-do-not-solve-geometry.con
-#galeisbstdem.exe galeisbstdem-solve-rxpitch.con
-#galeisbstdem.exe galeisbstdem-solve-rxpitch-and-offsets.con
+#Run standalone
+galeisbstdem.exe galeisbstdem-xzamplitude-solve-offsets.con
+#galeisbstdem.exe galeisbstdem-xzcomponents-solve-offsets-and-rxpitch.con
+#galeisbstdem.exe galeisbstdem-zcomponentonly-do-not-solve-geometry.con
 
-#Use 4 MPI processes
-#mpirun -np 4 galeisbstdem.exe galeisbstdem-do-not-solve-geometry.con
-#mpirun -np 4 galeisbstdem.exe galeisbstdem-solve-rxpitch.con
-mpirun -np 4 galeisbstdem.exe galeisbstdem-solve-rxpitch-and-offsets.con
+#Run using 4 OpenMP threads
+#galeisbstdem.exe galeisbstdem-xzamplitude-solve-offsets.con 4
+#galeisbstdem.exe galeisbstdem-xzcomponents-solve-offsets-and-rxpitch.con 4
+#galeisbstdem.exe galeisbstdem-zcomponentonly-do-not-solve-geometry.con 4
 
-#Use 4 OpenMP threads
-#galeisbstdem.exe galeisbstdem-do-not-solve-geometry.con 4
-#galeisbstdem.exe galeisbstdem-solve-rxpitch.con 4
-#galeisbstdem.exe galeisbstdem-solve-rxpitch-and-offsets.con 4
+#Run using 4 MPI processes
+#mpirun -np 4 galeisbstdem-xzamplitude-solve-offsets.con
+#mpirun -np 4 galeisbstdem-xzcomponents-solve-offsets-and-rxpitch.con
+#mpirun -np 4 galeisbstdem-zcomponentonly-do-not-solve-geometry.con
 
