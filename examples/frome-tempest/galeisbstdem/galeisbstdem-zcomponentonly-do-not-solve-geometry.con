@@ -3,11 +3,11 @@ Control Begin
 	EMSystem Begin
 		SystemFile = ../stmfiles/Tempest-standard.stm
 		InvertXPlusZ    = no							//yes to invert the amplitude of the data in the XZ plane
-		InvertPrimaryPlusSecondary = yes				//yes to invert the total field (usually only for fixed-wing systems)
-		ReconstructPrimaryFieldFromInputGeometry = yes	//yes to reconstruct primary field (from the input geometry) if not supplied in the data file
+		InvertPrimaryPlusSecondary = no					//yes to invert the total field (usually only for fixed-wing systems)
+		ReconstructPrimaryFieldFromInputGeometry = no	//yes to reconstruct primary field (from the input geometry) if not supplied in the data file
 
 		XComponent Begin
-			Use = yes
+			Use = no
 			EstimateNoiseFromModel = yes
 			MultiplicativeNoise    = 2.26
 			AdditiveNoise	       = 0.0119 0.0117 0.0093 0.0061 0.0057 0.0054 0.0051 0.0048 0.0046 0.0044 0.0043 0.0040 0.0034 0.0026 0.0034
@@ -33,7 +33,7 @@ Control Begin
 		NormType    = L2					//use L1 or L2 norm
 		MinimumPhiD = 1.0					//PhiD misfit value at which inversion terminates
 		MinimumPercentageImprovement = 5.0	//Minimun reduction in PhiD between iterations that causes termination
-		MaximumIterations = 1				//Maximum nuber of iteration before termination
+		MaximumIterations = 100			//Maximum nuber of iteration before termination
 
 		//Experimental Parameter
 		//BeginGeometrySolveIteration = 0
@@ -81,7 +81,7 @@ Control Begin
 			Northing
 			Lidar
 			Radalt
-			conductivity
+			DTM
 		AncillaryFields End
 			
 		Geometry Begin
@@ -102,7 +102,7 @@ Control Begin
 			TX_Yaw    = 0
 
 			TXRX_DX Begin
-				Solve = yes
+				Solve = no
 				Ref   = HSep_GPS
 				Std   = 0.5
 				Min   = HSep_GPS - 5
@@ -117,7 +117,7 @@ Control Begin
 			TXRX_DY End
 
 			TXRX_DZ Begin
-				Solve = yes
+				Solve = no
 				Ref   = VSep_GPS
 				Std   = 0.5
 				Min   = VSep_GPS - 5
@@ -127,7 +127,7 @@ Control Begin
 		
 			RX_Roll   =  0
 			RX_Pitch Begin
-				Solve = yes
+				Solve = no
 				Ref   = 0
 				TFR   = 0		//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing
 				Std   = 0.5
