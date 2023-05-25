@@ -81,7 +81,21 @@ if(NOT FFTW_FOUND)
 	message(STATUS "FFTW package was not found - manual setup")
 	set(FFTW_DIR $ENV{FFTW_DIR})
 	find_path(FFTW_INCLUDE_DIRS NAMES "fftw3.h" PATHS ${FFTW_DIR} PATH_SUFFIXES "include" NO_DEFAULT_PATH)
-	find_library(FFTW_LINK_LIBRARIES "fftw3-3" libfftw3-3 PATHS ${FFTW_DIR} PATH_SUFFIXES "lib" "lib64" NO_DEFAULT_PATH)
+	
+	if (MSVC)
+		#For Visual studio/MSVC make an import library from the downloaded FFTW dll (something to do with it being built using MinGW)
+		#and must add MSVC_FFTW_IMPORTLIB as a dependency (see add_dependencies()) for all targets that require FFTW in MSVC
+		set(FFTW_LINK_LIBRARIES ${FFTW_DIR}/libfftw3-3.lib)
+		add_custom_command(OUTPUT ${FFTW_DIR}/libfftw3-3.lib						
+			COMMAND CMD /C lib.exe /machine:x64 /def:libfftw3-3.def /out:libfftw3-3.lib
+			WORKING_DIRECTORY ${FFTW_DIR}
+			COMMENT "Creating MSVC FFTW import library"
+			VERBATIM)
+		add_custom_target(MSVC_FFTW_IMPORTLIB DEPENDS ${FFTW_DIR}/libfftw3-3.lib)
+	else()
+		find_library(FFTW_LINK_LIBRARIES "fftw3-3" "libfftw3-3" PATHS ${FFTW_DIR} PATH_SUFFIXES "lib" "lib64" NO_DEFAULT_PATH)
+	endif()
+
 	set(FFTW_FOUND 1)
 endif()
 
@@ -215,6 +229,9 @@ add_subdirectory(submodules/ticpp)
 # Add the gatdaem1d static library
 set(target gatdaem1d-static)
 add_library(${target} STATIC src/gatdaem1d.cpp)
+if (MSVC)
+	add_dependencies(${target} MSVC_FFTW_IMPORTLIB)
+endif()
 set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
 target_sources(${target} PRIVATE submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
@@ -237,6 +254,9 @@ install(FILES src/gatdaem1d.h TYPE INCLUDE)
 # Add gaforwardmodeltdem executable
 set(target gaforwardmodeltdem)
 add_executable(${target} src/gaforwardmodeltdem.cpp)
+if (MSVC)
+	add_dependencies(${target} MSVC_FFTW_IMPORTLIB)
+endif()
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
@@ -245,6 +265,9 @@ install(TARGETS ${target} DESTINATION bin OPTIONAL)
 # Add example_forward_model executable
 set(target example_forward_model)
 add_executable(${target} src/example_forward_model.cpp)
+if (MSVC)
+	add_dependencies(${target} MSVC_FFTW_IMPORTLIB)
+endif()
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
@@ -254,6 +277,9 @@ install(TARGETS ${target} DESTINATION bin OPTIONAL)
 # Add the pure C example executable
 set(target example_forward_model_c)
 add_executable(${target} src/example_forward_model_c.c)
+if (MSVC)
+	add_dependencies(${target} MSVC_FFTW_IMPORTLIB)
+endif()
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE gatdaem1d-static)
 install(TARGETS ${target} DESTINATION bin OPTIONAL)
@@ -261,6 +287,9 @@ install(TARGETS ${target} DESTINATION bin OPTIONAL)
 # Add galeisbstdem executable
 set(target galeisbstdem)
 add_executable(${target} src/galeisbstdem.cpp)
+if (MSVC)
+	add_dependencies(${target} MSVC_FFTW_IMPORTLIB)
+endif()
 target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})
@@ -289,6 +318,9 @@ install(TARGETS ${target} DESTINATION bin OPTIONAL)
 set(target garjmcmctdem)
 if(${WITH_NETCDF})
 	add_executable(${target} src/garjmcmctdem.cpp)
+	if (MSVC)
+		add_dependencies(${target} MSVC_FFTW_IMPORTLIB)
+	endif()
 	target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 	target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 	target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
@@ -314,6 +346,9 @@ endif()
 set(target galeiallatonce)
 if(MPI_FOUND AND PETSC_FOUND) 
 	add_executable(${target} src/galeiallatonce.cpp)
+	if (MSVC)
+		add_dependencies(${target} MSVC_FFTW_IMPORTLIB)
+	endif()
 	target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
 	target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 	target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
@@ -429,6 +464,18 @@ install(DIRECTORY matlab/ DESTINATION matlab
 		MESSAGE_NEVER
 		PATTERN "bin" EXCLUDE)
 
+# Install any Unix shell scripts or Windows batch files
+if(UNIX)
+	install(DIRECTORY scripts/ DESTINATION scripts
+			MESSAGE_NEVER
+			PATTERN "*.sh" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
+else()
+	install(DIRECTORY scripts/ DESTINATION scripts
+			MESSAGE_NEVER
+			PATTERN "*.bat" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)		
+endif()
+
 #On Windows copy and rename Matlab .dll file to .mexw64 
 # and on linux copy and rename Python libgatdaem1d.so to gatdaem1d.so 
 install (SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")
+
