@@ -53,8 +53,8 @@ System Begin
 		ZOutputScaling = 1e15
 		SecondaryFieldNormalisation  =  none
 
-		FrequenciesPerDecade = 8
-		NumberOfAbsiccaInHankelTransformEvaluation = 41
+		FrequenciesPerDecade = 6
+		NumberOfAbsiccaInHankelTransformEvaluation = 21
 
 	ForwardModelling End
 
