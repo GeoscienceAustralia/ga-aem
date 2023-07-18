@@ -1,6 +1,6 @@
 #!/bin/sh
 
-module load intel-compiler
+module load intel-compiler-llvm/2023.0.0
 module load cmake/3.21.4
 module load fftw3/3.3.8
 module load netcdf/4.8.0
@@ -24,7 +24,7 @@ export INSTALL_DIR=$PWD/install-intel
 mkdir $BUILD_DIR
 cd $BUILD_DIR
 
-cmake -Wno-dev -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc ..
+cmake -Wno-dev -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx ..
 cmake --build . --target all
 cmake --install . --prefix $INSTALL_DIR
 

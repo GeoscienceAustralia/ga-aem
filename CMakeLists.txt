@@ -44,16 +44,15 @@ if("${CMAKE_C_COMPILER_ID}" MATCHES "MSVC" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES
 	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /O2")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 else()
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security")
-	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security")
-
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security -Wno-tautological-constant-compare ")
+	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security -Wno-tautological-constant-compare ")
 	# Adding filesystem library
 	link_libraries(-lstdc++fs)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Wno-date-time -Wno-error=date-time")
-	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wno-unused-result -Wno-date-time -Wno-error=date-time")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Wno-date-time -Wno-error=date-time ")
+	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wno-unused-result -Wno-date-time -Wno-error=date-time ")
 	#On GCC, even with -Wno-date-time, still get warings of the form: warning: macro "__DATE__" might prevent reproducible builds [-Wdate-time]	
 endif()
 
