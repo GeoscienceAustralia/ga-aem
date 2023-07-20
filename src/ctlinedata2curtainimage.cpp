@@ -150,7 +150,7 @@ private:
 	double highspreadfade = 0.0;
 
 	double geometrytolerance = 0.0;
-	int    tilesize = 0.0;
+	int    tilesize = 0;
 	std::string datasetname;
 	std::string datacachename;
 
@@ -370,7 +370,7 @@ public:
 					bm.SetPixel(i,j,AirColor);					
 				}
 				else{					
-					for (int li = 0; li<D.nlayers; li++){
+					for (size_t li = 0; li<D.nlayers; li++){
 						if (zp < D.z[k][li] && zp >= D.z[k][li + 1]){
 							double conductivity = D.c[k][li];
 							if(conductivity < 0.0){
@@ -454,7 +454,7 @@ public:
 
 	void drawgraticule(Bitmap& bm){
 
-		if (gratdiv == ud_double()) return;
+		if (gratdiv == undefinedvalue<double>()) return;
 		if (gratdiv <= 0.0) return;
 
 		Graphics gr(&bm);
@@ -953,7 +953,7 @@ int main(int argc, char** argv)
 			std::string datafile = filelist[i];			
 
 			cCTLineData dummy(ib, dfnfile);
-			cRange<int> lcol = dummy.getcolumns("line");
+			cRange<size_t> lcol = dummy.getcolumns("line");
 
 			cFileSplitter FS(datafile, 0, lcol.from);
 			std::vector<std::string> L;

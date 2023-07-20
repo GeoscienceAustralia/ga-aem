@@ -874,7 +874,7 @@ public:
 		for (size_t sysi = 0; sysi < SV.size(); sysi++){
 			for (size_t ci = 0; ci < 3; ci++) {
 				if (solve_scalingfactors(sysi, ci)){
-					SV[sysi].CompInfo[ci].fdSF.offset = nParamPerSounding * nSoundings + nScalingParam;
+					SV[sysi].CompInfo[ci].fdSF.offset = (int)(nParamPerSounding * nSoundings + nScalingParam);
 					nScalingParam++;
 				}
 			}
@@ -2185,13 +2185,13 @@ public:
 			//value = std::get<T>(AncFld[si][ki].second.vnt);						
 			const cVrnt& v = AncFld[si][ki].second.vnt;						
 			if (v.index() == 0) {
-				value = std::get<double>(v);
+				value = (T)std::get<double>(v);
 			}
 			else if (v.index() == 1) {
-				value = std::get<int>(v);
+				value = (T)std::get<int>(v);
 			}
 			else if (v.index() == 2) {
-				value = std::get<float>(v);
+				value = (T)std::get<float>(v);
 			}
 			else {
 				glog.errormsg(_SRC_,"Bad variant type\n");

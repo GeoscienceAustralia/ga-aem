@@ -49,14 +49,14 @@ public:
 		int subsample = B.getintvalue("Subsample");
 		if (isdefined(subsample) == false)subsample = 1;
 
-		cRange<int> lcol = getcolumns("Line");
-		cRange<int> fcol = getcolumns("Fiducial");
-		cRange<int> xcol = getcolumns("Easting");
-		cRange<int> ycol = getcolumns("Northing");
-		cRange<int> ecol = getcolumns("Elevation");
+		cRange<size_t> lcol = getcolumns("Line");
+		cRange<size_t> fcol = getcolumns("Fiducial");
+		cRange<size_t> xcol = getcolumns("Easting");
+		cRange<size_t> ycol = getcolumns("Northing");
+		cRange<size_t> ecol = getcolumns("Elevation");
 		
 		bool isresistivity = false;
-		cRange<int> crcol = getcolumns("Conductivity");
+		cRange<size_t> crcol = getcolumns("Conductivity");
 		if (crcol.valid() == false){
 			crcol = getcolumns("Resistivity");
 			isresistivity = true;
@@ -83,7 +83,7 @@ public:
 			glog.logmsg("Unknown InputConductivityUnits %s\n", cunits.c_str());
 		}
 
-		cRange<int> cp10col, cp90col;
+		cRange<size_t> cp10col, cp90col;
 		if (spreadfade){
 			cp10col = getcolumns("Conductivity_p10");
 			cp10col = getcolumns("Conductivity_p90");
@@ -92,7 +92,7 @@ public:
 		//Thickness
 		bool isconstantthickness = false;
 		std::vector<double> constantthickness;						
-		cRange<int> tcol = getcolumns("Thickness");
+		cRange<size_t> tcol = getcolumns("Thickness");
 		if (tcol.valid() == true){
 			isconstantthickness = false;
 		}
@@ -202,17 +202,17 @@ public:
 
 	}
 
-	cRange<int> getcolumns(const std::string &token){
+	cRange<size_t> getcolumns(const std::string &token){
 		return getcolumns(B, token, A);
 	}
 
-	static cRange<int> getcolumns(const cBlock& b, const std::string &token, const cAsciiColumnFile& A){
+	static cRange<size_t> getcolumns(const cBlock& b, const std::string &token, const cAsciiColumnFile& A){
 
 		std::string s = b.getstringvalue(token);
 
-		cRange<int> r;
+		cRange<size_t> r;
 		int status;
-		status = sscanf(s.c_str(), "Column %d-%d", &r.from, &r.to);
+		status = sscanf(s.c_str(), "Column %zu-%zu", &r.from, &r.to);
 		if (status == 1){
 			r.to = r.from;
 			r.from--; r.to--;

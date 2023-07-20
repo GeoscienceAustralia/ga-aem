@@ -169,7 +169,7 @@ public:
 	void fillundefined(const cTDEmGeometry& g)
 	{				
 		for (size_t i = 0; i < size(); i++){			
-			if ((*this)[i] == ud_double()){
+			if ((*this)[i] == undefinedvalue<double>()){
 				(*this)[i] = g[i];				
 			}			
 		}		

@@ -68,7 +68,7 @@ int process(std::string controlfilename)
 	
 	std::string ipmodel = C.getstringvalue("Control.IPModel");
 	cLEM::IPType iptype = cLEM::IPType::NONE;
-	if (strcasecmp(ipmodel, ud_string()) == 0){
+	if (strcasecmp(ipmodel, undefinedvalue<std::string>()) == 0){
 		iptype = cLEM::IPType::NONE;
 	}
 	else if (strcasecmp(ipmodel, "none")==0){
