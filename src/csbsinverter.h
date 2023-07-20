@@ -798,11 +798,14 @@ public:
 
 	void set_field_definitions_ancillary(const cBlock& parent) {
 		AncFld.resize(nSoundings);
+		glog.logmsg(0, "Adding ancillary fields\n");
 		const cBlock& b = parent;
 		for (size_t i = 0; i < b.Entries.size(); i++) {
 			std::string key   = b.key(i);
 			std::string value = b.value(i);
 			if (key[0] == '/') continue;//Skip commented out fields
+			if (key.size() == 0) continue;//Skip blank lines			
+			glog.logmsg(0, "\tAdding ancillary field %s\n", value.c_str());
 			cFieldDefinition fd(parent, key);						
 			cFdVrnt fdvrnt(fd,cVrnt());			
 			IM->set_variant_type(fd, fdvrnt.vnt);
