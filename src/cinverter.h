@@ -55,7 +55,7 @@ public:
 
 	bool initialise(const cBlock& parent, const std::string& key) {
 		std::string id = parent.findkey(key);
-		if (id.compare(ud_string()) != 0) {
+		if (id.compare(undefinedvalue<std::string>()) != 0) {
 			return entryinit(parent, key);
 		}
 		else {

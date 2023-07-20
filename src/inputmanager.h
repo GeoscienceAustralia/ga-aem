@@ -104,7 +104,7 @@ public:
 	bool read(const cFieldDefinition& fd, T& v, const size_t n=1)
 	{
 		if (fd.definitiontype() == cFieldDefinition::TYPE::UNAVAILABLE) {
-			v = undefinedvalue(v);
+			v = undefinedvalue<T>();
 			return false;
 		}
 		else if (fd.definitiontype() == cFieldDefinition::TYPE::NUMERIC) {
@@ -115,11 +115,8 @@ public:
 		std::vector<T> vec;
 		file_read(fd,vec,1);
 		v = vec[0];
-
 		if (iotype != IOType::ASCII) {//Don't flip if ASCII reader as it already does this - to be fixed
-			if (fd.flip) { v = -1 * v; } {
-				fd.applyoperator(v);
-			}
+			fd.apply_flip_and_operator(v);
 		}
 		return true;
 	}
@@ -153,10 +150,7 @@ public:
 		bool status = file_read(fd, vec, n);
 
 		if (iotype != IOType::ASCII) {//Don't flip if ASCII reader as it already does this - to be fixed
-			for (size_t i = 0; i < vec.size(); i++) {
-				if (fd.flip) { vec[i] = -vec[i]; }
-				fd.applyoperator(vec[i]);
-			}
+			fd.apply_flip_and_operator(vec);
 		}
 		return true;
 	}
@@ -364,7 +358,7 @@ public:
 			findex = AF.fieldindexbyname(fd.varname);
 		}
 		else if(fd.type == cFieldDefinition::TYPE::COLUMNNUMBER) {
-			findex = fd.column - 1;
+			findex = (int)fd.column - 1;
 		}
 
 		if (findex >= 0) {

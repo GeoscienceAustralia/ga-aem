@@ -17,7 +17,7 @@ using DoublePair = std::pair<double, double>;
 
 class cInversionLineSearcher{
 
-	int maxtrials = 20;	
+	size_t maxtrials = 20;	
 	double target;
 	std::vector<std::pair<double, double>> trials;
 	double xtol = 1e-8;
@@ -39,7 +39,7 @@ public:
 		ytol = _ytol;
 	}
 
-	void set_maxtrials(const int& _maxtrials) {
+	void set_maxtrials(const size_t& _maxtrials) {
 		maxtrials = _maxtrials;
 	}
 

@@ -1,24 +1,22 @@
 @echo off
 
-REM Add executable and FFTW directories to your search path
-REM (Ideally you would add these to your PATH environment variable)
-set path=..\..\..\bin\x64\Release\;%path%
-set path=..\..\..\third_party\fftw3.2.2.dlls\64bit;%path%
+REM Ideally you would set GA-AEM_ROOT as a variable in you user environment (e.g. Start | Edit environment variable for your account)
+REM set GA-AEM_ROOT=C:\Users\[YourUserName]\AppData\Local\GA-AEM
+REM set GA-AEM_ROOT=%LocalAppData%\GA-AEM
 
-REM Standalone
-galeisbstdem.exe galeisbstdem.con
-REM galeisbstdem.exe galeisbstdem-columns.con
+REM Call "ga-aem_vars.bat" batch script to add executables and dependencies to your search path
+CALL %GA-AEM_ROOT%\scripts\ga-aem_vars.bat
+
+REM Run standalone on a single CPU
+galeisbstdem.exe galeisbstdem.con	
+
+REM Run using 4 OpenMP threads
+REM galeisbstdem.exe galeisbstdem.con 4	
 
 REM Use 4 MPI processes
-REM mpiexec -np 4 galeisbstdem.exe galeisbstdem.con
+REM mpiexec -np 4 galeisbstdem.exe galeisbstdem.con	
 
-REM Use 4 OpenMP threads
-REM galeisbstdem.exe galeisbstdem.con 4
-
-REM If you don't have MPI installed use the non-MPI version
-REM Use 4 OpenMP threads 
-REM galeisbstdem-nompi.exe galeisbstdem.con 4
+REM If you do not have MPI installed substitute galeisbstdem-nompi.exe in place of galeisbstdem.exe
+REM galeisbstdem-nompi.exe galeisbstdem.con
 
 pause
-
-

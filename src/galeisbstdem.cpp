@@ -40,9 +40,9 @@ class cStackTrace gtrace; //The global instance of the stacktrace
 #endif
 
 void finalise() {
-	#if defined _MPI_ENABLED				
+	#if defined _MPI_ENABLED
 		MPI_Finalize();
-	#endif		
+	#endif
 }
 
 int finaliseandexit(){		
