@@ -110,6 +110,7 @@
     <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\airborne_types.h" />
     <ClInclude Include="..\..\src\cinverter.h" />
     <ClInclude Include="..\..\src\csbsinverter.h" />
     <ClInclude Include="..\..\src\gaaem_version.h" />
@@ -131,7 +132,9 @@
     <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\logger.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\streamredirecter.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\string_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\undefinedvalues.h" />
     <ClInclude Include="..\..\submodules\geophysics-netcdf\src\geophysics_netcdf.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

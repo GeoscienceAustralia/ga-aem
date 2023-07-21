@@ -32,7 +32,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 class cGeomStruct {
 
-public:		
+public:
 	cTDEmGeometry input;
 	cTDEmGeometry ref;
 	cTDEmGeometry std;
@@ -44,7 +44,7 @@ public:
 
 class cEarthStruct {
 
-public:	
+public:
 	cEarth1D ref;
 	cEarth1D std;
 	cEarth1D min;
@@ -63,13 +63,13 @@ public:
 
 		if (ref.conductivity.size() > 0) {
 			if (::min(ref.conductivity) <= 0) oss << "The conductivity ref is <= 0 in at least one layer\n";
-		}	
+		}
 
 		if (std.conductivity.size() > 0) {
 			if (::min(std.conductivity) <= 0) oss << "The conductivity std is <= 0\n";
 		}
 
-		if (min.conductivity.size() > 0) {		
+		if (min.conductivity.size() > 0) {
 			if (min.conductivity.size() != nc) oss << "The conductivity min does not have the correct number of layer\n";
 			if (max.conductivity.size() != nc) oss << "The conductivity max does not have the correct number of layer\n";
 			if (::min(min.conductivity) <= 0) oss << "The conductivity min is <= 0 in at least one layer in at least one layer\n";
@@ -102,7 +102,7 @@ public:
 		}
 
 	}
-	
+
 };
 
 class cOutputOptions {
@@ -110,7 +110,7 @@ class cOutputOptions {
 private:
 	std::string DumpBasePath;
 
-public:	
+public:
 	std::string LogFile;
 	bool PositiveLayerTopDepths = false;
 	bool NegativeLayerTopDepths = false;
@@ -132,9 +132,9 @@ public:
 		return p;
 	};
 
-	cOutputOptions(){};
-	cOutputOptions(const cBlock& b) {		
-		LogFile = b.getstringvalue("LogFile");				
+	cOutputOptions() {};
+	cOutputOptions(const cBlock& b) {
+		LogFile = b.getstringvalue("LogFile");
 		fixseparator(LogFile);
 
 		PositiveLayerTopDepths = b.getboolvalue("PositiveLayerTopDepths");
@@ -146,7 +146,7 @@ public:
 		ParameterUncertainty = b.getboolvalue("ParameterUncertainty");
 		ObservedData = b.getboolvalue("ObservedData");
 		NoiseEstimates = b.getboolvalue("NoiseEstimates");
-		PredictedData = b.getboolvalue("PredictedData");				
+		PredictedData = b.getboolvalue("PredictedData");
 
 		Dump = b.getboolvalue("Dump");
 		if (Dump) {
@@ -157,24 +157,24 @@ public:
 			}
 			makedirectorydeep(DumpBasePath.c_str());
 		}
-	}	
+	}
 };
 
 class cConstraint {
 
-private:	
+private:
 	bool refmodeldiff = false;
 	std::vector<std::string> allowed_methods;
 
 public:
 	bool alreadyparsed = false;
-	Matrix W;			
+	Matrix W;
 	double alpha = 0.0;
 	std::string key;
 	std::string method;
 	std::string initials;
 	std::string description;
-	
+
 	std::string alpha_field_name() const {
 		return "Alpha_" + initials;
 	};
@@ -195,29 +195,29 @@ public:
 		return "W_" + initials;
 	};
 
-		
+
 	cConstraint() {};
 
 	cConstraint(
-		const std::string& _key,		
+		const std::string& _key,
 		const std::vector<std::string>& _allowed_methods,
 		const std::string& _initials,
-		const std::string& _field_description		
+		const std::string& _field_description
 	) {
-		key = _key;		
+		key = _key;
 		allowed_methods = _allowed_methods;
 		initials = _initials;
-		description = _field_description;		
+		description = _field_description;
 	};
 
-	static std::string get_key(const std::string& controlstring) {		
+	static std::string get_key(const std::string& controlstring) {
 		std::istringstream is(controlstring);
 		std::string k;
-		is >> k;		
+		is >> k;
 		return k;
 	}
 
-	bool verify_method() {		
+	bool verify_method() {
 		if (allowed_methods.size() == 0 && method.size() == 0) return true;
 
 		for (size_t i = 0; i < allowed_methods.size(); i++) {
@@ -254,17 +254,17 @@ public:
 class cLinearConstraint : public cConstraint {
 
 private:
-	
+
 
 public:
-	
+
 	cLinearConstraint() {};
-	
+
 	cLinearConstraint(const std::string& _key, const std::vector<std::string>& _allowed_methods, const std::string& _initials, const std::string& _description)
 		: cConstraint(_key, _allowed_methods, _initials, _description) {};
 
 	bool parse(const std::string& controlstring) {
-		
+
 		std::istringstream is(controlstring);
 		std::string inputkey;
 		is >> inputkey;
@@ -288,7 +288,7 @@ public:
 class cNonLinearConstraint : public cConstraint {
 
 private:
-		
+
 
 public:
 	double _sd_;//Holding value for err std from control file
@@ -296,19 +296,19 @@ public:
 	Matrix J;//Jacobian of non-linear constraint
 	Vector data;//Data of non-linear constraint
 	Vector err;//Data error std of non-linear constraint
-					
+
 	cNonLinearConstraint() {};
 
 	cNonLinearConstraint(const std::string& _key, const std::vector<std::string>& _allowed_methods, const std::string& _subscript, const std::string& _description)
 		: cConstraint(_key, _allowed_methods, _subscript, _description) {};
 
 	bool parse(const std::string& controlstring) {
-		
+
 		std::istringstream is(controlstring);
 		std::string inputkey;
 		is >> inputkey;
 		if (key != inputkey) return false;
-		
+
 		if (alreadyparsed == true) {
 			std::ostringstream msg;
 			msg << "Constraint has already been set: " << std::endl << controlstring << std::endl;
@@ -316,8 +316,8 @@ public:
 		};
 
 		is >> alpha;
-		is >> method;		
-		is >> _sd_;		
+		is >> method;
+		is >> _sd_;
 		alreadyparsed = true;
 		return true;
 	}
@@ -328,7 +328,7 @@ public:
 		Vector delta = data - predicted;
 		return mtAm(delta, W);
 	}
-	
+
 };
 
 class cSBSInverter : public cInverter {
@@ -342,16 +342,16 @@ class cSBSInverter : public cInverter {
 	std::vector<std::vector<std::vector<std::vector<int>>>> _dindex_;
 
 	int    BeginGeometrySolveIteration = 0;
-	bool   FreeGeometry = false;	
+	bool   FreeGeometry = false;
 	Matrix Wr;//Composite reference model matrix
 
 	size_t StartRecord = 0; // 1-based first record to be inverted
 	size_t EndRecord = INT_MAX;// 1-based last record to be inverted
 	size_t Subsample = 0;
 	size_t nSoundings = 0;
-	size_t nBunchSubsample = 0;	
+	size_t nBunchSubsample = 0;
 	size_t nDataPerSounding = 0;
-	size_t nAllData = 0;			
+	size_t nAllData = 0;
 	size_t nLayers = 0;
 	size_t nParamPerSounding = 0;
 	size_t nGeomParamPerSounding = 0;
@@ -364,15 +364,15 @@ class cSBSInverter : public cInverter {
 	size_t nSystems = 0;
 	size_t pointsoutput = 0;
 	std::vector<cGeomStruct> G;
-	std::vector<cEarthStruct> E;		
+	std::vector<cEarthStruct> E;
 	cOutputOptions OO;
 	std::vector<cTDEmSystemInfo> SV;
 
 	//Column definitions		
 	cInvertibleFieldDefinition fdC;
-	cInvertibleFieldDefinition fdT;	
+	cInvertibleFieldDefinition fdT;
 	cIFDMap fdG;
-	
+
 	//Sample instances
 	struct SampleId {
 		int uniqueid = -1;
@@ -387,11 +387,11 @@ class cSBSInverter : public cInverter {
 	};
 	std::vector<SampleId> Id;
 	std::vector<cKeyVec<std::string, cFdVrnt, caseinsensetiveequal<std::string>>> AncFld;
-	
-private:	
-	
-	
-	
+
+private:
+
+
+
 	Vector cull(const Vector& vall) const {
 		assert(ActiveData.size() == nData);
 		assert(vall.size() == nAllData);
@@ -423,8 +423,8 @@ private:
 		return mcull;
 	}
 
-public:			
-		
+public:
+
 	const size_t& nsoundings() {
 		return nSoundings;
 	}
@@ -442,11 +442,11 @@ public:
 
 	cNonLinearConstraint NLCcablen;//Cable length constraint
 
-	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline) 
-					: cInverter(controlfile, size, rank, usingopenmp, commandline)
-	{		
+	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline)
+		: cInverter(controlfile, size, rank, usingopenmp, commandline)
+	{
 		_GSTPUSH_
-		try {			
+			try {
 			initialise(controlfile);
 		}
 		catch (const std::string& msg) {
@@ -466,9 +466,9 @@ public:
 	~cSBSInverter() {
 		//std::cout << "Destroying cSBSInverter\n";
 	}
-			
+
 	void loadcontrolfile(const std::string& filename)
-	{		
+	{
 		glog.logmsg(0, "Loading control file %s\n", filename.c_str());
 		Control = cBlock(filename);
 		cBlock ob = Control.findblock("Output");
@@ -477,45 +477,45 @@ public:
 		OO = cOutputOptions(ob);
 		Verbose = ob.getboolvalue("verbose");
 
-		
+
 		if (Rank == 0) {
 			std::string od = extractfiledirectory(OO.LogFile);
-			makedirectorydeep(od);			
+			makedirectorydeep(od);
 		}
-		#if defined _MPI_ENABLED
-			cMpiEnv::world_barrier();
-		#endif
-		
+#if defined _MPI_ENABLED
+		cMpiEnv::world_barrier();
+#endif
+
 		std::string suffix = stringvalue(Rank, ".%04d");
 		OO.LogFile = insert_after_filename(OO.LogFile, suffix);
 		openlogfile(); //load this first to get outputlogfile opened
 
 		//Load control file
 		parse_options();
-		
+
 		//Setup InputManager
 		if (cInputManager::isnetcdf(ib)) {
-			#if defined HAVE_NETCDF
-				IM = std::make_unique<cNetCDFInputManager>(ib);
-			#else
-				glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
-			#endif			
+#if defined HAVE_NETCDF
+			IM = std::make_unique<cNetCDFInputManager>(ib);
+#else
+			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
+#endif			
 			//std::string s = IM->datafilename();
 		}
 		else {
 			IM = std::make_unique<cASCIIInputManager>(ib);
 		}
 		IM->set_subsample_rate(Subsample);
-		
-		initialise_systems();		
+
+		initialise_systems();
 
 		//Setup OutputManager
 		if (cOutputManager::isnetcdf(ob)) {
-			#if defined HAVE_NETCDF
-				OM = std::make_unique<cNetCDFOutputManager>(ob, Size, Rank);
-			#else
-				glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
-			#endif						
+#if defined HAVE_NETCDF
+			OM = std::make_unique<cNetCDFOutputManager>(ob, Size, Rank);
+#else
+			glog.errormsg(_SRC_, "Sorry NETCDF I/O is not available in this executable\n");
+#endif						
 		}
 		else {
 			OM = std::make_unique<cASCIIOutputManager>(ob, Size, Rank);
@@ -525,9 +525,9 @@ public:
 			std::string od = extractfiledirectory(OM->datafilename());
 			makedirectorydeep(od);
 		}
-		#if defined _MPI_ENABLED
-			cMpiEnv::world_barrier();
-		#endif
+#if defined _MPI_ENABLED
+		cMpiEnv::world_barrier();
+#endif
 
 		OM->opendatafile(IM->datafilename(), IM->subsamplerate());
 	}
@@ -536,20 +536,20 @@ public:
 	{
 		return fdT.solve;
 	};
-	
+
 	bool solve_conductivity() const {
 		return fdC.solve;
 	};
-	
-	bool solve_geometry_element(const std::string& gname) const {								
-		return fdG.cref(gname).solve;		
+
+	bool solve_geometry_element(const std::string& gname) const {
+		return fdG.cref(gname).solve;
 	};
 
-	bool solve_geometry_index(const size_t index) const {		
+	bool solve_geometry_index(const size_t index) const {
 		return fdG.cref(cTDEmGeometry::element_name(index)).solve;
 	}
-	
-	bool solve_geometry() const {		
+
+	bool solve_geometry() const {
 		if (nGeomParamPerSounding > 0) return true;
 		return true;
 	};
@@ -588,7 +588,7 @@ public:
 
 	std::string dumppath() const
 	{
-		const size_t& record  = Bunch.master_record();
+		const size_t& record = Bunch.master_record();
 		std::string s = OO.DumpPath(record, CIS.iteration);
 		return s;
 	};
@@ -603,48 +603,48 @@ public:
 		if (solve_conductivity() == false) {
 			glog.errormsg("Out of boundes in cindex()\n");
 		}
-		return (int) (si*nParamPerSounding + cOffset + li);
+		return (int)(si * nParamPerSounding + cOffset + li);
 	}
 
 	int tindex(const size_t& si, const size_t& li) {
 		if (solve_thickness() == false) {
 			glog.errormsg("Out of boundes in tindex()\n");
-		}		
-		return (int) (si*nParamPerSounding + tOffset + li);
+		}
+		return (int)(si * nParamPerSounding + tOffset + li);
 	}
-	
-	int gindex(const size_t& si, const std::string& gname) const {				
+
+	int gindex(const size_t& si, const std::string& gname) const {
 		cInvertibleFieldDefinition val;
-		bool status = fdG.get(gname,val);
+		bool status = fdG.get(gname, val);
 		if (status) {
 			if (val.offset >= 0) return (int)(si * nParamPerSounding + val.offset);
-		} 
+		}
 		return -1;
 	}
 
-    int gindex(const size_t& si, const size_t& gi) const {		
+	int gindex(const size_t& si, const size_t& gi) const {
 		int goff = fdG[gi].second.offset;
 		if (goff < 0) return -1;
-		return (int)(si*nParamPerSounding + goff);
+		return (int)(si * nParamPerSounding + goff);
 	}
 
-	int sfindex(const size_t& sysi, const size_t& ci) const {		
+	int sfindex(const size_t& sysi, const size_t& ci) const {
 		int pi = SV[sysi].CompInfo[ci].fdSF.offset;
-		if (pi < 0) return -1;		
+		if (pi < 0) return -1;
 		return pi;
 	}
-	
+
 	void openlogfile()
-	{		
+	{
 		glog.logmsg(0, "Opening log file %s\n", OO.LogFile.c_str());
 		glog.open(OO.LogFile);
 		glog.logmsg(0, "%s\n", CommandLine.c_str());
-		glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());				
+		glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 		glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
 		if (UsingOpenMP && Size > 1) {
 			glog.logmsg(0, "Using OpenMP threading Processes=%d\tRank=%d\n", Size, Rank);
 		}
-		else if (Size>1) {
+		else if (Size > 1) {
 			glog.logmsg(0, "Using MPI Processes=%d\tRank=%d\n", Size, Rank);
 		}
 		else {
@@ -655,10 +655,10 @@ public:
 		glog.log(Control.get_as_string());
 		glog.flush();
 	}
-	
+
 	void parse_options()
 	{
-		cBlock b = Control.findblock("Options");				
+		cBlock b = Control.findblock("Options");
 		if (b.getvalue("StartRecord", StartRecord) == false) {
 			StartRecord = 1;
 		}
@@ -670,8 +670,8 @@ public:
 		if (b.getvalue("Subsample", Subsample) == false) {
 			Subsample = 1;
 		}
-		
-		if (b.getvalue("SoundingsPerBunch", nSoundings)==false) {
+
+		if (b.getvalue("SoundingsPerBunch", nSoundings) == false) {
 			nSoundings = 1;
 		}
 
@@ -682,11 +682,11 @@ public:
 		if (b.getvalue("ErrorAddition", ErrorAddition) == false) {
 			ErrorAddition = 0.0;
 		}
-		
+
 		cBlock cb = b.findblock("Constraints");
 		parse_constraints(cb);
-				
-		BeginGeometrySolveIteration = b.getintvalue("BeginGeometrySolveIteration");						
+
+		BeginGeometrySolveIteration = b.getintvalue("BeginGeometrySolveIteration");
 		if (!isdefined(BeginGeometrySolveIteration)) {
 			BeginGeometrySolveIteration = 0;
 		}
@@ -705,30 +705,30 @@ public:
 		else {
 			glog.errormsg("Unknown NormType %s\n", nt.c_str());
 		}
-		
+
 		MaxIterations = b.getsizetvalue("MaximumIterations");
 		MinimumPhiD = b.getdoublevalue("MinimumPhiD");
 		MinimumImprovement = b.getdoublevalue("MinimumPercentageImprovement");
 	}
-	
+
 	void parse_constraints(const cBlock& b) {
-		
+
 		LCrefc = cLinearConstraint("ConductivityReferenceModel", { }, "RefCon", "Conductivity reference model");
 		LCreft = cLinearConstraint("ThicknessReferenceModel", { }, "RefThk", "Thickness reference model");
 		LCrefg = cLinearConstraint("GeometryReferenceModel", { }, "RefGeom", "Geometry reference model");
 		LCrefs = cLinearConstraint("ScalingFactorsReferenceModel", { }, "RefScalingFactors", "ScalingFactors reference model");
 
-		LCvcsmth   = cLinearConstraint("VerticalConductivity", {"Minimise1stDerivatives","Minimise2ndDerivatives" }, "VCsmth", "Vertical conductivity smoothness");
+		LCvcsmth = cLinearConstraint("VerticalConductivity", { "Minimise1stDerivatives","Minimise2ndDerivatives" }, "VCsmth", "Vertical conductivity smoothness");
 		LCvcsim = cLinearConstraint("VerticalConductivitySimilarity", { }, "VCsim", "Vertical conductivity similarity");
-		LClatc   = cLinearConstraint("LateralConductivity", {"Minimise1stDerivatives", "Minimise2ndDerivatives","Similarity" }, "LatCon", "Lateral conductivity smoothness");		
-		LClatg   = cLinearConstraint("LateralGeometry", { "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives","Minimise2ndDerivativesOfDifferenceFromReferenceModel" }, "LatGeom", "Lateral geometry smoothness");		
-		NLCcablen  = cNonLinearConstraint("CableLength", { "Input","InputBunchMean","BunchSimilarity" }, "CabLength", "Cable length");
-		
-		for (size_t i = 0; i < b.Entries.size(); i++) {			
+		LClatc = cLinearConstraint("LateralConductivity", { "Minimise1stDerivatives", "Minimise2ndDerivatives","Similarity" }, "LatCon", "Lateral conductivity smoothness");
+		LClatg = cLinearConstraint("LateralGeometry", { "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives","Minimise2ndDerivativesOfDifferenceFromReferenceModel" }, "LatGeom", "Lateral geometry smoothness");
+		NLCcablen = cNonLinearConstraint("CableLength", { "Input","InputBunchMean","BunchSimilarity" }, "CabLength", "Cable length");
+
+		for (size_t i = 0; i < b.Entries.size(); i++) {
 			const std::string cstr = b.Entries[i];
 			std::string key = cConstraint::get_key(cstr);
 			if (key[0] == '/')continue;
-			if (LCrefc.parse(cstr)){
+			if (LCrefc.parse(cstr)) {
 				LCrefc.set_operates_on_difference_from_reference_model();
 			}
 			else if (LCreft.parse(cstr)) {
@@ -757,15 +757,15 @@ public:
 					LClatg.set_operates_on_difference_from_reference_model();
 				}
 			}
-			else if(NLCcablen.parse(cstr)) {				
+			else if (NLCcablen.parse(cstr)) {
 				//nothing to do
 			}
 			else {
 				std::stringstream msg;
 				msg << "Unknown constraint " << key << std::endl;
 				glog.errormsg(msg.str());
-			}			
-		}				
+			}
+		}
 	}
 
 	void set_field_definitions()
@@ -801,24 +801,24 @@ public:
 		glog.logmsg(0, "Adding ancillary fields\n");
 		const cBlock& b = parent;
 		for (size_t i = 0; i < b.Entries.size(); i++) {
-			std::string key   = b.key(i);
+			std::string key = b.key(i);
 			std::string value = b.value(i);
 			if (key[0] == '/') continue;//Skip commented out fields
 			if (key.size() == 0) continue;//Skip blank lines			
 			glog.logmsg(0, "\tAdding ancillary field %s\n", value.c_str());
-			cFieldDefinition fd(parent, key);						
-			cFdVrnt fdvrnt(fd,cVrnt());			
+			cFieldDefinition fd(parent, key);
+			cFdVrnt fdvrnt(fd, cVrnt());
 			IM->set_variant_type(fd, fdvrnt.vnt);
 			for (size_t si = 0; si < nSoundings; si++) {
 				AncFld[si].add(key, fdvrnt);
 			}
-		}		
+		}
 	}
-	
+
 	cIFDMap set_field_definitions_geometry(const cBlock& parent)
-	{				
+	{
 		cIFDMap g;
-		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {			
+		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
 			std::string key = cTDEmGeometry::element_name(i);
 			cInvertibleFieldDefinition f(parent, key);
 			bool a = g.add(key, f);
@@ -829,7 +829,7 @@ public:
 		}
 		return g;
 	}
-	
+
 	void setup_parameters()
 	{
 		Id.resize(nSoundings);
@@ -871,16 +871,16 @@ public:
 		}
 
 		//Scaling params
-		for (size_t sysi = 0; sysi < SV.size(); sysi++){
+		for (size_t sysi = 0; sysi < SV.size(); sysi++) {
 			for (size_t ci = 0; ci < 3; ci++) {
-				if (solve_scalingfactors(sysi, ci)){
+				if (solve_scalingfactors(sysi, ci)) {
 					SV[sysi].CompInfo[ci].fdSF.offset = (int)(nParamPerSounding * nSoundings + nScalingParam);
 					nScalingParam++;
 				}
 			}
 		}
 
-		nParam = nParamPerSounding*nSoundings + nScalingParam;				
+		nParam = nParamPerSounding * nSoundings + nScalingParam;
 		RefParam.resize(nParam);
 		RefParamStd.resize(nParam);
 
@@ -890,15 +890,15 @@ public:
 		}
 
 		if (nScalingParam == 0) {
-			LCrefs.alpha = 0.0;			
+			LCrefs.alpha = 0.0;
 		}
-		
+
 		if (nSoundings == 1) {
 			LClatc.alpha = 0.0;
 			LClatg.alpha = 0.0;
 		}
 	}
-	
+
 	void initialise_Wc() {
 		cLinearConstraint& C = LCrefc;
 		C.W = Matrix::Zero(nParam, nParam);
@@ -983,18 +983,18 @@ public:
 		cLinearConstraint& C = LCvcsmth;
 		C.W = Matrix::Zero(nParam, nParam);
 		if (solve_conductivity() == false) return;
-		if (C.alpha == 0 ) return;
-		if (C.method == "Minimise1stDerivatives") {			
+		if (C.alpha == 0) return;
+		if (C.method == "Minimise1stDerivatives") {
 			initialise_VC_1st_derivative(C);
 		}
 		else if (C.method == "Minimise2ndDerivatives") {
-			initialise_VC_2nd_derivative(C);			
-		}		
+			initialise_VC_2nd_derivative(C);
+		}
 	}
 
 	void initialise_VC_1st_derivative(cLinearConstraint& C)
-	{		
-		if (nLayers < 3) return;		
+	{
+		if (nLayers < 3) return;
 		Matrix L = Matrix::Zero(nSoundings * (nLayers - 1), nParam);
 		size_t nrows = 0;
 		for (size_t si = 0; si < nSoundings; si++) {
@@ -1018,8 +1018,8 @@ public:
 	}
 
 	void initialise_VC_2nd_derivative(cLinearConstraint& C)
-	{		
-		if (nLayers < 3) return;		
+	{
+		if (nLayers < 3) return;
 		Matrix L = Matrix::Zero(nSoundings * nLayers, nParam);
 		size_t nrows = 0;
 		for (size_t si = 0; si < nSoundings; si++) {
@@ -1047,21 +1047,21 @@ public:
 			int pi1 = cindex(si, 1);
 			double s = std::sqrt(t[0] / tavg);
 			L(nrows, pi0) = -1.0 * s / t[0];
-			L(nrows, pi1) =  1.0 * s / t[0];
+			L(nrows, pi1) = 1.0 * s / t[0];
 			nrows++;
 
 			//Minimise 1st deriv on last interface
-			pi0 = cindex(si, nLayers-2);
-			pi1 = cindex(si, nLayers-1);
-			s = std::sqrt(t[nLayers-2] / tavg);
-			L(nrows, pi0) = -1.0 * s / t[nLayers-1];
-			L(nrows, pi1) =  1.0 * s / t[nLayers-1];
-			nrows++;			
+			pi0 = cindex(si, nLayers - 2);
+			pi1 = cindex(si, nLayers - 1);
+			s = std::sqrt(t[nLayers - 2] / tavg);
+			L(nrows, pi0) = -1.0 * s / t[nLayers - 1];
+			L(nrows, pi1) = 1.0 * s / t[nLayers - 1];
+			nrows++;
 		}
 		C.W = L.transpose() * L;
 		C.W *= (C.alpha / (double)(nrows));
 	}
-	
+
 	void initialise_LC() {
 		cLinearConstraint& C = LClatc;
 		C.W = Matrix::Zero(nParam, nParam);
@@ -1129,11 +1129,11 @@ public:
 			for (size_t si = 0; si < nSoundings; si++) {
 				const int psi = cindex(si, li);
 				double std = RefParamStd[psi];
-				L(nrows, psi) = 1.0/std;
+				L(nrows, psi) = 1.0 / std;
 				for (size_t ri = 0; ri < nSoundings; ri++) {
 					if (ri != si) {
 						const int pri = cindex(ri, li);
-						L(nrows, pri) = -1.0 / (std*(double)(nSoundings - 1));
+						L(nrows, pri) = -1.0 / (std * (double)(nSoundings - 1));
 					}
 				}
 				nrows++;
@@ -1162,8 +1162,8 @@ public:
 				L(nrows, lpindex) = 1.0;
 				//Loop over layers for this equation
 				for (size_t ki = 0; ki < nLayers; ki++) {
-					const int kpindex = cindex(si, ki);					
-					if(li!=ki){
+					const int kpindex = cindex(si, ki);
+					if (li != ki) {
 						L(nrows, kpindex) = -1.0 / ((double)nLayers - 1.0);
 					}
 				}
@@ -1173,7 +1173,7 @@ public:
 		C.W = L.transpose() * L;
 		C.W *= (C.alpha / (double)(nrows));
 	}
-	
+
 	void initialise_LG() {
 		cLinearConstraint& C = LClatg;
 		C.W = Matrix::Zero(nParam, nParam);
@@ -1192,17 +1192,17 @@ public:
 		else if (C.method == "Minimise2ndDerivativesOfDifferenceFromReferenceModel") {
 			initialise_LG_accelerations(C);
 		}
-		
+
 	}
 
 	void initialise_LG_accelerations(cLinearConstraint& C)
-	{				
-		if (nSoundings < 3) return;		
+	{
+		if (nSoundings < 3) return;
 		Matrix L = Matrix::Zero((nSoundings - 2) * nGeomParamPerSounding, nParam);
 		size_t nrows = 0;
 		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
 			if (solve_geometry_index(gi) == false)continue;
-			for (size_t si = 1; si < nSoundings - 1; si++) {				
+			for (size_t si = 1; si < nSoundings - 1; si++) {
 				double d01 = std::hypot(Id[si].x - Id[si - 1].x, Id[si].y - Id[si - 1].y);
 				double d12 = std::hypot(Id[si].x - Id[si + 1].x, Id[si].y - Id[si + 1].y);
 
@@ -1210,9 +1210,9 @@ public:
 				const int pi1 = gindex(si, gi);
 				const int pi2 = gindex(si + 1, gi);
 				const double std = RefParamStd[pi1];
-				L(nrows, pi0) = 1.0 / (d01*std);
-				L(nrows, pi1) = -1.0 / (d01*std) - 1.0 / (d12*std);
-				L(nrows, pi2) = 1.0 / (d12*std);
+				L(nrows, pi0) = 1.0 / (d01 * std);
+				L(nrows, pi1) = -1.0 / (d01 * std) - 1.0 / (d12 * std);
+				L(nrows, pi2) = 1.0 / (d12 * std);
 				nrows++;
 			}
 		}
@@ -1221,25 +1221,25 @@ public:
 	}
 
 	void initialise_LG_acceleration_derivatives(cLinearConstraint& C)
-	{		
-		if (nSoundings < 5) return;		
+	{
+		if (nSoundings < 5) return;
 		Matrix L = Matrix::Zero(nSoundings * nGeomParamPerSounding, nParam);
 		size_t nrows = 0;
-		
+
 		double d = 0.0;
-		for (size_t j = 0; j < nSoundings-1; j++) {
+		for (size_t j = 0; j < nSoundings - 1; j++) {
 			d += std::hypot(Id[j].x - Id[j + 1].x, Id[j].y - Id[j + 1].y);
 		}
-		d = d / (double)(nSoundings-1);//average sample distance
+		d = d / (double)(nSoundings - 1);//average sample distance
 
-		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {			
+		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
 			if (solve_geometry_index(gi) == false)continue;
-			for (size_t si = 2; si < nSoundings - 2; si++) {																
+			for (size_t si = 2; si < nSoundings - 2; si++) {
 				const int pi0 = gindex(si - 2, gi);
 				const int pi1 = gindex(si - 1, gi);
 				const int pi2 = gindex(si, gi);
 				const int pi3 = gindex(si + 1, gi);
-				const int pi4 = gindex(si + 2, gi);	
+				const int pi4 = gindex(si + 2, gi);
 				const double std = RefParamStd[pi2];
 
 				L(nrows, pi0) = -1.0 / (d * std);
@@ -1248,32 +1248,32 @@ public:
 				L(nrows, pi3) = 4.0 / (d * std);
 				L(nrows, pi4) = -1.0 / (d * std);
 				nrows++;
-			}			
+			}
 		}
 		C.W = L.transpose() * L;
 		C.W *= (C.alpha / (double)(nrows));
 	}
 
 	void initialise_LG_similarity(cLinearConstraint& C)
-	{				
-		if (nSoundings < 2) return;		
+	{
+		if (nSoundings < 2) return;
 		Matrix L = Matrix::Zero(nSoundings * nGeomParamPerSounding, nParam);
-		size_t nrows = 0;		
+		size_t nrows = 0;
 		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
 			if (solve_geometry_index(gi) == false)continue;
 			for (size_t si = 0; si < nSoundings; si++) {
-				const int spi = gindex(si, gi);				
+				const int spi = gindex(si, gi);
 				const double std = RefParamStd[spi];
 				L(nrows, spi) = 1.0 / std;
 				for (size_t ri = 0; ri < nSoundings; ri++) {
-					const int rpi = gindex(ri, gi);					
+					const int rpi = gindex(ri, gi);
 					if (si != ri) {
-						L(nrows, rpi) = -1.0 / (std * (double)(nSoundings-1));
+						L(nrows, rpi) = -1.0 / (std * (double)(nSoundings - 1));
 					}
 				}
 				nrows++;
 			}
-		}		
+		}
 		C.W = L.transpose() * L;
 		C.W *= C.alpha / (double)(nrows);
 	}
@@ -1385,9 +1385,9 @@ public:
 	}
 
 	void initialise_Wm() {
-		initialise_Wr();		
+		initialise_Wr();
 		initialise_VC();
-		initialise_LC();				
+		initialise_LC();
 		initialise_LG();
 		initialise_QC(LCvcsim);
 		initialise_CableLengthConstraint();
@@ -1395,13 +1395,13 @@ public:
 	}
 
 	void dump_W_matrices() {
-		if (OO.Dump) {						
-			const std::string dp = dumppath();			
+		if (OO.Dump) {
+			const std::string dp = dumppath();
 			makedirectorydeep(dp);
-			writetofile(Wd, dp + "Wd.dat");			
+			writetofile(Wd, dp + "Wd.dat");
 			writetofile(Wr, dp + "Wr.dat");
-			
-			LCrefc.write_W_matrix(dp);			
+
+			LCrefc.write_W_matrix(dp);
 			LCreft.write_W_matrix(dp);
 			LCrefg.write_W_matrix(dp);
 			LCrefs.write_W_matrix(dp);
@@ -1410,15 +1410,15 @@ public:
 			LClatc.write_W_matrix(dp);
 			LClatg.write_W_matrix(dp);
 			NLCcablen.write_W_matrix(dp);
-			writetofile(Wm, dp + "Wm.dat");			
+			writetofile(Wm, dp + "Wm.dat");
 		}
 	}
 
 	const int& dindex(const size_t& sampleindex, const size_t& systemindex, const size_t& componentindex, const size_t& windowindex) {
 		const size_t& si = sampleindex;
-		const size_t& sysi = systemindex;		
+		const size_t& sysi = systemindex;
 		const size_t& ci = componentindex;
-		const size_t& wi = windowindex;	
+		const size_t& wi = windowindex;
 		return _dindex_[si][sysi][ci][wi];
 	};
 
@@ -1427,16 +1427,16 @@ public:
 		set_fftw_lock();
 		std::vector<cBlock> B = Control.findblocks("EMSystem");
 		nSystems = B.size();
-		SV.resize(nSystems);		
+		SV.resize(nSystems);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			SV[sysi].initialise(B[sysi], nSoundings);				
+			SV[sysi].initialise(B[sysi], nSoundings);
 			SV[sysi].set_units(IM.get());
 		}
-		unset_fftw_lock();		
+		unset_fftw_lock();
 	}
-	
+
 	void setup_data()
-	{		
+	{
 		nAllData = 0;
 		_dindex_.resize(nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
@@ -1450,12 +1450,12 @@ public:
 					}
 				}
 			}
-		}		
+		}
 
 		int di = 0;
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				cTDEmSystemInfo& S = SV[sysi];				
+				cTDEmSystemInfo& S = SV[sysi];
 				if (S.invertXPlusZ) {
 					nAllData += S.nwindows;
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
@@ -1487,7 +1487,7 @@ public:
 		}
 	}
 
-	bool initialise_bunch_data(){
+	bool initialise_bunch_data() {
 		std::vector<double> obs(nAllData);
 		std::vector<double> err(nAllData);
 		std::vector<double> pred(nAllData);
@@ -1501,7 +1501,7 @@ public:
 					T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 					T.LEM.derivative_layer = INT_MAX;
 					T.setprimaryfields();
-					
+
 					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PrimaryX;
 					if (S.CompInfo[YCOMP].Use) S.CompInfo[YCOMP].data[si].P = T.PrimaryY;
 					if (S.CompInfo[ZCOMP].Use) S.CompInfo[ZCOMP].data[si].P = T.PrimaryZ;
@@ -1512,17 +1512,17 @@ public:
 						//XZ Amplitude						
 						int di = dindex(si, sysi, XZAMP, wi);
 						double X = S.CompInfo[XCOMP].data[si].S[wi];
-						double Z = S.CompInfo[ZCOMP].data[si].S[wi];						
+						double Z = S.CompInfo[ZCOMP].data[si].S[wi];
 						if (S.invertPrimaryPlusSecondary) {
 							X += S.CompInfo[XCOMP].data[si].P;
-							Z += S.CompInfo[ZCOMP].data[si].P;														
+							Z += S.CompInfo[ZCOMP].data[si].P;
 						}
 						obs[di] = std::hypot(X, Z);
 
 						const double& Xerr = S.CompInfo[XCOMP].data[si].E[wi];
 						const double& Zerr = S.CompInfo[ZCOMP].data[si].E[wi];
 						if (obs[di] == 0.0) {
-							err[di] = std::hypot(Xerr, Zerr);							
+							err[di] = std::hypot(Xerr, Zerr);
 						}
 						else {
 							err[di] = std::hypot(X * Xerr, Z * Zerr) / obs[di];
@@ -1530,7 +1530,7 @@ public:
 
 						//Y Comp
 						if (S.CompInfo[YCOMP].Use) {
-							int di = dindex(si, sysi, YCOMP, wi);							
+							int di = dindex(si, sysi, YCOMP, wi);
 							obs[di] = S.CompInfo[YCOMP].data[si].S[wi];
 							if (S.invertPrimaryPlusSecondary) {
 								obs[di] += S.CompInfo[YCOMP].data[si].P;
@@ -1542,7 +1542,7 @@ public:
 				else {
 					for (size_t ci = 0; ci < 3; ci++) {
 						if (S.CompInfo[ci].Use == false) continue;
-						for (size_t wi = 0; wi < S.nwindows; wi++) {							
+						for (size_t wi = 0; wi < S.nwindows; wi++) {
 							int di = dindex(si, sysi, ci, wi);
 							obs[di] = S.CompInfo[ci].data[si].S[wi];
 							if (S.invertPrimaryPlusSecondary) {
@@ -1558,20 +1558,20 @@ public:
 		if (ErrorAddition > 0.0) {
 			err = err + ErrorAddition;
 		}
-		
+
 		//Work out indices to be culled				
 		ActiveData.clear();
-		for (size_t i = 0; i < nAllData; i++){
-			if(!isnull(obs[i])  && !isnull(err[i])) ActiveData.push_back(i);			
+		for (size_t i = 0; i < nAllData; i++) {
+			if (!isnull(obs[i]) && !isnull(err[i])) ActiveData.push_back(i);
 		}
 		nData = ActiveData.size();
 
 		if (nData != nAllData) {
 			size_t ncull = nAllData - nData;
-			OutputMessage += strprint(", %d null data/noise were culled",(int)ncull);
+			OutputMessage += strprint(", %d null data/noise were culled", (int)ncull);
 		}
 		Err = cull(err);
-		Obs = cull(obs);				
+		Obs = cull(obs);
 		//std::cerr << std::endl << Obs << std::endl;
 
 		//Check for zero Error values		
@@ -1579,13 +1579,13 @@ public:
 		for (size_t i = 0; i < nData; i++) {
 			if (Err[i] == 0.0) nzeroerr++;
 		}
-		if (nzeroerr > 0) {			
-			OutputMessage += strprint(", Skipped %d noise values were 0.0", nzeroerr);			
+		if (nzeroerr > 0) {
+			OutputMessage += strprint(", Skipped %d noise values were 0.0", nzeroerr);
 			return false;
-		}				
+		}
 		return true;
 	}
-		
+
 	void initialise_bunch_parameters() {
 
 		for (size_t si = 0; si < nSoundings; si++) {
@@ -1593,22 +1593,22 @@ public:
 			const cGeomStruct& g = G[si];
 			if (solve_conductivity()) {
 				for (size_t li = 0; li < nLayers; li++) {
-					RefParam[cindex(si,li)] = log10(e.ref.conductivity[li]);
-					RefParamStd[cindex(si,li)] = e.std.conductivity[li];
+					RefParam[cindex(si, li)] = log10(e.ref.conductivity[li]);
+					RefParamStd[cindex(si, li)] = e.std.conductivity[li];
 				}
 			}
 
 			if (solve_thickness()) {
 				for (size_t li = 0; li < nLayers - 1; li++) {
-					RefParam[tindex(si,li)] = log10(e.ref.thickness[li]);
-					RefParamStd[tindex(si,li)] = e.std.thickness[li];
+					RefParam[tindex(si, li)] = log10(e.ref.thickness[li]);
+					RefParamStd[tindex(si, li)] = e.std.thickness[li];
 				}
 			}
 
 			for (int gi = 0; gi < cTDEmGeometry::size(); gi++) {
 				std::string gname = cTDEmGeometry::element_name(gi);
-				const int pi = gindex(si, gname);								
-				if (pi >= 0) {						
+				const int pi = gindex(si, gname);
+				if (pi >= 0) {
 					RefParam[pi] = g.ref[gname];
 					RefParamStd[pi] = g.std[gname];
 				}
@@ -1617,30 +1617,30 @@ public:
 			//Scaling params				
 			for (size_t sysi = 0; sysi < SV.size(); sysi++) {
 				for (size_t ci = 0; ci < 3; ci++) {
-					const int pi = sfindex(sysi,ci);
-					if (pi >= 0) {		
+					const int pi = sfindex(sysi, ci);
+					if (pi >= 0) {
 						double ref = SV[sysi].CompInfo[ci].SF.ref;
 						double std = SV[sysi].CompInfo[ci].SF.std;
-						RefParam[pi]    = SV[sysi].CompInfo[ci].SF.ref;
+						RefParam[pi] = SV[sysi].CompInfo[ci].SF.ref;
 						RefParamStd[pi] = SV[sysi].CompInfo[ci].SF.std;
-					}					
+					}
 				}
 			}
 
 
 		}
 	}
-		
+
 	Vector parameter_change(const double& lambda, const Vector& m_old, const Vector& pred)
 	{
 		Vector m_new = solve_linear_system(lambda, m_old, pred);
 		Vector dm = m_new - m_old;
-				
-		if (fdC.bound()) {			
+
+		if (fdC.bound()) {
 			for (size_t si = 0; si < nSoundings; si++) {
 				const cEarthStruct& e = E[si];
 				for (size_t li = 0; li < nLayers; li++) {
-					const int pindex = cindex(si,li);
+					const int pindex = cindex(si, li);
 					const double lmin = std::log10(e.min.conductivity[li]);
 					const double lmax = std::log10(e.max.conductivity[li]);
 					if (m_new[pindex] < lmin) {
@@ -1666,12 +1666,12 @@ public:
 				}
 			}
 		}
-		
+
 		if (fdT.bound()) {
 			for (size_t si = 0; si < nSoundings; si++) {
 				const cEarthStruct& e = E[si];
 				for (size_t li = 0; li < nLayers - 1; li++) {
-					const int pindex = tindex(si,li);
+					const int pindex = tindex(si, li);
 					const double lmin = std::log10(e.min.thickness[li]);
 					const double lmax = std::log10(e.max.thickness[li]);
 					if (m_new[pindex] < lmin) {
@@ -1704,7 +1704,7 @@ public:
 				const std::string ename = cTDEmGeometry::element_name(i);
 				const cInvertibleFieldDefinition& e = fdG.cref(ename);
 				if (e.bound()) {
-					const int pi = gindex(si,ename);
+					const int pi = gindex(si, ename);
 					const double emin = g.min[ename];
 					const double emax = g.max[ename];
 					if (m_new[pi] < emin) {
@@ -1726,7 +1726,7 @@ public:
 				}
 			}
 		}
-		
+
 		return dm;
 	}
 
@@ -1735,17 +1735,17 @@ public:
 		std::vector<cEarth1D> ev(nSoundings);;
 		for (size_t si = 0; si < nSoundings; si++) {
 			ev[si] = E[si].ref;
-			if (solve_conductivity()) {				
+			if (solve_conductivity()) {
 				for (size_t li = 0; li < nLayers; li++) {
 					ev[si].conductivity[li] = pow10(parameters[cindex(si, li)]);
 				}
-			}			
+			}
 
-			if (solve_thickness()) {				
+			if (solve_thickness()) {
 				for (size_t li = 0; li < nLayers - 1; li++) {
 					ev[si].thickness[li] = pow10(parameters[tindex(si, li)]);
 				}
-			}			
+			}
 		}
 		return ev;
 	}
@@ -1756,9 +1756,9 @@ public:
 		for (size_t si = 0; si < nSoundings; si++) {
 			gv[si] = G[si].input;
 			for (int gi = 0; gi < cTDEmGeometry::size(); gi++) {
-				const std::string& gname = cTDEmGeometry::element_name(gi);				
+				const std::string& gname = cTDEmGeometry::element_name(gi);
 				const int pi = gindex(si, gname);
-				if (pi>=0) {
+				if (pi >= 0) {
 					gv[si][gname] = parameters[pi];
 				}
 			}
@@ -1766,11 +1766,11 @@ public:
 		return gv;
 	}
 
-	
+
 	std::vector<double> get_scalefactors(const size_t sysi, const Vector& parameters)
 	{
-		std::vector<double> sf(3);		
-		const cTDEmSystemInfo& S = SV[sysi];								
+		std::vector<double> sf(3);
+		const cTDEmSystemInfo& S = SV[sysi];
 		//bookmark
 		for (int ci = 0; ci < 3; ci++) {
 			sf[ci] = 1.0;
@@ -1778,13 +1778,13 @@ public:
 			if (pi >= 0) {
 				sf[ci] = parameters[pi];
 			}
-		}		
+		}
 		return sf;
 	}
-	
-	
+
+
 	void set_predicted(const Vector& parameters)
-	{				
+	{
 		std::vector<cEarth1D> ev = get_earth(parameters);
 		std::vector<cTDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
@@ -1812,15 +1812,15 @@ public:
 				d.zcomponent().Primary = T.PrimaryZ;
 				d.xcomponent().Secondary = T.X;
 				d.ycomponent().Secondary = T.Y;
-				d.zcomponent().Secondary = T.Z;				
+				d.zcomponent().Secondary = T.Z;
 			}
-		}				
+		}
 	}
-	
+
 	void forwardmodel(const Vector& parameters, Vector& predicted) {
-		Matrix dummy;	
+		Matrix dummy;
 		nForwards++;
-		forwardmodel_impl(parameters, predicted, dummy, false);		
+		forwardmodel_impl(parameters, predicted, dummy, false);
 	}
 
 	void forwardmodel_and_jacobian(const Vector& parameters, Vector& predicted, Matrix& jacobian) {
@@ -1839,8 +1839,8 @@ public:
 		}
 
 		std::vector<cEarth1D> ev = get_earth(parameters);
-		std::vector<cTDEmGeometry> gv = get_geometry(parameters);				
-		for (size_t sysi = 0; sysi < nSystems; sysi++) {			
+		std::vector<cTDEmGeometry> gv = get_geometry(parameters);
+		for (size_t sysi = 0; sysi < nSystems; sysi++) {
 			cTDEmSystemInfo& S = SV[sysi];
 			cTDEmSystem& T = S.T;
 
@@ -1881,7 +1881,7 @@ public:
 					for (size_t wi = 0; wi < nw; wi++) {
 						const int& di = dindex(si, sysi, XZAMP, wi);
 						pred_all[di] = xzfm[wi];
-						if (S.CompInfo[1].Use){
+						if (S.CompInfo[1].Use) {
 							pred_all[dindex(si, sysi, YCOMP, wi)] = yfm[wi];
 						}
 					}
@@ -1894,11 +1894,11 @@ public:
 					}
 				}
 
-				if (computederivatives) {					
+				if (computederivatives) {
 					std::vector<double> xdrv(nw);
 					std::vector<double> ydrv(nw);
 					std::vector<double> zdrv(nw);
-					
+
 					//bookmark
 					for (size_t ci = 0; ci < 3; ci++) {
 						if (S.CompInfo[ci].Use) {
@@ -1918,11 +1918,11 @@ public:
 								fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 							}
 						}
-					}		
+					}
 
 					if (solve_conductivity()) {
 						for (size_t li = 0; li < nLayers; li++) {
-							const int pindex = cindex(si,li);
+							const int pindex = cindex(si, li);
 							T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
 							T.LEM.derivative_layer = li;
 							T.setprimaryfields();
@@ -1938,7 +1938,7 @@ public:
 
 					if (solve_thickness()) {
 						for (size_t li = 0; li < nLayers - 1; li++) {
-							const int pindex = tindex(si,li);
+							const int pindex = tindex(si, li);
 							T.LEM.calculation_type = cLEM::CalculationType::THICKNESSDERIVATIVE;
 							T.LEM.derivative_layer = li;
 							T.setprimaryfields();
@@ -1952,7 +1952,7 @@ public:
 					}
 
 					if (FreeGeometry) {
-						if (solve_geometry_element("tx_height")) {							
+						if (solve_geometry_element("tx_height")) {
 							const size_t pindex = gindex(si, "tx_height");
 							T.LEM.calculation_type = cLEM::CalculationType::HDERIVATIVE;
 							T.LEM.derivative_layer = INT_MAX;
@@ -1962,8 +1962,8 @@ public:
 							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 						}
 
-						if (solve_geometry_element("txrx_dx")) {							
-							const size_t pindex = gindex(si,"txrx_dx");
+						if (solve_geometry_element("txrx_dx")) {
+							const size_t pindex = gindex(si, "txrx_dx");
 							T.LEM.calculation_type = cLEM::CalculationType::XDERIVATIVE;
 							T.LEM.derivative_layer = INT_MAX;
 							T.setprimaryfields();
@@ -1972,7 +1972,7 @@ public:
 							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 						}
 
-						if (solve_geometry_element("txrx_dy")) {							
+						if (solve_geometry_element("txrx_dy")) {
 							const size_t pindex = gindex(si, "txrx_dy");
 							T.LEM.calculation_type = cLEM::CalculationType::YDERIVATIVE;
 							T.LEM.derivative_layer = INT_MAX;
@@ -1998,7 +1998,7 @@ public:
 							ydrv *= 0.0;
 							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 						}
-						
+
 						if (solve_geometry_element("rx_roll")) {
 							const size_t pindex = gindex(si, "rx_roll");
 							T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
@@ -2010,7 +2010,7 @@ public:
 			}
 		}
 		predicted = cull(pred_all);
-		if(computederivatives) jacobian = cull(J_all);
+		if (computederivatives) jacobian = cull(J_all);
 
 		if (Verbose && computederivatives) {
 			//std::cerr << "\n-----------------\n";
@@ -2045,7 +2045,7 @@ public:
 		const cTDEmSystemInfo& S = SV[sysi];
 		const size_t& nw = S.T.NumberOfWindows;
 		if (S.invertXPlusZ) {
-			for (size_t wi = 0; wi < nw; wi++) {								
+			for (size_t wi = 0; wi < nw; wi++) {
 				M(dindex(si, sysi, XZAMP, wi), pindex) = (xfm[wi] * xdrv[wi] + zfm[wi] * zdrv[wi]) / xzfm[wi];
 				if (S.CompInfo[1].Use) {
 					M(dindex(si, sysi, YCOMP, wi), pindex) = ydrv[wi];
@@ -2053,10 +2053,10 @@ public:
 			}
 		}
 		else {
-			for (size_t wi = 0; wi < nw; wi++) {				
-				if (S.CompInfo[XCOMP].Use)M(dindex(si, sysi, XCOMP, wi),pindex) = xdrv[wi];
-				if (S.CompInfo[YCOMP].Use)M(dindex(si, sysi, YCOMP, wi),pindex) = ydrv[wi];
-				if (S.CompInfo[ZCOMP].Use)M(dindex(si, sysi, ZCOMP, wi),pindex) = zdrv[wi];
+			for (size_t wi = 0; wi < nw; wi++) {
+				if (S.CompInfo[XCOMP].Use)M(dindex(si, sysi, XCOMP, wi), pindex) = xdrv[wi];
+				if (S.CompInfo[YCOMP].Use)M(dindex(si, sysi, YCOMP, wi), pindex) = ydrv[wi];
+				if (S.CompInfo[ZCOMP].Use)M(dindex(si, sysi, ZCOMP, wi), pindex) = zdrv[wi];
 			}
 		}
 	}
@@ -2065,11 +2065,11 @@ public:
 		std::ofstream ofs(dumppath() + "iteration.dat");
 		ofs << S.info_string();
 	};
-	
+
 	bool read_bunch(const size_t& record) {
 		_GSTITEM_
 
-		bool bunchstatus=false;
+			bool bunchstatus = false;
 		int fi = AncFld[0].keyindex("line");
 		if (fi > 0) {
 			//only if linenumber is specified
@@ -2118,10 +2118,10 @@ public:
 			}
 		}
 
-		return true;			
+		return true;
 	}
 
-	bool read_record(const size_t& bunchsoundingindex){
+	bool read_record(const size_t& bunchsoundingindex) {
 		const size_t& si = bunchsoundingindex;
 		bool readstatus = true;
 		cEarthStruct& e = E[si];
@@ -2154,11 +2154,11 @@ public:
 		status = IM->read(fdT.max, e.max.thickness, nLayers - 1); if (status == false) readstatus = false;
 
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			read_system_data(sysi, si);			
+			read_system_data(sysi, si);
 		}
 		return readstatus;
 	}
-	
+
 	bool read_ancillary_fields(const size_t& bunchindex) {
 		const size_t& si = bunchindex;
 		SampleId& id = Id[si];
@@ -2166,12 +2166,12 @@ public:
 		for (size_t fi = 0; fi < AncFld[si].size(); fi++) {
 			IM->readfdvnt(AncFld[si][fi].second);
 		}
-				
+
 		set_ancillary_id(si, "Survey", id.survey);
 		set_ancillary_id(si, "Date", id.date);
 		set_ancillary_id(si, "Flight", id.flight);
 		set_ancillary_id(si, "Line", id.line);
-		set_ancillary_id(si, "Fiducial", id.fiducial);		
+		set_ancillary_id(si, "Fiducial", id.fiducial);
 		set_ancillary_id(si, "X", id.x);
 		set_ancillary_id(si, "Y", id.y);
 		set_ancillary_id(si, "GroundElevation", id.elevation);
@@ -2183,7 +2183,7 @@ public:
 		int ki = AncFld[si].keyindex(key);
 		if (ki >= 0) {
 			//value = std::get<T>(AncFld[si][ki].second.vnt);						
-			const cVrnt& v = AncFld[si][ki].second.vnt;						
+			const cVrnt& v = AncFld[si][ki].second.vnt;
 			if (v.index() == 0) {
 				value = (T)std::get<double>(v);
 			}
@@ -2194,9 +2194,9 @@ public:
 				value = (T)std::get<float>(v);
 			}
 			else {
-				glog.errormsg(_SRC_,"Bad variant type\n");
+				glog.errormsg(_SRC_, "Bad variant type\n");
 			}
-			
+
 			return true;
 		}
 		return false;
@@ -2253,7 +2253,7 @@ public:
 		}
 		return status;
 	}
-		
+
 	void read_system_data(size_t& sysindex, const size_t& soundingindex)
 	{
 		cTDEmSystemInfo& S = SV[sysindex];
@@ -2263,7 +2263,7 @@ public:
 	}
 
 	void dump_first_iteration() {
-		
+
 		const std::string dp = dumppath();
 		makedirectorydeep(dumppath());
 
@@ -2271,7 +2271,7 @@ public:
 		cGeomStruct& g = G[si];
 		cEarthStruct& e = E[si];
 		SampleId& id = Id[si];
-		
+
 		write(Obs, dp + "observed.dat");
 		write(Err, dp + "observed_std.dat");
 
@@ -2308,7 +2308,7 @@ public:
 		std::vector<cEarth1D> e = get_earth(state.param);
 		std::vector <cTDEmGeometry> g = get_geometry(state.param);
 		e[Bunch.master_index()].write(dumppath() + "earth_inv.dat");
-		g[Bunch.master_index()].write(dumppath() + "geometry_inv.dat");		
+		g[Bunch.master_index()].write(dumppath() + "geometry_inv.dat");
 		dump_earth_all(e, dumppath() + "earth_all.dat");
 		dump_geometry_all(g, dumppath() + "geometry_all.dat");
 		save_iteration_file(state);
@@ -2318,14 +2318,14 @@ public:
 		std::ofstream of(path);
 		for (size_t si = 0; si < e.size(); si++) {
 			const std::vector<double>& c = e[si].conductivity;
-			const std::vector<double>t   = e[si].dummy_thickness();						
+			const std::vector<double>t = e[si].dummy_thickness();
 			for (size_t li = 0; li < e[si].nlayers(); li++) {
 				of << t[li] << " " << c[li] << std::endl;
 			}
 		}
 	}
 
-	void dump_geometry_all(const std::vector <cTDEmGeometry> g, const std::string& path){
+	void dump_geometry_all(const std::vector <cTDEmGeometry> g, const std::string& path) {
 		std::ofstream of(path);
 		for (size_t si = 0; si < g.size(); si++) {
 			for (size_t gi = 0; gi < g[si].size(); gi++) {
@@ -2334,28 +2334,28 @@ public:
 		}
 	}
 
-	bool initialise_bunch() {	
+	bool initialise_bunch() {
 		nForwards = 0;
 		nJacobians = 0;
-		OutputMessage = "";		
-		CIS = cIterationState();		
+		OutputMessage = "";
+		CIS = cIterationState();
 		bool status = initialise_bunch_data();
 		if (status == false) return false;
 		initialise_bunch_parameters();
 		initialise_Wd();
-		initialise_Wm();		
+		initialise_Wm();
 		dump_W_matrices();
 		return true;
 	}
 
 	void iterate() {
-		_GSTITEM_				
-		CIS.iteration = 0;
-		CIS.lambda = 1e8;		
-		CIS.param = RefParam;		
+		_GSTITEM_
+			CIS.iteration = 0;
+		CIS.lambda = 1e8;
+		CIS.param = RefParam;
 		forwardmodel(CIS.param, CIS.pred);
 		CIS.phid = phiData(CIS.pred);
-		CIS.targetphid = CIS.phid;		
+		CIS.targetphid = CIS.phid;
 		CIS.phim = phiModel(CIS.param);
 
 		TerminationReason = "Has not terminated";
@@ -2364,11 +2364,11 @@ public:
 			dump_first_iteration();
 			dump_iteration(CIS);
 		}
-					
+
 		double percentchange = 100.0;
 		bool   keepiterating = true;
-		while (keepiterating == true) {			
-			if (Verbose && nScalingParam >0) {			
+		while (keepiterating == true) {
+			if (Verbose && nScalingParam > 0) {
 				std::vector<double> scalefactors = get_scalefactors(0, CIS.param);
 				std::cout << "Scaling Factors ";
 				for (size_t ci = 0; ci < 3; ci++) {
@@ -2381,21 +2381,21 @@ public:
 				keepiterating = false;
 				TerminationReason = "Too many iterations";
 			}
-			else if (CIS.iteration>0 && CIS.phid <= MinimumPhiD) {
+			else if (CIS.iteration > 0 && CIS.phid <= MinimumPhiD) {
 				keepiterating = false;
 				TerminationReason = "Reached minimum";
-			}			
+			}
 			else if (CIS.phid < 50.0 && CIS.iteration > 10 && percentchange < MinimumImprovement) {
 				keepiterating = false;
 				TerminationReason = "Small % improvement";
 			}
-			else {			
+			else {
 				if (Verbose) {
 					std::cerr << CIS.info_string();
 				}
-				if (CIS.iteration+1 >= BeginGeometrySolveIteration) FreeGeometry = true;
+				if (CIS.iteration + 1 >= BeginGeometrySolveIteration) FreeGeometry = true;
 				else FreeGeometry = false;
-								
+
 				Vector g;
 				forwardmodel_and_jacobian(CIS.param, g, J);
 				//if (CIS.iteration == 0) {
@@ -2403,76 +2403,76 @@ public:
 				//	std::cerr << "Initial lambda = " << CIS.lambda << std::endl;
 				//}
 
-				double targetphid = std::max(CIS.phid*0.7, MinimumPhiD);
+				double targetphid = std::max(CIS.phid * 0.7, MinimumPhiD);
 
-				cTrial t  = lambda_search_target(CIS.lambda, targetphid);
+				cTrial t = lambda_search_target(CIS.lambda, targetphid);
 				Vector dm = parameter_change(t.lambda, CIS.param, CIS.pred);
 				Vector m = CIS.param + (t.stepfactor * dm);
-				
-				forwardmodel(m,g);
+
+				forwardmodel(m, g);
 				double phid = phiData(g);
 
 				percentchange = 100.0 * (CIS.phid - phid) / (CIS.phid);
-				if (phid <= CIS.phid) {				
+				if (phid <= CIS.phid) {
 					CIS.iteration++;
 					CIS.param = m;
 					CIS.pred = g;
-					CIS.targetphid = targetphid;										
-					CIS.phid   = phid;
+					CIS.targetphid = targetphid;
+					CIS.phid = phid;
 					CIS.lambda = t.lambda;
 					CIS.phim = phiModel(CIS.param);
 					if (OO.Dump) dump_iteration(CIS);
-				}						
-			}			
-		} 
-		
+				}
+			}
+		}
+
 		std::vector<cEarth1D> ev = get_earth(CIS.param);
 		std::vector<cTDEmGeometry> gv = get_geometry(CIS.param);
-		for (size_t si = 0; si < nSoundings; si++) {			
+		for (size_t si = 0; si < nSoundings; si++) {
 			E[si].invmodel = ev[si];
 			G[si].invmodel = gv[si];
 		}
 
 		set_predicted(CIS.param);
-		forwardmodel_and_jacobian(CIS.param, CIS.pred, J);		
+		forwardmodel_and_jacobian(CIS.param, CIS.pred, J);
 		ParameterSensitivity = compute_parameter_sensitivity();
 		ParameterUncertainty = compute_parameter_uncertainty();
 	}
-	
+
 	int execute() {
-		_GSTITEM_				
-		bool readstatus = true;
-		int paralleljob = 0;			
-		do{												
-			int record = ((int)StartRecord-1) + paralleljob*(int)IM->subsamplerate();			
+		_GSTITEM_
+			bool readstatus = true;
+		int paralleljob = 0;
+		do {
+			int record = ((int)StartRecord - 1) + paralleljob * (int)IM->subsamplerate();
 			if (record > (EndRecord - 1))break;
-			if ((paralleljob % Size) == Rank) {					
-				std::ostringstream s;				
-				if ((readstatus = read_bunch(record))) {					
+			if ((paralleljob % Size) == Rank) {
+				std::ostringstream s;
+				if ((readstatus = read_bunch(record))) {
 					s << bunch_id();
 					if (initialise_bunch()) {
 						double t1 = gettime();
 						iterate();
 						double t2 = gettime();
 						double etime = t2 - t1;
-						write_result(record);						
-						s << bunch_result(etime);																		
+						write_result(record);
+						s << bunch_result(etime);
 					}
 					else {
-						OutputMessage += ", Skipping - could not initialise the bunch";						
+						OutputMessage += ", Skipping - could not initialise the bunch";
 					}
 					s << std::endl;
 					if (OutputMessage.size() > 0) {
 						std::cerr << s.str();
 					}
 					glog.logmsg(s.str());
-				}								
-			}						
+				}
+			}
 			paralleljob++;
 		} while (readstatus == true);
 		glog.close();
 		return 0;
-	}	
+	}
 
 	double phiModel(const Vector& m)
 	{
@@ -2492,9 +2492,9 @@ public:
 	}
 
 	double estimate_initial_lambda()
-	{				
+	{
 		Matrix JtWdJ = J.transpose() * Wd * J;
-		
+
 		Eigen::JacobiSVD<Matrix> svd0(JtWdJ);
 		Vector s0 = svd0.singularValues();
 		//std::cerr << "s0" << std::endl << s0 << std::endl;
@@ -2518,10 +2518,10 @@ public:
 		//b = J'Wd(d - g(m) + Jm) + lambda*Wr*m0
 		//dm = m(n+1) - m = x - m
 
-		
+
 		const Vector& m = param;
 		const Vector& g = pred;
-		const Vector& d = Obs;		
+		const Vector& d = Obs;
 		const Vector& e = Err;
 		const Vector& m0 = RefParam;
 
@@ -2535,7 +2535,7 @@ public:
 
 		Matrix JtV = J.transpose() * V;
 		Matrix JtVJ = JtV * J;
-		
+
 		Matrix A = JtVJ + lambda * Wm;
 		Vector b = JtV * (d - g + J * m);
 		b += lambda * (Wr * m0);
@@ -2545,22 +2545,22 @@ public:
 		}
 
 		cNonLinearConstraint& C = NLCcablen;
-		if (C.alpha > 0) {		
+		if (C.alpha > 0) {
 			CableLengthConstraint_jacobian(m);
 			Vector predicted = CableLengthConstraint_forward(m);
-			A += C.J.transpose() * C.W.transpose() * C.J;						
+			A += C.J.transpose() * C.W.transpose() * C.J;
 			b += C.J.transpose() * C.W.transpose() * (C.data - predicted + C.J * m);
 		}
-				
-		const Eigen::LLT<Matrix> lltOfA(A);										
+
+		const Eigen::LLT<Matrix> lltOfA(A);
 		if (lltOfA.info() == Eigen::NumericalIssue)
 		{
-			std::cerr << "The matrix A is possibly non semi-positive definite" << std::endl << A << std::endl;						
+			std::cerr << "The matrix A is possibly non semi-positive definite" << std::endl << A << std::endl;
 		}
-		Vector x = lltOfA.solve(b);		
+		Vector x = lltOfA.solve(b);
 		return x;
 	}
-	
+
 	void write_result(const int& pointindex)
 	{
 		const Vector& m = CIS.param;
@@ -2574,7 +2574,7 @@ public:
 		OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 12, 0);
 		for (size_t fi = 0; fi < AncFld[si].size(); fi++) {
 			cFdVrnt& fdv = AncFld[si][fi].second;
-			cAsciiColumnField c;			
+			cAsciiColumnField c;
 			IM->get_acsiicolumnfield(fdv.fd, c);
 			OM->writevrnt(pi, fdv.vnt, c);
 		}
@@ -2604,15 +2604,15 @@ public:
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
 				cTDEmSystemInfo& S = SV[sysi];
 				std::vector<double> sf = get_scalefactors(sysi, m);
-				for (size_t ci = 0; ci < 3; ci++) {					
+				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) {
-						std::string comp = S.CompInfo[ci].Name;						
+						std::string comp = S.CompInfo[ci].Name;
 						std::string fname = "scalingfactor" + strprint("_EMSystem_%d_", (int)sysi + 1) + comp;
-						std::string fdesc = "Scaling factor" + strprint(" EMSystem %d ", (int)sysi + 1) + comp +"-component";
-											
+						std::string fdesc = "Scaling factor" + strprint(" EMSystem %d ", (int)sysi + 1) + comp + "-component";
+
 						OM->writefield(pi,
 							sf[ci], fname, fdesc, UNITLESS,
-							1, ST_FLOAT, DN_NONE, 'F', 6, 3);						
+							1, ST_FLOAT, DN_NONE, 'F', 6, 3);
 					}
 				}
 			}
@@ -2741,12 +2741,12 @@ public:
 		//ObservedData
 		if (OO.ObservedData) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				cTDEmSystemInfo& S = SV[sysi];		
-				for (size_t ci = 0; ci < 3; ci++) {					
+				cTDEmSystemInfo& S = SV[sysi];
+				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name,
 						"observed", "Observed",
-						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary,S.units);
+						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary, S.units);
 				}
 			}
 		}
@@ -2774,7 +2774,7 @@ public:
 						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
 						S.predicted[si].component(ci).Primary,
 						S.predicted[si].component(ci).Secondary,
-						S.invertPrimaryPlusSecondary,S.units);
+						S.invertPrimaryPlusSecondary, S.units);
 				}
 			}
 		}
@@ -2831,12 +2831,12 @@ public:
 	{
 		std::string DN_WINDOW = "em_window";
 		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
-		std::string sysdesc = descprefix + strprint(" EMSystem %d ", (int)sysnum + 1);		
+		std::string sysdesc = descprefix + strprint(" EMSystem %d ", (int)sysnum + 1);
 		if (includeprimary) {
 			std::string name = sysname + comp + "P";
 			std::string desc = sysdesc + comp + "-component primary field";
 			OM->writefield(pointindex,
-				p, name, desc,units,
+				p, name, desc, units,
 				1, ST_FLOAT, DN_NONE, form, width, decimals);
 		}
 
