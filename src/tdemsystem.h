@@ -1659,7 +1659,7 @@ public:
 	  setconductivitythickness(conductivity, thickness);
 	  setgeometry(geometry);
 	  LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-	  LEM.derivative_layer = INT_MAX;
+	  LEM.derivative_layer = undefinedvalue<size_t>();
 
 	  setupcomputations();
 	  setprimaryfields();
