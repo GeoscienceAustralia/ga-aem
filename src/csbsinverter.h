@@ -346,7 +346,7 @@ class cSBSInverter : public cInverter {
 	Matrix Wr;//Composite reference model matrix
 
 	size_t StartRecord = 0; // 1-based first record to be inverted
-	size_t EndRecord = INT_MAX;// 1-based last record to be inverted
+	size_t EndRecord = std::numeric_limits<size_t>::max();// 1-based last record to be inverted
 	size_t Subsample = 0;
 	size_t nSoundings = 0;
 	size_t nBunchSubsample = 0;
@@ -440,6 +440,7 @@ public:
 	cLinearConstraint LClatc;//Lateral conductivity constraint	
 	cLinearConstraint LClatg;//Lateral geometry constraint
 
+	cNonLinearConstraint NLCbounds;//Log-barrier bounds constraint
 	cNonLinearConstraint NLCcablen;//Cable length constraint
 
 	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline)
@@ -581,8 +582,8 @@ public:
 		s << " Time=" << fxd(4, 1) << etime;
 		s << " " << TerminationReason;
 		s << " " << OutputMessage;
-		//s << " nF= " << nForwards / CIS.iteration;
-		//s << " nJ= " << nJacobians;
+		s << " nF= " << nForwards / CIS.iteration;
+		s << " nJ= " << nJacobians;
 		return s.str();
 	}
 
@@ -664,7 +665,7 @@ public:
 		}
 
 		if (b.getvalue("EndRecord", EndRecord) == false) {
-			EndRecord = INT_MAX;
+			EndRecord = std::numeric_limits<size_t>::max();
 		}
 
 		if (b.getvalue("Subsample", Subsample) == false) {
@@ -723,6 +724,7 @@ public:
 		LClatc = cLinearConstraint("LateralConductivity", { "Minimise1stDerivatives", "Minimise2ndDerivatives","Similarity" }, "LatCon", "Lateral conductivity smoothness");
 		LClatg = cLinearConstraint("LateralGeometry", { "Similarity","MinimiseAccelerations","MinimiseAccelerationDerivatives","Minimise2ndDerivativesOfDifferenceFromReferenceModel" }, "LatGeom", "Lateral geometry smoothness");
 		NLCcablen = cNonLinearConstraint("CableLength", { "Input","InputBunchMean","BunchSimilarity" }, "CabLength", "Cable length");
+		NLCbounds = cNonLinearConstraint("Bounds", { }, "Bounds", "Log-barrier Bounds");
 
 		for (size_t i = 0; i < b.Entries.size(); i++) {
 			const std::string cstr = b.Entries[i];
@@ -760,11 +762,17 @@ public:
 			else if (NLCcablen.parse(cstr)) {
 				//nothing to do
 			}
+			else if (NLCbounds.parse(cstr)) {
+				//nothing to do
+			}
 			else {
 				std::stringstream msg;
 				msg << "Unknown constraint " << key << std::endl;
 				glog.errormsg(msg.str());
 			}
+		}
+		if (NLCbounds.alreadyparsed == false) {
+			NLCbounds.alpha = 1.0;
 		}
 	}
 
@@ -840,8 +848,6 @@ public:
 		nGeomParamPerSounding = 0;
 		cOffset = 0;
 		tOffset = 0;
-		//gOffset = 0;		
-		//sOffset = 0;
 
 		if (solve_conductivity()) {
 			fdC.offset = 0;
@@ -856,7 +862,7 @@ public:
 			nParamPerSounding += nLayers - 1;
 		}
 
-		//Geometry params			
+		//Geometry params
 		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
 			std::string gname = cTDEmGeometry::element_name(gi);
 			cInvertibleFieldDefinition& g = fdG.ref(gname);
@@ -896,6 +902,49 @@ public:
 		if (nSoundings == 1) {
 			LClatc.alpha = 0.0;
 			LClatg.alpha = 0.0;
+		}
+	}
+
+	void setup_parameter_bounds() {
+		const static double ud = undefinedvalue<double>();
+		Param_Min.resize(nParam);
+		Param_Max.resize(nParam);
+		Param_Min.setConstant(ud);
+		Param_Max.setConstant(ud);
+
+		if (fdC.bound()) {
+			for (size_t si = 0; si < nSoundings; si++) {
+				const cEarthStruct& e = E[si];
+				for (size_t li = 0; li < nLayers; li++) {
+					const int pi = cindex(si, li);
+					Param_Min[pi] = std::log10(e.min.conductivity[li]);
+					Param_Max[pi] = std::log10(e.max.conductivity[li]);
+				}
+			}
+		}
+
+		if (fdT.bound()) {
+			for (size_t si = 0; si < nSoundings; si++) {
+				const cEarthStruct& e = E[si];
+				for (size_t li = 0; li < nLayers - 1; li++) {
+					const int pi = tindex(si, li);
+					Param_Min[pi] = std::log10(e.min.thickness[li]);
+					Param_Max[pi] = std::log10(e.max.thickness[li]);
+				}
+			}
+		}
+
+		for (size_t si = 0; si < nSoundings; si++) {
+			cGeomStruct& g = G[si];
+			for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
+				const std::string ename = cTDEmGeometry::element_name(i);
+				const cInvertibleFieldDefinition& e = fdG.cref(ename);
+				if (e.bound()) {
+					const int pi = gindex(si, ename);
+					Param_Min[pi] = g.min[ename];
+					Param_Max[pi] = g.max[ename];
+				}
+			}
 		}
 	}
 
@@ -1371,6 +1420,69 @@ public:
 		}
 	}
 
+	void initialise_BoundsConstraint() {
+		cNonLinearConstraint& C = NLCbounds;
+		C.W = Matrix::Zero(nParam, nParam);
+		C.J = Matrix::Zero(nParam, nParam);
+		C.err = Vector::Zero(nParam);
+		C.data = Vector::Zero(nParam);
+		if (C.alpha == 0.0) return;
+
+		double s = C.alpha / (double)(nParam);
+		C.data.resize(nParam);
+		for (size_t pi = 0; pi < nParam; pi++) {
+			C.err[pi] = 1.0;
+			C.data[pi] = 0.0;
+			C.W(pi, pi) = s / (C.err[pi] * C.err[pi]);
+		}
+	}
+
+	static double log_barrier(const double& L, const double& U, const double& n, const double& x) {
+		const double v = -std::log(std::pow(((U - x) / (U - L)), n))
+			- std::log(std::pow(((x - L) / (U - L)), n))
+			+ 2.0 * std::log(1.0 / std::pow(2.0, n));
+		return v;
+	}
+
+	static double log_barrier_deriv(const double& L, const double& U, const double& n, const double& x) {
+		const double dv = (n * (L + U - 2.0 * x)) / ((L - x) * (U - x));
+		return dv;
+	}
+
+	Vector BoundsConstraint_forward(const Vector& m) {
+		static double eps = std::numeric_limits<double>::epsilon();
+		cNonLinearConstraint& C = NLCbounds;
+		Vector predicted = Vector::Zero(nParam);
+		if (C.alpha == 0.0) return predicted;
+		for (size_t pi = 0; pi < nParam; pi++) {
+			const double& L = Param_Min[pi];
+			const double& U = Param_Max[pi];
+			const double& N = 0.5;
+			double x = m[pi];
+			if (x <= L) x = L + eps * (U - L);
+			else if (x >= U) x = U - eps * (U - L);
+			predicted[pi] = log_barrier(L, U, N, x);
+		}
+		return predicted;
+	}
+
+	void BoundsConstraint_jacobian(const Vector& m) {
+		static double eps = std::numeric_limits<double>::epsilon();
+		cNonLinearConstraint& C = NLCbounds;
+		if (C.alpha == 0.0) return;
+
+		double s = C.alpha / (double)(nParam);
+		for (size_t pi = 0; pi < nParam; pi++) {
+			const double& L = Param_Min[pi];
+			const double& U = Param_Max[pi];
+			const double N = 0.5;
+			double x = m[pi];
+			if (x <= L) x = L + eps * (U - L);
+			else if (x >= U) x = U - eps * (U - L);
+			C.J(pi, pi) = log_barrier_deriv(L, U, N, x);
+		}
+	}
+
 	void initialise_Wr() {
 		initialise_Wc();
 		initialise_Wt();
@@ -1391,6 +1503,7 @@ public:
 		initialise_LG();
 		initialise_QC(LCvcsim);
 		initialise_CableLengthConstraint();
+		initialise_BoundsConstraint();
 		Wm = Wr + LCvcsmth.W + LCvcsim.W + LClatc.W + LClatg.W;
 	}
 
@@ -1410,6 +1523,7 @@ public:
 			LClatc.write_W_matrix(dp);
 			LClatg.write_W_matrix(dp);
 			NLCcablen.write_W_matrix(dp);
+			NLCbounds.write_W_matrix(dp);
 			writetofile(Wm, dp + "Wm.dat");
 		}
 	}
@@ -1499,7 +1613,7 @@ public:
 				if (S.reconstructPrimary) {
 					T.setgeometry(G[si].tfr);
 					T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-					T.LEM.derivative_layer = INT_MAX;
+					T.LEM.derivative_layer = undefinedvalue<size_t>();
 					T.setprimaryfields();
 
 					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PrimaryX;
@@ -1631,11 +1745,25 @@ public:
 		}
 	}
 
-	Vector parameter_change(const double& lambda, const Vector& m_old, const Vector& pred)
-	{
-		Vector m_new = solve_linear_system(lambda, m_old, pred);
-		Vector dm = m_new - m_old;
+	double max_step_fraction_to_bound(const Vector& m_old, const Vector& m_new, const Vector& dm) {
+		static const double ud = undefinedvalue<double>();
+		double maxf = 1.0;
+		for (size_t pi = 0; pi < nParam; pi++) {
+			if (Param_Min[pi] == ud) continue;
 
+			if (m_new[pi] <= Param_Min[pi]) {
+				double f = (Param_Min[pi] - m_old[pi]) / dm[pi];
+				maxf = std::min(f, maxf);
+			}
+			else if (m_new[pi] >= Param_Max[pi]) {
+				double f = (Param_Max[pi] - m_old[pi]) / dm[pi];
+				maxf = std::min(f, maxf);
+			}
+		}
+		return maxf;
+	}
+
+	Vector elementwise_bound_restrict(const Vector& m_old, const Vector& m_new, Vector& dm) {
 		if (fdC.bound()) {
 			for (size_t si = 0; si < nSoundings; si++) {
 				const cEarthStruct& e = E[si];
@@ -1728,6 +1856,19 @@ public:
 		}
 
 		return dm;
+
+	}
+
+	Vector parameter_change(const double& lambda, const Vector& m_old, const Vector& pred)
+	{
+		const Vector m_new = solve_linear_system(lambda, m_old, pred);
+		Vector dm = m_new - m_old;
+
+		double maxf = max_step_fraction_to_bound(m_old, m_new, dm);
+		if (maxf < 1.0) return dm *= maxf;
+		//elementwise_bound_restrict(m_old, m_new, dm);
+
+		return dm;
 	}
 
 	std::vector<cEarth1D> get_earth(const Vector& parameters)
@@ -1782,7 +1923,6 @@ public:
 		return sf;
 	}
 
-
 	void set_predicted(const Vector& parameters)
 	{
 		std::vector<cEarth1D> ev = get_earth(parameters);
@@ -1801,7 +1941,7 @@ public:
 
 				//Forwardmodel
 				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-				T.LEM.derivative_layer = INT_MAX;
+				T.LEM.derivative_layer = undefinedvalue<size_t>();
 				T.setupcomputations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
@@ -1855,7 +1995,7 @@ public:
 
 				//Forwardmodel
 				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-				T.LEM.derivative_layer = INT_MAX;
+				T.LEM.derivative_layer = undefinedvalue<size_t>();
 				T.setupcomputations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
@@ -1955,7 +2095,7 @@ public:
 						if (solve_geometry_element("tx_height")) {
 							const size_t pindex = gindex(si, "tx_height");
 							T.LEM.calculation_type = cLEM::CalculationType::HDERIVATIVE;
-							T.LEM.derivative_layer = INT_MAX;
+							T.LEM.derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -1965,7 +2105,7 @@ public:
 						if (solve_geometry_element("txrx_dx")) {
 							const size_t pindex = gindex(si, "txrx_dx");
 							T.LEM.calculation_type = cLEM::CalculationType::XDERIVATIVE;
-							T.LEM.derivative_layer = INT_MAX;
+							T.LEM.derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -1975,7 +2115,7 @@ public:
 						if (solve_geometry_element("txrx_dy")) {
 							const size_t pindex = gindex(si, "txrx_dy");
 							T.LEM.calculation_type = cLEM::CalculationType::YDERIVATIVE;
-							T.LEM.derivative_layer = INT_MAX;
+							T.LEM.derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -1985,7 +2125,7 @@ public:
 						if (solve_geometry_element("txrx_dz")) {
 							const size_t pindex = gindex(si, "txrx_dz");
 							T.LEM.calculation_type = cLEM::CalculationType::ZDERIVATIVE;
-							T.LEM.derivative_layer = INT_MAX;
+							T.LEM.derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2350,20 +2490,16 @@ public:
 
 	void iterate() {
 		_GSTITEM_
-			CIS.iteration = 0;
-		CIS.lambda = 1e8;
+
+		setup_parameter_bounds();
+		CIS.iteration = 0;
+		//CIS.lambda = 1e8;
 		CIS.param = RefParam;
 		forwardmodel(CIS.param, CIS.pred);
 		CIS.phid = phiData(CIS.pred);
 		CIS.targetphid = CIS.phid;
 		CIS.phim = phiModel(CIS.param);
-
 		TerminationReason = "Has not terminated";
-
-		if (OO.Dump) {
-			dump_first_iteration();
-			dump_iteration(CIS);
-		}
 
 		double percentchange = 100.0;
 		bool   keepiterating = true;
@@ -2385,7 +2521,7 @@ public:
 				keepiterating = false;
 				TerminationReason = "Reached minimum";
 			}
-			else if (CIS.phid < 50.0 && CIS.iteration > 10 && percentchange < MinimumImprovement) {
+			else if (CIS.iteration > 10 && percentchange < MinimumImprovement) {
 				keepiterating = false;
 				TerminationReason = "Small % improvement";
 			}
@@ -2398,21 +2534,36 @@ public:
 
 				Vector g;
 				forwardmodel_and_jacobian(CIS.param, g, J);
-				//if (CIS.iteration == 0) {
-				//	CIS.lambda = estimate_initial_lambda();
-				//	std::cerr << "Initial lambda = " << CIS.lambda << std::endl;
-				//}
+				double svdlambdaestimate = 0;
+				if (CIS.iteration == 0) {
+					svdlambdaestimate = estimate_initial_lambda();
+					CIS.lambda = 1e8;
+					if (OO.Dump) {
+						dump_first_iteration();
+						dump_iteration(CIS);
+					}
+				}
 
-				double targetphid = std::max(CIS.phid * 0.7, MinimumPhiD);
-
-				cTrial t = lambda_search_target(CIS.lambda, targetphid);
-				Vector dm = parameter_change(t.lambda, CIS.param, CIS.pred);
-				Vector m = CIS.param + (t.stepfactor * dm);
+				const double targetphid = std::max(CIS.phid * 0.7, MinimumPhiD);
+				const cTrial t = lambda_search_targetphid(CIS.lambda, targetphid);
+				const Vector dm = parameter_change(t.lambda, CIS.param, CIS.pred);
+				const Vector m = CIS.param + (t.stepfactor * dm);
 
 				forwardmodel(m, g);
-				double phid = phiData(g);
-
+				const double phid = phiData(g);
 				percentchange = 100.0 * (CIS.phid - phid) / (CIS.phid);
+
+				if (Verbose) {
+					if (CIS.iteration == 0) {
+						std::cout << "SVD lambda estimate = " << svdlambdaestimate << std::endl << std::flush;
+						std::cerr << "SVD lambda estimate = " << svdlambdaestimate << std::endl << std::flush;
+						std::cout << "Ratio: " << t.lambda / svdlambdaestimate << std::endl << std::flush;
+						std::cerr << "Ratio: " << t.lambda / svdlambdaestimate << std::endl << std::flush;
+					}
+					std::cout << "Ratio1: " << CIS.iteration << "\t" << t.lambda << "\t" << t.lambda / CIS.lambda << std::endl << std::flush;
+					std::cerr << "Ratio1: " << CIS.iteration << "\t" << t.lambda << "\t" << t.lambda / CIS.lambda << std::endl << std::flush;
+				}
+
 				if (phid <= CIS.phid) {
 					CIS.iteration++;
 					CIS.param = m;
@@ -2488,6 +2639,10 @@ public:
 
 		Vector clfwd = CableLengthConstraint_forward(m);
 		v += NLCcablen.phi(clfwd);
+
+		Vector bndfwd = BoundsConstraint_forward(m);
+		v += NLCbounds.phi(bndfwd);
+
 		return v;
 	}
 
@@ -2502,10 +2657,8 @@ public:
 		Eigen::JacobiSVD<Matrix> svd1(Wm);
 		Vector s1 = svd1.singularValues();
 		//std::cerr << "s1" << std::endl << s1 << std::endl;
-
 		//std::cerr << "ratio " << s0[0]/s1[0] << std::endl;		
-
-		double elambda = s0[0] / s1[0] * 1.0e4;
+		double elambda = 1000.0 * (s0[0] / s1[0]);
 		return elambda;
 	}
 
@@ -2544,10 +2697,18 @@ public:
 			b += lambda * (LClatg.W * m0);
 		}
 
-		cNonLinearConstraint& C = NLCcablen;
-		if (C.alpha > 0) {
+		if (NLCcablen.alpha > 0) {
+			cNonLinearConstraint& C = NLCcablen;
 			CableLengthConstraint_jacobian(m);
 			Vector predicted = CableLengthConstraint_forward(m);
+			A += C.J.transpose() * C.W.transpose() * C.J;
+			b += C.J.transpose() * C.W.transpose() * (C.data - predicted + C.J * m);
+		}
+
+		if (NLCbounds.alpha > 0) {
+			cNonLinearConstraint& C = NLCbounds;
+			BoundsConstraint_jacobian(m);
+			Vector predicted = BoundsConstraint_forward(m);
 			A += C.J.transpose() * C.W.transpose() * C.J;
 			b += C.J.transpose() * C.W.transpose() * (C.data - predicted + C.J * m);
 		}
@@ -2791,6 +2952,9 @@ public:
 
 		Vector clfwd = CableLengthConstraint_forward(m);
 		write_result(pi, NLCcablen, clfwd);
+
+		Vector bndfwd = BoundsConstraint_forward(m);
+		write_result(pi, NLCbounds, bndfwd);
 
 		OM->writefield(pi, CIS.phid, "PhiD", "Normalised data misfit", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
 		OM->writefield(pi, CIS.phim, "PhiM", "Combined model norm", UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);

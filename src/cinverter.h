@@ -27,9 +27,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "inversion_line_searcher.h"
 
 #if defined _OPENMP
-	#include <omp.h>
-	//This external thread lock must be set when fftw is being initialised
-	extern omp_lock_t fftw_thread_lock;
+#include <omp.h>
+//This external thread lock must be set when fftw is being initialised
+extern omp_lock_t fftw_thread_lock;
 #endif
 
 enum class eBracketResult { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
@@ -37,16 +37,16 @@ enum class eNormType { L1, L2 };
 
 class cInvertibleFieldDefinition {
 
-public:	
+public:
 	int  offset = -1;
 	bool solve = false;
-	cFieldDefinition input;	
+	cFieldDefinition input;
 	cFieldDefinition ref;
 	cFieldDefinition std;
 	cFieldDefinition min;
 	cFieldDefinition max;
 	cFieldDefinition tfr;
-	
+
 	cInvertibleFieldDefinition() {};
 
 	cInvertibleFieldDefinition(const cBlock& parent, const std::string& key) {
@@ -102,103 +102,119 @@ public:
 	}
 };
 
-class cTrial{
+class cTrial {
 
 public:
 	size_t insert_order = 0;
 	double lambda = 0.0;
 	double stepfactor = 0.0;
-	double phid = 0.0;	
+	double phid = 0.0;
 
 	static bool lambda_compare(const cTrial& a, const cTrial& b)
-	{				
+	{
 		if (a.lambda < b.lambda) return true;
-		if (a.lambda > b.lambda) return false;		
-		if (a.stepfactor < b.stepfactor) return true;				
-		return false;		
+		if (a.lambda > b.lambda) return false;
+		if (a.stepfactor < b.stepfactor) return true;
+		return false;
 	}
 
 	static bool phid_compare(const cTrial& a, const cTrial& b)
 	{
 		if (a.phid < b.phid) return true;
-		if (a.phid > b.phid) return false;		
+		if (a.phid > b.phid) return false;
 		if (a.stepfactor < b.stepfactor) return true;
-		return false;		
-	}	
+		return false;
+	}
 };
 
-class cTrialCache {	
+class cTrialCache {
 
-	public:
+private:
+	std::vector<cTrial> trials;
 
-	double target=0;	
-	std::vector<cTrial> trial;
-	double sfsearch(const double& x){		
-		for(size_t k=0; k<trial.size(); ++k){
-			if(x == trial[k].stepfactor)return trial[k].phid;
-		}		
+public:
+
+	double target = 0;
+
+	const size_t size() const {
+		return trials.size();
+	}
+
+	const cTrial& trial(const size_t& index) const {
+		return trials[index];
+	}
+
+	void insert(cTrial& t) {
+		t.insert_order = size();
+		trials.push_back(t);
+	}
+
+	double sfsearch(const double& x) {
+		for (size_t k = 0; k < trials.size(); ++k) {
+			if (x == trials[k].stepfactor)return trials[k].phid;
+		}
 		return -1.0;
 	}
-	
-	size_t minphidindex(){
-		size_t ind=0;		
-		for(size_t k=1; k<trial.size(); ++k){						
-			if( trial[k].phid < trial[ind].phid){
-				ind=k;
-			}		
-		}		
-		return ind;
-	}
 
-	size_t maxphidindex(){
-		size_t ind=0;
-		for(size_t k=1; k<trial.size(); ++k){			
-			if( trial[k].phid > trial[ind].phid){
-				ind=k;
-			}			
-		}	
-		return ind;
-	}
-
-	size_t maxlambdaindex(){
-		size_t ind=0;		
-		for(size_t k=1; k<trial.size(); ++k){			
-			if( trial[k].lambda > trial[ind].lambda){
-				ind=k;
-			}			
-		}	
-		return ind;
-	}
-
-	cTrial findlambda(const double lambda){
-		for(size_t i=0; i<trial.size(); i++){
-			if(trial[i].lambda == lambda){
-			  return trial[i];			  
+	size_t minphidindex() {
+		size_t ind = 0;
+		for (size_t k = 1; k < trials.size(); ++k) {
+			if (trials[k].phid < trials[ind].phid) {
+				ind = k;
 			}
 		}
-		return trial[0];
+		return ind;
 	}
 
-	double minphid(){return trial[minphidindex()].phid;}
-	
-	double maxphid(){return trial[maxphidindex()].phid;}
-	
-	cTrial minphidtrial(){return trial[minphidindex()];}
-	
-	cTrial maxphidtrial(){return trial[maxphidindex()];}
-	
-	cTrial maxlambdatrial(){return trial[maxlambdaindex()];}
+	size_t maxphidindex() {
+		size_t ind = 0;
+		for (size_t k = 1; k < trials.size(); ++k) {
+			if (trials[k].phid > trials[ind].phid) {
+				ind = k;
+			}
+		}
+		return ind;
+	}
 
-	
+	size_t maxlambdaindex() {
+		size_t ind = 0;
+		for (size_t k = 1; k < trials.size(); ++k) {
+			if (trials[k].lambda > trials[ind].lambda) {
+				ind = k;
+			}
+		}
+		return ind;
+	}
+
+	cTrial findlambda(const double lambda) {
+		for (size_t i = 0; i < trials.size(); i++) {
+			if (trials[i].lambda == lambda) {
+				return trials[i];
+			}
+		}
+		return trials[0];
+	}
+
+	double minphid() { return trials[minphidindex()].phid; }
+
+	double maxphid() { return trials[maxphidindex()].phid; }
+
+	cTrial minphidtrial() { return trials[minphidindex()]; }
+
+	cTrial maxphidtrial() { return trials[maxphidindex()]; }
+
+	cTrial maxlambdatrial() { return trials[maxlambdaindex()]; }
+
+
 	bool is_target_braketed()
-	{				
+	{
 		bool below = false;
 		bool above = false;
-		for (size_t i = 0; i<trial.size(); i++) {
-			if (trial[i].phid <= target){
+		for (size_t i = 0; i < trials.size(); i++) {
+			if (trials[i].phid <= target) {
 				below = true;
 			}
-			else if (trial[i].phid >= target) {
+			else if (trials[i].phid >= target) {
 				above = true;
 			}
 			if (above && below) return true;
@@ -209,43 +225,43 @@ class cTrialCache {
 	bool is_min_braketed()
 	{
 		size_t index = minphidindex();
-		if (index == 0 || index == trial.size() - 1) {
+		if (index == 0 || index == trials.size() - 1) {
 			return false;
 		}
 
-		double fa = trial[index - 1].phid;
-		double fb = trial[index].phid;
-		double fc = trial[index + 1].phid;
+		double fa = trials[index - 1].phid;
+		double fb = trials[index].phid;
+		double fc = trials[index + 1].phid;
 		if ((fb < fa) && (fb < fc)) {
 			return true;
 		}
 		return false;
 	}
-	
+
 
 	void sort_lambda()
 	{
-		std::sort(trial.begin(), trial.end(), cTrial::lambda_compare);
+		std::sort(trials.begin(), trials.end(), cTrial::lambda_compare);
 	}
 
 	void sort_phid()
 	{
-		std::sort(trial.begin(), trial.end(), cTrial::phid_compare);
+		std::sort(trials.begin(), trials.end(), cTrial::phid_compare);
 	}
 
 	std::string info_string(const double& current_lambda, const double& current_phid)
 	{
 		sort_lambda();
-		std::ostringstream s;		
+		std::ostringstream s;
 		s << "Trials: Current Lambda = " << current_lambda << " Current Phid = " << current_phid << " Target = " << target << std::endl;;
-		s << "   N           Lambda       Stepfactor             Phid\n";		
-		for (size_t i = 0; i < trial.size(); i++) {
-			s << ixd(4)  << trial[i].insert_order << " " <<
-				std::setw(16) << trial[i].lambda << " " <<
-				std::setw(16) << trial[i].stepfactor << " " <<
-				std::setw(16) << trial[i].phid << std::endl;
-		}	
-		return s.str();				
+		s << "   N           Lambda       Stepfactor             Phid\n";
+		for (size_t i = 0; i < trials.size(); i++) {
+			s << ixd(4) << trials[i].insert_order << " " <<
+				std::setw(16) << trials[i].lambda << " " <<
+				std::setw(16) << trials[i].stepfactor << " " <<
+				std::setw(16) << trials[i].phid << std::endl;
+		}
+		return s.str();
 	}
 
 	void print(const double& current_lambda, const double& current_phid)
@@ -259,7 +275,7 @@ class cTrialCache {
 class cIterationState {
 
 public:
-	size_t iteration = 0;	
+	size_t iteration = 0;
 	double lambda = 0.0;
 	double targetphid = 0.0;
 	double phid = 0.0;
@@ -279,7 +295,7 @@ public:
 		ss << "Iteration " << iteration << std::endl;
 		ss << "Lambda " << lambda << std::endl;
 		ss << "PhiD " << phid << std::endl;
-		ss << "TargetPhiD " << targetphid << std::endl;		
+		ss << "TargetPhiD " << targetphid << std::endl;
 		ss << "PhiM " << phim << std::endl;
 		//ss << "PhiC " << phic << std::endl;
 		//ss << "PhiT " << phit << std::endl;
@@ -295,14 +311,14 @@ public:
 class cInverter {
 
 private:
-	
+
 	cTrial stepfactor_trial(const double& lambda, const Vector& dm, const double& stepfactor)
-	{		
+	{
 		cTrial t;
 		Vector p = CIS.param + stepfactor * dm;
 		Vector g(nData);
 		forwardmodel(p, g);
-		t.phid = phiData(g);		
+		t.phid = phiData(g);
 		t.lambda = lambda;
 		t.stepfactor = stepfactor;
 
@@ -321,12 +337,12 @@ private:
 	}
 
 	cTrial stepfactor_search(const double& lambda, const Vector& dm, const double& target)
-	{								
+	{
 		cInversionLineSearcher s(target);
-		s.set_maxtrials(20);		
+		s.set_maxtrials(20);
 		s.set_ytol(target * 0.01);
-		s.add_pair(0.0,CIS.phid);
-				
+		s.add_pair(0.0, CIS.phid);
+
 		cTrial t;
 
 		//bookmark
@@ -337,19 +353,19 @@ private:
 
 		if (t.phid > CIS.phid) {
 			t = stepfactor_trial(lambda, dm, 0.01);
-			s.add_pair(t.stepfactor, t.phid);					
+			s.add_pair(t.stepfactor, t.phid);
 			if (t.phid > CIS.phid) {
 				t = stepfactor_trial(lambda, dm, 0.001);
 				s.add_pair(t.stepfactor, t.phid);
 			}
 		}
-		
+
 		if (t.phid <= CIS.phid && t.phid > target) {
 			t = stepfactor_trial(lambda, dm, 0.25);
 			s.add_pair(t.stepfactor, t.phid);
 		}
-		
-		if (t.phid <= CIS.phid  && t.phid > target) {
+
+		if (t.phid <= CIS.phid && t.phid > target) {
 			t = stepfactor_trial(lambda, dm, 0.5);
 			s.add_pair(t.stepfactor, t.phid);
 		}
@@ -358,9 +374,9 @@ private:
 			t = stepfactor_trial(lambda, dm, maxsf);
 			s.add_pair(t.stepfactor, t.phid);
 		}
-				
+
 		double sf;
-		while(s.next_x(sf)) {
+		while (s.next_x(sf)) {
 			if (sf >= maxsf || sf <= 0.0) {
 				if (Verbose) {
 					std::ostringstream msg;
@@ -374,38 +390,44 @@ private:
 			s.add_pair(t.stepfactor, t.phid);
 		}
 
-				
-		DoublePair p = s.nearest();		
+
+		DoublePair p = s.nearest();
 		t.lambda = lambda;
 		t.stepfactor = p.first;
 		t.phid = p.second;
 
 		if (Verbose) {
 			std::ostringstream msg;
-			msg << "Trial Lambda=" << lambda << std::endl;			
-			msg << s << std::endl;			
+			msg << "Trial Lambda=" << lambda << std::endl;
+			msg << s << std::endl;
 			msg << "Found ";
 			msg << "  Lambda: " << t.lambda;
 			msg << "  Step Factor: " << t.stepfactor;
 			msg << "  Phid: " << t.phid << std::endl;
-			std::cout << msg.str();	
+			std::cout << msg.str();
 			std::cerr << msg.str();
 
 			//std::cout << dm.transpose() << std::endl;
 			//std::cerr << dm.transpose() << std::endl;
 		};
 
+		//std::cout << s << std::endl;
 		return t;
 	}
-	
-	double lambda_trial_function(cTrialCache& T, const double& lambda)
-	{		
+
+	double lambda_trial_function(cTrialCache& T, const double& lambda, bool dostepfactorsearch)
+	{
 		Vector dm = parameter_change(lambda, CIS.param, CIS.pred);
-		cTrial t  = stepfactor_search(lambda, dm, T.target);		
-		t.insert_order = T.trial.size();
-		T.trial.push_back(t);
+		cTrial t;
+		if (dostepfactorsearch) {
+			t = stepfactor_search(lambda, dm, T.target);
+		}
+		else {
+			t = stepfactor_trial(lambda, dm, 1.0);
+		}
+		T.insert(t);
 		return t.phid;
-	}	
+	}
 
 	double goldensearch(double a, double b, double c, double xtol, const double lambda, const Vector& m, const Vector& dm, Vector& g, cTrialCache& cache)
 	{
@@ -430,28 +452,24 @@ private:
 		if (fx < 0) {
 			cTrial t;
 			Vector p = m + x * dm;
-			forwardmodel(p,g);
+			forwardmodel(p, g);
 			fx = phiData(g);
 			t.stepfactor = x;
 			t.phid = fx;
-			//t.phim = phiModel(p);
-			t.insert_order = cache.trial.size();
 			t.lambda = lambda;
-			cache.trial.push_back(t);
+			cache.insert(t);
 		}
 
 		double fb = cache.sfsearch(b);
 		if (fb < 0) {
 			cTrial t;
 			Vector p = m + b * dm;
-			forwardmodel(p,g);
+			forwardmodel(p, g);
 			fb = phiData(g);
 			t.stepfactor = b;
 			t.phid = fb;
-			//t.phim = phiModel(p);
-			t.insert_order = cache.trial.size();
 			t.lambda = lambda;
-			cache.trial.push_back(t);
+			cache.insert(t);
 		}
 
 		assert(fx != fb);
@@ -471,39 +489,43 @@ private:
 				return goldensearch(x, b, c, xtol, lambda, m, dm, g, cache);
 			}
 		}
-	}	
-	
+	}
+
 	eBracketResult brackettarget(cTrialCache& T, const double target, const double currentlambda)
-	{		
+	{
+		bool dostepfactorsearch = true;
 		cInversionLineSearcher s(target);
 		s.set_ytol(target * 0.01);
 		s.set_maxtrials(10);
-		std::vector<double> xlist;		
-		if (CIS.iteration == 0) {			
+		std::vector<double> xlist;
+		if (CIS.iteration == 0) {
 			xlist = increment<double>(32, 8.0, -0.25);
-			s.set_maxtrials(xlist.size()*2);
+			s.set_maxtrials(xlist.size() * 2);
 		}
-		else {			
+		else {
 			s.set_maxtrials(10);
-			double x1 = std::log10(currentlambda * 2.0);
-			double x2 = std::log10(currentlambda);
-			double x3 = std::log10(currentlambda * 0.5);
-			double x4 = std::log10(currentlambda * 0.25);
-			xlist = { x1, x2, x3, x4 };			
+			xlist = {
+				std::log10(currentlambda * 2.0),
+				std::log10(currentlambda),
+				std::log10(currentlambda * 0.5),
+				std::log10(currentlambda * 0.25)
+			};
 		}
-		
+
 		double x;
 		for (size_t i = 0; i < xlist.size(); i++) {
-			double x = xlist[i];			
-			double phid = lambda_trial_function(T, pow10(x));
+			double x = xlist[i];
+			double phid = lambda_trial_function(T, pow10(x), dostepfactorsearch);
+			if (Verbose) T.print(CIS.lambda, CIS.phid);
 			s.add_pair(x, phid);
 			if (T.is_target_braketed()) {
 				return eBracketResult::BRACKETED;//target bracketed		
 			}
 		}
-		
-		while (s.next_x(x)) {			
-			double phid = lambda_trial_function(T, pow10(x));
+
+		while (s.next_x(x)) {
+			double phid = lambda_trial_function(T, pow10(x), dostepfactorsearch);
+			if (Verbose) T.print(CIS.lambda, CIS.phid);
 			s.add_pair(x, phid);
 			if (T.is_target_braketed()) {
 				return eBracketResult::BRACKETED;//target bracketed		
@@ -526,20 +548,20 @@ private:
 		double yerrorTol = target * 0.01;//1% accuracy is good enough
 
 		T.sort_lambda();
-		size_t index = T.trial.size() - 1;
-		for (size_t i = T.trial.size() - 1; i >= 1; i--) {
-			double f1 = T.trial[i].phid - target;
-			double f2 = T.trial[i - 1].phid - target;
+		size_t index = T.size() - 1;
+		for (size_t i = T.size() - 1; i >= 1; i--) {
+			double f1 = T.trial(i).phid - target;
+			double f2 = T.trial(i - 1).phid - target;
 			if (f1 * f2 <= 0.0) {
 				index = i;
 				break;
 			}
 		}
-		
-		double a = std::log10(T.trial[index - 1].lambda);
-		double b = std::log10(T.trial[index].lambda);
-		double fa = T.trial[index - 1].phid - target;
-		double fb = T.trial[index].phid - target;
+
+		double a = std::log10(T.trial(index - 1).lambda);
+		double b = std::log10(T.trial(index).lambda);
+		double fa = T.trial(index - 1).phid - target;
+		double fb = T.trial(index).phid - target;
 		if (fa * fb >= 0.0) {
 			std::string msg = strprint("Warning: Target must be bracketed\n");
 			glog.logmsg(msg);
@@ -547,7 +569,7 @@ private:
 		}
 
 		double c = 0;
-		double d = DBL_MAX;
+		double d = std::numeric_limits<double>::max();
 		double fc = 0;
 		double s = 0;
 		double fs = 0;
@@ -602,7 +624,7 @@ private:
 				else
 					mflag = false;
 			}
-			fs = lambda_trial_function(T, pow10(s)) - target;
+			fs = lambda_trial_function(T, pow10(s), true) - target;
 			if (fabs(fs) < yerrorTol) {
 				newphid = fs + target;
 				return pow10(s);
@@ -647,40 +669,42 @@ protected:
 	int Size;
 	int Rank;
 	bool UsingOpenMP;
-	bool Verbose = false;	
+	bool Verbose = false;
 	std::string OutputMessage;
 	cBlock Control;
 
 	size_t nData;
 	size_t nParam;
 
-	cIterationState CIS;		
+	cIterationState CIS;
 	Vector Obs;
 	Vector Err;
 	Vector RefParam;
 	Vector RefParamStd;
 	Vector ParameterSensitivity;
 	Vector ParameterUncertainty;
-	
+	Vector Param_Min;
+	Vector Param_Max;
+
 	Matrix J;
 	Matrix Wd;
 	Matrix Wm;
-	
+
 	eNormType  NormType;
 
 	double MinimumPhiD;//overall	
 	double MinimumImprovement;//			
 	size_t MaxIterations;
-	std::string TerminationReason;	
+	std::string TerminationReason;
 	cSampleBunch Bunch;
 	std::unique_ptr<cInputManager> IM;
-	std::unique_ptr<cOutputManager> OM;	
+	std::unique_ptr<cOutputManager> OM;
 	std::vector<size_t> ActiveData;//indices of the data that are not culled	
 
 public:
 
 	cInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline)
-	{		
+	{
 		Size = size;
 		Rank = rank;
 		UsingOpenMP = usingopenmp;
@@ -696,7 +720,7 @@ public:
 	void initialise(const std::string& controlfile)
 	{
 		_GSTITEM_
-		loadcontrolfile(controlfile);
+			loadcontrolfile(controlfile);
 		set_field_definitions();
 		setup_data();
 		setup_parameters();
@@ -709,7 +733,7 @@ public:
 	virtual void setup_parameters() = 0;
 	virtual int  execute() = 0;
 	virtual std::string dumppath() const = 0;
-		
+
 	virtual void forwardmodel(const Vector& parameters, Vector& predicted) = 0;
 	virtual void forwardmodel_and_jacobian(const Vector& parameters, Vector& predicted, Matrix& jacobian) = 0;
 	virtual Vector parameter_change(const double& lambda, const Vector& m_old, const Vector& g_old) = 0;
@@ -724,20 +748,20 @@ public:
 	}
 
 	void set_fftw_lock() {
-		#if defined _OPENMP
-			//If OpenMP is being used set the thread lock while FFTW initialises
-			if (UsingOpenMP) {
-				omp_set_lock(&fftw_thread_lock);
-			}
-		#endif	
+#if defined _OPENMP
+		//If OpenMP is being used set the thread lock while FFTW initialises
+		if (UsingOpenMP) {
+			omp_set_lock(&fftw_thread_lock);
+		}
+#endif	
 	}
 
 	void unset_fftw_lock() {
-		#if defined _OPENMP			
-			if (UsingOpenMP) {
-				omp_unset_lock(&fftw_thread_lock);
-			}
-		#endif	
+#if defined _OPENMP			
+		if (UsingOpenMP) {
+			omp_unset_lock(&fftw_thread_lock);
+		}
+#endif	
 	}
 
 	double l1_norm(const Vector& g)
@@ -799,21 +823,21 @@ public:
 	}
 
 	std::string rec_it_str() const
-	{				
+	{
 		std::ostringstream os;
 		os << "Record " << Bunch.master_record() << " It " << CIS.iteration;
 		return os.str();
 	};
 
-	cTrial lambda_search_target(const double& currentlambda, const double& targetphid)
+	cTrial lambda_search_targetphid(const double& currentlambda, const double& targetphid)
 	{
 		cTrialCache T;
-		T.target = targetphid;		
-		eBracketResult b = brackettarget(T, targetphid, currentlambda);				
+		T.target = targetphid;
+		eBracketResult b = brackettarget(T, targetphid, currentlambda);
 		cTrial t;
 		if (b == eBracketResult::BRACKETED) {
 			//bracketed target - find with Brents Method
-			double newphid = DBL_MIN;
+			double newphid = undefinedvalue<double>();
 			double lambda = brentsmethod(T, targetphid, newphid);
 			t = T.findlambda(lambda);
 		}
@@ -869,6 +893,101 @@ public:
 		for (size_t i = 0; i < nData; i++) {
 			Wd(i, i) = s / (Err[i] * Err[i]);
 		}
+	}
+
+	eBracketResult brackettarget_new(cTrialCache& T, const double target, const double currentlambda)
+	{
+		bool dostepfactorsearch = false;
+		cInversionLineSearcher s(target);
+		s.set_ytol(target * 0.01);
+		s.set_maxtrials(10);
+		std::vector<double> xlist;
+		if (CIS.iteration < 200) {
+			//xlist = increment<double>(32, 8.0, -0.25);
+			//s.set_maxtrials(xlist.size() * 2);
+			//xlist = {
+			//	std::log10(currentlambda * 100000.0),
+			//	std::log10(currentlambda * 10000.0),
+			//	std::log10(currentlambda * 1000.0),
+			//	std::log10(currentlambda * 100.0),
+			//	std::log10(currentlambda * 10.0),
+			//	std::log10(currentlambda),
+			//	std::log10(currentlambda / 10.0)
+			//};
+			//s.set_maxtrials(xlist.size() + 10);
+
+			//double lambda = currentlambda * 10000;
+			double lambda = 1e8;
+			if (CIS.iteration > 3) lambda = currentlambda;
+
+			const double& currentphid = CIS.phid;
+			double phid = 0;
+			do {
+				phid = lambda_trial_function(T, lambda, dostepfactorsearch);
+				s.add_pair(std::log10(lambda), phid);
+				if (Verbose) T.print(CIS.lambda, CIS.phid);
+				if (T.is_target_braketed()) {
+					return eBracketResult::BRACKETED;//target bracketed		
+				}
+				else if (T.is_min_braketed()) {
+					return eBracketResult::MINBRACKETED;//target bracketed		
+				}
+				lambda *= 0.1;
+			} while (phid * 1.001 > currentphid);
+
+			do {
+				phid = lambda_trial_function(T, lambda, dostepfactorsearch);
+				s.add_pair(std::log10(lambda), phid);
+				if (Verbose) T.print(CIS.lambda, CIS.phid);
+
+				if (T.is_target_braketed()) {
+					return eBracketResult::BRACKETED;//target bracketed		
+				}
+				else if (T.is_min_braketed()) {
+					return eBracketResult::MINBRACKETED;//target bracketed		
+				}
+				lambda *= 0.9;
+			} while (phid > target);
+		}
+		else {
+			s.set_maxtrials(10);
+			xlist = {
+				std::log10(currentlambda * 10.0),
+				std::log10(currentlambda),
+				std::log10(currentlambda * 0.5),
+				std::log10(currentlambda * 0.25)
+			};
+		}
+
+		double x;
+		for (size_t i = 0; i < xlist.size(); i++) {
+			double x = xlist[i];
+			double phid = lambda_trial_function(T, pow10(x), dostepfactorsearch);
+			if (Verbose) T.print(CIS.lambda, CIS.phid);
+
+			s.add_pair(x, phid);
+			if (T.is_target_braketed()) {
+				return eBracketResult::BRACKETED;//target bracketed		
+			}
+		}
+
+		while (s.next_x(x)) {
+			double phid = lambda_trial_function(T, pow10(x), dostepfactorsearch);
+			if (Verbose) T.print(CIS.lambda, CIS.phid);
+
+			s.add_pair(x, phid);
+			if (T.is_target_braketed()) {
+				return eBracketResult::BRACKETED;//target bracketed		
+			}
+		}
+
+		if (T.maxphid() < target) {
+			return eBracketResult::ALLBELOW;//all below target	
+		}
+		else if (T.is_min_braketed()) {
+			return eBracketResult::MINBRACKETED;//min bracketed											
+		}
+		else return eBracketResult::ALLABOVE;//all above target
 	}
 };
 

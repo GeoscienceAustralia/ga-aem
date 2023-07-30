@@ -15,25 +15,22 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 using DoublePair = std::pair<double, double>;
 
-class cInversionLineSearcher{
+class cInversionLineSearcher {
 
-	size_t maxtrials = 20;	
+	size_t maxtrials = 20;
 	double target;
 	std::vector<std::pair<double, double>> trials;
 	double xtol = 1e-8;
-	double ytol =  0.0;	
+	double ytol = 0.0;
 
 public:
 
-	cInversionLineSearcher(const double& _target){
-		target  = _target;
-		ytol    = target*0.01;		
+	cInversionLineSearcher(const double& _target) {
+		target = _target;
+		ytol = target * 0.01;
 	};
 
-	~cInversionLineSearcher() {
-		//std::cerr << *this;
-		//std::cout << *this;
-	};
+	~cInversionLineSearcher() {	};
 
 	void set_ytol(const double& _ytol) {
 		ytol = _ytol;
@@ -64,9 +61,9 @@ public:
 		}
 		return false;
 	};
-	
+
 	bool next_x(double& nextx) const {
-		
+
 		if (trials.size() >= maxtrials)return false;
 
 		nextx = 0.0;
@@ -80,13 +77,10 @@ public:
 			return xtol_ok(nextx);
 		}
 		else if (trials.size() == 2) {
-			double y0 = trials[0].second;
-			double y1 = trials[1].second;
-			if (y1 < y0) {
-				nextx = linear_estimate(0, 1);
-				return xtol_ok(nextx);				
-			}
-			return false;
+			const double& y0 = trials[0].second;
+			const double& y1 = trials[1].second;
+			nextx = linear_estimate(0, 1);
+			return xtol_ok(nextx);
 		}
 
 		size_t ibrak;
@@ -101,59 +95,61 @@ public:
 			nextx = quadratic_estimate(imin - 1, imin, imin + 1);
 			return xtol_ok(nextx);
 		}
-
-		if (ymin >= target) {
-			if (imin == 0) {	
+		else if (ymin >= target) {
+			if (imin == 0) {
 				const double& x0 = trials[0].first;
 				const double& x1 = trials[1].first;
-				const double dx = x1-x0;
-				nextx = x0 - dx / 2.0;
+				const double dx = x1 - x0;
+				nextx = x0 - dx;
 				return xtol_ok(nextx);
 			}
 			else if (imin == trials.size() - 1) {
 				const double& x0 = trials[trials.size() - 2].first;
-				const double& x1 = trials[trials.size() - 1].first;								
+				const double& x1 = trials[trials.size() - 1].first;
 				const double dx = x1 - x0;
-				nextx = x1 + dx / 2.0;
+				nextx = x1 + dx;
 				return xtol_ok(nextx);
 			}
 		}
-		else {			
+		else {
 			double xmax, ymax;
 			size_t imax = max_index(xmax, ymax);
 			if (imax == 0) {
 				const double dx = trials[1].first - trials[0].first;
-				nextx = trials[0].first - dx / 2.0;				
+				nextx = trials[0].first - dx / 2.0;
 				return xtol_ok(nextx);
 			}
 			else if (imax == trials.size() - 1) {
 				const double dx = trials[trials.size() - 1].first - trials[trials.size() - 2].first;
-				nextx = trials[trials.size() - 1].first + dx / 2.0;				
+				nextx = trials[trials.size() - 1].first + dx / 2.0;
 				return xtol_ok(nextx);
 			}
-			else {	
+			else {
 				//Must be convex up 
 				std::cerr << "Warning unexpected circumstance" << std::endl;;
 				std::cout << "Warning unexpected circumstance" << std::endl;;
-			    //char c; std::cin >> c;
+				//char c; std::cin >> c;
 				return false;
 			}
 		}
 		return false;
 	};
-	
+
 	double linear_estimate(const size_t i0, const size_t i1) const {
-		double x0 = trials[i0].first;
-		double y0 = trials[i0].second;
-		double x1 = trials[i1].first;
-		double y1 = trials[i1].second;
-		if (x1==x0) {
+		const double& x0 = trials[i0].first;
+		const double& y0 = trials[i0].second;
+		const double& x1 = trials[i1].first;
+		const double& y1 = trials[i1].second;
+		if (x1 == x0) {
 			glog.errormsg(_SRC_ + "\nDivide by zero error 'a' in linear estimate");
 		}
+		if (y1 == y0) {
+			return (x0 + x1) / 2.0;
+		}
 		double m = (y1 - y0) / (x1 - x0);
-		double c = y0 - m*x0;
-		double x3 = (target - c) / m;
-		return x3;
+		double c = y0 - m * x0;
+		double x = (target - c) / m;
+		return x;
 	}
 
 	double quadratic_estimate(const size_t i1, const size_t i2, const size_t i3) const {
@@ -169,7 +165,7 @@ public:
 			glog.errormsg(_SRC_ + "\nDivide by zero error 'denom' in quadratic estimate");
 		}
 		double a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom;
-		double b = (x3*x3 * (y1 - y2) + x2*x2 * (y3 - y1) + x1*x1 * (y2 - y3)) / denom;
+		double b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / denom;
 		//double c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / denom;
 		double xmin = -b / (2.0 * a);
 		if (a == 0) {
@@ -180,12 +176,12 @@ public:
 	}
 
 	bool is_target_braketed(size_t& ibrak)const {
-		for (size_t k = 0; k < trials.size() - 1; k++){
-			if (trials[k].second > target && trials[k + 1].second < target){
+		for (size_t k = 0; k < trials.size() - 1; k++) {
+			if (trials[k].second > target && trials[k + 1].second < target) {
 				ibrak = k;
 				return true;
 			}
-			else if (trials[k].second < target && trials[k + 1].second > target){
+			else if (trials[k].second < target && trials[k + 1].second > target) {
 				ibrak = k;
 				return true;
 			}
@@ -195,7 +191,7 @@ public:
 
 	bool is_min_braketed(size_t& imin, double& xmin, double& ymin)const {
 		imin = min_index(xmin, ymin);
-		if (imin > 0 && imin < trials.size() - 1){
+		if (imin > 0 && imin < trials.size() - 1) {
 			return true;
 		}
 		return false;
@@ -219,19 +215,19 @@ public:
 	};
 
 	DoublePair nearest() const {
-		return trials[nearest_index()];		
+		return trials[nearest_index()];
 	};
 
 	size_t min_index(double& xmin, double& ymin) const {
 		size_t index = 0;
 		xmin = trials[0].first;
 		ymin = trials[0].second;
-		for (size_t k = 1; k < trials.size(); k++){
-			if (trials[k].second < ymin){
+		for (size_t k = 1; k < trials.size(); k++) {
+			if (trials[k].second < ymin) {
 				xmin = trials[k].first;
 				ymin = trials[k].second;
 				index = k;
-			}			
+			}
 		}
 		return index;
 	};
@@ -250,7 +246,7 @@ public:
 		return index;
 	};
 
-	friend std::ostream& operator<<(std::ostream& os, const cInversionLineSearcher& s) {		
+	friend std::ostream& operator<<(std::ostream& os, const cInversionLineSearcher& s) {
 		os << "*Target=" << s.target << std::endl;
 		for (size_t k = 0; k < s.trials.size(); k++) {
 			os << "Frac=" << std::setw(10) << s.trials[k].first << "\tPhiD=" << std::setw(10) << s.trials[k].second << std::endl;
