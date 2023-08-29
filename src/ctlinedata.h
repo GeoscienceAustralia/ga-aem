@@ -151,7 +151,7 @@ public:
 		}
 
 		for (int si = 0; si < nsamples; si++){
-			fid[si] = M[si][fcol.from];
+			if(fcol.from >=0 ) fid[si] = M[si][fcol.from];
 			x[si] = M[si][xcol.from];
 			y[si] = M[si][ycol.from];
 			e[si] = M[si][ecol.from];

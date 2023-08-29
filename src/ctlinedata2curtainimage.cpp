@@ -262,8 +262,8 @@ public:
 		h1 = hlength;
 		nhpixels = 1 + (int)(hlength / dh);
 
-		double zmin = DBL_MAX;
-		double zmax = -DBL_MAX;
+		double zmin = (std::numeric_limits<double>::max)();
+		double zmax = (std::numeric_limits<double>::lowest)();
 		for (int si = 0; si < D.nsamples; si++) {
 			if (D.z[si][D.nlayers] < zmin)zmin = D.z[si][D.nlayers];
 			if (D.z[si][0] > zmax)zmax = D.z[si][0];

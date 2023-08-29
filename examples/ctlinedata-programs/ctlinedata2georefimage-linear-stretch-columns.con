@@ -1,7 +1,8 @@
 Control Begin
 
 	Input Begin
-		DataFiles    = example-inversion-output\lines\*.asc
+		//DataFiles  = example-inversion-output\lines\*.asc
+		DataFiles    = example-inversion-output\inversion.output.dat
 		Subsample    = 1
 		Line         = Column 5
 		Easting      = Column 9
@@ -31,8 +32,8 @@ Control Begin
 		ColourBar      = yes
 		ColourBarTicks = 0.001 0.01 0.1 1
 
-		SaveJPG = false
 		SavePNG = true
+		SaveJPG = false
 
 		//AlphaRGB quartet in range [0-255], A=0->transparent A=255->opague
 		AirColour        = 0 255 255 255
