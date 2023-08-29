@@ -1,7 +1,7 @@
 Control Begin
 
 	Input Begin
-		DataFiles    = output\lines\*.asc
+		DataFiles    = example-inversion-output\lines\*.asc
 		Subsample    = 1
 		Line         = Column 5
 		Easting      = Column 9

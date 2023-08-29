@@ -72,6 +72,9 @@
     <ClInclude Include="..\..\submodules\ticpp\tinyxml.h">
       <Filter>tinyxml</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_formats.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">

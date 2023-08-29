@@ -7,10 +7,12 @@
 build*/
 install*/
 
-# Ignore output files from the examples
+# Ignore output files from the examples folder
 examples/**/output
 examples/**/*.out
 examples/**/*.log
+examples/ctlinedata-programs/earthsci
+examples/ctlinedata-programs/georef_sections
 
 # Ignore output from julia synthetic tests
 julia/output

@@ -1,0 +1,46 @@
+DEFN   ST=RECD,RT=COMM;RT:A4;COMMENTS:A76
+DEFN 1 ST=RECD,RT=; uniqueid : I12 : DESC=Inversion sequence number
+DEFN 2 ST=RECD,RT=; Project_GA : I6 : NULL=-9999, LONGNAME=GA Project Number
+DEFN 3 ST=RECD,RT=; Date : I9 : NULL=-9999999, LONGNAME=Date (yyyymmdd)
+DEFN 4 ST=RECD,RT=; Flight : I4 : NULL=-99, LONGNAME=Flight Number
+DEFN 5 ST=RECD,RT=; Line : I10 : NULL=-99999999, LONGNAME=Line Number
+DEFN 6 ST=RECD,RT=; Fiducial : F8.1 : NULL=-999999.9, LONGNAME=Fiducial Number
+DEFN 7 ST=RECD,RT=; Longitude : F13.7 : NULL=-999.9999999, UNITS=deg, LONGNAME=Longitude, extra1=DATUM, extra2=GDA94
+DEFN 8 ST=RECD,RT=; Latitude : F12.7 : NULL=-99.9999999, UNITS=deg, LONGNAME=Latitude, extra1=DATUM, extra2=GDA94
+DEFN 9 ST=RECD,RT=; Easting : F10.2 : NULL=-99999.99, UNITS=m, LONGNAME=Easting, extra1=PROJECTION, extra2=GDA94/MGA54
+DEFN 10 ST=RECD,RT=; Northing : F11.2 : NULL=-999999.99, UNITS=m, LONGNAME=Northing, extra1=PROJECTION, extra2=GDA94/MGA54
+DEFN 11 ST=RECD,RT=; Lidar : F8.2 : NULL=-999.99, UNITS=m, LONGNAME=Final Lidar altimeter
+DEFN 12 ST=RECD,RT=; Radalt : F8.2 : NULL=-999.99, UNITS=m, LONGNAME=Final Radar altimeter
+DEFN 13 ST=RECD,RT=; DTM : F8.2 : NULL=-999.99, UNITS=m, LONGNAME=Final Ground Elevation (AHD), extra1=DATUM, extra2=AHD
+DEFN 14 ST=RECD,RT=; input_tx_height : F9.2 : UNITS=m, DESC=Input Tx height above ground level
+DEFN 15 ST=RECD,RT=; input_tx_roll : F9.2 : UNITS=degrees, DESC=Input Tx roll - left side up + ve
+DEFN 16 ST=RECD,RT=; input_tx_pitch : F9.2 : UNITS=degrees, DESC=Input Tx pitch - nose down + ve
+DEFN 17 ST=RECD,RT=; input_tx_yaw : F9.2 : UNITS=degrees, DESC=Input Tx yaw - turn left + ve
+DEFN 18 ST=RECD,RT=; input_txrx_dx : F9.2 : UNITS=m, DESC=Input Tx - Rx horizonatl inline separation
+DEFN 19 ST=RECD,RT=; input_txrx_dy : F9.2 : UNITS=m, DESC=Input Tx - Rx horizonatl transverse separation
+DEFN 20 ST=RECD,RT=; input_txrx_dz : F9.2 : UNITS=m, DESC=Input Tx - Rx vertical separation
+DEFN 21 ST=RECD,RT=; input_rx_roll : F9.2 : UNITS=degrees, DESC=Input Rx roll - left side up + ve
+DEFN 22 ST=RECD,RT=; input_rx_pitch : F9.2 : UNITS=degrees, DESC=Input Rx pitch - nose down + ve
+DEFN 23 ST=RECD,RT=; input_rx_yaw : F9.2 : UNITS=degrees, DESC=Input Rx yaw - turn left + ve
+DEFN 24 ST=RECD,RT=; ndata : I4 : DESC=Number of data in inversion
+DEFN 25 ST=RECD,RT=; nlayers : I4 : DESC=Number of layers 
+DEFN 26 ST=RECD,RT=; conductivity : 30E15.6 : UNITS=S/m, DESC=Layer conductivity
+DEFN 27 ST=RECD,RT=; thickness : 30F9.2 : UNITS=m, DESC=Layer thickness
+DEFN 28 ST=RECD,RT=; depth_top : 30F9.2 : UNITS=m, DESC=Depth to top of layer
+DEFN 29 ST=RECD,RT=; depth_bottom : 30F9.2 : UNITS=m, DESC=Depth to bottom of layer
+DEFN 30 ST=RECD,RT=; depth_bottom_negative : 30F9.2 : UNITS=m, DESC=Negative of depth to bottom of layer
+DEFN 31 ST=RECD,RT=; elevation_interface : 30F9.2 : UNITS=m, DESC=Elevation of interface
+DEFN 32 ST=RECD,RT=; conductivity_sensitivity : 30E15.6 : DESC=Conductivity parameter sensitivity
+DEFN 33 ST=RECD,RT=; conductivity_uncertainty : 30E15.6 : UNITS=log10(S/m), DESC=Conductivity parameter uncertainty
+DEFN 34 ST=RECD,RT=; observed_EMSystem_1_ZS : 15E15.6 : UNITS=fT, DESC=Observed EMSystem 1 Z-component secondary field
+DEFN 35 ST=RECD,RT=; noise_EMSystem_1_ZS : 15E15.6 : UNITS=fT, DESC=Estimated noise EMSystem 1 Z-component secondary field
+DEFN 36 ST=RECD,RT=; predicted_EMSystem_1_ZS : 15E15.6 : UNITS=fT, DESC=Predicted EMSystem 1 Z-component secondary field
+DEFN 37 ST=RECD,RT=; Alpha_RefCon : E15.6 : DESC=Conductivity reference model constraint alpha parameter
+DEFN 38 ST=RECD,RT=; Phi_RefCon : E15.6 : DESC=Conductivity reference model constraint model norm
+DEFN 39 ST=RECD,RT=; Alpha_VCsmth : E15.6 : DESC=Vertical conductivity smoothness constraint alpha parameter
+DEFN 40 ST=RECD,RT=; Phi_VCsmth : E15.6 : DESC=Vertical conductivity smoothness constraint model norm
+DEFN 41 ST=RECD,RT=; PhiD : E15.6 : DESC=Normalised data misfit
+DEFN 42 ST=RECD,RT=; PhiM : E15.6 : DESC=Combined model norm
+DEFN 43 ST=RECD,RT=; Lambda : E15.6 : DESC=Lambda regularization parameter
+DEFN 44 ST=RECD,RT=; Iterations : I4 : DESC=Number of iterations
+DEFN 45 ST=RECD,RT=; END DEFN

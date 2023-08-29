@@ -12,13 +12,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 
 #include "blocklanguage.h"
-#include "asciicolumnfile.h"
+#include "file_formats.h"
 
 class cCTLineData {
 
 private:
-	cAsciiColumnFile A;
 	cBlock B;
+	std::vector<cAsciiColumnField> fields;
 
 public:
 	int linenumber;
@@ -36,9 +36,23 @@ public:
 	std::vector<std::vector<double>> cp10;
 	std::vector<std::vector<double>> cp90;
 
-	cCTLineData(const cBlock& b, const std::string& dfnfile){
+	cCTLineData(const cBlock& b, const std::vector<cAsciiColumnField>& _fields) {
 		B = b;
-		A.parse_dfn_header(dfnfile);
+		fields = _fields;
+	}
+
+	cCTLineData(const cBlock& b, const std::string& headerfile){
+		B = b;
+		cASEGGDF2Header A(headerfile);
+		if (A.isvalid()) {
+			fields = A.getfields();
+		}
+		else {
+			cHDRHeader H(headerfile);
+			if (H.isvalid()) {
+				fields = H.getfields();
+			}
+		}
 	}
 
 	void load(const std::vector<std::string>& L)
@@ -49,14 +63,14 @@ public:
 		int subsample = B.getintvalue("Subsample");
 		if (isdefined(subsample) == false)subsample = 1;
 
-		cRange<size_t> lcol = getcolumns("Line");
-		cRange<size_t> fcol = getcolumns("Fiducial");
-		cRange<size_t> xcol = getcolumns("Easting");
-		cRange<size_t> ycol = getcolumns("Northing");
-		cRange<size_t> ecol = getcolumns("Elevation");
+		cRange<int> lcol = getcolumns("Line");
+		cRange<int> fcol = getcolumns("Fiducial");
+		cRange<int> xcol = getcolumns("Easting");
+		cRange<int> ycol = getcolumns("Northing");
+		cRange<int> ecol = getcolumns("Elevation");
 		
 		bool isresistivity = false;
-		cRange<size_t> crcol = getcolumns("Conductivity");
+		cRange<int> crcol = getcolumns("Conductivity");
 		if (crcol.valid() == false){
 			crcol = getcolumns("Resistivity");
 			isresistivity = true;
@@ -83,7 +97,7 @@ public:
 			glog.logmsg("Unknown InputConductivityUnits %s\n", cunits.c_str());
 		}
 
-		cRange<size_t> cp10col, cp90col;
+		cRange<int> cp10col, cp90col;
 		if (spreadfade){
 			cp10col = getcolumns("Conductivity_p10");
 			cp10col = getcolumns("Conductivity_p90");
@@ -92,7 +106,7 @@ public:
 		//Thickness
 		bool isconstantthickness = false;
 		std::vector<double> constantthickness;						
-		cRange<size_t> tcol = getcolumns("Thickness");
+		cRange<int> tcol = getcolumns("Thickness");
 		if (tcol.valid() == true){
 			isconstantthickness = false;
 		}
@@ -202,36 +216,47 @@ public:
 
 	}
 
-	cRange<size_t> getcolumns(const std::string &token){
-		return getcolumns(B, token, A);
-	}
+	int field_index_by_name(const std::string& fieldname) const {
+		int index = field_index_by_name_impl(fields, fieldname);
+		return index;
+	};
 
-	static cRange<size_t> getcolumns(const cBlock& b, const std::string &token, const cAsciiColumnFile& A){
-
-		std::string s = b.getstringvalue(token);
-
-		cRange<size_t> r;
-		int status;
-		status = sscanf(s.c_str(), "Column %zu-%zu", &r.from, &r.to);
-		if (status == 1){
+	static bool parse_column_range(const std::string& token, cRange<int>& r) {
+		int status = sscanf(token.c_str(), "Column %d-%d", &r.from, &r.to);
+		if (status == 1) {
 			r.to = r.from;
 			r.from--; r.to--;
-			return r;
+			return true;
 		}
-		else if (status == 2){
+		else if (status == 2) {
 			r.from--; r.to--;
+			return true;
+		}
+		else return false;
+	}
+
+	cRange<int> getcolumns(const std::string& token) {
+		return getcolumns_block_fields(B, token);
+	};
+
+	cRange<int> getcolumns_block_fields(const cBlock& b, const std::string &fieldkey){
+
+		std::string fieldvalue = b.getstringvalue(fieldkey);
+		cRange<int> r(-1,-1);
+
+		if (fields.size() == 0) {
+			bool status = parse_column_range(fieldvalue, r);
 			return r;
 		}
-		else{
-			size_t findex = A.fieldindexbyname(s);
-			if (findex >= 0 && findex < A.fields.size()) {
-				r.from = (int)A.fields[findex].startcol();
-				r.to = (int)A.fields[findex].endcol();
-				//r.from++; r.to++;
+		else {
+			int findex = field_index_by_name(fieldvalue);
+			if (findex >= 0 && findex < fields.size()) {
+				r.from = fields[findex].startcol();
+				r.to = fields[findex].endcol();
 				return r;
 			}
-			return r;//invalid;
-		}		
+		}
+		return r;//invalid;
 	}
 	
 
