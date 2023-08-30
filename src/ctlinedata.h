@@ -25,7 +25,7 @@ public:
 	size_t nlayers;
 	size_t nsamples;
 	bool spreadfade = false;
-	std::string inputdatumprojection;
+	std::string inputdatumprojection = "Unspecified";
 	std::vector<double> fid;
 	std::vector<double> x;
 	std::vector<double> y;
@@ -58,7 +58,7 @@ public:
 	void load(const std::vector<std::string>& L)
 	{
 
-		inputdatumprojection = B.getstringvalue("DatumProjection");
+		B.getvalue("DatumProjection", inputdatumprojection);
 
 		int subsample = B.getintvalue("Subsample");
 		if (isdefined(subsample) == false)subsample = 1;
@@ -71,12 +71,12 @@ public:
 		
 		bool isresistivity = false;
 		cRange<int> crcol = getcolumns("Conductivity");
-		if (crcol.valid() == false){
+		if (crcol.from == -1){
 			crcol = getcolumns("Resistivity");
 			isresistivity = true;
 		}
 
-		if (crcol.valid() == false){
+		if (crcol.from == -1){
 			std::string msg = strprint("Either a conductivity or resistivity field must be specified\n") + _SRC_;
 			throw(std::runtime_error(msg));
 		}
@@ -87,11 +87,14 @@ public:
 		if (isdefined(cunits) == false){
 			cscale = 1.0;
 		}
-		else if (strcasecmp(cunits, "S/m") == 0){
+		else if (ciequal(cunits, "S/m")){
 			cscale = 1.0;
 		}
-		else if (strcasecmp(cunits, "mS/m") == 0){
+		else if (ciequal(cunits, "mS/m")){
 			cscale = 0.001;
+		}
+		else if (ciequal(cunits, "Ohm.m")) {
+			cscale = 1.00;
 		}
 		else{
 			glog.logmsg("Unknown InputConductivityUnits %s\n", cunits.c_str());
@@ -105,9 +108,9 @@ public:
 
 		//Thickness
 		bool isconstantthickness = false;
-		std::vector<double> constantthickness;						
+		std::vector<double> constantthickness;
 		cRange<int> tcol = getcolumns("Thickness");
-		if (tcol.valid() == true){
+		if (tcol.from != -1){
 			isconstantthickness = false;
 		}
 		else{

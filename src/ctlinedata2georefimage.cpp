@@ -121,6 +121,8 @@ public:
 		}
 
 		outdir = b.getstringvalue("OutDir");
+		addtrailingseparator(outdir);
+
 		prefix = b.getstringvalue("Prefix");
 		suffix = b.getstringvalue("Suffix");
 
@@ -158,172 +160,6 @@ public:
 		if (nullsclr.size() == 4) NullsColor = Color(nullsclr[0], nullsclr[1], nullsclr[2], nullsclr[3]);
 
 	}
-
-	/*
-	void readdatafile(const cBlock& input, const std::string filename)
-	{
-		int subsample = input.getintvalue("Subsample");
-		if (!isdefined(subsample))subsample = 1;
-
-		std::string lstr = input.getstringvalue("Line");
-		std::string xstr = input.getstringvalue("Easting");
-		std::string ystr = input.getstringvalue("Northing");
-		std::string estr = input.getstringvalue("Elevation");
-
-		bool isresistivity = false;
-		std::string crstr = input.getstringvalue("Conductivity");
-		if (!isdefined(crstr)) {
-			crstr = input.getstringvalue("Resistivity");
-			isresistivity = true;
-		}
-
-		std::string cp10str = input.getstringvalue("Conductivity_p10");
-		std::string cp90str = input.getstringvalue("Conductivity_p90");
-
-		double cscale = 1.0;
-		std::string cunits = input.getstringvalue("InputConductivityUnits");
-		if (!isdefined(cunits)) {
-			cscale = 1.0;
-		}
-		else if (strcasecmp(cunits, "S/m") == 0) {
-			cscale = 1.0;
-		}
-		else if (strcasecmp(cunits, "mS/m") == 0) {
-			cscale = 0.001;
-		}
-		else {
-			glog.logmsg("Unknown InputConductivityUnits %s\n", cunits.c_str());
-		}
-
-		int lcol, xcol, ycol, ecol;
-		int crcol1, crcol2, tcol1, tcol2;
-		int cp10col1, cp10col2;
-		int cp90col1, cp90col2;
-		std::sscanf(lstr.c_str(), "Column %d", &lcol); lcol--;
-		std::sscanf(xstr.c_str(), "Column %d", &xcol); xcol--;
-		std::sscanf(ystr.c_str(), "Column %d", &ycol); ycol--;
-		std::sscanf(estr.c_str(), "Column %d", &ecol); ecol--;
-
-		std::sscanf(crstr.c_str(), "Column %d-%d", &crcol1, &crcol2); crcol1--; crcol2--;
-		nlayers = crcol2 - crcol1 + 1;
-
-		if (spreadfade) {
-			std::sscanf(cp10str.c_str(), "Column %d-%d", &cp10col1, &cp10col2); cp10col1--; cp10col2--;
-			std::sscanf(cp90str.c_str(), "Column %d-%d", &cp90col1, &cp90col2); cp90col1--; cp90col2--;
-		}
-
-		bool isconstantthickness = false;
-		std::vector<double> constantthickness;
-		std::string tstr = input.getstringvalue("Thickness");
-		if (std::sscanf(tstr.c_str(), "Column %d-%d", &tcol1, &tcol2) == 2) {
-			tcol1--; tcol2--;
-			isconstantthickness = false;
-		}
-		else {
-			constantthickness = input.getdoublevector("Thickness");
-			tcol1 = 0; tcol2 = 0;
-			isconstantthickness = true;
-			if (constantthickness.size() == 0) {
-				glog.errormsg(_SRC_, "Thickness not set\n");
-			}
-			else if (constantthickness.size() > 1 && constantthickness.size() < nlayers - 1) {
-				glog.errormsg(_SRC_, "Thickness not set correctly\n");
-			}
-			else if (constantthickness.size() == 1) {
-				constantthickness = std::vector<double>(nlayers - 1, constantthickness[0]);
-			}
-			else {
-				//all good
-			}
-
-		}
-
-		FILE* fp = fileopen(filename, "r");
-		std::string str;
-		std::vector<std::vector<double>> M;
-
-		int k = 0;
-		while (filegetline(fp, str)) {
-			if (k % subsample == 0) {
-				M.push_back(getdoublevector(str.c_str(), " "));
-			}
-			k++;
-		}
-		fclose(fp);
-
-
-		nsamples = (int)M.size();
-		linenumber = (int)M[0][lcol];
-
-		x.resize(nsamples);
-		y.resize(nsamples);
-		e.resize(nsamples);
-		z.resize(nsamples);
-		c.resize(nsamples);
-		if (spreadfade) {
-			cp10.resize(nsamples);
-			cp90.resize(nsamples);
-		}
-		for (int si = 0; si < nsamples; si++) {
-			x[si] = M[si][xcol];
-			y[si] = M[si][ycol];
-			e[si] = M[si][ecol];
-
-			c[si].resize(nlayers);
-			for (int li = 0; li < nlayers; li++) {
-				c[si][li] = M[si][crcol1 + li];
-				if (c[si][li] > 0.0) {
-					if (isresistivity)c[si][li] = 1.0 / c[si][li];
-					c[si][li] *= cscale;
-				}
-			}
-
-			if (spreadfade) {
-				cp10[si].resize(nlayers);
-				for (int li = 0; li < nlayers; li++) {
-					cp10[si][li] = M[si][cp10col1 + li];
-					if (cp10[si][li] > 0.0) {
-						cp10[si][li] *= cscale;
-					}
-				}
-
-				cp90[si].resize(nlayers);
-				for (int li = 0; li < nlayers; li++) {
-					cp90[si][li] = M[si][cp90col1 + li];
-					if (cp90[si][li] > 0.0) {
-						cp90[si][li] *= cscale;
-					}
-				}
-			}
-
-			z[si].resize(nlayers + 1);
-			z[si][0] = e[si];
-			for (int li = 0; li < nlayers; li++) {
-
-				double t;
-				if (li < nlayers - 1) {
-					if (isconstantthickness == true) {
-						t = constantthickness[li];
-					}
-					else {
-						t = M[si][tcol1 + li];
-					}
-				}
-				else {
-					if (isconstantthickness == true) {
-						t = constantthickness[li - 1];
-					}
-					else {
-						t = M[si][tcol1 + li - 1];
-					}
-				}
-
-				z[si][li + 1] = z[si][li] - t;
-
-			}
-		}
-	}
-	*/
 
 	void process() {
 		calculateextents();
@@ -796,7 +632,6 @@ int main(int argc, char** argv)
 
 				cGeorefSection S(D);
 				S.getoptions(sb);
-				//S.readdatafile(ib, filelist[i].c_str());
 				S.process();
 			}
 		}

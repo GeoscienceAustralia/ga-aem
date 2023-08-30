@@ -5,8 +5,6 @@ VisualStudioVersion = 17.6.33723.286
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2georefimage", "ctlinedata2georefimage.vcxproj", "{BC29E294-2FFF-45E2-BDF1-6D98691142D6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2curtainimage", "..\ctlinedata2curtainimage\ctlinedata2curtainimage.vcxproj.vcxproj", "{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -21,14 +19,6 @@ Global
 		{BC29E294-2FFF-45E2-BDF1-6D98691142D6}.Release|Win32.ActiveCfg = Release|x64
 		{BC29E294-2FFF-45E2-BDF1-6D98691142D6}.Release|x64.ActiveCfg = Release|x64
 		{BC29E294-2FFF-45E2-BDF1-6D98691142D6}.Release|x64.Build.0 = Release|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|Win32.ActiveCfg = Debug|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|Win32.Build.0 = Debug|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x64.ActiveCfg = Debug|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x64.Build.0 = Debug|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|Win32.ActiveCfg = Release|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|Win32.Build.0 = Release|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|x64.ActiveCfg = Release|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

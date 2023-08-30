@@ -3,8 +3,6 @@ echo off
 REM execute (Call) "ga-aem_vars.bat" batch script to add executables and dependencies to your search path
 CALL %GA-AEM_ROOT%\scripts\ga-aem_vars.bat
 
-
-
 REM using column numbers to define fields 
 ctlinedata2georefimage.exe ctlinedata2georefimage-log-stretch-columns.con
 
