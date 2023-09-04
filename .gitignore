@@ -14,6 +14,7 @@ examples/**/*.log
 examples/ctlinedata-programs/earthsci
 examples/ctlinedata-programs/georef_sections
 examples/ctlinedata-programs/sgrids
+examples/ctlinedata-programs/grids
 
 # Ignore output from julia synthetic tests
 julia/output

@@ -345,17 +345,6 @@ public:
 			imagey[i] = linearinterp(D.linedistance[a], D.y[a], D.linedistance[b], D.y[b], hp);;
 			imageelevation[i] = linearinterp(D.linedistance[a], D.e[a], D.linedistance[b], D.e[b], hp);
 
-
-			/*if (i > 10270) {
-				std::cout << i << " ";
-				std::cout << k << " ";
-				std::cout << std::setprecision(10) << D.linedistance[k] << " ";
-				std::cout << std::setprecision(10) << D.x[k] << " ";
-				std::cout << std::setprecision(10) << D.y[k] << " ";
-				std::cout << std::setprecision(10) << D.y[k+1] << " ";
-				std::cout << std::endl;
-			}*/
-
 			for (int j = vp1; j <= vp0; j++) {
 				bm.SetPixel(i, j, BkgColor);
 
