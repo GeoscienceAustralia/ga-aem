@@ -182,6 +182,13 @@ tdlib.forwardmodel.restype  = None;
 tdlib.derivative.argtypes = [c_void_p, c_int, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double)];
 tdlib.derivative.restype  = None;
 
+tdlib.fm_dlogc.argtypes = [c_void_p,c_double,
+                           c_double,c_double,c_double,
+                           c_double,c_double,c_double,
+                           c_double,c_double,c_double,
+                           c_int, POINTER(c_double), POINTER(c_double),
+                           POINTER(c_double)];
+tdlib.fm_dlogc.restype  = None;
 class TDAEMSystem:
     """TDAEMSystem Class"""
 
@@ -255,3 +262,38 @@ class TDAEMSystem:
                          cptr(R.SX),cptr(R.SY),cptr(R.SZ));
         return R;
 
+    def fm_dlogc(self, G, E):
+
+        nchan = (1+self.nwindows());
+        ncomp = 3;
+        ncalc = (1+E.nlayers());
+        len = nchan * ncomp * ncalc;
+
+        tmp = np.zeros(len, dtype=np.double, order='C')
+
+
+        tdlib.fm_dlogc(self.handle, G.tx_height,
+                        G.tx_roll,G.tx_pitch,G.tx_yaw,
+                        G.txrx_dx,G.txrx_dy,G.txrx_dz,
+                        G.rx_roll,G.rx_pitch,G.rx_yaw,
+                        E.nlayers(),cptr(E.conductivity),cptr(E.thickness),
+                        cptr(tmp)
+                       )
+
+        tmp = np.reshape(tmp,(ncalc, ncomp, nchan));
+
+        R = Response(self.nwindows())
+
+        R._PX[0] = tmp[0, 0, 0]
+        R._PY[0] = tmp[0, 1, 0]
+        R._PZ[0] = tmp[0, 2, 0]
+
+        R._SX = tmp[0, 0, 1:]
+        R._SY = tmp[0, 1, 1:]
+        R._SZ = tmp[0, 2, 1:]
+
+        Jx = tmp[1:, 0, 1:]
+        Jy = tmp[1:, 1, 1:]
+        Jz = tmp[1:, 2, 1:]
+
+        return R, Jx, Jy, Jz
