@@ -1,6 +1,6 @@
 #!/bin/sh
 
-module load gcc/11.1.0
+module load gcc/13.2.0
 module load cmake/3.21.4
 module load fftw3/3.3.8
 module load netcdf/4.8.0
