@@ -9,6 +9,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #ifndef _gaaem_version_H
 #define _gaaem_version_H
 
-constexpr auto GAAEM_VERSION = "Release-20230904";
+constexpr auto GAAEM_VERSION = "Release-20240313";
 
 #endif
