@@ -278,7 +278,7 @@ public:
 	double targetphid = 0.0;
 	double phid = 0.0;
 	double phim = 0.0;
-	
+
 	Vector pred;
 	Vector param;
 
@@ -398,12 +398,7 @@ private:
 			msg << "  Phid: " << t.phid << std::endl;
 			std::cout << msg.str();
 			std::cerr << msg.str();
-
-			//std::cout << dm.transpose() << std::endl;
-			//std::cerr << dm.transpose() << std::endl;
 		};
-
-		//std::cout << s << std::endl;
 		return t;
 	}
 

@@ -2710,7 +2710,7 @@ public:
 		const Eigen::LLT<Matrix> lltOfA(A);
 		if (lltOfA.info() == Eigen::NumericalIssue)
 		{
-			std::cerr << "The matrix A is possibly non semi-positive definite" << std::endl << A << std::endl;
+			std::cerr << "At " << bunch_id() << ": The matrix A is possibly non semi - positive definite" << std::endl << A << std::endl;
 		}
 		Vector x = lltOfA.solve(b);
 		return x;
