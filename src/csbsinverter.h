@@ -358,8 +358,6 @@ class cSBSInverter : public cInverter {
 	size_t nScalingParam = 0;
 	size_t cOffset = 0;//Offset within sample of conductivity parameters
 	size_t tOffset = 0;//Offset within sample of thickness parameters
-	//size_t gOffset = 0;//Offset within sample of geometry parameters
-	//size_t sOffset = 0;//Offset within whole inversion
 
 	size_t nSystems = 0;
 	size_t pointsoutput = 0;
@@ -464,9 +462,7 @@ public:
 		}
 	};
 
-	~cSBSInverter() {
-		//std::cout << "Destroying cSBSInverter\n";
-	}
+	~cSBSInverter() {};
 
 	void loadcontrolfile(const std::string& filename)
 	{
@@ -852,13 +848,11 @@ public:
 		if (solve_conductivity()) {
 			fdC.offset = 0;
 			tOffset += nLayers;
-			//gOffset += nLayers;
 			nParamPerSounding += nLayers;
 		}
 
 		if (solve_thickness()) {
 			fdT.offset = (int)tOffset;
-			//gOffset += nLayers-1;
 			nParamPerSounding += nLayers - 1;
 		}
 
@@ -1362,9 +1356,6 @@ public:
 				C.data[si] = mn;
 			}
 		}
-
-		//std::cout << C.data.transpose() << std::endl;
-		//std::cout << C.err.transpose() << std::endl;
 	}
 
 	Vector CableLengths(const Vector& m) {
@@ -1673,7 +1664,7 @@ public:
 			err = err + ErrorAddition;
 		}
 
-		//Work out indices to be culled				
+		//Work out indices to be culled
 		ActiveData.clear();
 		for (size_t i = 0; i < nAllData; i++) {
 			if (!isnull(obs[i]) && !isnull(err[i])) ActiveData.push_back(i);
@@ -1686,7 +1677,6 @@ public:
 		}
 		Err = cull(err);
 		Obs = cull(obs);
-		//std::cerr << std::endl << Obs << std::endl;
 
 		//Check for zero Error values		
 		int nzeroerr = 0;
@@ -2491,7 +2481,7 @@ public:
 	void iterate() {
 		_GSTITEM_
 
-		setup_parameter_bounds();
+			setup_parameter_bounds();
 		CIS.iteration = 0;
 		//CIS.lambda = 1e8;
 		CIS.param = RefParam;

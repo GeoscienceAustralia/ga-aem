@@ -205,7 +205,6 @@ public:
 
 	cTrial maxlambdatrial() { return trials[maxlambdaindex()]; }
 
-
 	bool is_target_braketed()
 	{
 		bool below = false;
@@ -237,7 +236,6 @@ public:
 		}
 		return false;
 	}
-
 
 	void sort_lambda()
 	{
@@ -280,13 +278,7 @@ public:
 	double targetphid = 0.0;
 	double phid = 0.0;
 	double phim = 0.0;
-	//double phic = 0.0;
-	//double phit = 0.0;
-	//double phig = 0.0;
-	//double phivc = 0.0;
-	//double phiqc = 0.0;
-	//double philc = 0.0;
-	//double philg = 0.0;
+	
 	Vector pred;
 	Vector param;
 
@@ -893,101 +885,6 @@ public:
 		for (size_t i = 0; i < nData; i++) {
 			Wd(i, i) = s / (Err[i] * Err[i]);
 		}
-	}
-
-	eBracketResult brackettarget_new(cTrialCache& T, const double target, const double currentlambda)
-	{
-		bool dostepfactorsearch = false;
-		cInversionLineSearcher s(target);
-		s.set_ytol(target * 0.01);
-		s.set_maxtrials(10);
-		std::vector<double> xlist;
-		if (CIS.iteration < 200) {
-			//xlist = increment<double>(32, 8.0, -0.25);
-			//s.set_maxtrials(xlist.size() * 2);
-			//xlist = {
-			//	std::log10(currentlambda * 100000.0),
-			//	std::log10(currentlambda * 10000.0),
-			//	std::log10(currentlambda * 1000.0),
-			//	std::log10(currentlambda * 100.0),
-			//	std::log10(currentlambda * 10.0),
-			//	std::log10(currentlambda),
-			//	std::log10(currentlambda / 10.0)
-			//};
-			//s.set_maxtrials(xlist.size() + 10);
-
-			//double lambda = currentlambda * 10000;
-			double lambda = 1e8;
-			if (CIS.iteration > 3) lambda = currentlambda;
-
-			const double& currentphid = CIS.phid;
-			double phid = 0;
-			do {
-				phid = lambda_trial_function(T, lambda, dostepfactorsearch);
-				s.add_pair(std::log10(lambda), phid);
-				if (Verbose) T.print(CIS.lambda, CIS.phid);
-				if (T.is_target_braketed()) {
-					return eBracketResult::BRACKETED;//target bracketed		
-				}
-				else if (T.is_min_braketed()) {
-					return eBracketResult::MINBRACKETED;//target bracketed		
-				}
-				lambda *= 0.1;
-			} while (phid * 1.001 > currentphid);
-
-			do {
-				phid = lambda_trial_function(T, lambda, dostepfactorsearch);
-				s.add_pair(std::log10(lambda), phid);
-				if (Verbose) T.print(CIS.lambda, CIS.phid);
-
-				if (T.is_target_braketed()) {
-					return eBracketResult::BRACKETED;//target bracketed		
-				}
-				else if (T.is_min_braketed()) {
-					return eBracketResult::MINBRACKETED;//target bracketed		
-				}
-				lambda *= 0.9;
-			} while (phid > target);
-		}
-		else {
-			s.set_maxtrials(10);
-			xlist = {
-				std::log10(currentlambda * 10.0),
-				std::log10(currentlambda),
-				std::log10(currentlambda * 0.5),
-				std::log10(currentlambda * 0.25)
-			};
-		}
-
-		double x;
-		for (size_t i = 0; i < xlist.size(); i++) {
-			double x = xlist[i];
-			double phid = lambda_trial_function(T, pow10(x), dostepfactorsearch);
-			if (Verbose) T.print(CIS.lambda, CIS.phid);
-
-			s.add_pair(x, phid);
-			if (T.is_target_braketed()) {
-				return eBracketResult::BRACKETED;//target bracketed		
-			}
-		}
-
-		while (s.next_x(x)) {
-			double phid = lambda_trial_function(T, pow10(x), dostepfactorsearch);
-			if (Verbose) T.print(CIS.lambda, CIS.phid);
-
-			s.add_pair(x, phid);
-			if (T.is_target_braketed()) {
-				return eBracketResult::BRACKETED;//target bracketed		
-			}
-		}
-
-		if (T.maxphid() < target) {
-			return eBracketResult::ALLBELOW;//all below target	
-		}
-		else if (T.is_min_braketed()) {
-			return eBracketResult::MINBRACKETED;//min bracketed											
-		}
-		else return eBracketResult::ALLABOVE;//all above target
 	}
 };
 
