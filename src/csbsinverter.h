@@ -1428,20 +1428,27 @@ public:
 		}
 	}
 
-	static double log_barrier(const double& L, const double& U, const double& n, const double& x) {
+	static double log_barrier(const double& L, const double& U, const double& n, double& x) {
+		//Make sure calculation is not subject to log(0) or divide by 0
+		if (x <= L) x = L + (U - L) / 1000.0;
+		else if (x >= U) x = U - (U - L) / 1000.0;
+
 		const double v = -std::log(std::pow(((U - x) / (U - L)), n))
 			- std::log(std::pow(((x - L) / (U - L)), n))
 			+ 2.0 * std::log(1.0 / std::pow(2.0, n));
 		return v;
 	}
 
-	static double log_barrier_deriv(const double& L, const double& U, const double& n, const double& x) {
+	static double log_barrier_deriv(const double& L, const double& U, const double& n, double x) {
+		//Make sure calculation is not subject to log(0) or divide by 0
+		if (x <= L) x = L + (U - L) / 1000.0;
+		else if (x >= U) x = U - (U - L) / 1000.0;
+		
 		const double dv = (n * (L + U - 2.0 * x)) / ((L - x) * (U - x));
 		return dv;
 	}
 
 	Vector BoundsConstraint_forward(const Vector& m) {
-		static double eps = std::numeric_limits<double>::epsilon();
 		cNonLinearConstraint& C = NLCbounds;
 		Vector predicted = Vector::Zero(nParam);
 		if (C.alpha == 0.0) return predicted;
@@ -1450,15 +1457,12 @@ public:
 			const double& U = Param_Max[pi];
 			const double& N = 0.5;
 			double x = m[pi];
-			if (x <= L) x = L + eps * (U - L);
-			else if (x >= U) x = U - eps * (U - L);
 			predicted[pi] = log_barrier(L, U, N, x);
 		}
 		return predicted;
 	}
 
 	void BoundsConstraint_jacobian(const Vector& m) {
-		static double eps = std::numeric_limits<double>::epsilon();
 		cNonLinearConstraint& C = NLCbounds;
 		if (C.alpha == 0.0) return;
 
@@ -1468,8 +1472,6 @@ public:
 			const double& U = Param_Max[pi];
 			const double N = 0.5;
 			double x = m[pi];
-			if (x <= L) x = L + eps * (U - L);
-			else if (x >= U) x = U - eps * (U - L);
 			C.J(pi, pi) = log_barrier_deriv(L, U, N, x);
 		}
 	}
@@ -1856,8 +1858,6 @@ public:
 
 		double maxf = max_step_fraction_to_bound(m_old, m_new, dm);
 		if (maxf < 1.0) return dm *= maxf;
-		//elementwise_bound_restrict(m_old, m_new, dm);
-
 		return dm;
 	}
 
@@ -2481,7 +2481,7 @@ public:
 	void iterate() {
 		_GSTITEM_
 
-			setup_parameter_bounds();
+		setup_parameter_bounds();
 		CIS.iteration = 0;
 		//CIS.lambda = 1e8;
 		CIS.param = RefParam;
@@ -2528,9 +2528,7 @@ public:
 
 				Vector g;
 				forwardmodel_and_jacobian(CIS.param, g, J);
-				double svdlambdaestimate = 0;
 				if (CIS.iteration == 0) {
-					svdlambdaestimate = estimate_initial_lambda();
 					CIS.lambda = 1e8;
 					if (OO.Dump) {
 						dump_first_iteration();
@@ -2546,17 +2544,6 @@ public:
 				forwardmodel(m, g);
 				const double phid = phiData(g);
 				percentimprovement = 100.0 * (CIS.phid - phid) / (CIS.phid);
-
-				if (Verbose) {
-					if (CIS.iteration == 0) {
-						std::cout << "SVD lambda estimate = " << svdlambdaestimate << std::endl << std::flush;
-						std::cerr << "SVD lambda estimate = " << svdlambdaestimate << std::endl << std::flush;
-						std::cout << "Ratio: " << t.lambda / svdlambdaestimate << std::endl << std::flush;
-						std::cerr << "Ratio: " << t.lambda / svdlambdaestimate << std::endl << std::flush;
-					}
-					std::cout << "Ratio1: " << CIS.iteration << "\t" << t.lambda << "\t" << t.lambda / CIS.lambda << std::endl << std::flush;
-					std::cerr << "Ratio1: " << CIS.iteration << "\t" << t.lambda << "\t" << t.lambda / CIS.lambda << std::endl << std::flush;
-				}
 
 				if (phid <= CIS.phid) {
 					CIS.iteration++;
@@ -2682,7 +2669,7 @@ public:
 
 		Matrix JtV = J.transpose() * V;
 		Matrix JtVJ = JtV * J;
-
+		
 		Matrix A = JtVJ + lambda * Wm;
 		Vector b = JtV * (d - g + J * m);
 		b += lambda * (Wr * m0);
@@ -2710,7 +2697,7 @@ public:
 		const Eigen::LLT<Matrix> lltOfA(A);
 		if (lltOfA.info() == Eigen::NumericalIssue)
 		{
-			std::cerr << "At " << bunch_id() << ": The matrix A is possibly non semi - positive definite" << std::endl << A << std::endl;
+			std::cerr << "\nAt " << bunch_id() << ": The matrix A is possibly non semi - positive definite" << std::endl << A << std::endl;
 		}
 		Vector x = lltOfA.solve(b);
 		return x;

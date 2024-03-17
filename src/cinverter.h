@@ -310,21 +310,10 @@ private:
 		Vector p = CIS.param + stepfactor * dm;
 		Vector g(nData);
 		forwardmodel(p, g);
+
 		t.phid = phiData(g);
 		t.lambda = lambda;
 		t.stepfactor = stepfactor;
-
-		//if (Verbose) {
-		//	std::ostringstream msg;
-		//	msg << " sf=" << t.stepfactor;
-		//	msg << " phid=" << t.phid << std::endl;
-		//	msg << "   m  " << CIS.param.transpose() << std::endl;
-		//	msg << "   dm " << dm.transpose() << std::endl;
-		//	msg << "   p  " << p.transpose() << std::endl;
-		//	std::cout << msg.str();
-		//	std::cerr << msg.str();
-		//}
-
 		return t;
 	}
 
