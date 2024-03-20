@@ -2,6 +2,7 @@ clc;
 clear all;
 clear mex;
 
+% These examples are setup to be run as if your Matlab current directory is [ga-aem-install-dir]\matlab\examples
 % Add path to the gatdaem1d wrapper .m files and the shared library
 % addpath('..\bin'); % Not needed if already in your Matlab path
 % addpath('..\gatdaem1d_functions'); % Not needed if already in your Matlab path

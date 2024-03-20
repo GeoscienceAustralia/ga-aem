@@ -19,3 +19,13 @@ Directory for the MATLAB interface module (C callable shared libarary) gatdaem1d
 	- [ga-aem-install-dir]/matlab/bin
 	- [ga-aem install dir]/gatdaem1d_functions
 	- [ga-aem install dir]/rjmcmctdem_functions
+
+# Examples
+There are several example of how to use the Matlab interface in the directory [ga-aem-install-dir]\matlab\examples
+- The examples have paths setup to be run as if your Matlab current working directory is [ga-aem-install-dir]\matlab\examples
+- If they are not already added in your Matlab startup.m script, you may need to add the gatdaem1d wrapper function (.m) files and the shared library to you Matlab path at the beginning of each script, for example you may need to uncomment and alter these lines,
+```matlab
+	addpath('..\bin');
+	addpath('..\gatdaem1d_functions');
+	addpath('C:\fftw-3.3.5-dll64');
+```
