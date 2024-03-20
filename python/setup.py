@@ -3,6 +3,7 @@
 # Author: Leon Foks
 # March 10 2017
 # Updated: Ross C Brodie, March 20 2017
+# Updated: Ross C Brodie, March 20 2024
 import sys
 import os
 from os.path import join
@@ -23,7 +24,7 @@ setup(name='gatdaem1d',
       package_dir={'gatdaem1d':'gatdaem1d'},
       package_data={'gatdaem1d':['gatdaem1d.so','gatdaem1d.dll']},
       scripts=[],
-      version=1.0,
+      version=2.0,
       description='Time-domain airborne electromagnetic forward modelling.',
       long_description='Time-domain airborne electromagnetic forward modelling. Python interface to C++ library for forward model and derivative calculations for airborne electromagnetic (AEM) systems used in geophysics.',
       classifiers=[

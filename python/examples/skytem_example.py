@@ -21,8 +21,8 @@ from gatdaem1d import Geometry;
 from gatdaem1d import Response;
 
 #Construct the AEM system class instance
-#stmfile = "../../examples/bhmar-skytem/stmfiles/Skytem-HM.stm";
-stmfile  = "..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm";
+#stmfile = "../../examples/SkyTEM-BHMAR-2009/stmfiles/Skytem-HM.stm";
+stmfile  = "..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm";
 S = TDAEMSystem(stmfile);
 
 #Print the window times

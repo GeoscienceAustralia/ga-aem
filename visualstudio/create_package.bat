@@ -8,7 +8,6 @@ REM SET INSTALL_DIR=..\install-windows-vs2022-ide
 
 MKDIR %INSTALL_DIR%
 XCOPY /I/Y/D bin\x64\Release\*.exe %INSTALL_DIR%\bin
-XCOPY /I/Y/D bin\x64\Release\*.dll %INSTALL_DIR%\bin
 XCOPY /I/Y/D lib\x64\Release\*.lib %INSTALL_DIR%\lib
 
 XCOPY /E/I/Y/D ..\docs %INSTALL_DIR%\docs
