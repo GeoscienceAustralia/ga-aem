@@ -8,7 +8,7 @@
   <PropertyGroup>
     <IncludePath>..\..\submodules\geophysics-netcdf\src;..\..\submodules\geophysics-netcdf\submodules\marray\include\andres;$(IncludePath)</IncludePath>
     <LibraryPath>$(LibraryPath)</LibraryPath>
-    <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemGroup />
   <ItemDefinitionGroup>

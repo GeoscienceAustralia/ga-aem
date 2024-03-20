@@ -66,13 +66,15 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
     <TargetName>gatdaem1d_debug</TargetName>
-    <OutDir>..\..\matlab\bin\x64\</OutDir>
+    <OutDir>..\..\matlab\bin</OutDir>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
     <TargetName>gatdaem1d</TargetName>
-    <OutDir>..\..\matlab\bin\x64\</OutDir>
+    <OutDir>..\..\matlab\bin</OutDir>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -88,6 +90,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary />
+      <AdditionalOptions>/NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />
@@ -119,6 +123,8 @@ del $(OutDir)$(TargetName).exp
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary />
+      <AdditionalOptions>/NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />

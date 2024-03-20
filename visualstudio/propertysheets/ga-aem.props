@@ -7,8 +7,9 @@
   <PropertyGroup>
     <IncludePath>..\..\src;..\..\submodules\csv-parser\single_include;$(IncludePath)</IncludePath>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>..\..\bin\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\bin\$(Platform)\$(Configuration)\</OutDir>
     <SourcePath>$(SourcePath)</SourcePath>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <ItemGroup />
   <ItemDefinitionGroup>

@@ -113,11 +113,10 @@ When initially cloning the repository in git it is convenient to use the "--recu
 - Matlab shared library should go into ga-aem/matlab/bin/linux (.dll on Windows or .so on linux)
 - Python shared library should go into ga-aem/python/gatdaem1d (.dll on Windows or .so on linux)
 
-## Building on Windows
-- You can build the programs with the free Microsoft Visual Studio Community 2019.
-- Visual Studio solution and project files are supplied.
-- Open ga-aem\visualstudio\ga-aem-all\ga-aem-all.sln to compile all programs plus the matlab and python shared libraries.
-- Alternatively open individual program solutions files in their respective directories.
+## Building on Windows with Microsoft Visual Studio
+- You can build the programs with the free Microsoft Visual Studio 2019 (or later) software.
+- For convenience Microsoft Visual Studio project, solution and property sheet files are supplied.
+- See [here](visualstudio/README.md) for more details.
 
 ## Additional source code and library dependencies
 
