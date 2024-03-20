@@ -2,16 +2,17 @@ clc;
 clear all;
 clear mex;
 
-%Add path to the gatdaem1d wrapper .m files and the shared library
-addpath('..\bin\x64');
-addpath('..\gatdaem1d_functions');
+% Add path to the gatdaem1d wrapper .m files and the shared library
+% addpath('..\bin'); % Not needed if already in your Matlab path
+% addpath('..\gatdaem1d_functions'); % Not needed if already in your Matlab path
+% addpath('C:\fftw-3.3.5-dll64'); % Not needed if already in your Windows path
 
 %Load the shared library
 gatdaem1d_loadlibrary();
 
 %Create a system object, get its handle, and some basic info
-%S.stmfile = '..\..\examples\bhmar-skytem\stmfiles\Skytem-LM.stm';
-S.stmfile = '..\..\examples\bhmar-skytem\stmfiles\Skytem-HM.stm';
+%S.stmfile = '..\..\examples\SkyTEM-BHMAR-2009\stmfiles\Skytem-LM.stm';
+S.stmfile = '..\..\examples\SkyTEM-BHMAR-2009\stmfiles\Skytem-HM.stm';
 
 S.hS  = gatdaem1d_getsystemhandle(S.stmfile);
 S.nw  = gatdaem1d_nwindows(S.hS);

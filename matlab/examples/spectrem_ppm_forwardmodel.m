@@ -1,9 +1,10 @@
 clc;
 clear all;
 
-%Add path to the gatdaem1d wrapper .m files and the shared library
-addpath('..\bin');
-addpath('..\gatdaem1d_functions');
+% Add path to the gatdaem1d wrapper .m files and the shared library
+% addpath('..\bin'); % Not needed if already in your Matlab path
+% addpath('..\gatdaem1d_functions'); % Not needed if already in your Matlab path
+% addpath('C:\fftw-3.3.5-dll64'); % Not needed if already in your Windows path
 
 %Load the shared library
 gatdaem1d_loadlibrary();
