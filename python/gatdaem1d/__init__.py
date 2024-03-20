@@ -53,7 +53,7 @@ class Geometry:
         self.rx_roll   = rx_roll;
         self.rx_pitch  = rx_pitch;
         self.rx_yaw    = rx_yaw;
-        
+
     def print(self):
         print("Tx height ",self.tx_height);
         print("Tx roll   ",self.tx_roll);
@@ -65,17 +65,29 @@ class Geometry:
         print("Rx roll   ",self.rx_roll);
         print("Rx pitch  ",self.rx_pitch);
         print("Rx yaw    ",self.rx_yaw);
-        
+
 class Response:
     """Response Class"""
 
     def __init__(self, nwindows):
-        self.PX = np.double(0);
-        self.PY = np.double(0);
-        self.PZ = np.double(0);
+        self._PX = np.zeros(1,dtype=np.double,order='C');
+        self._PY = np.zeros(1,dtype=np.double,order='C');
+        self._PZ = np.zeros(1,dtype=np.double,order='C');
         self.SX = np.zeros(nwindows,dtype=np.double,order='C');
         self.SY = np.zeros(nwindows,dtype=np.double,order='C');
         self.SZ = np.zeros(nwindows,dtype=np.double,order='C');
+
+    @property
+    def PX(self):
+        return self._PX[0]
+
+    @property
+    def PY(self):
+        return self._PY[0]
+
+    @property
+    def PZ(self):
+        return self._PZ[0]
 
     def print(self):
         print(" Window       SX               SY               SZ");
@@ -117,7 +129,7 @@ class Windows:
             print("{0:5d} {1:10.8f} {2:10.8f}".format(i+1,self.low[i],self.high[i]));
 
 ###########################
-            
+
 #void* createhandle(const char* systemfile);
 tdlib.createhandle.argtypes = [c_char_p];
 tdlib.createhandle.restype  = c_void_p;
@@ -170,9 +182,16 @@ tdlib.forwardmodel.restype  = None;
 tdlib.derivative.argtypes = [c_void_p, c_int, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double), POINTER(c_double)];
 tdlib.derivative.restype  = None;
 
+tdlib.fm_dlogc.argtypes = [c_void_p,c_double,
+                           c_double,c_double,c_double,
+                           c_double,c_double,c_double,
+                           c_double,c_double,c_double,
+                           c_int, POINTER(c_double), POINTER(c_double),
+                           POINTER(c_double)];
+tdlib.fm_dlogc.restype  = None;
 class TDAEMSystem:
     """TDAEMSystem Class"""
-    
+
     def __init__(self, stmfile):
         """Initialise the class with the STM file"""
         self.handle   = tdlib.createhandle(stmfile.encode("ascii"));
@@ -192,7 +211,7 @@ class TDAEMSystem:
     def __del__(self):
         """Delete the handle to free up internal resources"""
         tdlib.deletehandle(self.handle);
-        
+
     def waveform_windows_plot(self,fig):
         ax1 = fig.add_subplot(1,1,1);
         ax1.plot(self.waveform.time,self.waveform.current,'-k');
@@ -225,14 +244,56 @@ class TDAEMSystem:
     def loopArea(self):
         return tdlib.looparea(self.handle);
 
-    def forwardmodel(self,G,E):
+    def forwardmodel(self, G, E):
         R = Response(self.nwindows());
-        tdlib.forwardmodel(self.handle,G.tx_height,G.tx_roll,G.tx_pitch,G.tx_yaw,G.txrx_dx,G.txrx_dy,G.txrx_dz,G.rx_roll,G.rx_pitch,G.rx_yaw,
-        E.nlayers(),cptr(E.conductivity),cptr(E.thickness),cptr(R.PX),cptr(R.PY),cptr(R.PZ),cptr(R.SX),cptr(R.SY),cptr(R.SZ));
+        tdlib.forwardmodel(self.handle,G.tx_height,
+                           G.tx_roll,G.tx_pitch,G.tx_yaw,
+                           G.txrx_dx,G.txrx_dy,G.txrx_dz,
+                           G.rx_roll,G.rx_pitch,G.rx_yaw,
+                           E.nlayers(),cptr(E.conductivity),cptr(E.thickness),
+                           cptr(R._PX),cptr(R._PY),cptr(R._PZ),
+                           cptr(R.SX),cptr(R.SY),cptr(R.SZ));
         return R;
 
-    def derivative(self,dtype,dlayer):
+    def derivative(self, dtype, dlayer):
         R = Response(self.nwindows());
-        tdlib.derivative(self.handle,dtype,dlayer,cptr(R.PX),cptr(R.PY),cptr(R.PZ),cptr(R.SX),cptr(R.SY),cptr(R.SZ));
+        tdlib.derivative(self.handle, dtype, dlayer,
+                         cptr(R._PX),cptr(R._PY),cptr(R._PZ),
+                         cptr(R.SX),cptr(R.SY),cptr(R.SZ));
         return R;
 
+    def fm_dlogc(self, G, E):
+
+        nchan = (1+self.nwindows());
+        ncomp = 3;
+        ncalc = (1+E.nlayers());
+        len = nchan * ncomp * ncalc;
+
+        tmp = np.zeros(len, dtype=np.double, order='C')
+
+
+        tdlib.fm_dlogc(self.handle, G.tx_height,
+                        G.tx_roll,G.tx_pitch,G.tx_yaw,
+                        G.txrx_dx,G.txrx_dy,G.txrx_dz,
+                        G.rx_roll,G.rx_pitch,G.rx_yaw,
+                        E.nlayers(),cptr(E.conductivity),cptr(E.thickness),
+                        cptr(tmp)
+                       )
+
+        tmp = np.reshape(tmp,(ncalc, ncomp, nchan));
+
+        R = Response(self.nwindows())
+
+        R._PX[0] = tmp[0, 0, 0]
+        R._PY[0] = tmp[0, 1, 0]
+        R._PZ[0] = tmp[0, 2, 0]
+
+        R._SX = tmp[0, 0, 1:]
+        R._SY = tmp[0, 1, 1:]
+        R._SZ = tmp[0, 2, 1:]
+
+        Jx = tmp[1:, 0, 1:]
+        Jy = tmp[1:, 1, 1:]
+        Jz = tmp[1:, 2, 1:]
+
+        return R, Jx, Jy, Jz
