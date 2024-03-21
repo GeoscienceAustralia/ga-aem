@@ -34,7 +34,7 @@ if True:
     #S.waveform.print(); #Too much printing
     S.waveform_windows_plot(fig1);
     if display_plots: plt.show(fig1);
-    if save_pdfs: plt.savefig("figure1.pdf", dpi=300, facecolor='w', edgecolor='w',           orientation='portrait', papertype=None, format=None, transparent=False, bbox_inches=None, pad_inches=0.1, frameon=None);
+    if save_pdfs: plt.savefig("figure1.pdf", dpi=300, facecolor='w', edgecolor='w',           orientation='portrait', format=None, transparent=False, bbox_inches=None, pad_inches=0.1);
 
 #Set the conductivity and thicknesses
 conductivity = [0.01, 0.1, 0.001];
@@ -47,7 +47,8 @@ G = Geometry(tx_height=35, txrx_dx = -12.62, txrx_dz = +2.16);
 G.print();
 
 #Run a few random forward models in a loop
-t1=time.clock()
+#t1=time.clock(); #Now deprecated
+t1=time.perf_counter();
 for i in range(10):
     conductivity[0] = 10**(random.uniform(-3, 0));
     conductivity[1] = 10**(random.uniform(-3, 0));
@@ -55,7 +56,8 @@ for i in range(10):
     thickness       = [40, 20];
     E = Earth(conductivity,thickness);
     fm = S.forwardmodel(G,E);
-t2=time.clock()
+#t2=time.clock(); #Now deprecated
+t2=time.perf_counter();
 print("Time = ",t2-t1);
 
 #Set another earth nodel
@@ -112,7 +114,7 @@ if True:
     ax3.semilogx(S.windows.centre,-dl2t.SZ,'-m',linewidth=2,label='dL2T');
     ax3.legend(fontsize=10);
     if display_plots: plt.show(fig2);
-    if save_pdfs: plt.savefig("figure2.pdf", dpi=300, facecolor='w', edgecolor='w', orientation='portrait', papertype=None, format=None, transparent=False, bbox_inches=None, pad_inches=0.1, frameon=None);
+    if save_pdfs: plt.savefig("figure2.pdf", dpi=300, facecolor='w', edgecolor='w', orientation='portrait', format=None, transparent=False, bbox_inches=None, pad_inches=0.1);
 
 quit();
 
