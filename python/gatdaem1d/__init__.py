@@ -90,7 +90,10 @@ class Response:
         return self._PZ[0]
 
     def print(self):
-        print(" Window       SX               SY               SZ");
+        print(" Primary       PX               PY               PZ");
+        print('{0:5d} {1:16.6e} {2:16.6e} {3:16.6e}'.format(0,self.PX,self.PY,self.PZ));
+
+        print(" Window        SX               SY               SZ");
         for i in range(0, self.SX.size):
             print('{0:5d} {1:16.6e} {2:16.6e} {3:16.6e}'.format(i+1,self.SX[i],self.SY[i],self.SZ[i]));
 
@@ -198,7 +201,7 @@ class TDAEMSystem:
         self.waveform = Waveform(self.handle);
         self.windows  = Windows(self.handle);
 
-        #Following are defioned in le.h #enum eCalculationType { CT_FORWARDMODEL, CT_CONDUCTIVITYDERIVATIVE, CT_THICKNESSDERIVATIVE, CT_HDERIVATIVE, CT_RDERIVATIVE, CT_XDERIVATIVE,	CT_YDERIVATIVE, CT_ZDERIVATIVE };
+        #Following are defined in le.h #enum eCalculationType { CT_FORWARDMODEL, CT_CONDUCTIVITYDERIVATIVE, CT_THICKNESSDERIVATIVE, CT_HDERIVATIVE, CT_RDERIVATIVE, CT_XDERIVATIVE,	CT_YDERIVATIVE, CT_ZDERIVATIVE };
         self.FORWARDMODEL=0;
         self.CONDUCTIVITYDERIVATIVE=1;
         self.THICKNESSDERIVATIVE=2;
