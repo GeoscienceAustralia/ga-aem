@@ -474,7 +474,8 @@ else()
 			PATTERN "*.bat" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)		
 endif()
 
-#On Windows copy and rename Matlab .dll file to .mexw64 
-# and on linux copy and rename Python libgatdaem1d.so to gatdaem1d.so 
+# Copy shared library to Matlab and Python directories
+# On Windows rename Matlab .dll file to .mexw64
+# On Linux rename libgatdaem1d.so to gatdaem1d.so
 install (SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")
 

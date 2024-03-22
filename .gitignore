@@ -1,7 +1,7 @@
 #File patterns that are ignored
 
-# Ignore gadi specific scripts/files
-#*gadi*
+# Ignore temp-* files
+temp-*
 
 # Ignore build and install directories
 build*/
