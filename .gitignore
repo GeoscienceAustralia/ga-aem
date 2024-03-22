@@ -38,6 +38,9 @@ julia/output
 /python/gatdaem1d/gatdaem1d.exp  #Ignore the export lib
 /python/gatdaem1d/gatdaem1d.lib  #Ignore the lib
 /python/gatdaem1d/*.so           #Ignore the Linux shared libraries
+/python/examples/figure1.pdf
+/python/examples/figure2.pdf
+/python/gatdaem1d.egg-info/
 
 # DO NOT IGNORE these Windows binaries
 # !/matlab/bin/x64/gatdaem1d.mexw64 #Keep the Windows mexw64 (dll)

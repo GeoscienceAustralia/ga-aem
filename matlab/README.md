@@ -3,11 +3,11 @@
 Directory for the MATLAB interface module (C callable shared libarary) gatdaem1d which contains time domain forward modelling and derivative functions.
 
 # Contents
-- matlab/bin/libgatdaem1d.so is the time-domain Linux shared library
-- matlab/bin/gatdaem1d.mexw64 is the time-domain 64-Bit Windows shared library (it is a dll that MATLAB can call)
-- matlab/gatdaem1d_functions contains the wrapper functions MATLAB scripts .m
-- matlab/rjmcmctdem_functions contains the wrapper functions MATLAB scripts .m for handling Monte-Carlo invesrion outputs
-- matlab/examples contains examples of how to use the gatdaem1d module
+- [ga-aem-install-dir]/matlab/bin/libgatdaem1d.so is the time-domain Linux shared library
+- [ga-aem-install-dir]/matlab/bin/gatdaem1d.mexw64 is the time-domain 64-Bit Windows shared library (it is a dll that MATLAB can call)
+- [ga-aem-install-dir]/matlab/gatdaem1d_functions contains the wrapper functions MATLAB scripts .m
+- [ga-aem-install-dir]/matlab/rjmcmctdem_functions contains the wrapper functions MATLAB scripts .m for handling Monte-Carlo invesrion outputs
+- [ga-aem-install-dir]/matlab/examples contains examples of how to use the gatdaem1d module
 
 # Notes
 1. You should run 'mex -setup' from the Matlab command prompt first to allow Matlab to find your installed C Compiler.
