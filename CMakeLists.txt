@@ -313,6 +313,33 @@ if(OpenMP_CXX_FOUND)
 endif()
 install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
+# Add galeisbstdem-nompi executable
+# This is simply an executable without any MPI functionality or dependency designed for use by people who are not allowed to have MPI installed on their systems
+set(target galeisbstdem-nompi)
+add_executable(${target} src/galeisbstdem.cpp)
+if (MSVC)
+	add_dependencies(${target} MSVC_FFTW_IMPORTLIB)
+endif()
+target_sources(${target} PUBLIC submodules/cpp-utils/src/file_utils.cpp submodules/cpp-utils/src/general_utils.cpp)
+target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
+target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})
+if(${WITH_NETCDF})
+	target_compile_definitions(${target} PRIVATE -DHAVE_NETCDF)
+	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/src/)
+	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/submodules/marray/include/andres/)	
+	target_include_directories(${target} PRIVATE ${NETCDFCXX_INCLUDE_DIRS})
+
+	target_link_libraries(${target} PRIVATE ${NETCDFCXX_LINK_LIBRARIES})
+	if(NOT ${NETCDFCXX_PACKAGE_FOUND})
+		target_link_libraries(${target} PRIVATE libnetcdfcxx)
+	endif()
+endif()
+if(OpenMP_CXX_FOUND)
+	target_link_libraries(${target} PRIVATE OpenMP::OpenMP_CXX)	
+endif()
+install(TARGETS ${target} DESTINATION bin OPTIONAL)
+
+
 # Add garjmcmctdem executable
 set(target garjmcmctdem)
 if(${WITH_NETCDF})

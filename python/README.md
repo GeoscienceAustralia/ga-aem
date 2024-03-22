@@ -1,5 +1,5 @@
 # Python
-Directory containing the Python(3) interface files.
+Directory containing the Python(3) interface files package.
 
 ## Description
 The Python (>=v3.5) interface consists of a C/C++ shared libarary (.so on Linux or .dll on Windows) called gatdaem1d which contains time domain forward modelling and derivative functions which are called by the Python interpreter.
@@ -23,12 +23,17 @@ The Python (>=v3.5) interface consists of a C/C++ shared libarary (.so on Linux 
 ```
 
 ## Examples
-The directory [ga-aem-install-dir]/python/examples contains an example of how to use the gatdaem1d package.
+- The directory [ga-aem-install-dir]/python/examples contains an example of how to use the gatdaem1d package.
+- To run the example
+```bash
+	cd [ga-aem-install-dir]/examples
+	python skytem_example.py
+```
 
 ## Dependencies
 
 ### Python dependencies
-- The gatdaem1d module itself requires the ***numpy*** Python package.
+- The gatdaem1d package itself requires the ***numpy*** Python package.
 - The example additionally requires the ***matplotlib*** Python package.
 - Numpy and matplotlib can usually be installed as follows:
 ````bash

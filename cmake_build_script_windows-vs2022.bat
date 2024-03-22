@@ -53,6 +53,7 @@ REM Or alternatively ...
 
 REM Build only particular targets
 REM cmake --build . --target galeisbstdem --config=Release
+REM cmake --build . --target galeisbstdem-nompi --config=Release
 REM cmake --build . --target garjmcmctdem --config=Release
 REM cmake --build . --target galeisbsfdem --config=Release
 REM cmake --build . --target galeiallatonce --config=Release
