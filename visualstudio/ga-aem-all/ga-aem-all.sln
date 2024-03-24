@@ -29,8 +29,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2slicegrids", "..
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example_forward_model", "..\example_forward_model\example_forward_model.vcxproj", "{CAE0B057-3FA2-4BAA-9B78-FCAF8BD4E254}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbsfdem", "..\galeisbsfdem\galeisbsfdem.vcxproj", "{D255C3C7-D023-48E9-BEFB-89BD0E34E631}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2curtainimage", "..\ctlinedata2curtainimage\ctlinedata2curtainimage.vcxproj.vcxproj", "{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbstdem-nompi", "..\galeisbstdem-nompi\galeisbstdem-nompi.vcxproj", "{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}"
@@ -117,12 +115,6 @@ Global
 		{CAE0B057-3FA2-4BAA-9B78-FCAF8BD4E254}.Release|x64.ActiveCfg = Release|x64
 		{CAE0B057-3FA2-4BAA-9B78-FCAF8BD4E254}.Release|x64.Build.0 = Release|x64
 		{CAE0B057-3FA2-4BAA-9B78-FCAF8BD4E254}.Release|x86.ActiveCfg = Release|x64
-		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Debug|x64.ActiveCfg = Debug|x64
-		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Debug|x64.Build.0 = Debug|x64
-		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Debug|x86.ActiveCfg = Debug|x64
-		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Release|x64.ActiveCfg = Release|x64
-		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Release|x64.Build.0 = Release|x64
-		{D255C3C7-D023-48E9-BEFB-89BD0E34E631}.Release|x86.ActiveCfg = Release|x64
 		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x64.ActiveCfg = Debug|x64
 		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x64.Build.0 = Debug|x64
 		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x86.ActiveCfg = Debug|x64
