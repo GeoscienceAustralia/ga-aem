@@ -3,20 +3,10 @@ cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0076 NEW)
 SET(CMAKE_COLOR_MAKEFILE ON)
 
-function(reportvar var)
-  message(STATUS "${ARGVN}${var}=${${var}}")
-endfunction()
-
-function(reportallvars)
-	get_cmake_property(_variableNames VARIABLES)
-	list (SORT _variableNames)
-	foreach (_variableName ${_variableNames})
-		message(STATUS "${_variableName}=${${_variableName}}")
-	endforeach()
-endfunction()
-
 # Set project name
 project(ga-aem)
+
+include(cmake/Message-Functions.cmake)
 
 reportvar(CMAKE_SYSTEM_NAME)
 reportvar(CMAKE_BUILD_TYPE)
@@ -79,21 +69,11 @@ if(NOT FFTW_FOUND)
 	message(STATUS "FFTW package was not found - manual setup")
 	set(FFTW_DIR $ENV{FFTW_DIR})
 	find_path(FFTW_INCLUDE_DIRS NAMES "fftw3.h" PATHS ${FFTW_DIR} PATH_SUFFIXES "include" NO_DEFAULT_PATH)
-	
 	if (MSVC)
-		#For Visual studio/MSVC make an import library from the downloaded FFTW dll (something to do with it being built using MinGW)
-		#and must add MSVC_FFTW_IMPORTLIB as a dependency (see add_dependencies()) for all targets that require FFTW in MSVC
-		set(FFTW_LINK_LIBRARIES ${FFTW_DIR}/libfftw3-3.lib)
-		add_custom_command(OUTPUT ${FFTW_DIR}/libfftw3-3.lib						
-			COMMAND CMD /C lib.exe /machine:x64 /def:libfftw3-3.def /out:libfftw3-3.lib
-			WORKING_DIRECTORY ${FFTW_DIR}
-			COMMENT "Creating MSVC FFTW import library"
-			VERBATIM)
-		add_custom_target(MSVC_FFTW_IMPORTLIB DEPENDS ${FFTW_DIR}/libfftw3-3.lib)
+		include(cmake/Create-MSVC-FFTW-Import-Library.cmake)
 	else()
 		find_library(FFTW_LINK_LIBRARIES "fftw3-3" "libfftw3-3" PATHS ${FFTW_DIR} PATH_SUFFIXES "lib" "lib64" NO_DEFAULT_PATH)
 	endif()
-
 	set(FFTW_FOUND 1)
 endif()
 
@@ -528,5 +508,5 @@ endif()
 # Copy shared library to Matlab and Python directories
 # On Windows rename Matlab .dll file to .mexw64
 # On Linux rename libgatdaem1d.so to gatdaem1d.so
-install (SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")
+install (SCRIPT "${CMAKE_SOURCE_DIR}/cmake/Post-Install.cmake")
 
