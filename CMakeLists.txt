@@ -4,10 +4,12 @@ cmake_policy(SET CMP0076 NEW)
 SET(CMAKE_COLOR_MAKEFILE ON)
 
 # Set project name
-project(ga-aem)
+project(ga-aem VERSION 2.0 DESCRIPTION "Airborne electromagnetics forward modelling and inversion" LANGUAGES CXX C)
+message(STATUS "Configuring ga-aem")
 
 include(cmake/Message-Functions.cmake)
 
+reportvar(CMAKE_VERSION)
 reportvar(CMAKE_SYSTEM_NAME)
 reportvar(CMAKE_BUILD_TYPE)
 
@@ -28,21 +30,18 @@ reportvar(WITH_PETSC)
 # Set the C++ standard to C++17
 set(CMAKE_CXX_STANDARD 17)
 
-# Set the compile flags
-if("${CMAKE_C_COMPILER_ID}" MATCHES "MSVC" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2")
-	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   /O2")
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+# Set the compile/link flags
+if(MSVC)
+	add_compile_options(/O2)
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+	add_compile_definitions(_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
 else()
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security -Wno-tautological-constant-compare ")
-	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -O3 -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security -Wno-tautological-constant-compare ")
-	# Adding filesystem library
+	add_compile_options(-O3 -Wno-unused-but-set-variable -Wno-sign-compare -Wno-format-security -Wno-tautological-constant-compare)
 	link_libraries(-lstdc++fs)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-result -Wno-date-time -Wno-error=date-time ")
-	SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -Wno-unused-result -Wno-date-time -Wno-error=date-time ")
+	add_compile_options(-Wno-unused-result -Wno-date-time -Wno-error=date-time)
 	#On GCC, even with -Wno-date-time, still get warings of the form: warning: macro "__DATE__" might prevent reproducible builds [-Wdate-time]	
 endif()
 
@@ -53,12 +52,6 @@ if(PkgConfig_FOUND)
 else()
 	message(STATUS "PkgConfig package was NOT found")
 endif()
-
-
-# Add the project include directories
-include_directories(src/)
-include_directories(submodules/csv-parser/single_include/)
-include_directories(submodules/eigen/)
 
 # Configure FFTW
 if(PkgConfig_FOUND)
@@ -92,6 +85,8 @@ if(${WITH_MPI})
 	find_package(MPI)
 	if(MPI_FOUND)
 		message(STATUS "MPI was found")
+		reportvar(MPI_INCLUDE_PATH)
+		reportvar(MPI_LIBRARIES)
 	endif()
 endif()
 
@@ -218,12 +213,17 @@ endif()
 #######################################
 ### Add the build targets
 
+# Add the project include directories, which don't have their own CMakelists.txt
+include_directories(src/)
+include_directories(submodules/eigen)
+include_directories(submodules/csv-parser/single_include)
+
 # Add the TICPP library submodule
-add_subdirectory(submodules/ticpp)
+add_subdirectory(submodules/ticpp EXCLUDE_FROM_ALL)
 
 # Add the cpp-utils submodule with CGAL turned OFF as it is not needed
-SET(WITH_CGAL OFF CACHE BOOL "Build cpp-utils library without CGAL")
-add_subdirectory(submodules/cpp-utils)
+SET(WITH_CGAL OFF CACHE BOOL "Build cpp-utils library without CGAL" FORCE)
+add_subdirectory(submodules/cpp-utils EXCLUDE_FROM_ALL)
 
 # Add the gatdaem1d static library
 set(target gatdaem1d-static)
@@ -276,7 +276,6 @@ target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
 install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
-
 # Add the pure C example executable
 set(target example_forward_model_c)
 add_executable(${target} src/example_forward_model_c.c)
@@ -285,6 +284,7 @@ if (MSVC)
 endif()
 target_include_directories(${target} PRIVATE ${FFTW_INCLUDE_DIRS})
 target_link_libraries(${target} PRIVATE gatdaem1d-static)
+target_link_libraries(${target} PRIVATE cpp-utils::static)
 install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Add galeisbstdem executable
@@ -300,7 +300,8 @@ target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})
 if(${WITH_MPI})
 	target_compile_definitions(${target} PRIVATE -D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
 	target_include_directories(${target} PRIVATE SYSTEM ${MPI_INCLUDE_PATH})
-	target_link_libraries(${target} PRIVATE ${MPI_C_LIBRARIES})
+	target_link_libraries(${target} PRIVATE ${MPI_LIBRARIES})
+	target_link_libraries(${target} PRIVATE ${MPI_LIBRARIES})
 endif()
 if(${WITH_NETCDF})
 	target_compile_definitions(${target} PRIVATE -DHAVE_NETCDF)
@@ -357,7 +358,7 @@ if(${WITH_NETCDF})
 	if(${WITH_MPI})
 		target_compile_definitions(${target} PRIVATE -D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
 		target_include_directories(${target} PRIVATE SYSTEM ${MPI_INCLUDE_PATH})
-		target_link_libraries(${target} PRIVATE ${MPI_C_LIBRARIES})
+		target_link_libraries(${target} PRIVATE ${MPI_LIBRARIES})
 	endif()
 	install(TARGETS ${target} DESTINATION bin OPTIONAL)
 else()
@@ -377,7 +378,7 @@ if(MPI_FOUND AND PETSC_FOUND)
 	target_link_libraries(${target} PRIVATE ${FFTW_LINK_LIBRARIES})	
 	target_compile_definitions(${target} PRIVATE -D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
 	target_include_directories(${target} PRIVATE SYSTEM ${MPI_INCLUDE_PATH})
-	target_link_libraries(${target} PRIVATE ${MPI_C_LIBRARIES})
+	target_link_libraries(${target} PRIVATE ${MPI_LIBRARIES})
 
 	if(USE_PETSC_VIA_PKG_CONFIG)
 		target_link_libraries(${target} PRIVATE PkgConfig::PETSC)
@@ -404,7 +405,7 @@ endif()
 ### if(${WITH_MPI})
 ### 		target_compile_definitions(${target} PRIVATE -D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
 ### 		target_include_directories(${target} PRIVATE SYSTEM ${MPI_INCLUDE_PATH})
-### 		target_link_libraries(${target} PRIVATE ${MPI_C_LIBRARIES})
+### 		target_link_libraries(${target} PRIVATE ${MPI_LIBRARIES})
 ### endif()
 ### if(OpenMP_CXX_FOUND) 
 ### 	target_link_libraries(${target} PRIVATE OpenMP::OpenMP_CXX)	
@@ -510,3 +511,4 @@ endif()
 # On Linux rename libgatdaem1d.so to gatdaem1d.so
 install (SCRIPT "${CMAKE_SOURCE_DIR}/cmake/Post-Install.cmake")
 
+reportvar(CMAKE_CXX_FLAGS)

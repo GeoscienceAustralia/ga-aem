@@ -43,7 +43,7 @@ REM 	-DWITH_PETSC=OFF
 REM cmake -Wno-dev -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=OFF -DWITH_NETCDF=OFF -DWITH_GDAL=OFF -DWITH_PETSC=OFF ..
 
 REM Build and install everything
-cmake --build . --target all --config=Release
+cmake --build . --config=Release
 cmake --install . --prefix %INSTALL_DIR%
 
 REM Or alternatively ...
