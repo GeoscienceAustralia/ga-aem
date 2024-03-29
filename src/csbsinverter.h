@@ -2718,6 +2718,7 @@ public:
 			cFdVrnt& fdv = AncFld[si][fi].second;
 			cAsciiColumnField c;
 			IM->get_acsiicolumnfield(fdv.fd, c);
+			if (fi == 0) c.width++;//First column after unique_id needs to have extra space in case it fills the width to enfore space between columns
 			OM->writevrnt(pi, fdv.vnt, c);
 		}
 
