@@ -1,6 +1,6 @@
 #!/bin/sh
 
-module load intel-compiler-llvm/2023.2.0
+module load intel-compiler-llvm/2024.0.2
 module load cmake/3.21.4
 module load fftw3/3.3.8
 module load netcdf/4.8.0
@@ -16,10 +16,12 @@ export PKG_CONFIG_PATH=$PETSC_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
 export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/Intel
 #export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/GNU
 
-# BUILD_DIR is a temporary directory for building (compiling and linking)
-export BUILD_DIR=$PWD/build-intel
-# INSTALL_DIR is the directory for installing the build package
+# INSTALL_DIR is the directory where the built package will be installed
 export INSTALL_DIR=$PWD/install-intel
+#export INSTALL_DIR=/g/data/qi71/apps/ga-aem/csiro-dev-20240329
+
+# BUILD_DIR is a temporary directory for building (compiling and linking) the package
+export BUILD_DIR=$PWD/build-intel
 
 mkdir $BUILD_DIR
 cd $BUILD_DIR
