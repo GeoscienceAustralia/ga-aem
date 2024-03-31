@@ -13,8 +13,7 @@ module list
 export PKG_CONFIG_PATH=$PETSC_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
 
 # pkg-config for PETSc seems non-standard on gadi so add the ompi/compiler specific library directory 
-export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/Intel
-#export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/GNU
+export PETSC_EXTRA_LIB_DIR=$PETSC_DIR/lib/ompi3/GNU
 
 # BUILD_DIR is a temporary directory for building (compiling and linking)
 export BUILD_DIR=$PWD/build-gnu
