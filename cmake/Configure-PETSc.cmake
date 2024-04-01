@@ -1,4 +1,3 @@
-#include(cmake/Message-Functions.cmake)
 set(PETSC_DIR $ENV{PETSC_DIR})
 set(PETSC_LIBRARY_DIR $ENV{PETSC_LIBRARY_DIR})
 set(PETSC_FOUND FALSE)
@@ -8,7 +7,6 @@ if(NOT PETSC_FOUND AND PkgConfig_FOUND)
 	pkg_search_module(PETSC IMPORTED_TARGET PETSc)
 	if(PETSC_FOUND)
 		message(STATUS "PETSC was found by pkg_search_module()")
-		#reportallvars()
 	endif()
 endif()
 if(NOT PETSC_FOUND)
@@ -16,7 +14,15 @@ if(NOT PETSC_FOUND)
 	include(cmake/Configure-PETSc-Manual-Setup.cmake)
 endif()
 
-#if(PETSC_FOUND)
+if(PETSC_FOUND)
+	message(STATUS "Creating PETSC::PETSC INTERFACE")
+	add_library(PETSC::PETSC INTERFACE IMPORTED)
+	set_target_properties(PETSC::PETSC PROPERTIES
+		INTERFACE_INCLUDE_DIRECTORIES "${PETSC_INCLUDE_DIRS}"
+		INTERFACE_LINK_LIBRARIES "${PETSC_LINK_LIBRARIES}"
+		INTERFACE_LINK_DIRECTORIES "${PETSC_LIBRARY_DIR}"
+		INTERFACE_LINK_OPTIONS "${PETSC_LDFLAGS}"
+	)
 #	reportvar(PETSC_DIR)
 #	reportvar(PETSC_INSTALL_PREFIX)
 #	reportvar(PETSC_VERSION)
@@ -26,5 +32,5 @@ endif()
 #	reportvar(PETSC_LIBRARIES)
 #	reportvar(PETSC_LINK_LIBRARIES)
 #	reportvar(PETSC_LDFLAGS)
-#	endif()
+endif()
 
