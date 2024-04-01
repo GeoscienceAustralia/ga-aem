@@ -23,9 +23,9 @@ SET GDAL_DIR=%LocalAppData%\gdal-3.0.4
 REM Set the PETSc paths if not set in user environment externally
 SET PETSC_DIR=%LocalAppData%\petsc\3.9.4\vs2017
 SET PETSC_INCLUDE_DIRS=%PETSC_DIR%\include;%PETSC_DIR%\win64_release\include
-SET PETSC_LIB_DIR=%PETSC_DIR%\win64_release\lib
+SET PETSC_LIBRARY_DIR=%PETSC_DIR%\win64_release\lib
 SET PETSC_LIBRARIES=libf2cblas.lib;libf2clapack.lib;libpetsc.lib
-SET PETSC_LDFLAGS=
+SET PETSC_LINK_OPTIONS=
 
 REM Create and cd to the BUILD_DIR
 mkdir %BUILD_DIR%
