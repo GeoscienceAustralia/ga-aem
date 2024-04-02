@@ -119,25 +119,56 @@ add_subdirectory(submodules/cpp-utils EXCLUDE_FROM_ALL)
 
 # Add the gatdaem1d static library
 set(target gatdaem1d-static)
-add_library(${target} STATIC src/gatdaem1d.cpp)
-set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
+add_library(${target} STATIC EXCLUDE_FROM_ALL src/gatdaem1d.cpp)
+set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d-static)
+set_target_properties(${target} PROPERTIES PREFIX "")
+set_target_properties(${target} PROPERTIES PUBLIC_HEADER src/gatdaem1d.h)
 target_include_directories(${target} PRIVATE cpp-utils::static)
 target_link_libraries(${target} PRIVATE cpp-utils::static)
 target_link_libraries(${target} PRIVATE FFTW::FFTW)
-install(TARGETS ${target} ARCHIVE DESTINATION lib OPTIONAL)
+install(TARGETS ${target} OPTIONAL PUBLIC_HEADER DESTINATION include OPTIONAL)
+
+# Platform differences for Matlab and Python targets
+if(WIN32)
+	set(matlab_suffix ".mexw64")
+	set(artefact_type "RUNTIME")
+else()
+	set(matlab_suffix ".so")
+	set(artefact_type "LIBRARY")
+endif()
 
 # Add the gatdaem1d shared library
 set(target gatdaem1d-shared)
-add_library(${target} SHARED src/gatdaem1d.cpp)
+add_library(${target} SHARED EXCLUDE_FROM_ALL src/gatdaem1d.cpp)
 set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
+set_target_properties(${target} PROPERTIES PREFIX "")
+set_target_properties(${target} PROPERTIES PUBLIC_HEADER src/gatdaem1d.h)
 target_include_directories(${target} PRIVATE cpp-utils::static)
 target_link_libraries(${target} PRIVATE cpp-utils::static)
 target_link_libraries(${target} PRIVATE FFTW::FFTW)
-# Install the shared library
-install(TARGETS ${target} RUNTIME DESTINATION bin OPTIONAL)
-# Install the include files
-install(FILES src/gatdaem1d.h TYPE INCLUDE)
+install(TARGETS ${target} ${artefact_type} OPTIONAL PUBLIC_HEADER DESTINATION include OPTIONAL)
 
+# Python bindings target - same as gatdaem1d-shared but different location
+set(target python-bindings)
+add_library(${target} SHARED src/gatdaem1d.cpp)
+set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
+set_target_properties(${target} PROPERTIES PREFIX "")
+target_include_directories(${target} PRIVATE cpp-utils::static)
+target_link_libraries(${target} PRIVATE cpp-utils::static)
+target_link_libraries(${target} PRIVATE FFTW::FFTW)
+install(TARGETS ${target} ${artefact_type} DESTINATION python/gatdaem1d OPTIONAL)
+
+# Matlab bindings target - same as gatdaem1d-shared but different suffix and location
+set(target matlab-bindings)
+add_library(${target} SHARED src/gatdaem1d.cpp)
+set_target_properties(${target} PROPERTIES OUTPUT_NAME gatdaem1d)
+set_target_properties(${target} PROPERTIES PREFIX "")
+set_target_properties(${target} PROPERTIES SUFFIX ${matlab_suffix})
+set_target_properties(${target} PROPERTIES PUBLIC_HEADER src/gatdaem1d.h)
+target_include_directories(${target} PRIVATE cpp-utils::static)
+target_link_libraries(${target} PRIVATE cpp-utils::static)
+target_link_libraries(${target} PRIVATE FFTW::FFTW)
+install(TARGETS ${target} ${artefact_type} DESTINATION matlab/bin OPTIONAL PUBLIC_HEADER DESTINATION matlab/gatdaem1d_functions OPTIONAL)
 
 # Add gaforwardmodeltdem executable
 set(target gaforwardmodeltdem)
@@ -349,5 +380,5 @@ endif()
 # Copy shared library to Matlab and Python directories
 # On Windows rename Matlab .dll file to .mexw64
 # On Linux rename libgatdaem1d.so to gatdaem1d.so
-install (SCRIPT "${CMAKE_SOURCE_DIR}/cmake/Post-Install.cmake")
+#install (SCRIPT "${CMAKE_SOURCE_DIR}/cmake/Post-Install.cmake")
 

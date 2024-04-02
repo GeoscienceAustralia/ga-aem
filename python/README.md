@@ -21,12 +21,13 @@ The Python (>=v3.5) interface consists of a C/C++ shared libarary (.so on Linux 
 	cd [ga-aem-install-dir]/python
 	python -m pip install .
 ```
+- Note that "python" may need to be "python3" on your system.
 
 ## Examples
 - The directory [ga-aem-install-dir]/python/examples contains an example of how to use the gatdaem1d package.
 - To run the example
 ```bash
-	cd [ga-aem-install-dir]/examples
+	cd [ga-aem-install-dir]/python/examples
 	python skytem_example.py
 ```
 
