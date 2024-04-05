@@ -21,7 +21,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #endif
 
 #if defined HAVE_NETCDF
-	#include "geophysics_netcdf.h"
+	#include "geophysics_netcdf.hpp"
 #endif
 
 template<class T>

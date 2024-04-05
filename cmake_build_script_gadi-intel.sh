@@ -32,7 +32,6 @@ cmake --install . --prefix $INSTALL_DIR
 #cmake --build . --target galeisbstdem
 #cmake --build . --target galeisbstdem-nompi
 #cmake --build . --target garjmcmctdem
-#cmake --build . --target galeisbsfdem
 #cmake --build . --target galeiallatonce
 
 #cmake --build . --target gaforwardmodeltdem

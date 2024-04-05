@@ -13,7 +13,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "asciicolumnfile.h"
 #include "fielddefinition.h"
 #if defined HAVE_NETCDF
-	#include "geophysics_netcdf.h"
+	#include "geophysics_netcdf.hpp"
 #endif
 
 class cInputManager {

@@ -97,11 +97,6 @@ if(${WITH_PETSC})
 	endif()
 endif()
 
-# Configure NetCDF C++ Libraries
-if(${WITH_NETCDF})
-	include(cmake/Configure-NetCDF_CXX.cmake)
-endif()
-
 #######################################
 ### Add the build targets
 
@@ -109,12 +104,18 @@ endif()
 include_directories(src/)
 include_directories(submodules/eigen)
 
-# Add the TICPP library submodule
-add_subdirectory(submodules/ticpp EXCLUDE_FROM_ALL)
-
 # Add the cpp-utils submodule with CGAL turned OFF as it is not needed
 set(WITH_CGAL OFF CACHE BOOL "Build cpp-utils library without CGAL" FORCE)
 add_subdirectory(submodules/cpp-utils EXCLUDE_FROM_ALL)
+
+# Add the geophysics-netcdf submodule
+if(${WITH_NETCDF})
+	set(WITH_CGAL OFF CACHE BOOL "Build cpp-utils library without CGAL" FORCE)
+	add_subdirectory(submodules/geophysics-netcdf EXCLUDE_FROM_ALL)
+endif()
+
+# Add the TICPP library submodule
+add_subdirectory(submodules/ticpp EXCLUDE_FROM_ALL)
 
 # Add the gatdaem1d static library
 set(target gatdaem1d-static)
@@ -197,9 +198,7 @@ if(${WITH_MPI})
 endif()
 if(${WITH_NETCDF})
 	target_compile_definitions(${target} PRIVATE -DHAVE_NETCDF)
-	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/src/)
-	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/submodules/marray/include/andres/)
-	target_link_libraries(${target} PRIVATE NETCDF::CXX)
+	target_link_libraries(${target} PUBLIC geophysics-netcdf::static)
 endif()
 if(OpenMP_CXX_FOUND)
 	target_link_libraries(${target} PRIVATE OpenMP::OpenMP_CXX)
@@ -214,9 +213,7 @@ target_link_libraries(${target} PRIVATE cpp-utils::static)
 target_link_libraries(${target} PRIVATE FFTW::FFTW)
 if(${WITH_NETCDF})
 	target_compile_definitions(${target} PRIVATE -DHAVE_NETCDF)
-	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/src/)
-	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/submodules/marray/include/andres/)
-	target_link_libraries(${target} PRIVATE NETCDF::CXX)
+	target_link_libraries(${target} PUBLIC geophysics-netcdf::static)
 endif()
 if(OpenMP_CXX_FOUND)
 	target_link_libraries(${target} PRIVATE OpenMP::OpenMP_CXX)
@@ -230,9 +227,7 @@ if(${WITH_NETCDF})
 	target_link_libraries(${target} PRIVATE cpp-utils::static)
 	target_link_libraries(${target} PRIVATE FFTW::FFTW)
 	target_compile_definitions(${target} PRIVATE -DHAVE_NETCDF)
-	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/src/)
-	target_include_directories(${target} PRIVATE submodules/geophysics-netcdf/submodules/marray/include/andres/)
-	target_link_libraries(${target} PRIVATE NETCDF::CXX)
+	target_link_libraries(${target} PUBLIC geophysics-netcdf::static)
 	if(${WITH_MPI})
 		target_compile_definitions(${target} PRIVATE -D_MPI_ENABLED -DOMPI_SKIP_MPICXX)
 		target_link_libraries(${target} PRIVATE MPI::MPI_C)
