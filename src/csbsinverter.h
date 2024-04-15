@@ -474,12 +474,12 @@ public:
 		OO = cOutputOptions(ob);
 		Verbose = ob.getboolvalue("verbose");
 
-
 		if (Rank == 0) {
 			std::string od = extractfiledirectory(OO.LogFile);
 			makedirectorydeep(od);
 		}
-#if defined _MPI_ENABLED
+
+#ifdef ENABLE_MPI
 		cMpiEnv::world_barrier();
 #endif
 
@@ -522,7 +522,7 @@ public:
 			std::string od = extractfiledirectory(OM->datafilename());
 			makedirectorydeep(od);
 		}
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 		cMpiEnv::world_barrier();
 #endif
 

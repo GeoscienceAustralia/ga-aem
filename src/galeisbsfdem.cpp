@@ -7,12 +7,11 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #include <cmath>
+#include <cstring>
 
-
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 #include <mpi.h>
 #endif
-#include <cstring>
 
 #include "gaaem_version.h"
 #include "vector_utils.h"
@@ -65,7 +64,7 @@ int main(int argc, char** argv) {
 
 int main1(int argc, char** argv)
 {
-#ifdef _MPI_ENABLED
+#ifdef ENABLE_MPI
 	int Size, Rank;
 	if (argc<2){
 		printf("Executing %s\n", argv[0]);

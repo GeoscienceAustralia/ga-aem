@@ -13,7 +13,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "asciicolumnfile.h"
 #include "fielddefinition.h"
 #if defined HAVE_NETCDF
-	#include "geophysics_netcdf.hpp"
+#include "geophysics_netcdf.hpp"
 #endif
 
 class cInputManager {
@@ -21,7 +21,7 @@ class cInputManager {
 public:
 	enum class IOType { ASCII, NETCDF, NONE };
 
-protected:		
+protected:
 	std::string DataFileName;
 	IOType iotype = IOType::NONE;
 	size_t Subsample = 1;
@@ -38,7 +38,7 @@ public:
 	}
 
 	void set_subsample_rate(const size_t& subsamplerate) {
-		Subsample = subsamplerate;		
+		Subsample = subsamplerate;
 	}
 
 	static bool isnetcdf(const cBlock& b) {
@@ -49,59 +49,59 @@ public:
 		}
 		return false;
 	}
-	
+
 	size_t subsamplerate() { return Subsample; }
 
 	virtual bool is_record_valid() { return true; }
-	
+
 	virtual bool get_bunch(cSampleBunch& bunch, const cFieldDefinition& fd, const int& pointindex, const int& bunchsize, const int& bunchsubsample)
 	{
-		glog.errormsg(_SRC_+"\nfunction not yet implemented\n");
+		glog.errormsg(_SRC_ + "\nfunction not yet implemented\n");
 		return false;
 	};
 
 	virtual bool load_record(const size_t& record) = 0;
 
 	virtual bool parse_record() { return true; }
-	
+
 	virtual bool get_acsiicolumnfield(const cFieldDefinition& fd, cAsciiColumnField& c) const {
-		glog.errormsg(_SRC_,"get_acsiicolumnfield() not yet implemented\n");
+		glog.errormsg(_SRC_, "get_acsiicolumnfield() not yet implemented\n");
 		return true;
 	}
 
 	virtual bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {
-		glog.errormsg(_SRC_,"set_variant_type() not yet implemented\n");
+		glog.errormsg(_SRC_, "set_variant_type() not yet implemented\n");
 		return true;
 	}
-		
+
 	const std::string& datafilename() { return DataFileName; }
 
 	const size_t& record() const { return Record; }
-			
-	bool readvnt(cFDVar& fdv, const size_t n=1)
+
+	bool readvnt(cFDVar& fdv, const size_t n = 1)
 	{
-		cFieldDefinition& fd  = fdv.first;
+		cFieldDefinition& fd = fdv.first;
 		cVrnt& vnt = fdv.second;
 
 		auto ReadVisitor = [&](auto& t) {
 			bool s = read(fd, t, n);
-		};		
-		std::visit(ReadVisitor, vnt);		
+			};
+		std::visit(ReadVisitor, vnt);
 		return true;
 	}
 
 	bool readfdvnt(cFdVrnt& fdv, const size_t n = 1)
-	{		
+	{
 		auto ReadVisitor = [&](auto& t) {
 			bool s = read(fdv.fd, t, n);
-		};
+			};
 		std::visit(ReadVisitor, fdv.vnt);
 		return true;
 	}
 
 
 	template<typename T>
-	bool read(const cFieldDefinition& fd, T& v, const size_t n=1)
+	bool read(const cFieldDefinition& fd, T& v, const size_t n = 1)
 	{
 		if (fd.definitiontype() == cFieldDefinition::TYPE::UNAVAILABLE) {
 			v = undefinedvalue<T>();
@@ -113,7 +113,7 @@ public:
 		}
 
 		std::vector<T> vec;
-		file_read(fd,vec,1);
+		file_read(fd, vec, 1);
 		v = vec[0];
 		if (iotype != IOType::ASCII) {//Don't flip if ASCII reader as it already does this - to be fixed
 			fd.apply_flip_and_operator(v);
@@ -130,18 +130,18 @@ public:
 			if (deflen != 1 && deflen != n) {
 				std::ostringstream oss;
 				oss << "Mismatch in field sizes for '<" << fd.keyname << ">' : expected " << n << " but got " << deflen << std::endl;
-				glog.errormsg(_SRC_,oss.str().c_str());
+				glog.errormsg(_SRC_, oss.str().c_str());
 			}
-			
+
 
 			if (deflen == 1) {
 				for (size_t i = 0; i < n; i++) {
-					vec[i] = (T)fd.numericvalue[0];					
+					vec[i] = (T)fd.numericvalue[0];
 				}
 			}
-			else {				
-				for (size_t i = 0; i < n; i++) {					
-					vec[i] = (T) fd.numericvalue[i];
+			else {
+				for (size_t i = 0; i < n; i++) {
+					vec[i] = (T)fd.numericvalue[i];
 				}
 			}
 			return true;
@@ -154,24 +154,24 @@ public:
 		}
 		return true;
 	}
-	
+
 	//virtual template classes are not allowed - therefore repeated
 	virtual bool file_read(const cFieldDefinition& fd, std::vector<char>& vec, const size_t n) = 0;
 	virtual bool file_read(const cFieldDefinition& fd, std::vector<int>& vec, const size_t n) = 0;
 	virtual bool file_read(const cFieldDefinition& fd, std::vector<float>& vec, const size_t n) = 0;
-	virtual bool file_read(const cFieldDefinition& fd, std::vector<double>& vec, const size_t n) = 0;	
+	virtual bool file_read(const cFieldDefinition& fd, std::vector<double>& vec, const size_t n) = 0;
 };
 
 class cASCIIInputManager : public cInputManager {
 
 private:
-	cAsciiColumnFile AF;	
+	cAsciiColumnFile AF;
 
 public:
 
 	std::string HeaderFileName;
 	std::size_t HeaderLines;
-		
+
 	cASCIIInputManager(const cBlock& b) {
 		cInputManager::initialise(b);
 		initialise(b);
@@ -180,14 +180,14 @@ public:
 	~cASCIIInputManager() {	};
 
 	void initialise(const cBlock& b)
-	{		
+	{
 		iotype = IOType::ASCII;
 		HeaderFileName = b.getstringvalue("DfnFile");
-		if(!isdefined(HeaderFileName)){
+		if (!isdefined(HeaderFileName)) {
 			HeaderFileName = b.getstringvalue("HeaderFile");
 		}
-		
-		if(isdefined(HeaderFileName)) {
+
+		if (isdefined(HeaderFileName)) {
 			fixseparator(HeaderFileName);
 			if (!exists(HeaderFileName)) {
 				std::string msg = _SRC_;
@@ -202,23 +202,23 @@ public:
 			msg += strprint("\n\tD'Oh! the specified data file (%s) does not exist\n", DataFileName.c_str());
 			throw(std::runtime_error(msg));
 		}
-		
+
 		AF.openfile(DataFileName);
 
-		if (isdefined(HeaderFileName)) {			
+		if (isdefined(HeaderFileName)) {
 			glog.logmsg(0, "Parsing input HeaderFile %s\n", HeaderFileName.c_str());
 			std::string ext = extractfileextension(HeaderFileName);
-			if (strcasecmp(ext,".dfn")==0){
+			if (strcasecmp(ext, ".dfn") == 0) {
 				AF.parse_dfn_header(HeaderFileName);
 				AF.headertype = cAsciiColumnFile::HeaderType::DFN;
-				AF.parsetype  = cAsciiColumnFile::ParseType::FIXEDWIDTH;
+				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
 			}
-			else if (strcasecmp(ext,".csv")==0) {
+			else if (strcasecmp(ext, ".csv") == 0) {
 				AF.parse_csv_header(HeaderFileName);
 				AF.headertype = cAsciiColumnFile::HeaderType::CSV;
 				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
 			}
-			else if (strcasecmp(ext,".csvh")==0) {
+			else if (strcasecmp(ext, ".csvh") == 0) {
 				AF.parse_csv_header(HeaderFileName);
 				AF.headertype = cAsciiColumnFile::HeaderType::CSV;
 				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
@@ -234,19 +234,19 @@ public:
 				throw(std::runtime_error(msg));
 			}
 		}
-		else{
+		else {
 			AF.headertype = cAsciiColumnFile::HeaderType::NONE;
-			AF.parsetype  = cAsciiColumnFile::ParseType::DELIMITED;
+			AF.parsetype = cAsciiColumnFile::ParseType::DELIMITED;
 			AF.set_fields_noheader();
 		}
 
 		size_t headerlines = b.getsizetvalue("Headerlines");
 		if (!isdefined(headerlines)) { headerlines = 0; }
-		HeaderLines = headerlines;				
+		HeaderLines = headerlines;
 	}
 
 	bool is_record_valid() {
-		bool status =  AF.is_record_valid();
+		bool status = AF.is_record_valid();
 		if (status == false) {
 			std::string msg;
 			msg = strprint("Skipping non-valid record at line %zu of Input DataFile %s\n", record(), datafilename().c_str());
@@ -260,60 +260,60 @@ public:
 		}
 		return true;
 	}
-	
+
 	bool load_record(const size_t& n)
 	{
 		Record = n;
-		return AF.load_record(n+HeaderLines);
+		return AF.load_record(n + HeaderLines);
 	}
 
 	bool parse_record() {
 		size_t n = AF.parse_record();
 		if (n <= 1) return false;
-		return true;		
+		return true;
 	}
-	
+
 	template<typename T>
 	bool get_one(const cFieldDefinition& fd, const size_t& pointindex, T& val) {
-		if (load_record(pointindex)) {			
+		if (load_record(pointindex)) {
 			if (parse_record()) {
 				if (fd.isinitialised()) {
 					if (read(fd, val)) {
 						return true;
 					};
 				}
-				else{
+				else {
 					return true;
 				}
 			}
 		}
 		return false;
 	}
-	
+
 	bool get_bunch(cSampleBunch& bunch, const cFieldDefinition& fd, const int& pointindex, const int& bunchsize, const int& bunchsubsample)
-	{							
-		int line;		
-		bool status = get_one(fd, pointindex, line);		
+	{
+		int line;
+		bool status = get_one(fd, pointindex, line);
 
 		if (status == false) return false;
 
 		int pn = pointindex;
 		int ln = line;
 
-		int pa = pointindex - bunchsubsample*((bunchsize-1)/2);
+		int pa = pointindex - bunchsubsample * ((bunchsize - 1) / 2);
 		while (pa < 0) pa += bunchsubsample;
 		pn = pointindex - bunchsubsample;
 		if (pn < pa) pn = pa;
 
-		while(pn>pa){
+		while (pn > pa) {
 			bool status = get_one(fd, pn, ln);
-			if (status && ln == line) {				
+			if (status && ln == line) {
 				pn -= bunchsubsample;
 			}
-			else{
+			else {
 				pa = pn + bunchsubsample;
-				break;					
-			}													
+				break;
+			}
 		}
 
 		int pb = pa + bunchsubsample * (bunchsize - 1);
@@ -331,15 +331,15 @@ public:
 			}
 		}
 
-		std::vector<std::size_t> indices = increment((size_t)bunchsize, (size_t)pa,(size_t)bunchsubsample);
-		bunch=cSampleBunch(indices,pointindex);
+		std::vector<std::size_t> indices = increment((size_t)bunchsize, (size_t)pa, (size_t)bunchsubsample);
+		bunch = cSampleBunch(indices, pointindex);
 		return true;
 	};
 
 	const std::string& recordstring() const { return AF.currentrecord_string(); }
 
 	const std::vector<std::string>& fields() const { return AF.currentrecord_columns(); }
-	
+
 	bool file_read(const cFieldDefinition& fd, std::vector<char>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
 	bool file_read(const cFieldDefinition& fd, std::vector<int>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
 	bool file_read(const cFieldDefinition& fd, std::vector<float>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
@@ -347,17 +347,17 @@ public:
 
 	template<typename T>
 	bool file_read_impl(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n)
-	{									
+	{
 		bool status = AF.getvec_fielddefinition(fd, vec, n);
-		return status;	
-	}	
-	
+		return status;
+	}
+
 	bool get_acsiicolumnfield(const cFieldDefinition& fd, cAsciiColumnField& c) const {
-		int findex=-1;
+		int findex = -1;
 		if (fd.type == cFieldDefinition::TYPE::VARIABLENAME) {
 			findex = AF.fieldindexbyname(fd.varname);
 		}
-		else if(fd.type == cFieldDefinition::TYPE::COLUMNNUMBER) {
+		else if (fd.type == cFieldDefinition::TYPE::COLUMNNUMBER) {
 			findex = (int)fd.column - 1;
 		}
 
@@ -365,20 +365,20 @@ public:
 			c = AF.fields[findex];
 			return true;
 		}
-		return false;		
+		return false;
 	}
 
-	bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {		
-		cAsciiColumnField c;				
+	bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {
+		cAsciiColumnField c;
 		bool status = get_acsiicolumnfield(fd, c);
-		if (status) {			
+		if (status) {
 			c.set_variant_type(vnt);
 			return true;
 		}
 		else {
-			glog.errormsg(_SRC_,"Could not find field %s\n",fd.varname.c_str());
+			glog.errormsg(_SRC_, "Could not find field %s\n", fd.varname.c_str());
 			return false;
-		}		
+		}
 	}
 
 };
@@ -386,7 +386,7 @@ public:
 #if defined HAVE_NETCDF
 class cNetCDFInputManager : public cInputManager {
 
-private:	
+private:
 	cGeophysicsNcFile NC;
 
 public:
@@ -399,18 +399,18 @@ public:
 	~cNetCDFInputManager() {	};
 
 	void initialise(const cBlock& b)
-	{						
-		glog.logmsg(0, "Opening Input DataFile %s\n", DataFileName.c_str());		
+	{
+		glog.logmsg(0, "Opening Input DataFile %s\n", DataFileName.c_str());
 		iotype = IOType::NETCDF;
-		NC.open(DataFileName, netCDF::NcFile::FileMode::read);		
+		NC.open(DataFileName, netCDF::NcFile::FileMode::read);
 	}
 
 	bool load_record(const size_t& n)
 	{
 		Record = n;
-		#if defined HAVE_NETCDF
-			if (Record > NC.ntotalsamples()) return false;
-		#endif
+#if defined HAVE_NETCDF
+		if (Record > NC.ntotalsamples()) return false;
+#endif
 		return true;
 	}
 
@@ -424,10 +424,9 @@ public:
 	{
 		NC.getDataByPointIndex(fd.varname, Record, v);
 		return true;
-	}	
+	}
 };
 #endif
 
 #endif
 
- 

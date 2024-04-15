@@ -108,8 +108,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\airborne_types.h" />
@@ -130,14 +128,12 @@
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_formats.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\general_constants.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\logger.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\streamredirecter.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\string_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\undefinedvalues.h" />
-    <ClInclude Include="..\..\submodules\geophysics-netcdf\src\geophysics_netcdf.h" />
+    <ClInclude Include="..\..\submodules\geophysics-netcdf\include\geophysics_netcdf.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

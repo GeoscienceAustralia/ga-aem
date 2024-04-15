@@ -16,11 +16,11 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "fielddefinition.h"
 
 
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 	#include "mpi_wrapper.h"
 #endif
 
-#if defined HAVE_NETCDF
+#ifdef HAVE_NETCDF
 	#include "geophysics_netcdf.hpp"
 #endif
 
@@ -601,7 +601,7 @@ public:
 
 		
 		int rank = 0;
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 		rank = cMpiEnv::world_rank();
 #endif
 		if (rank == 0){
@@ -611,7 +611,7 @@ public:
 			outncfile.subsample(srcfile, subsample, include_varnames, exclude_varnames);
 		}	
 
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 		cMpiEnv::world_barrier();
 #endif
 

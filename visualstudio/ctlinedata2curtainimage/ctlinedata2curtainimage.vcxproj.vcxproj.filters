@@ -4,18 +4,6 @@
     <ClCompile Include="..\..\src\ctlinedata2curtainimage.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\gdal_utils.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\RamerDouglasPeucker.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\submodules\ticpp\ticpp.cpp">
       <Filter>tinyxml</Filter>
     </ClCompile>

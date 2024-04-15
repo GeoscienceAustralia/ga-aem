@@ -88,8 +88,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ctlinedata2sgrid.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
     <ClCompile Include="..\..\submodules\ticpp\ticpp.cpp" />
     <ClCompile Include="..\..\submodules\ticpp\tinystr.cpp" />
     <ClCompile Include="..\..\submodules\ticpp\tinyxml.cpp" />

@@ -25,7 +25,7 @@ Richard L. Taylor, Geoscience Australia.
 #include "ptrvec.h"
 
 //third-party headers
-#if defined(_MPI_ENABLED)
+#ifdef ENABLE_MPI
 	#include "mpi.h"
 #endif
 #include <netcdf>

@@ -16,7 +16,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <random>
 
-
 #include "gaaem_version.h"
 #include "file_utils.h"
 #include "tdemsystem.h"
@@ -30,17 +29,17 @@ Author: Ross C. Brodie, Geoscience Australia.
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 #include "mpi_wrapper.h"
 #endif
 
-#if defined _OPENMP	
+#ifdef _OPENMP
 //This thread lock must be set when fftw is being initialised
 omp_lock_t fftw_thread_lock;
 #endif
 
 void finalise() {
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 	MPI_Finalize();
 #endif
 }
@@ -62,7 +61,7 @@ int main(int argc, char** argv) {
 	std::string controlfile;
 	std::string mpipname = "No MPI - Standalone";
 
-#if defined _MPI_ENABLED		
+#ifdef ENABLE_MPI
 	MPI_Init(&argc, &argv);
 	mpirank = cMpiEnv::world_rank();
 	mpisize = cMpiEnv::world_size();
@@ -71,7 +70,7 @@ int main(int argc, char** argv) {
 
 	std::string wlogpath = "warning.log";
 	if (mpirank == 0) deletefile(wlogpath);
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 	cMpiEnv::world_barrier();
 #endif
 
@@ -135,7 +134,7 @@ int main(int argc, char** argv) {
 	}
 	else {
 		std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter>(controlfile, mpisize, mpirank, usingopenmp, commandline);
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 		cMpiEnv::world_barrier();
 #endif
 		if (mpirank == 0) std::cerr << "Warning log closing " << timestamp() << std::endl;

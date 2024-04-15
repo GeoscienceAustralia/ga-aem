@@ -15,7 +15,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "logger.h"
 #include "stacktrace.h"
 
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 	#include "mpi_wrapper.h"
 #endif
 
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 	int mpisize = 1;
 	int mpirank = 0;
 	std::string mpipname = "Standalone";
-	#if defined _MPI_ENABLED
+	#ifdef ENABLE_MPI
 		MPI_Init(&argc, &argv);
 		mpirank = cMpiEnv::world_rank();
 		mpisize = cMpiEnv::world_size();
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 		exitstatus = EXIT_SUCCESS;
 	}
 
-	#if defined _MPI_ENABLED
+	#ifdef ENABLE_MPI
 		MPI_Finalize();
 	#endif
 

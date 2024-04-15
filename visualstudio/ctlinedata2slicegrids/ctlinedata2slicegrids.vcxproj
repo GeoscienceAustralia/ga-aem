@@ -101,12 +101,11 @@ del $(OutDir)$(TargetName).exp
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ctlinedata2slicegrids.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\gdal_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
   </ItemGroup>
