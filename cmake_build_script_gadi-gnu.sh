@@ -3,7 +3,7 @@
 module load gcc/13.2.0
 module load cmake/3.21.4
 module load fftw3/3.3.8
-module load netcdf/4.8.0
+module load netcdf/4.7.1
 module load gdal/3.0.2
 module load openmpi/4.1.4
 module load petsc/3.17.4
