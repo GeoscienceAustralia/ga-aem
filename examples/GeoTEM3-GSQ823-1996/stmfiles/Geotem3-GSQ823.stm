@@ -1,0 +1,123 @@
+System Begin
+	Name = Geotem-GSQ823
+	Type = Time Domain
+	Transmitter Begin
+		NumberOfTurns = 1
+		PeakCurrent   = 1.0
+		LoopArea      = 1
+		BaseFrequency = 25
+		WaveFormCurrent Begin
+			-0.0041080 0.0000000
+			-0.0040438 0.0490677
+			-0.0039796 0.0980171
+			-0.0039154 0.1467305
+			-0.0038512 0.1950903
+			-0.0037871 0.2429802
+			-0.0037229 0.2902847
+			-0.0036587 0.3368899
+			-0.0035945 0.3826834
+			-0.0035303 0.4275551
+			-0.0034661 0.4713967
+			-0.0034019 0.5141027
+			-0.0033377 0.5555702
+			-0.0032736 0.5956993
+			-0.0032094 0.6343933
+			-0.0031452 0.6715590
+			-0.0030810 0.7071068
+			-0.0030168 0.7409511
+			-0.0029526 0.7730105
+			-0.0028884 0.8032075
+			-0.0028242 0.8314696
+			-0.0027601 0.8577286
+			-0.0026959 0.8819213
+			-0.0026317 0.9039893
+			-0.0025675 0.9238795
+			-0.0025033 0.9415441
+			-0.0024391 0.9569403
+			-0.0023749 0.9700313
+			-0.0023107 0.9807853
+			-0.0022466 0.9891765
+			-0.0021824 0.9951847
+			-0.0021182 0.9987955
+			-0.0020540 1.0000000
+			-0.0019898 0.9987955
+			-0.0019256 0.9951847
+			-0.0018614 0.9891765
+			-0.0017972 0.9807853
+			-0.0017331 0.9700313
+			-0.0016689 0.9569403
+			-0.0016047 0.9415441
+			-0.0015405 0.9238795
+			-0.0014763 0.9039893
+			-0.0014121 0.8819213
+			-0.0013479 0.8577286
+			-0.0012837 0.8314696
+			-0.0012196 0.8032075
+			-0.0011554 0.7730105
+			-0.0010912 0.7409511
+			-0.0010270 0.7071068
+			-0.0009628 0.6715590
+			-0.0008986 0.6343933
+			-0.0008344 0.5956993
+			-0.0007703 0.5555702
+			-0.0007061 0.5141027
+			-0.0006419 0.4713967
+			-0.0005777 0.4275551
+			-0.0005135 0.3826834
+			-0.0004493 0.3368899
+			-0.0003851 0.2902847
+			-0.0003209 0.2429802
+			-0.0002568 0.1950903
+			-0.0001926 0.1467305
+			-0.0001284 0.0980171
+			-0.0000642 0.0490677
+			 0.0000000 0.0000000
+			 0.0158920 0.0000000
+		WaveFormCurrent End
+		WaveformDigitisingFrequency = 1638400
+	Transmitter End
+
+	Receiver Begin
+		NumberOfWindows = 16
+		WindowWeightingScheme = Boxcar
+		WindowTimes Begin
+			0.0002733 0.0004295
+			0.0004295 0.0005858
+			0.0005858 0.0007420
+			0.0007420 0.0010545
+			0.0010545 0.0013670
+			0.0013670 0.0018358
+			0.0018358 0.0023045
+			0.0023045 0.0029295
+			0.0029295 0.0037107
+			0.0037107 0.0046483
+			0.0046483 0.0057420
+			0.0057420 0.0069920
+			0.0069920 0.0085545
+			0.0085545 0.0104295
+			0.0104295 0.0129295
+			0.0129295 0.0157420
+		WindowTimes End
+	Receiver End
+
+	ForwardModelling Begin
+		OutputType = dB/dt
+		XOutputScaling = 1
+		YOutputScaling = 1
+		ZOutputScaling = 1
+		SecondaryFieldNormalisation  =  ppm
+		FrequenciesPerDecade = 6
+		NumberOfAbsiccaInHankelTransformEvaluation = 21
+	ForwardModelling End
+
+	ReferenceGeometry Begin
+		//This block is only required for normalization by PPM or PPMPEAKTOPEAK
+		//Specify the (estimated) geometry at which the primary field(s) that
+		//which the data are to be normalized by, was measured. Normalizatuion
+		//is by component. TX_HEIGHT is not relevant and unspecified geometry
+		//attributes (TX_ROLL, TX_PITCH, ...) values are taken to be zero.
+		TXRX_DX = -120
+		TXRX_DZ = -45
+	ReferenceGeometry End
+
+System End

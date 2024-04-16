@@ -1,0 +1,18 @@
+[submodule "submodules/cpp-utils"]
+	path = submodules/cpp-utils
+	url = https://github.com/rcb547/cpp-utils.git
+[submodule "submodules/ticpp"]
+	path = submodules/ticpp
+	url = https://github.com/wxFormBuilder/ticpp.git
+[submodule "submodules/eigen"]
+	path = submodules/eigen
+	url = https://github.com/eigenteam/eigen-git-mirror.git
+[submodule "submodules/geophysics-netcdf"]
+	path = submodules/geophysics-netcdf
+	url = https://github.com/GeoscienceAustralia/geophysics-netcdf.git
+[submodule "submodules/netcdf-cxx4"]
+
+	path = submodules/netcdf-cxx4
+
+	url = https://github.com/Unidata/netcdf-cxx4.git
+

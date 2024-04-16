@@ -1,0 +1,26 @@
+DEFN   ST=RECD,RT=COMM;RT:A4;COMMENTS:A76
+DEFN 1 ST=RECD,RT=; Flight : I8 : NAME=Flight
+DEFN 2 ST=RECD,RT=; Line : I8 : NAME=Line
+DEFN 3 ST=RECD,RT=; Fiducial : I8 : NAME=Fiducial
+DEFN 4 ST=RECD,RT=; Easting : F10.1 : NAME=Easting
+DEFN 5 ST=RECD,RT=; Northing : F10.1 : NAME=Northing
+DEFN 6 ST=RECD,RT=; Elevation : F10.1 : NAME=Elevation
+DEFN 7 ST=RECD,RT=; Tx_Height : F8.3 : NAME=Tx_Height
+DEFN 8 ST=RECD,RT=; Tx_Roll : F8.3 : NAME=Tx_Roll
+DEFN 9 ST=RECD,RT=; Tx_Pitch : F8.3 : NAME=Tx_Pitch
+DEFN 10 ST=RECD,RT=; Tx_Yaw : F8.3 : NAME=Tx_Yaw
+DEFN 11 ST=RECD,RT=; TxRx_Dx : F8.3 : NAME=TxRx_Dx
+DEFN 12 ST=RECD,RT=; TxRx_Dy : F8.3 : NAME=TxRx_Dy
+DEFN 13 ST=RECD,RT=; TxRx_Dz : F8.3 : NAME=TxRx_Dz
+DEFN 14 ST=RECD,RT=; Tx_Roll : F8.3 : NAME=Tx_Roll
+DEFN 15 ST=RECD,RT=; Rx_Pitch : F8.3 : NAME=Rx_Pitch
+DEFN 16 ST=RECD,RT=; Rx_Yaw : F8.3 : NAME=Rx_Yaw
+DEFN 17 ST=RECD,RT=; LMZ : 18E16.5 : NAME=LMZ
+DEFN 18 ST=RECD,RT=; LMZ_Plus_Noise : 18E16.5 : NAME=LMZ_Plus_Noise
+DEFN 19 ST=RECD,RT=; LMZ_Noise : 18E16.5 : NAME=LMZ_Noise
+DEFN 20 ST=RECD,RT=; HMZ : 21E16.5 : NAME=HMZ
+DEFN 21 ST=RECD,RT=; HMZ_Plus_Noise : 21E16.5 : NAME=HMZ_Plus_Noise
+DEFN 22 ST=RECD,RT=; HMZ_Noise : 21E16.5 : NAME=HMZ_Noise
+DEFN 23 ST=RECD,RT=; NLayers : I8 : NAME=NLayers
+DEFN 24 ST=RECD,RT=; Conductivity : 5E16.5 : NAME=Conductivity
+DEFN 25 ST=RECD,RT=; Thickness : 4E16.5 : NAME=Thickness;END DEFN

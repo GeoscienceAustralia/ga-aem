@@ -1,0 +1,44 @@
+Control Begin
+
+	Input Begin
+		//DataFiles  = example-inversion-output\lines\*.asc
+		DataFiles    = example-inversion-output\inversion.output.dat
+		Subsample    = 1
+		Line         = Column 5
+		Easting      = Column 9
+		Northing     = Column 10
+		Elevation    = Column 13
+		Conductivity = Column 28-57
+		Thickness    = Column 58-87
+		//DepthExtent  = 400
+	Input End
+
+	Section Begin
+		HorizontalResolution = 12.5
+		VerticalResolution   = 1
+		VerticalExaggeration = 7.5
+		//ElevationTop    =  200
+		//ElevationBottom = -200
+		ElevationGridDivision = 100
+
+		Prefix = 
+		Suffix = 
+		OutDir = georef_sections\linear-stretch\
+
+		ColourMap      = Jet
+		Log10Stretch   = no
+		LowClip        = 0.0
+		HighClip       = 1
+		ColourBar      = yes
+		ColourBarTicks = 0.001 0.01 0.1 1
+
+		SavePNG = true
+		SaveJPG = false
+
+		//AlphaRGB quartet in range [0-255], A=0->transparent A=255->opague
+		AirColour        = 0 255 255 255
+		BackgroundColour = 0 255 255 255
+		NullsColour      = 255 128 128 128
+	Section End
+
+Control End

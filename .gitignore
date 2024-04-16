@@ -1,5 +1,52 @@
 #File patterns that are ignored
 
+# Ignore temp-* files
+temp-*
+
+# Ignore build and install directories
+build*/
+install*/
+
+# Ignore output files from the examples folder
+examples/**/output
+examples/**/*.out
+examples/**/*.log
+examples/ctlinedata-programs/earthsci
+examples/ctlinedata-programs/georef_sections
+examples/ctlinedata-programs/sgrids
+examples/ctlinedata-programs/grids
+
+# Ignore output from julia synthetic tests
+julia/output
+
+# Ignore all binary executables
+*.exe
+*.dll
+*.mexw64
+/bin/x64/Release/*.exp
+/bin/x64/Release/*.lib
+/bin/x64/Debug
+/bin/x64/Debug/*.exe
+/bin/x64/Debug/*.exp
+/bin/x64/Debug/*.lib
+*_debug.dll
+*_debug.mexw64
+
+# Python
+*.pyc
+*.pyo
+/python/gatdaem1d/gatdaem1d.exp  #Ignore the export lib
+/python/gatdaem1d/gatdaem1d.lib  #Ignore the lib
+/python/gatdaem1d/*.so           #Ignore the Linux shared libraries
+/python/examples/figure1.pdf
+/python/examples/figure2.pdf
+/python/gatdaem1d.egg-info/
+
+# DO NOT IGNORE these Windows binaries
+# !/matlab/bin/x64/gatdaem1d.mexw64 #Keep the Windows mexw64 (dll)
+# !/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
+# !/bin/x64/Release/*.exe #Keep the Windows executables
+
 # Compiled Object files
 *.slo
 *.lo
@@ -24,10 +71,12 @@
 *.sln.docstates
 
 # Build results
+visualstudio/*/x64
 [Dd]ebug/
-[Rr]elease/
-[Rr]elease-nompi/
 [Oo]bj/
+.vs/
+*.iobj
+*.ipdb
 
 
 # Enable "build/" folder in the NuGet Packages folder since NuGet packages use it for MSBuild targets
@@ -47,8 +96,10 @@ TestResult.xml
 *.ilk
 *.meta
 *.obj
+*.iobj
 *.pch
 *.pdb
+*.ipdb
 *.pgc
 *.pgd
 *.rsp
@@ -59,6 +110,8 @@ TestResult.xml
 *.tmp
 *.tmp_proj
 *.log
+*.tlog
+*.lastbuildstate
 *.vspscc
 *.vssscc
 .builds
@@ -100,19 +153,11 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
-# Python
-*.pyc
-*.pyo
-/python/gatdaem1d/gatdaem1d.exp  #Ignore the export lib
-/python/gatdaem1d/gatdaem1d.lib  #Ignore the lib
-/python/gatdaem1d/*.so           #Ignore the Linux shared libraries
-!/python/gatdaem1d/gatdaem1d.dll #Keep the Windows dll
-
-# Keep the Windows x64 Release and FFTW binaries
-!/bin/x64/Release/*      #Make exception for these
-!/third_party/*          #Make exception for these
-
-# Renove all raijin.nci.org.au binaries
-#Compiled executables on linux
-/bin/raijin/*
-
+diag_discretefrequencies.txt
+diag_frequencydomainwaveform.txt
+diag_splinedfrequencies.txt
+diag_windows.txt
+diag_xtimeseries.txt
+diag_ytimeseries.txt
+diag_ztimeseries.txt
+temp-run.bat

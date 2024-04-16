@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Source Files\netcdfcxx">
+      <UniqueIdentifier>{32906806-38d4-4888-bc98-52837bd835e5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncAtt.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncByte.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncChar.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncCheck.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncCompoundType.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncDim.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncDouble.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncEnumType.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncException.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncFile.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncFloat.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncGroup.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncGroupAtt.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncInt.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncInt64.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncOpaqueType.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncShort.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncString.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncType.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncUbyte.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncUint.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncUint64.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncUshort.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncVar.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncVarAtt.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\submodules\netcdf-cxx4\cxx4\ncVlenType.cpp">
+      <Filter>Source Files\netcdfcxx</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

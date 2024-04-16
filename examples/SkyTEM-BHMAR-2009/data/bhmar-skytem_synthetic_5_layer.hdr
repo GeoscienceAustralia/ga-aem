@@ -1,0 +1,26 @@
+1	Flight
+2	Line
+3	Fiducial
+4	Easting
+5	Northing
+6	Elevation
+7	Tx_Height
+8	Tx_Roll
+9	Tx_Pitch
+10	Tx_Yaw
+11	TxRx_Dx
+12	TxRx_Dy
+13	TxRx_Dz
+14	Tx_Roll
+15	Rx_Pitch
+16	Rx_Yaw
+17-34	LMZ
+35-52	LMZ_Plus_Noise
+53-70	LMZ_Noise
+71-91	HMZ
+92-112	HMZ_Plus_Noise
+113-133	HMZ_Noise
+134	NLayers
+135-139	Conductivity
+140-143	Thickness
+

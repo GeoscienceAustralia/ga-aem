@@ -1,0 +1,141 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4BF1EB2C-05EA-408B-9D87-8BA7A6B0E2E2}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>galeisbs</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\propertysheets\msmpi.x64.props" />
+    <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\geophysics-netcdf.props" />
+    <Import Project="..\propertysheets\eigen.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\propertysheets\msmpi.x64.props" />
+    <Import Project="..\propertysheets\fftw.x64.props" />
+    <Import Project="..\propertysheets\ga-aem.props" />
+    <Import Project="..\propertysheets\geophysics-netcdf.props" />
+    <Import Project="..\propertysheets\eigen.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
+    <LibraryPath>..\lib\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>..\lib\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>HAVE_NETCDF;USEGLOBALSTACKTRACE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions> /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <BuildStlModules>false</BuildStlModules>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>HAVE_NETCDF;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <ConformanceMode>false</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions> /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <BuildStlModules>false</BuildStlModules>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\galeisbstdem.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\airborne_types.h" />
+    <ClInclude Include="..\..\src\cinverter.h" />
+    <ClInclude Include="..\..\src\csbsinverter.h" />
+    <ClInclude Include="..\..\src\gaaem_version.h" />
+    <ClInclude Include="..\..\src\inputmanager.h" />
+    <ClInclude Include="..\..\src\inversion_line_searcher.h" />
+    <ClInclude Include="..\..\src\lem.h" />
+    <ClInclude Include="..\..\src\outputmanager.h" />
+    <ClInclude Include="..\..\src\tdemcomponentinfo.h" />
+    <ClInclude Include="..\..\src\tdemsystem.h" />
+    <ClInclude Include="..\..\src\tdemsysteminfo.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\asciicolumnfile.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\eigen_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_formats.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\general_constants.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\logger.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\streamredirecter.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\string_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\src\undefinedvalues.h" />
+    <ClInclude Include="..\..\submodules\geophysics-netcdf\include\geophysics_netcdf.hpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

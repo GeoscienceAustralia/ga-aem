@@ -11,7 +11,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #define  EXPORT_FCNS
 #include "shrhelp.h"
+#include "earth1d.h"
 #include "gatdaem1d.h"
+
+
+class cLogger glog; //The global instance of the log file manager
+class cStackTrace gtrace; //The global instance of the stacktrace
 
 void* createhandle(const char* systemfile)
 {			
@@ -37,11 +42,11 @@ void waveform(void* hS, double* time, double* currentwaveform, double* voltagewa
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	for(size_t i=0; i<T.SamplesPerWaveform; i++){
 		time[i] = T.WaveformTime[i];
-		if(T.WaveformType == WT_TX){
+		if(T.WaveformType == cTDEmSystem::WaveFormType::TX){
 			currentwaveform[i]  = T.WaveformCurrent[i];
 		}
 
-		if(T.WaveformType == WT_RX){
+		if(T.WaveformType == cTDEmSystem::WaveFormType::RX){
 			voltagewaveform[i]  = T.WaveformReceived[i];
 		}
 	}		
@@ -54,21 +59,21 @@ int nwindows(void* hS)
 }
 
 int nturns(void* hS)
-{		
+{
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (int)T.TX_NumberOfTurns;	
+	return (int)T.TX_NumberOfTurns;
 }
 
 double peakcurrent(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-        return (double)T.TX_PeakCurrent;
+	return (double)T.TX_PeakCurrent;
 }
 
 double looparea(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-        return (double)T.TX_LoopArea;
+	return (double)T.TX_LoopArea;
 }
 
 double basefrequency(void* hS)
@@ -80,7 +85,7 @@ double basefrequency(void* hS)
 int nlayers(void* hS)
 {		
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (int)T.Earth.NumLayers;	
+	return (int)T.LEM.NumLayers;	
 }
 
 void windowtimes(void* hS, double* low, double* high)
@@ -100,30 +105,94 @@ void setgeometry(void* hS, const double tx_height, const double tx_roll, const d
 
 void setearth(void* hS, int nlayers, double* conductivity, double* thickness)
 {		
-	cTDEmSystem& T = *(cTDEmSystem*)hS;	
-	T.Earth.setconductivitythickness(nlayers,conductivity,thickness);
+	cTDEmSystem& T = *(cTDEmSystem*)hS;			
+	T.LEM.setconductivitythickness(nlayers,conductivity,thickness);
 }
 
 void forwardmodel(void* hS,
-	const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw,
-	const int nlayers, const double* conductivity, const double* thickness,
-	double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
-{		
-	cTDEmSystem& T = *(cTDEmSystem*)hS;	
+	const double tx_height,
+	const double tx_roll,
+	const double tx_pitch,
+	const double tx_yaw,
+	const double txrx_dx,
+	const double txrx_dy,
+	const double txrx_dz,
+	const double rx_roll,
+	const double rx_pitch,
+	const double rx_yaw,
+	const int nlayers,
+	const double* conductivity,
+	const double* thickness,	
+	double* PX,
+	double* PY,
+	double* PZ,
+	double* SX,
+	double* SY,
+	double* SZ)
+{
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
-	T.Earth.setconductivitythickness(nlayers,conductivity,thickness);
+	cEarth1D E(nlayers, conductivity, thickness);
+	T.LEM.setproperties(E);
 	T.setupcomputations();
-	T.Earth.calculation_type = CT_FORWARDMODEL;
-	T.Earth.derivative_layer = -1;			
-	T.setprimaryfields();	
+	T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	T.LEM.derivative_layer = -1;
+	T.setprimaryfields();
 	T.setsecondaryfields();
 
-	size_t nw=T.NumberOfWindows;
-	size_t sz=sizeof(double)*nw;
-	
-	*PX=T.PrimaryX;
-	*PY=T.PrimaryY;
-	*PZ=T.PrimaryZ;
+	size_t nw = T.NumberOfWindows;
+	size_t sz = sizeof(double)*nw;
+
+	*PX = T.PrimaryX;
+	*PY = T.PrimaryY;
+	*PZ = T.PrimaryZ;
+	memcpy(SX, T.X.data(), sz);
+	memcpy(SY, T.Y.data(), sz);
+	memcpy(SZ, T.Z.data(), sz);
+}
+
+void forwardmodel_ip(void* hS,
+	const double tx_height,
+	const double tx_roll,
+	const double tx_pitch,
+	const double tx_yaw,
+	const double txrx_dx,
+	const double txrx_dy,
+	const double txrx_dz,
+	const double rx_roll,
+	const double rx_pitch,
+	const double rx_yaw,
+	const int nlayers,
+	const double* conductivity,
+	const double* thickness,
+	const int iptype,
+	const double* chargeability,
+	const double* timeconstant,
+	const double* frequencydependence,
+	double* PX,
+	double* PY,
+	double* PZ,
+	double* SX,
+	double* SY,
+	double* SZ)
+{
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
+	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	cEarth1D E(nlayers, conductivity, thickness, chargeability, timeconstant, frequencydependence);
+	T.LEM.iptype = (cLEM::IPType)iptype;
+	T.LEM.setproperties(E);
+	T.setupcomputations();
+	T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	T.LEM.derivative_layer = -1;
+	T.setprimaryfields();
+	T.setsecondaryfields();
+
+	size_t nw = T.NumberOfWindows;
+	size_t sz = sizeof(double)*nw;
+
+	*PX = T.PrimaryX;
+	*PY = T.PrimaryY;
+	*PZ = T.PrimaryZ;
 	memcpy(SX, T.X.data(), sz);
 	memcpy(SY, T.Y.data(), sz);
 	memcpy(SZ, T.Z.data(), sz);
@@ -133,8 +202,8 @@ void derivative(void* hS, int dtype, int dlayer,
 	double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
 {		
 	cTDEmSystem& T = *(cTDEmSystem*)hS;		
-	T.Earth.calculation_type = (eCalculationType)dtype;
-	T.Earth.derivative_layer = dlayer-1;	//subtract one from the layer number for zero based indexing
+	T.LEM.calculation_type = (cLEM::CalculationType)dtype;
+	T.LEM.derivative_layer = (size_t)((int)(dlayer-1));	//subtract one from the layer number for zero based indexing
 	T.setprimaryfields();	
 	T.setsecondaryfields();
 
@@ -156,10 +225,10 @@ void fm_dlogc(void* hS,
 {				
 	cTDEmSystem& T = *(cTDEmSystem*)hS;				
 	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
-	T.Earth.setconductivitythickness(nlayers,conductivity,thickness);		
+	T.LEM.setconductivitythickness(nlayers,conductivity,thickness);		
 	T.setupcomputations();
-	T.Earth.calculation_type = CT_FORWARDMODEL;		
-	T.Earth.derivative_layer = -1;	
+	T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	T.LEM.derivative_layer = -1;	
 	T.setprimaryfields();	
 	T.setsecondaryfields();
 
@@ -174,12 +243,12 @@ void fm_dlogc(void* hS,
 	memcpy(p,T.Z.data(),sz); p+=nw;	
 
 	for(size_t k=0;k<(size_t)nlayers;k++){
-		T.Earth.calculation_type = CT_CONDUCTIVITYDERIVATIVE;		
-		T.Earth.derivative_layer = k;
+		T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
+		T.LEM.derivative_layer = k;
 		T.setprimaryfields();	
 		T.setsecondaryfields();
 		
-		double c=T.Earth.Layer[k].Conductivity;
+		double c=T.LEM.Layer[k].Conductivity;
 		*p=T.PrimaryX*c; p++;		
 		for(size_t w=0;w<nw;w++){
 			*p = T.X[w] * c;
@@ -200,4 +269,26 @@ void fm_dlogc(void* hS,
 
 	}
 }
+
+void derivative_rx_pitch(void* hS, int n, double rx_pitch, double* xb, double* zb, double* dxbdp, double* dzbdp)
+{
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
+	//T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	//T.LEM.derivative_layer = -1;
+	//T.setprimaryfields();
+	//T.setsecondaryfields();
+	
+	size_t sz = sizeof(double)*n;
+	
+	std::vector<double> dxbdpvec(n);	
+	std::vector<double> dzbdpvec(n);
+	std::vector<double> xbvec(xb,xb + n);
+	std::vector<double> zbvec(zb,zb + n);
+
+	T.drx_pitch(xbvec, zbvec, rx_pitch, dxbdpvec, dzbdpvec);
+
+	memcpy(dxbdp, dxbdpvec.data(), sz);	
+	memcpy(dzbdp, dzbdpvec.data(), sz);
+}
+
 

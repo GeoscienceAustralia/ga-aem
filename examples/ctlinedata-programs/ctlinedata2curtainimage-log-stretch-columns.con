@@ -1,0 +1,53 @@
+Control Begin
+
+	Input Begin
+		//DatumProjection = EPSG:28354
+		DatumProjection = GDA94|MGA54
+
+		//HeaderFile = Don't specify a header file if using column numbers
+		DataFiles  = example-inversion-output\inversion.output.dat
+		//DataFiles  = example-inversion-output\lines\3*.asc;example-inversion-output\lines\4*.asc
+
+		Subsample    = 1
+		Line         = Column 5
+		Fiducial     = Column 6
+		Easting      = Column 9
+		Northing     = Column 10
+		Elevation    = Column 13
+		Conductivity = Column 26-55
+		Thickness    = Column 56-85
+		InputConductivityUnits = S/m
+	Input End
+
+	Section Begin
+		HorizontalResolution = 10
+		VerticalResolution   = 2
+		//ElevationTop    =  200
+		//ElevationBottom = -200
+		//ElevationGridDivision = 0
+
+		Prefix = 
+		Suffix = 
+		OutDir = earthsci\log-stretch
+
+		ColourStretch Begin
+			ColourMap      = Jet
+			Type           = LOG10
+			LowClip        = 0.001
+			HighClip       = 1
+			ColourBarTicks = 0.001 0.01 0.1 1
+
+			//AlphaRGB quartet in range [0-255], A=0->transparent A=255->opague
+			AirColour        = 0 255 255 255
+			BackgroundColour = 0 255 255 255
+			NullsColour      = 255 128 128 128
+		ColourStretch End
+
+		GeometryTolerance = 30
+		TileSize          = 512
+		DatasetName       = Frome_AEM_Log-Stretch
+		DataCacheName     = Frome_AEM_Log-Stretch
+
+	Section End
+
+Control End
