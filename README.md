@@ -49,7 +49,7 @@ or if you use SSH authentification,
 ```
 
 ## Submodules
-The ga-aem project has several source code dependencies that are included as git submodules from other open-source projects. The submodules are only required for building the programs and are not required if you are just using precompiled executables. See [*here*](submodules/Readme.md) for details of how the submodules should be initialised and updated.
+The ga-aem project has several source code dependencies that are included as git submodules from other open-source projects. The submodules are only required for building the programs and are not required if you are just using precompiled executables. See [*here*](./submodules/README.md) for details of how the submodules should be initialised and updated.
 
 ## Third-party library dependencies
 For full functionality and to build all programs the following packages are required: FFTW, MPI, NetCDF, GDAL and PETSc.
