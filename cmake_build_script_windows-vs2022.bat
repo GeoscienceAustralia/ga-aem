@@ -18,7 +18,7 @@ REM Set the NetCDF path if not set in user environment externally
 SET NETCDF_DIR=C:\Program Files\netCDF 4.9.2
 
 REM Set the GDAL path if not set in user environment externally
-SET GDAL_DIR=%LocalAppData%\gdal-3.0.4
+SET GDAL_DIR=%LocalAppData%\gdal-3.7.1-mapserver-8-0-1
 
 REM Set the PETSc paths if not set in user environment externally
 SET PETSC_DIR=%LocalAppData%\petsc\3.9.4\vs2017

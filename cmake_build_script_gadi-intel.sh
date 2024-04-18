@@ -17,7 +17,7 @@ export PETSC_LIBRARY_DIR=$PETSC_DIR/lib/ompi3/Intel
 
 # INSTALL_DIR is the directory where the built package will be installed
 export INSTALL_DIR=$PWD/install-intel
-#export INSTALL_DIR=/g/data/qi71/apps/ga-aem/csiro-dev-20240329
+#export INSTALL_DIR=/g/data/qi71/apps/ga-aem/2.0.0
 
 # BUILD_DIR is a temporary directory for building (compiling and linking) the package
 export BUILD_DIR=$PWD/build-intel
