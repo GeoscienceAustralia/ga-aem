@@ -10,6 +10,7 @@ mkdir $BUILD_DIR
 cd $BUILD_DIR
 
 # Switches for turning off certain dependencies if they are not wanted or available
+# 	-DWITH_FFTW=OFF
 # 	-DWITH_MPI=OFF
 # 	-DWITH_NETCDF=OFF
 # 	-DWITH_GDAL=OFF
@@ -17,8 +18,8 @@ cd $BUILD_DIR
 # cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=OFF -DWITH_NETCDF=OFF -DWITH_GDAL=OFF -DWITH_PETSC=OFF ..
 
 #Example for the GNU compilers
-cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
+cmake -Wno-dev -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --target all
 cmake --install . --prefix $INSTALL_DIR
 
 # Or alternatively ...

@@ -1,12 +1,13 @@
-# This file was downloaded from https://github.com/jedbrown/cmake-modules/blob/master/FindNetCDF.cmake
+# This file was downloaded from https://github.com/jedbrown/cmake-modules/blob/master/FindNETCDF.cmake
 # Author: Jed Brown
+# Modified for ga-aem purposes
 
-# - Find NetCDF
-# Find the native NetCDF includes and library
+# - Find NETCDF
+# Find the native NETCDF includes and library
 #
 #  NETCDF_INCLUDES    - where to find netcdf.h, etc
-#  NETCDF_LIBRARIES   - Link these libraries when using NetCDF
-#  NETCDF_FOUND       - True if NetCDF found including required interfaces (see below)
+#  NETCDF_LIBRARIES   - Link these libraries when using NETCDF
+#  NETCDF_FOUND       - True if NETCDF found including required interfaces (see below)
 #
 # Your package can require certain interfaces to be FOUND by setting these
 #
@@ -24,7 +25,7 @@
 #
 # Normal usage would be:
 #  set (NETCDF_F90 "YES")
-#  find_package (NetCDF REQUIRED)
+#  find_package (NETCDF REQUIRED)
 #  target_link_libraries (uses_f90_interface ${NETCDF_LIBRARIES})
 #  target_link_libraries (only_uses_c_interface ${NETCDF_LIBRARIES_C})
 
@@ -40,36 +41,36 @@ find_path (NETCDF_INCLUDES netcdf.h
 find_library (NETCDF_LIBRARIES_C       NAMES netcdf)
 mark_as_advanced(NETCDF_LIBRARIES_C)
 
-set (NetCDF_has_interfaces "YES") # will be set to NO if we're missing any interfaces
-set (NetCDF_libs "${NETCDF_LIBRARIES_C}")
+set (NETCDF_has_interfaces "YES") # will be set to NO if we're missing any interfaces
+set (NETCDF_libs "${NETCDF_LIBRARIES_C}")
 
-get_filename_component (NetCDF_lib_dirs "${NETCDF_LIBRARIES_C}" PATH)
+get_filename_component (NETCDF_lib_dirs "${NETCDF_LIBRARIES_C}" PATH)
 
-macro (NetCDF_check_interface lang header libs)
+macro (NETCDF_check_interface lang header libs)
   if (NETCDF_${lang})
     find_path (NETCDF_INCLUDES_${lang} NAMES ${header}
       HINTS "${NETCDF_INCLUDES}" NO_DEFAULT_PATH)
     find_library (NETCDF_LIBRARIES_${lang} NAMES ${libs}
-      HINTS "${NetCDF_lib_dirs}" NO_DEFAULT_PATH)
+      HINTS "${NETCDF_lib_dirs}" NO_DEFAULT_PATH)
     mark_as_advanced (NETCDF_INCLUDES_${lang} NETCDF_LIBRARIES_${lang})
     if (NETCDF_INCLUDES_${lang} AND NETCDF_LIBRARIES_${lang})
-      list (INSERT NetCDF_libs 0 ${NETCDF_LIBRARIES_${lang}}) # prepend so that -lnetcdf is last
+      list (INSERT NETCDF_libs 0 ${NETCDF_LIBRARIES_${lang}}) # prepend so that -lnetcdf is last
     else (NETCDF_INCLUDES_${lang} AND NETCDF_LIBRARIES_${lang})
-      set (NetCDF_has_interfaces "NO")
-      message (STATUS "Failed to find NetCDF interface for ${lang}")
+      set (NETCDF_has_interfaces "NO")
+      message (STATUS "Failed to find NETCDF interface for ${lang}")
     endif (NETCDF_INCLUDES_${lang} AND NETCDF_LIBRARIES_${lang})
   endif (NETCDF_${lang})
-endmacro (NetCDF_check_interface)
+endmacro (NETCDF_check_interface)
 
-NetCDF_check_interface (CXX netcdfcpp.h netcdf_c++)
-NetCDF_check_interface (F77 netcdf.inc  netcdff)
-NetCDF_check_interface (F90 netcdf.mod  netcdff)
+NETCDF_check_interface (CXX netcdfcpp.h netcdf_c++)
+NETCDF_check_interface (F77 netcdf.inc  netcdff)
+NETCDF_check_interface (F90 netcdf.mod  netcdff)
 
-set (NETCDF_LIBRARIES "${NetCDF_libs}" CACHE STRING "All NetCDF libraries required for interface level")
+set (NETCDF_LIBRARIES "${NETCDF_libs}" CACHE STRING "All NETCDF libraries required for interface level")
 
 # handle the QUIETLY and REQUIRED arguments and set NETCDF_FOUND to TRUE if
 # all listed variables are TRUE
 include (FindPackageHandleStandardArgs)
-find_package_handle_standard_args (NetCDF DEFAULT_MSG NETCDF_LIBRARIES NETCDF_INCLUDES NetCDF_has_interfaces)
+find_package_handle_standard_args (NETCDF DEFAULT_MSG NETCDF_LIBRARIES NETCDF_INCLUDES NETCDF_has_interfaces)
 
 mark_as_advanced (NETCDF_LIBRARIES NETCDF_INCLUDES)

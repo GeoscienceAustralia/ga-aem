@@ -25,7 +25,7 @@ export BUILD_DIR=$PWD/build-intel
 mkdir $BUILD_DIR
 cd $BUILD_DIR
 
-cmake -Wno-dev -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx ..
+cmake -Wno-dev -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --target all
 cmake --install . --prefix $INSTALL_DIR
 

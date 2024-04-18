@@ -32,18 +32,19 @@ mkdir %BUILD_DIR%
 cd    %BUILD_DIR%
 
 REM First generate the build cache first
-REM cmake -Wno-dev -G "Visual Studio 16 2019" -A x64 -DCMAKE_CXX_COMPILER=msvc ..
-cmake -Wno-dev -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc -DCMAKE_BUILD_TYPE=Release ..
+REM cmake -G "Visual Studio 16 2019" -A x64 -Wno-dev -DCMAKE_CXX_COMPILER=msvc ..
+cmake -G "Visual Studio 17 2022" -A x64 -Wno-dev -DCMAKE_CXX_COMPILER=msvc -DCMAKE_BUILD_TYPE=Release ..
 
 REM Switches for turning off certain dependencies if they are not wanted or available
+REM 	-DWITH_FFTW=OFF
 REM 	-DWITH_MPI=OFF
 REM 	-DWITH_NETCDF=OFF
 REM 	-DWITH_GDAL=OFF
 REM 	-DWITH_PETSC=OFF
-REM cmake -Wno-dev -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=OFF -DWITH_NETCDF=OFF -DWITH_GDAL=OFF -DWITH_PETSC=OFF ..
+REM cmake -G "Visual Studio 17 2022" -A x64 -Wno-dev -DCMAKE_CXX_COMPILER=msvc -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=OFF -DWITH_NETCDF=OFF -DWITH_GDAL=OFF -DWITH_PETSC=OFF ..
 
 REM Build and install everything
-cmake --build . --config=Release
+cmake --build . --target all --config=Release
 cmake --install . --prefix %INSTALL_DIR%
 
 REM Or alternatively ...
