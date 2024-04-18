@@ -1,7 +1,7 @@
 # Submodules for ga-aem
 
 # Description
-Git submodules are used in ga-aem git project. They contain utility and third party source code. Depending on what you are doing, you may not need all the submodules. They are not required if you just want to run the precompiled Windows executables.
+Git submodules are used in the ga-aem git project. They contain utility and third party source code. Depending on what you are doing, you may not need all the submodules. They are not required if you just want to run the precompiled Windows executables.
 
 # Initialisation and updating
 By default, when the ga-aem repository is initially cloned the submodule directories will not be populated with code/files. To populate them, you need to issue the `git submodule init` and `git submodule update --recursive` commands to initialise and populate each submodule with the (correct commit/version) of each repository.  The `--recursive` switch is required because some submodules have their own submodules.  For example,

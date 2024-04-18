@@ -24,7 +24,7 @@ mkdir $BUILD_DIR
 cd $BUILD_DIR
 
 cmake -Wno-dev -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . --target all
+cmake --build . 
 cmake --install . --prefix $INSTALL_DIR
 
 #cmake --build . --target galeisbstdem
@@ -36,8 +36,11 @@ cmake --install . --prefix $INSTALL_DIR
 #cmake --build . --target gaforwardmodeltdem
 #cmake --build . --target example_forward_model
 #cmake --build . --target example_forward_model_c
+
 #cmake --build . --target gatdaem1d-static
 #cmake --build . --target gatdaem1d-shared
+#cmake --build . --target matlab-bindings
+#cmake --build . --target python-bindings
 
 #cmake --build . --target ctlinedata2sgrid
 #cmake --build . --target ctlinedata2slicegrids

@@ -27,9 +27,12 @@ This is a repository for Geoscience Australia's programs and utilities for forwa
 - removelog10conductivityfromsgrid.exe - legacy program for removing the log10 conductivity from GoCAD SGrids
 ### User examples
 - Examples of how to use the programs for various AEM systems
-### For Matlab and Python users
-- Matlab interface via MEX file (shared library) with examples 
-- Python interface via shared library with examples 
+### For Matlab users
+- Matlab interface via MEX file (shared library) with examples
+- See [*here*](matlab/README.md) for details.
+### For Python users
+- Python interface via shared library with examples.
+- See [*here*](python/README.md) for details.
 ### For developers/coders
 - example_forward_model.exe - (for developers) simple C++ language example of how to use the code in C++ to run a forward models.
 - example_forward_model_c.exe - (for developers) simple C language example of how to use the code in C++ to run a forward models.
@@ -85,7 +88,7 @@ For full functionality and to build all programs the following packages are requ
 > mkdir <build-dir>                                // <build-dir> is a temporary directory for building
 > cd <build-dir>                                   // change to the <build-dir>
 > cmake -DCMAKE_BUILD_TYPE=Release ..              // generate the cache using ../CMakeLists.txt in the directory above
-> cmake --build . --target all                     // build all targets
+> cmake --build .                                  // build all targets
 > cmake --install . --prefix <install-dir>         // install the executables, libraries, headers, docs and Matlab and Python into <install-dir>
 ```
 - The above should work on Linux if you have a C and C++ compiler installed along with all the dependencies.

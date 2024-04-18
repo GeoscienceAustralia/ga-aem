@@ -1,8 +1,5 @@
-With the exception of the Template Numerical Toolkit (TNT) Linear Algebra Module (located in repository directory ./third_party/tnt), developed at the National Institute of Standards and Technology, which is incorporated into this package and belongs to the public domain, the remainder of the code is licensed under the GNU GPL Version 2.0 Licence by the following copyright holders:
+The code is licensed under the GNU GPL Version 2.0 Licence by the following copyright holders:
 
-Crown Copyright Commonwealth of Australia (Geoscience Australia) 2015.
-FFTW http://www.fftw.org (located in repository directory ./third_party/fftw3.2.2.dlls)
-Copyright (c) 2003, 2007-8 Matteo Frigo
-Copyright (c) 2003, 2007-8 Massachusetts Institute of Technology
+Crown Copyright Commonwealth of Australia (Geoscience Australia) 2024.
 
 The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.html. If you require a paper copy of the GNU GPL 2.0 Licence, please write to Free Software Foundation, Inc. 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.

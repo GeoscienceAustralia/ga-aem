@@ -9,15 +9,19 @@ set GA-AEM_ROOT=%LocalAppData%\GA-AEM
 REM Call batch script to setup the GA-AEM programs and dependency paths
 CALL %GA-AEM_ROOT%\scripts\ga-aem_vars.bat
 
-ECHO "-----------------"
+ECHO ==========================================================================
+ECHO GA-AEM_ROOT=%GA-AEM_ROOT%
+ECHO PATH=%PATH%
+
+ECHO ==========================================================================
 galeisbstdem.exe
-ECHO "-----------------"
+ECHO ==========================================================================
 galeiallatonce.exe
-ECHO "-----------------"
-ctlinedata2sgrid.exe
-ECHO "-----------------"
+ECHO ==========================================================================
+ctlinedata2curtainimage.exe
+ECHO ==========================================================================
 ctlinedata2slicegrids.exe
-ECHO "-----------------"
+ECHO ==========================================================================
 
 pause
 

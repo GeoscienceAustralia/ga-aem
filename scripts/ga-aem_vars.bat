@@ -1,6 +1,6 @@
-@ECHO ---------------------------------------------------------------------------
+@ECHO ===========================================================================
 @ECHO Adding GA-AEM programs and dependencies to the PATH environment variable
-@ECHO ---------------------------------------------------------------------------
+@ECHO ===========================================================================
 
 @ECHO OFF
 REM Add executable and library directories to your search path
@@ -12,13 +12,11 @@ set path=%GA-AEM_ROOT%\bin;%PATH%
 REM FFTW NOT required for the ctlinedata* programs
 set path=%LocalAppData%\fftw-3.3.5-dll64;%PATH%
 
-REM NetCDF only required for galeisbstdem.exe, galeisbstdem-nompi.exe, garjmcmctdem.exe
+REM NetCDF only optionally required for galeisbstdem.exe, galeisbstdem-nompi.exe, garjmcmctdem.exe
 set path=C:\Program Files\netCDF 4.9.2\bin;%PATH%
 
-REM GDAL only required for ctlinedata2georefimage.exe and ctlinedata2curtainimage.exe
-set path=%LocalAppData%\gdal-3.0.4\bin;%PATH%
-REM set path=%LocalAppData%\%LocalAppData%\gdal-3.7.1-mapserver-8-0-1;%PATH%
+REM GDAL only required for ctlinedata2slicegrids.exe and ctlinedata2curtainimage.exe
+set path=%LocalAppData%\gdal-3.7.1-mapserver-8-0-1\bin;%PATH%
 
 REM PETSc only required for galeiallatonce.exe
 SET path=%LocalAppData%\petsc\3.9.4\vs2017\win64_release\lib;%PATH%
-

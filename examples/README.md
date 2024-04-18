@@ -1,5 +1,0 @@
-examples
-========
-
-Directory for examples
-

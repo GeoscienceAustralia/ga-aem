@@ -44,7 +44,7 @@ REM 	-DWITH_PETSC=OFF
 REM cmake -G "Visual Studio 17 2022" -A x64 -Wno-dev -DCMAKE_CXX_COMPILER=msvc -DCMAKE_BUILD_TYPE=Release -DWITH_MPI=OFF -DWITH_NETCDF=OFF -DWITH_GDAL=OFF -DWITH_PETSC=OFF ..
 
 REM Build and install everything
-cmake --build . --target all --config=Release
+cmake --build . --config=Release
 cmake --install . --prefix %INSTALL_DIR%
 
 REM Or alternatively ...
@@ -58,10 +58,11 @@ REM cmake --build . --target galeiallatonce --config=Release
 REM cmake --build . --target gaforwardmodeltdem --config=Release
 REM cmake --build . --target example_forward_model --config=Release
 REM cmake --build . --target example_forward_model_c --config=Release
-REM cmake --build . --target gatdaem1d-static --config=Release
 
-REM gatdaem1d-shared is required FOR python and matlab interfaces
+REM cmake --build . --target gatdaem1d-static --config=Release
 REM cmake --build . --target gatdaem1d-shared --config=Release
+REM cmake --build . --target matlab-bindings --config=Release
+REM cmake --build . --target python-bindings --config=Release
 
 REM cmake --build . --target ctlinedata2sgrid --config=Release
 REM cmake --build . --target ctlinedata2slicegrids --config=Release
