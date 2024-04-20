@@ -3,8 +3,8 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>$(GDAL_ROOT)\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(GDAL_ROOT)\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(GDAL_DIR)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(GDAL_DIR)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>

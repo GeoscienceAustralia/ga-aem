@@ -65,20 +65,20 @@ Alternatively to build just an individual program, for example galeisbstdem
 
 ### Environment variables
 - The Visual Studio project files rely on some environment variable to be set so that the include and library files of the external packages can be found.  
-- To build all programs the following variables would need to be set: FFTW_DIR, MATLAB_ROOT, MSMPI_BIN, MSMPI_INC, MSMPI_LIB64, GDAL_ROOT, GDAL_DATA, PROJ_LIB, NETCDF_ROOT, PETSC_DIR, PETSC_BIN.  
-- For example, on the Windows 11 system used for development, the following variables were set:
+- To build all programs the following variables would need to be set: FFTW_DIR, MATLAB_DIR, MSMPI_BIN, MSMPI_INC, MSMPI_LIB64, GDAL_DIR, GDAL_DATA, PROJ_LIB, NETCDF_DIR, PETSC_DIR, PETSC_BIN.  
+- For example, on the Windows 11 syeditstem used for development, the following variables were set:
 ```text
 	FFTW_DIR=%LocalAppData%\fftw-3.3.5-dll64
 	MSMPI_BIN=C:\Program Files\Microsoft MPI\Bin\
 	MSMPI_INC=C:\Program Files (x86)\Microsoft SDKs\MPI\Include\
 	MSMPI_LIB64=C:\Program Files (x86)\Microsoft SDKs\MPI\Lib\x64\
-	GDAL_ROOT=%LocalAppData%\gdal-3.7.1-mapserver-8-0-1
-	GDAL_DATA=%GDAL_ROOT%\bin\gdal-data
-	PROJ_LIB=%GDAL_ROOT%\bin\proj9\SHARE
-	NETCDF_ROOT=C:\Program Files\netCDF 4.9.2
+	GDAL_DIR=%LocalAppData%\gdal-3.7.1-mapserver-8-0-1
+	GDAL_DATA=%GDAL_DIR%\bin\gdal-data
+	PROJ_LIB=%GDAL_DIR%\bin\proj9\SHARE
+	NETCDF_DIR=C:\Program Files\netCDF 4.9.2
 	PETSC_DIR=%LocalAppData%\petsc\3.9.4\vs2017
 	PETSC_BIN=%PETSC_DIR%\win64_release\lib
-	MATLAB_ROOT=C:\Program Files\MATLAB\R2022b
+	MATLAB_DIR=C:\Program Files\MATLAB\R2022b
 ```
 - Typically %LocalAppData% is located at `C:\Users\<username>\AppData\Local`.
 - These paths need to be adjusted according to where your particular packages are installed.
