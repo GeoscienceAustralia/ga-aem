@@ -2885,11 +2885,13 @@ public:
 		if (OO.ObservedData) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
 				cTDEmSystemInfo& S = SV[sysi];
+				bool reconstructedprimaryflag = false;
+				if (S.reconstructPrimary) reconstructedprimaryflag = true;//Only do this for the observed data but not for predicted data or noise
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name,
 						"observed", "Observed",
-						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary, S.units);
+						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary, S.units, reconstructedprimaryflag);
 				}
 			}
 		}
@@ -2973,7 +2975,7 @@ public:
 		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
 	}
 
-	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary, const std::string& units)
+	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary, const std::string& units, const bool& reconstructedprimaryflag=false)
 	{
 		std::string DN_WINDOW = "em_window";
 		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
@@ -2981,6 +2983,9 @@ public:
 		if (includeprimary) {
 			std::string name = sysname + comp + "P";
 			std::string desc = sysdesc + comp + "-component primary field";
+			if (reconstructedprimaryflag) {
+				desc = sysdesc + comp + "-component primary field reconstructed from input geometry";
+			}
 			OM->writefield(pointindex,
 				p, name, desc, units,
 				1, ST_FLOAT, DN_NONE, form, width, decimals);

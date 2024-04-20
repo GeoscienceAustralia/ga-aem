@@ -1,7 +1,7 @@
 # GA-AEM Source Code Repository
 
 # Description
-GA-AEM is a repository for Geoscience Australia's C++ programs and utilities for forward modelling and inversion of Airborne Electromagnetic (AEM) data. It includes Matlab and Python interfaces for forward model and derivative calculations. It also includes some programs for post-processing inversion results into GoCAD SGrid sections, georeferenced-section images and grids.
+GA-AEM is a repository for Geoscience Australia's C++ programs and utilities for forward modelling and inversion of Airborne Electromagnetic (AEM) data. It includes Matlab and Python interfaces for forward model and derivative calculations. It also includes programs for post-processing inversion results to generate GoCAD SGrid sections, georeferenced-section images, Geoscience Australia's EarthSci and Portal curtain images and layer, depth-slice and elevation-slice grids.
 
 ## Authors
 - Dr Ross C Brodie, formerly Geoscience Australia
@@ -9,6 +9,9 @@ GA-AEM is a repository for Geoscience Australia's C++ programs and utilities for
 
 ## Acknowledgements
 The majority of the development for this project was carried out by the authors whilst employed at Geoscience Australia. A significant part of the development was however carried out as part of a Geoscience Australia-CSIRO placement. The CSIRO Deep Earth Imaging Future Science Platform (DEI-FSP), CSIRO Discovery Program and CSIRO Research Office is acknowledged for funding and facilitating that placement.
+
+## Pre-built Windows binaries
+For Windows users whom do not wish to compile the programs themselves a package of pre-built Windows binaries are available to be downloaded from GitHub [*here*](https://github.com/GeoscienceAustralia/ga-aem/releases/tag/v2.0.0-Release-20240424). Although the package does not require compiling it does requires the installation of some third-party dependencies. See the section on [*third party software dependencies*](#third-party-software-dependencies) for details.
 
 ## Languages
 - Mostly C++.
@@ -56,12 +59,12 @@ or if you use SSH authentication,
 ## Submodules
 The ga-aem project has several source code dependencies that are included as git submodules from other open-source projects. The submodules are only required for building the programs and are not required if you are just using precompiled executables. See [*here*](submodules/README.md) for details of how the submodules should be initialized and updated.
 
-## Third-party library dependencies
-For full functionality and to build all programs the following packages are required: FFTW, MPI, NetCDF, GDAL and PETSc.
-- See [*here*](README-Dependencies.md) for details of how to obtain and install the library dependencies.
+## Third-party software dependencies
+For full functionality and to build all programs, and ultimately run them, the following packages are required: FFTW, MPI, NetCDF, GDAL and PETSc.
+- See [*here*](README-Dependencies.md) for details of how to obtain and install the dependencies.
 - Not all the dependencies are required for all the programs, as detailed below,
 	- FFTW
-		- required for galeisbstdem.exe, galeisbstdem-nompi.exe, garjmcmctdem.exe, galeiallatonce.exe, Matlab and Python interfaces.
+		- required for galeisbstdem.exe, galeisbstdem-nompi.exe, garjmcmctdem.exe, galeiallatonce.exe, and the Matlab and Python interfaces.
 	- MPI
 		- optional for galeisbstdem.exe.
 		- required for garjmcmctdem.exe and galeiallatonce.exe.
@@ -157,8 +160,29 @@ This may be useful if, for example, you do not have the third-party packages ins
 
 # Releases
 
-## Release-20240424
-- To be completed
+## v2.0.0 Release-20240424
+- Functionality changes to galeisbstdem.exe
+	- Added XZ amplitude inversion functionality.
+	- Added Bunch-by-bunch inversion functionality.
+	- More conservative (better) line search.
+	- Model parameter bounds and log-barrier constraint.
+	- More sanity checks on inputs and warning log output.
+	- Usability and convenience improvements.
+	- Zero and null data handling (for potentially culled data).
+	- Pass-through selected ancillary fields from input to output file.
+	- ASEGGDF2 DFN, CSV and HDR headers supported.
+	- Field names can be specified instead of column numbers.
+	- CSV header output.
+	- Vertical similarity/homogeneity constraints.
+	- Experimental output to GA's NetCDF line data format.
+	- Experimental delayed geometry inversion option.
+	- Experimental cable length constraint.
+- Post-processing of inversion results programs added.
+	- GoCAD SGrid generation.
+	- Georeferenced section generation.
+	- Generation of rudimentary layer, depth slice and elevation slice grids.
+	- Generation of curtain images sections for GA's EarthSci and Portal.
+- CMake build system supported and traditional Makefiles deprecated.
 ## Release-20160606
 - Added Python 3.x interface for simple forward modelling and derivatives only.
 - Added Matlab interface for simple forward modelling and derivatives only.
