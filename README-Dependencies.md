@@ -20,7 +20,7 @@ Depending on your flavour of Linux, you are likely to need to install the packag
 ### Installing dependencies on Windows
 On Windows the packages can be downloaded and installed as outlined below.
 - Note that 64 bit versions are required with the include and library files.
-- Note that the directory path `%LocalAppData%` is the Windows environment variable where non-administrator users can install applications for their own use and is typically located at `C:\Users\[your-username]\AppData\Local\`.
+- Note that the directory path `%LocalAppData%` is the Windows environment variable where non-administrator users can install applications for their own use and is typically located at `C:\Users\<your-username>\AppData\Local\`.
 - Note that `%LocalAppData%` can be substituted for any other suitable installation path, for example `C:\Program Files\` or `C:\Win10Dev\`.
 
 #### FFTW
@@ -45,7 +45,7 @@ On Windows the packages can be downloaded and installed as outlined below.
 - Download the - Compiled libraries and headers - https://build2.gisinternals.com/sdk/downloads/release-1911-x64-gdal-3-0-4-mapserver-7-4-3-libs.zip.
 - Unzip both these into a single directory e.g. `gdal-3.7.1-mapserver-8-0-1` that should then have bin, doc, include and lib sub-directories.
 - Place that folder into a suitable install path, for example `%LocalAppData%\gdal-3.7.1-mapserver-8-0-1`.
-- Note that earlier versions of GDAL can also be similarly used, eg. v3.0.4 - https://gisinternals.com/query2.html?content=filelist&file=release-1911-x64-gdal-3-0-4-mapserver-7-4-3.zip.
+- Note that earlier versions of GDAL can also be similarly used, for example, v3.0.4 - https://gisinternals.com/query2.html?content=filelist&file=release-1911-x64-gdal-3-0-4-mapserver-7-4-3.zip.
 
 #### PETSc
 - Download the prebuilt PETSc 3.9.4 Windows 64 bit libraries - https://github.com/rcb547/petsc-3.9.4-vs2017-win64-libraries/releases/download/v1.0.0/petsc-3.9.4-vs2017-win64-libraries.zip

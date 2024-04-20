@@ -1,7 +1,7 @@
 # GA-AEM Python forward modelling interface
 
 ## Description
-The Python (>=v3.5) interface consists of a C/C++ shared libarary (.so on Linux or .dll on Windows) called gatdaem1d which contains time-domain forward modelling and derivative functions which are called by the Python interpreter.
+The Python (>=v3.5) interface consists of a C/C++ shared library (.so on Linux or .dll on Windows) called gatdaem1d which contains time-domain forward modelling and derivative functions which are called by the Python interpreter.
 
 ## Compiling and installing the C/C++ shared libraries
 First the shared library needs to be built with CMake.  See one of the CMake build scripts in the root directory of the ga-aem source code repository. If you are only interested in the Python interface, you need only build the ***`python_bindings`*** target.

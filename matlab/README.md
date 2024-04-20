@@ -1,7 +1,7 @@
 # GA-AEM Matlab forward modelling interface
 
 ## Description
-The MATLAB interface consists of a C callable shared libarary gatdaem1d which contains time domain forward modelling and derivative functions which are called by the Matlab interpreter, and a series of .m wrapper function scripts.
+The MATLAB interface consists of a C callable shared library gatdaem1d which contains time domain forward modelling and derivative functions which are called by the Matlab interpreter, and a series of .m wrapper function scripts.
 
 ## Compiling and installing the C/C++ shared libraries
 First the shared library needs to be built with CMake.  See one of the CMake build scripts in the root directory of the ga-aem source code repository.  If you are only interested in the Matlab interface, you need only build the ***`matlab_bindings`*** target.
@@ -11,7 +11,7 @@ First the shared library needs to be built with CMake.  See one of the CMake bui
 - [ga-aem-install-dir]/matlab/bin/libgatdaem1d.so is the time-domain Linux shared library
 - [ga-aem-install-dir]/matlab/bin/gatdaem1d.mexw64 is the time-domain 64-Bit Windows shared library (it is a dll that MATLAB can call)
 - [ga-aem-install-dir]/matlab/gatdaem1d_functions contains the wrapper functions MATLAB scripts .m
-- [ga-aem-install-dir]/matlab/rjmcmctdem_functions contains the wrapper functions MATLAB scripts .m for handling Monte-Carlo invesrion outputs
+- [ga-aem-install-dir]/matlab/rjmcmctdem_functions contains the wrapper functions MATLAB scripts .m for handling Monte-Carlo inversion outputs
 - [ga-aem-install-dir]/matlab/examples contains examples of how to use the gatdaem1d module
 
 # Notes

@@ -1,18 +1,21 @@
 # GA-AEM Source Code Repository
 
 # Description
-This is a repository for Geoscience Australia's programs and utilities for forward modelling and inversion of Airborne Electromagnetic (AEM) data. It includes Matlab and Python interfaces for forward model and derivative calculations. It also includes some programs for post-processing inversion results into sections, images and grids.
+GA-AEM is a repository for Geoscience Australia's C++ programs and utilities for forward modelling and inversion of Airborne Electromagnetic (AEM) data. It includes Matlab and Python interfaces for forward model and derivative calculations. It also includes some programs for post-processing inversion results into GoCAD SGrid sections, georeferenced-section images and grids.
 
 ## Authors
-- Ross C Brodie, Geoscience Australia (formerly)
-- Richard Taylor, Geoscience Australia (formerly)
+- Dr Ross C Brodie, formerly Geoscience Australia
+- Dr Richard Taylor, formerly Geoscience Australia
+
+## Acknowledgements
+The majority of the development for this project was carried out by the authors whilst employed at Geoscience Australia. A significant part of the development was however carried out as part of a Geoscience Australia-CSIRO placement. The CSIRO Deep Earth Imaging Future Science Platform (DEI-FSP), CSIRO Discovery Program and CSIRO Research Office is acknowledged for funding and facilitating that placement.
 
 ## Languages
 - Mostly C++.
 - Some Matlab.
 - Some Python.
 
-## Included content
+## Included contents
 
 ### User programs
 - gaforwardmodeltdem.exe - 1D forward modelling program for time-domain AEM data
@@ -26,9 +29,9 @@ This is a repository for Geoscience Australia's programs and utilities for forwa
 - ctlinedata2curtainimage.exe - (undocumented) convert inversion outputs to GA's Earth Sci curtain image format
 - removelog10conductivityfromsgrid.exe - legacy program for removing the log10 conductivity from GoCAD SGrids
 ### User examples
-- Examples of how to use the programs for various AEM systems
+- Examples of how to use the programs for various AEM systems.
 ### For Matlab users
-- Matlab interface via MEX file (shared library) with examples
+- Matlab interface via MEX file (shared library) with examples.
 - See [*here*](matlab/README.md) for details.
 ### For Python users
 - Python interface via shared library with examples.
@@ -36,23 +39,22 @@ This is a repository for Geoscience Australia's programs and utilities for forwa
 ### For developers/coders
 - example_forward_model.exe - (for developers) simple C++ language example of how to use the code in C++ to run a forward models.
 - example_forward_model_c.exe - (for developers) simple C language example of how to use the code in C++ to run a forward models.
-
 ### User documentation
-- [User Manual](docs/GA-AEM_Programs_User_Manual.pdf)
-- [Theoretical details for GALEISBSTDEM](docs/GALEISBSTDEM_Inversion_Algorithm_Theoretical_Details.pdf)
+- [*User Manual*](docs/GA-AEM_Programs_User_Manual.pdf).
+- [*Theoretical details for GALEISBSTDEM*](docs/GALEISBSTDEM_Inversion_Algorithm_Theoretical_Details.pdf).
 
 # Cloning the repository
-When initially cloning the repository in git you should use the `--recursive` option so that all of the submodules and their respective submodules are initialised and populated with code.
+When initially cloning the repository in git you should use the `--recursive` option so that all of the submodules and their respective submodules are initialized and populated with code.
 ```bash
 > git clone --recursive https://github.com/GeoscienceAustralia/ga-aem.git
 ```
-or if you use SSH authentification,
+or if you use SSH authentication,
 ```bash
 > git clone --recursive git@github.com:GeoscienceAustralia/ga-aem.git
 ```
 
 ## Submodules
-The ga-aem project has several source code dependencies that are included as git submodules from other open-source projects. The submodules are only required for building the programs and are not required if you are just using precompiled executables. See [*here*](./submodules/README.md) for details of how the submodules should be initialised and updated.
+The ga-aem project has several source code dependencies that are included as git submodules from other open-source projects. The submodules are only required for building the programs and are not required if you are just using precompiled executables. See [*here*](./submodules/README.md) for details of how the submodules should be initialized and updated.
 
 ## Third-party library dependencies
 For full functionality and to build all programs the following packages are required: FFTW, MPI, NetCDF, GDAL and PETSc.
@@ -61,25 +63,25 @@ For full functionality and to build all programs the following packages are requ
 	- FFTW
 		- required for galeisbstdem.exe, galeisbstdem-nompi.exe, garjmcmctdem.exe, galeiallatonce.exe, Matlab and Python interfaces.
 	- MPI
-		- optional for galeisbstdem.exe
-		- required for garjmcmctdem.exe and galeiallatonce.exe
+		- optional for galeisbstdem.exe.
+		- required for garjmcmctdem.exe and galeiallatonce.exe.
 	- NetCDF
-		- optional for galeisbstdem.exe and galeisbstdem-nompi.exe
-		- required for garjmcmctdem.exe
+		- optional for galeisbstdem.exe and galeisbstdem-nompi.exe.
+		- required for garjmcmctdem.exe.
 	- GDAL
-		- required only for ctlinedata2slicegrids.exe and ctlinedata2curtainimage.exe
+		- required only for ctlinedata2slicegrids.exe and ctlinedata2curtainimage.exe.
 	- PETSc
-		- required only for galeiallatonce.exe
+		- required only for galeiallatonce.exe.
 
 # Building (compiling and linking) the code
 - The programs can be built from source code on both Linux and Windows systems, and probably other architectures.
-- The build system uses CMake (>=v3.16) software.
-- Traditional Makefiles are deprecated in this release of ga-aem.
-- It is typically simpler to build the code on Linux, however note that Windows users can build and run the code easily on the free [*Ubuntu 20.04*](https://www.microsoft.com/en-au/p/ubuntu-2004/9n6svws3rx71#activetab=pivot:overviewtab) emulator app available free from the Microsoft Store.
-- Nevertheless, the code definitely can be built on Windows with CMake or with the Microsoft Visual Studio IDE.
+- The ga-aem project make use of the [*CMake*](#building-with-cmake) (>=v3.16) software.
+- It is typically simpler to build the code on Linux, however note that Windows users can build and run the code easily on the free [*Ubuntu 20.04*](https://www.microsoft.com/en-au/p/ubuntu-2004/9n6svws3rx71#activetab=pivot:overviewtab) emulator app available from the Microsoft Store.
+- Nevertheless, the code definitely can be built on Windows with CMake or with the [*Microsoft Visual Studio IDE*](#building-on-windows-with-the-microsoft-visual-studio-ide).
+- Traditional Makefiles are now deprecated in ga-aem.
 
-## Building using CMake
-- CMake can be downloaded from https://cmake.org/download.
+## Building with CMake
+- CMake can be downloaded from *https://cmake.org/download*.
 - The CMake program uses the file [*CMakeLists.txt*](CMakeLists.txt) to build the executables and libraries.  Unless you really know what you are doing do not edit this file.
 - CMake involves a generate step, a build step, and an install step.
 - The most basic way to use CMake is as follows:
@@ -146,19 +148,19 @@ This may be useful if, for example, you do not have them installed or do not nee
 	cmake --install . --prefix %LocalAppData%\GA-AEM
 	```
 ## Building on Windows with the Microsoft Visual Studio IDE
-- On Windows systems you can build the programs with the free Microsoft Visual Studio 2019 (or later) software in a GUI based integrated development environment (IDE).  This is in fact how the code has been developed.
+- On Windows systems you can build the programs with the [*Microsoft Visual Studio*](https://visualstudio.microsoft.com) 2019 (or later) software in a GUI based integrated development environment (IDE).  This is in fact how the code has been developed. 
+- Be certain to select and install the ***`Desktop development with C++`*** workload in the Visual Studio installer.
 - For convenience Microsoft Visual Studio project, solution and property sheet files are supplied. However some path updates will be required depending on how/where you have installed the third-party dependency libraries.
-- See [*here*](visualstudio/README.md) for more details.
+- See [*here*](visualstudio/README.md) for more details on how to build ga-aem using the Microsoft Visual Studio IDE.
 
 # Releases
 
 ## Release-20240424
 - To be completed
-
 ## Release-20160606
 - Added Python 3.x interface for simple forward modelling and derivatives only.
 - Added Matlab interface for simple forward modelling and derivatives only.
-- Changed how the PPM normalisation is carried out. Now PPM normalisation is by directional-component-wise with respect to the maximum primary dB/dt or B-field at the receiver for a reference system geometry (which is usually estimated on a per flight or per survey basis). Previously PPM normalisation was with respect to the system geometry for the forward model being run.
+- Changed how the PPM normalization is carried out. Now PPM normalization is by directional-component-wise with respect to the maximum primary dB/dt or B-field at the receiver for a reference system geometry (which is usually estimated on a per flight or per survey basis). Previously PPM normalization was with respect to the system geometry for the forward model being run.
 - Added GEOTEM (1996 ppm system) and SPECTREM (ppm system) examples.
 - Fixed a bug in the thickness derivative of the second bottom layer. This may have effected few-layer inversions, but not multi-layer fixed-thickness inversion.
 ## Release-20160428
