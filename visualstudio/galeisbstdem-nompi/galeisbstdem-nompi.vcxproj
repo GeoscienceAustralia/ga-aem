@@ -97,13 +97,13 @@
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\outputmanager.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\fielddefinition.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\matrix_ops.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />

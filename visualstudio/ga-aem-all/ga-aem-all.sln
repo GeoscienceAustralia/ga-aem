@@ -21,15 +21,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gatdaem1d_python", "..\gatd
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeiallatonce", "..\galeiallatonce\galeiallatonce.vcxproj", "{4C0C6699-2660-402B-B688-344C21AF9F7C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2sgrid", "..\ctlinedata2sgrid\ctlinedata2sgrid.vcxproj.vcxproj", "{8A1E2299-06B1-4AB4-B197-FFCB5798319E}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2georefimage", "..\ctlinedata2georefimage\ctlinedata2georefimage.vcxproj", "{BC29E294-2FFF-45E2-BDF1-6D98691142D6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2slicegrids", "..\ctlinedata2slicegrids\ctlinedata2slicegrids.vcxproj", "{C0300794-FB6C-4D98-8F4A-8FF11D07A1DD}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example_forward_model", "..\example_forward_model\example_forward_model.vcxproj", "{CAE0B057-3FA2-4BAA-9B78-FCAF8BD4E254}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2curtainimage", "..\ctlinedata2curtainimage\ctlinedata2curtainimage.vcxproj.vcxproj", "{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "galeisbstdem-nompi", "..\galeisbstdem-nompi\galeisbstdem-nompi.vcxproj", "{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -46,6 +42,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "removelog10conductivityfromsgrid", "..\removelog10conductivityfromsgrid\removelog10conductivityfromsgrid.vcxproj", "{63A8B78C-7864-4796-A738-732B9C583736}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gatdaem1d", "..\gatdaem1d\gatdaem1d.vcxproj", "{1B7E2029-D3BA-4551-B020-D35EF4B3C9CB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2curtainimage", "..\ctlinedata2curtainimage\ctlinedata2curtainimage.vcxproj", "{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ctlinedata2sgrid", "..\ctlinedata2sgrid\ctlinedata2sgrid.vcxproj", "{8A1E2299-06B1-4AB4-B197-FFCB5798319E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -91,12 +91,6 @@ Global
 		{4C0C6699-2660-402B-B688-344C21AF9F7C}.Release|x64.ActiveCfg = Release|x64
 		{4C0C6699-2660-402B-B688-344C21AF9F7C}.Release|x64.Build.0 = Release|x64
 		{4C0C6699-2660-402B-B688-344C21AF9F7C}.Release|x86.ActiveCfg = Release|x64
-		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Debug|x64.ActiveCfg = Debug|x64
-		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Debug|x64.Build.0 = Debug|x64
-		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Debug|x86.ActiveCfg = Debug|x64
-		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Release|x64.ActiveCfg = Release|x64
-		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Release|x64.Build.0 = Release|x64
-		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Release|x86.ActiveCfg = Release|x64
 		{BC29E294-2FFF-45E2-BDF1-6D98691142D6}.Debug|x64.ActiveCfg = Debug|x64
 		{BC29E294-2FFF-45E2-BDF1-6D98691142D6}.Debug|x64.Build.0 = Debug|x64
 		{BC29E294-2FFF-45E2-BDF1-6D98691142D6}.Debug|x86.ActiveCfg = Debug|x64
@@ -115,12 +109,6 @@ Global
 		{CAE0B057-3FA2-4BAA-9B78-FCAF8BD4E254}.Release|x64.ActiveCfg = Release|x64
 		{CAE0B057-3FA2-4BAA-9B78-FCAF8BD4E254}.Release|x64.Build.0 = Release|x64
 		{CAE0B057-3FA2-4BAA-9B78-FCAF8BD4E254}.Release|x86.ActiveCfg = Release|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x64.ActiveCfg = Debug|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x64.Build.0 = Debug|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Debug|x86.ActiveCfg = Debug|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|x64.ActiveCfg = Release|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|x64.Build.0 = Release|x64
-		{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}.Release|x86.ActiveCfg = Release|x64
 		{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}.Debug|x64.ActiveCfg = Debug|x64
 		{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}.Debug|x64.Build.0 = Debug|x64
 		{7B1929DF-3492-4DEC-9E43-F64C1C8D7B96}.Debug|x86.ActiveCfg = Debug|x64
@@ -157,6 +145,22 @@ Global
 		{1B7E2029-D3BA-4551-B020-D35EF4B3C9CB}.Release|x64.Build.0 = Release|x64
 		{1B7E2029-D3BA-4551-B020-D35EF4B3C9CB}.Release|x86.ActiveCfg = Release|x64
 		{1B7E2029-D3BA-4551-B020-D35EF4B3C9CB}.Release|x86.Build.0 = Release|x64
+		{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}.Debug|x64.ActiveCfg = Debug|x64
+		{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}.Debug|x64.Build.0 = Debug|x64
+		{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}.Debug|x86.ActiveCfg = Debug|x64
+		{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}.Debug|x86.Build.0 = Debug|x64
+		{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}.Release|x64.ActiveCfg = Release|x64
+		{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}.Release|x64.Build.0 = Release|x64
+		{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}.Release|x86.ActiveCfg = Release|x64
+		{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}.Release|x86.Build.0 = Release|x64
+		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Debug|x64.ActiveCfg = Debug|x64
+		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Debug|x64.Build.0 = Debug|x64
+		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Debug|x86.ActiveCfg = Debug|x64
+		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Debug|x86.Build.0 = Debug|x64
+		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Release|x64.ActiveCfg = Release|x64
+		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Release|x64.Build.0 = Release|x64
+		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Release|x86.ActiveCfg = Release|x64
+		{8A1E2299-06B1-4AB4-B197-FFCB5798319E}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

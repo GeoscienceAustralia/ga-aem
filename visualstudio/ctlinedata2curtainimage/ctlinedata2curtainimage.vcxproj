@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{F2C8E4EA-11EA-4AB5-9D36-624F29CE131D}</ProjectGuid>
+    <ProjectGuid>{C63C0B65-EB12-41CF-A77C-C3EE5B3C7560}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ctlinedata2georefimage</RootNamespace>
     <ProjectName>ctlinedata2curtainimage</ProjectName>
@@ -101,15 +101,15 @@ icacls $(OutDir)$(TargetName)$(TargetExt) /grant Everyone:RX</Command>
     <ClCompile Include="..\..\submodules\ticpp\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\colormap.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_formats.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\gdal_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\RamerDouglasPeucker.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\stretch.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\undefinedvalues.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\colormap.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_formats.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\gdal_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\RamerDouglasPeucker.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stretch.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h" />
     <ClInclude Include="..\..\submodules\ticpp\ticpp.h" />
     <ClInclude Include="..\..\submodules\ticpp\ticppapi.h" />
     <ClInclude Include="..\..\submodules\ticpp\ticpprc.h" />
