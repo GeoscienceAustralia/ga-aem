@@ -14,9 +14,6 @@ for j=1:1:length(C);
     end
     errorbar(wtime,-P.observations(dind),-P.errors(dind),'r');
 end
-xlabel('Time (s)');
-ylabel('Response (pV/Am^4)');
-xlim([10e-6 2e-2]);
 if(~isempty(titlestr))
     title(titlestr);
 end

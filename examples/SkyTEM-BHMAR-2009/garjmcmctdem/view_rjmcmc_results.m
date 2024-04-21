@@ -19,21 +19,21 @@ if(~exist(plotdir','dir'))
 end
 
 %Component info for plotting nicely
-C(1).name   = 'Z';%name of the component
-C(1).dindex = 1:45;%index in the data array for this component
-C(1).wtime =  [2.05e-05     2.6e-05    3.15e-05    3.65e-05     4.2e-05     4.8e-05     5.5e-05    6.35e-05     7.3e-05     8.4e-05    9.65e-05   0.0001105    0.000127    0.000146   0.0001675   0.0001925    0.000221   0.0002535   0.0002915    0.000335   0.0003845   0.0004415   0.0005075    0.000583   0.0006695   0.0007695    0.000884   0.0010155   0.0011665   0.0013395    0.001539   0.0017685   0.0020315   0.0023335     0.00268   0.0030785   0.0035365    0.004061    0.004664    0.005358    0.006155   0.0070705   0.0081225    0.009331    0.010717];%window centre times
+C(1).name   = 'LM-Z';%name of the component
+C(1).dindex = 1:18;%index in the data array for this component
+C(1).wtime =  [1.7195e-05  2.1695e-05  2.7695e-05  3.5195e-05  4.4195e-05  5.5695e-05  7.0195e-05  8.8695e-05  0.00011219  0.00014119   0.0001782   0.0002247   0.0002827   0.0003562   0.0004487  0.00056519   0.0007117   0.0008962];%window centre times
 
 %Add other components as required
-%C(2).name   = ;%name of the component
-%C(2).dindex = ;%index in the data array for this component
-%C(2).wtime =  ;%window centre times
+C(2).name   = 'HM-Z';%name of the component
+C(2).dindex = 19:39;%index in the data array for this component
+C(2).wtime =  [8.5695e-05   0.0001092   0.0001382   0.0001752  0.00022169  0.00027969  0.00035319   0.0004457  0.00056219   0.0007087  0.00089319   0.0011257   0.0014182   0.0017862   0.0022497   0.0028332   0.0035677   0.0044927   0.0056572   0.0071227   0.0088392];%window centre times
 
 subsam   = 10; % > 1 to plot a bit faster
 select_nlayers = [];%select any number of layers with []
 %select_nlayers = 3;%select nl=3 layer models only
 
-%maxdepth = [];  % Use this for full depth range
-maxdepth = 400; % Or set to particular max depth
+maxdepth = [];  % Use this for full depth range
+%maxdepth = 200; % Or set to particular max depth
 
 F = dir([ncdir '*.nc']);
 nsoundings=length(F);
@@ -58,9 +58,9 @@ for i=1:1:nsoundings
     subplot(1,2,1);
     plot_rjmcmc_data_predicted(gca,P,C,subsam,titlestr);
     xlabel('Time (s)');
-    ylabel('Response (pV/Am^4)');
+    ylabel('Response (V/Am^4)');
     xlim([10e-6 2e-2]);
-    ylim([5e-3 2e2]); % data min/max
+    ylim([1e-13 2e-8]); % data min/max
 
     subplot(1,2,2);
     plot_rjmcmc_models(gca,P,subsam,maxdepth,[],select_nlayers);

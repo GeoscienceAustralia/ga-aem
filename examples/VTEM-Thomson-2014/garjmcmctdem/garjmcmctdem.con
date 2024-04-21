@@ -22,32 +22,33 @@ Control Begin
 		SaveMapsRate   = 1		// Sounding rate at which pmaps are saved
 		SaveChains     = Yes	// Only if SaveMaps=yes
 
-		NChains  =        4		// Number of parallel chains - this has no relationship to the number of MPI processes as MPI parallelism is done at sounding granularity
-		NSamples =  1000000		// Total number of samples in each chain
-		NBurnIn  =    20000		// Burn-in number of samples of in each chain
-		ThinRate =     1000		// Thin-rate
+		NChains  =          4	// Number of parallel chains - this has no relationship to the number of MPI processes as MPI parallelism is done at sounding granularity
+		NSamples =     250000	// Total number of samples in each chain
+		NBurnIn  =      25000	// Burn-in number of samples of in each chain
+		ThinRate =        100	// Thin-rate
 		HighTemperature = 2.5	// Run NChains in parallel tempering with temperatures log-spaced between 1 and HighTemperature
 
-		NLayersMin  =  1
-		NLayersMax  =  10
+		NLayersMin  =   1	// Minimum number of layers
+		NLayersMax  =  10	// Maximum number of layers
 
-		DepthMin        = 0.0
-		DepthMax        = 600
-		DepthScaling    = LINEAR
-		NDepthCells     = 600
+		DepthMin        = 0.0		// Minimum depth allowed for an interface
+		DepthMax        = 400		// Maximum depth allowed for an interface
+		DepthScaling    = LINEAR	// LOG10 or LINEAR parameterization of depth
+		NDepthCells     = 400		// Number of cells high (in deoth) in the probability map histogram
 
-		ConductivityMin          = 0.0001
-		ConductivityMax          = 5.0
-		ConductivityScaling      = LOG10
-		NConductivityCells       = 100
+		ConductivityMin          = 0.0001	// Minimum conductivity bound (S/m) to sample
+		ConductivityMax          = 5.0		// Maximum conductivity bound (S/m) to sample
+		ConductivityScaling      = LOG10	// LOG10 or LINEAR parameterization of conductivity
+		NConductivityCells       = 100		// Number of cells wide (in conductivity) in the probability map histogram
 	Sampler End
 
 	Input Begin
 		DataFile   = ../data/thomson-vtem.dat
-		HeaderLines = 0
-		FirstRecord = 1
-		LastRecord  = Inf
-		Subsample   = 100
+		HeaderLines = 0		// Number of header lines in file to skip
+		FirstRecord = 1		// First record to invert
+		LastRecord  = Inf	// Last record to invert (Inf for end of file)
+		Subsample   = 100	// Subsample rate
+
 
 		Columns Begin
 			SurveyNumber    = Column 1
