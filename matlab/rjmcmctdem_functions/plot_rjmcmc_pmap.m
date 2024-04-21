@@ -3,7 +3,6 @@ function [figure_handle,ax] = plot_rjmcmc_pmap(figure_handle,P,maxdepth,TM)
 if(isempty(maxdepth))
    maxdepth = P.pmax;
 end
-    
 
 oldvis = get(figure_handle,'visible');
 %        [ x1   x2   y1   y2 ];

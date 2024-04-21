@@ -18,36 +18,36 @@ Control Begin
 	EMSystem1 End
 
 	Sampler Begin
-		SaveMaps       = Yes
-		SaveMapsRate   = 50
-		SaveChains     = Yes
-		SaveChainsRate = 500
+		SaveMaps       = Yes	// Save NetCDF pmap files
+		SaveMapsRate   = 1		// Sounding rate at which pmaps are saved
+		SaveChains     = Yes	// Only if SaveMaps=yes
 
-		NChains  =     50
-		NSamples =  15000
-		NBurnIn  =   5000
-		ThinRate =    100
+		NChains  =        4		// Number of parallel chains - this has no relationship to the number of MPI processes as MPI parallelism is done at sounding granularity
+		NSamples =  1000000		// Total number of samples in each chain
+		NBurnIn  =    20000		// Burn-in number of samples of in each chain
+		ThinRate =     1000		// Thin-rate
+		HighTemperature = 2.5	// Run NChains in parallel tempering with temperatures log-spaced between 1 and HighTemperature
 
 		NLayersMin  =  1
-		NLayersMax  =  5
+		NLayersMax  =  10
 
 		DepthMin        = 0.0
-		DepthMax        = 400
+		DepthMax        = 600
 		DepthScaling    = LINEAR
-		NDepthCells     = 100
+		NDepthCells     = 600
 
-		ConductivityMin          = 0.001
+		ConductivityMin          = 0.0001
 		ConductivityMax          = 5.0
 		ConductivityScaling      = LOG10
 		NConductivityCells       = 100
 	Sampler End
 
 	Input Begin
-		DataFile   = ..\data\thomson-vtem.dat
+		DataFile   = ../data/thomson-vtem.dat
 		HeaderLines = 0
 		FirstRecord = 1
 		LastRecord  = Inf
-		Subsample   = 1
+		Subsample   = 100
 
 		Columns Begin
 			SurveyNumber    = Column 1
@@ -58,7 +58,6 @@ Control Begin
 			Easting         = Column 28
 			Northing        = Column 29
 			GroundElevation = Column 32
-			Altimeter       = Column 22
 
 			TX_Height       = Column 30
 			TX_Roll         = Column 23
@@ -76,9 +75,8 @@ Control Begin
 	Output Begin
 		LogFile    = rjmcmc.log
 		DataFile   = rjmcmc.asc
-
-		Directory  = output\
-		MapsDirectory    = output\pmaps\
-		ChainsDirectory  = output\chains\
+		Directory  = output/
+		MapsDirectory    = output/pmaps/
+		Verbose = no
 	Output End
 Control End

@@ -161,7 +161,7 @@ This may be useful if, for example, you do not have the third-party packages ins
 # Releases
 
 ## v2.0.0 Release-20240424
-- Functionality changes to galeisbstdem.exe
+- Functionality changes to deterministic inversion program (galeisbstdem.exe)
 	- Added XZ amplitude inversion functionality.
 	- Added Bunch-by-bunch inversion functionality.
 	- More conservative (better) line search.
@@ -170,13 +170,19 @@ This may be useful if, for example, you do not have the third-party packages ins
 	- Usability and convenience improvements.
 	- Zero and null data handling (for potentially culled data).
 	- Pass-through selected ancillary fields from input to output file.
-	- ASEGGDF2 DFN, CSV and HDR headers supported.
-	- Field names can be specified instead of column numbers.
-	- CSV header output.
+	- Input ASEGGDF2 DFN, HDR and CSV headers supported.
+		- Field names can be specified instead of column numbers.
+		- DFN, HDR, CSV and i3 output file headers.
 	- Vertical similarity/homogeneity constraints.
 	- Experimental output to GA's NetCDF line data format.
 	- Experimental delayed geometry inversion option.
 	- Experimental cable length constraint.
+- Functionality changes to stochastic inversion program (garjmcmctdem.exe).
+	- Parallel tempering added.
+	- NetCDF file output of probability maps for selected soundings.
+- Induced polarization forward-modelling (not inversion) capability added.
+	- Available in Matlab interface.
+	- Available in Python interface.
 - Post-processing of inversion results programs added.
 	- GoCAD SGrid generation.
 	- Georeferenced section generation.

@@ -11,7 +11,7 @@ for si=1:subsam:length(P.cvs);
         if(P.temperature(ci,si) ~= 1.0) continue; end;
         nl = P.nlayers(ci,si);
 
-        %For example only plot the "X" layer models
+        %For example only plot the "select_nlayers" layer models
         if(~isempty(select_nlayers))
             if(nl~=select_nlayers) continue; end;
         end
