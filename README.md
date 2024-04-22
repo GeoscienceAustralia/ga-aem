@@ -11,7 +11,7 @@ GA-AEM is a repository for Geoscience Australia's C++ programs and utilities for
 The majority of the development for this project was carried out by the authors whilst employed at Geoscience Australia. A significant part of the development was however carried out as part of a Geoscience Australia-CSIRO placement. The CSIRO Deep Earth Imaging Future Science Platform (DEI-FSP), CSIRO Discovery Program and CSIRO Research Office is acknowledged for funding and facilitating that placement.
 
 ## Pre-built Windows binaries
-For Windows users whom do not wish to compile the programs themselves a package of pre-built Windows binaries are available to be downloaded from GitHub [*here*](https://github.com/GeoscienceAustralia/ga-aem/releases/tag/v2.0.0-Release-20240424).
+For Windows users who do not wish to compile the programs themselves a package of pre-built Windows binaries are available for download from GitHub [*here*](https://github.com/GeoscienceAustralia/ga-aem/releases/tag/v2.0.0-Release-20240424).
 - Although the pre-built Windows package does not require compiling, it will require the installation of some third-party dependencies. See the section on [*third party software dependencies*](#third-party-software-dependencies) for details.
 - Then, once installed you will need to set or modify the user's *`PATH`* (and possibly *`GDAL_DATA`* and *`PROJ_LIB`*) environment variables. These may be set in the user's environment or using the example `ga-aem_vars.bat` batch file, which will probably need to be modified depending on which versions of, and where, you install ga-aem and the third-party packages.
 - See [*scripts/ga-aem_vars.bat*](scripts/ga-aem_vars.bat) and [*scripts/test_ga-aem_paths.bat*](scripts/test_ga-aem_paths.bat) for guidance on setting Windows environment variables for ga-aem.
@@ -164,7 +164,7 @@ This may be useful if, for example, you do not have the third-party packages ins
 
 # Releases
 
-## v2.0.0 Release-20240424
+## v2.0.0-Release-20240424
 - Functionality changes to deterministic inversion program (galeisbstdem.exe)
 	- Added XZ amplitude inversion functionality.
 	- Added Bunch-by-bunch inversion functionality.
