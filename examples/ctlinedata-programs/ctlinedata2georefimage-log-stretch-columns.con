@@ -1,8 +1,9 @@
 Control Begin
 
 	Input Begin
-		DataFiles    = example-inversion-output\lines\*.asc
-		//DataFiles    = example-inversion-output\inversion.output.dat
+		HeaderFile   = example-inversion-output\inversion.output.hdr
+		DataFiles    = example-inversion-output\inversion.output.dat
+		//DataFiles    = example-inversion-output\lines\*.asc
 		Subsample    = 1
 		Line         = Column 5
 		Easting      = Column 9

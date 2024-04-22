@@ -14,7 +14,7 @@
 #PBS -e galeisbstdem.err
 #PBS -j oe
 
-module load ga-aem-csiro/dev
+module load ga-aem/v2.0.0-Release20240424
 module list
 
 cat run_pbs.sh

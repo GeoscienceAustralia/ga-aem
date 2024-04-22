@@ -707,7 +707,7 @@ public:
 
 		GDALGridInverseDistanceToAPowerOptions* poOptions = new GDALGridInverseDistanceToAPowerOptions();
 		#if defined(GDAL_COMPUTE_VERSION)
-			#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0,0)
+			#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0)
 				poOptions->nSizeOfStructure = sizeof(GDALGridInverseDistanceToAPowerOptions);
 			#endif
 		#endif

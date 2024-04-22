@@ -8,13 +8,13 @@ REM Call "ga-aem_vars.bat" batch script to add executables and dependencies to y
 CALL %GA-AEM_ROOT%\scripts\ga-aem_vars.bat
 
 REM Run standalone on a single CPU
-galeisbstdem.exe galeisbstdem.con	
+REM galeisbstdem.exe galeisbstdem.con
 
 REM Run using 4 OpenMP threads
 REM galeisbstdem.exe galeisbstdem.con 4	
 
 REM Use 4 MPI processes
-REM mpiexec -np 4 galeisbstdem.exe galeisbstdem.con	
+mpiexec -np 4 galeisbstdem.exe galeisbstdem.con	
 
 REM If you do not have MPI installed substitute galeisbstdem-nompi.exe in place of galeisbstdem.exe
 REM galeisbstdem-nompi.exe galeisbstdem.con

@@ -11,7 +11,11 @@ GA-AEM is a repository for Geoscience Australia's C++ programs and utilities for
 The majority of the development for this project was carried out by the authors whilst employed at Geoscience Australia. A significant part of the development was however carried out as part of a Geoscience Australia-CSIRO placement. The CSIRO Deep Earth Imaging Future Science Platform (DEI-FSP), CSIRO Discovery Program and CSIRO Research Office is acknowledged for funding and facilitating that placement.
 
 ## Pre-built Windows binaries
-For Windows users whom do not wish to compile the programs themselves a package of pre-built Windows binaries are available to be downloaded from GitHub [*here*](https://github.com/GeoscienceAustralia/ga-aem/releases/tag/v2.0.0-Release-20240424). Although the package does not require compiling it does requires the installation of some third-party dependencies. See the section on [*third party software dependencies*](#third-party-software-dependencies) for details.
+For Windows users whom do not wish to compile the programs themselves a package of pre-built Windows binaries are available to be downloaded from GitHub [*here*](https://github.com/GeoscienceAustralia/ga-aem/releases/tag/v2.0.0-Release-20240424).
+- Although the pre-built Windows package does not require compiling, it will require the installation of some third-party dependencies. See the section on [*third party software dependencies*](#third-party-software-dependencies) for details.
+- Then, once installed you will need to set or modify the user's *`PATH`* (and possibly *`GDAL_DATA`* and *`PROJ_LIB`*) environment variables. These may be set in the user's environment or using the example `ga-aem_vars.bat` batch file, which will probably need to be modified depending on which versions of, and where, you install ga-aem and the third-party packages.
+- See [*scripts/ga-aem_vars.bat*](scripts/ga-aem_vars.bat) and [*scripts/test_ga-aem_paths.bat*](scripts/test_ga-aem_paths.bat) for guidance on setting Windows environment variables for ga-aem.
+- Ideally you would set the variables in the user environment (e.g. *`Start Menu | search "edit environment variable for your account"`*). After setting, be sure to open a fresh command window or Windows Explorer window.
 
 ## Languages
 - Mostly C++.
@@ -103,7 +107,7 @@ For full functionality and to build all programs, and ultimately run them, the f
 	- GNU compiler on Ubuntu [*`cmake_build_script_ubuntu.sh`*](cmake_build_script_ubuntu.sh)  (including for the Ubuntu emulator on Windows).
 	- GNU compiler on Gadi cluster [*`cmake_build_script_gadi-gnu.sh`*](cmake_build_script_gadi-gnu.sh).
 	- Intel compiler on Gadi cluster [*`cmake_build_script_gadi-intel.sh`*](cmake_build_script_gadi-intel.sh).
-- It is highly likely that you will need to set some environment variables, particularly on Windows, to help CMake find the various third-party packages. These include ***`FFTW_DIR, NETCDF_DIR, GDAL_DIR, PETSC_DIR`***. They may be set either inside the build script or in the user-environment. See [*here*](visualstudio/README.md) and [*here*](scripts/ga-aem_vars.bat) for hints.
+- It is highly likely that you will need to set some environment variables, particularly on Windows, to help CMake find the various third-party packages. These include ***`FFTW_DIR, NETCDF_DIR, GDAL_DIR, PETSC_DIR`***. They may be set either inside the build script or in the user-environment. See [*here*](visualstudio/README.md) and [*here*](scripts/ga-aem_vars.bat) for tips.
 ### CMake generate step
 - To choose a specific compiler, replace the line,
 	```bash

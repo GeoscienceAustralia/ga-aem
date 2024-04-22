@@ -1,0 +1,4 @@
+# Example inversion dataset
+This small and non-sensical example inversion output dataset ***`inversion.output.dat`*** is really just one line of AEM inversion results, with line 3001401 duplicated as line 4001401. It is used to demonstrating the ctlinedata programs. Thus the gridding results from ***`ctlinedata2slicegrids.exe`*** will not make sense because of it being one duplicated line.
+
+The script *`splitlines.bat`* uses a utility program for splitting up ASCII datafiles by column number called *`splitasciibycolumn.exe`*. These are the files in the *`lines`* sub-directory. *`Splitasciibycolumn.exe`* can be found in the open-source GitHub repository [*utility-programs*](https://github.com/rcb547/utility-programs). The Windows executables are available [*here*](https://github.com/rcb547/utility-programs/releases/tag/v1.0).
