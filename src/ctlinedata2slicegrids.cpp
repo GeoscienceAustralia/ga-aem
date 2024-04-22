@@ -706,6 +706,11 @@ public:
 		}
 
 		GDALGridInverseDistanceToAPowerOptions* poOptions = new GDALGridInverseDistanceToAPowerOptions();
+		#if defined(GDAL_COMPUTE_VERSION)
+			#if GDAL_VERSION_NUM >= GDAL_COMPUTE_VERSION(3,6,0,0)
+				poOptions->nSizeOfStructure = sizeof(GDALGridInverseDistanceToAPowerOptions);
+			#endif
+		#endif
 		poOptions->dfPower = 2;
 		poOptions->dfRadius1 = GO.searchradius;
 		poOptions->dfRadius2 = GO.searchradius;
