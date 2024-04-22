@@ -33,13 +33,13 @@ public:
   }
 
   ptr_vec(ptr_vec&& other) noexcept {
-    v = move(other.v);
+    v = std::move(other.v);
   }
 
   ptr_vec& operator=(ptr_vec&& other) noexcept {
     if (this != &other){
       v.clear();
-      v = move(other.v);
+      v = std::move(other.v);
     }
     return *this;
   }
@@ -52,7 +52,7 @@ public:
   }
 
   void push_back(unique_ptr<T> ptr) {
-    v.push_back(move(ptr));
+    v.push_back(std::move(ptr));
   }
 
   void clear() {

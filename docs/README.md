@@ -1,5 +1,0 @@
-docs
-====
-
-Directory for documentation
-

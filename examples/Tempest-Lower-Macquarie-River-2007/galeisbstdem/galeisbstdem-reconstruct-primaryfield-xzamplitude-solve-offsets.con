@@ -1,0 +1,177 @@
+Control Begin
+	
+	EMSystem Begin
+		SystemFile = ../stmfiles/Tempest.stm
+		InvertXPlusZ    = yes							//yes to invert the amplitude of the data in the XZ plane
+		InvertPrimaryPlusSecondary = yes		`		//yes to invert the total field (usually only for fixed-wing systems)
+		ReconstructPrimaryFieldFromInputGeometry = yes	//yes to reconstruct primary field (from the input geometry) if not supplied in the data file
+
+		XComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = yes
+			MultiplicativeNoise    = 3.2
+			AdditiveNoise	       = 0.0142  0.0139  0.0112  0.0087  0.0078  0.0073  0.0069  0.0066  0.0063  0.0058  0.0055  0.0047  0.0041  0.0027  0.0040
+			Secondary              = EMX_NonHPRG
+		XComponent End
+
+		ZComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = yes
+			MultiplicativeNoise    = 1.3
+			AdditiveNoise	       = 0.0083  0.0077  0.0062  0.0048  0.0046  0.0044  0.0042  0.0041  0.0037  0.0034  0.0031  0.0027  0.0021  0.0015  0.0022
+			Secondary              = -EMZ_NonHPRG  // Sign flipped to be in ga-aem convention
+		ZComponent End
+	EMSystem End
+
+	Options Begin
+		//StartRecord       = 1		//First record in file to invert
+		//EndRecord         = inf		//Last record in file to invert
+		Subsample           = 5		//The subsample rate
+		//SoundingsPerBunch = 1		//Number of soundings in each inversion problem
+		//BunchSubsample    = 1		//Number of sounding between adjacent sounding in the bunch
+
+		NormType    = L2					//use L1 or L2 norm
+		MinimumPhiD = 1.0					//PhiD misfit value at which inversion terminates
+		MinimumPercentageImprovement = 5.0	//Minimun reduction in PhiD between iterations that causes termination
+		MaximumIterations = 100				//Maximum nuber of iteration before termination
+
+		Constraints Begin
+			//Type								Alpha	Method
+			ConductivityReferenceModel			1		
+			ThicknessReferenceModel				0		
+			GeometryReferenceModel				1		
+			
+			VerticalConductivity				1e4		Minimise2ndDerivatives
+			//VerticalConductivity				1e4		Minimise1stDerivatives
+
+			//VerticalConductivitySimilarity	1
+
+			//LateralConductivity				1e3		Minimise1stDerivatives
+			//LateralConductivity				1e3		Minimise2ndDerivatives
+			//LateralConductivity				1e3		Similarity
+
+			//LateralGeometry					1e2		Similarity
+			//LateralGeometry					1e2		MinimiseAccelerationDerivatives
+			//LateralGeometry					1e4		MinimiseAccelerations
+
+			//CableLength						1		Input			0.01
+			//CableLength						1		InputBunchMean	0.01
+			//CableLength						1		BunchSimilarity	0.01
+		Constraints End
+	Options End
+
+	Input Begin
+	    DataFile    = ../data/lower_macquarie_tempest_non-hprg.dat
+		HeaderFile  = ../data/lower_macquarie_tempest_non-hprg.hdr
+		HeaderLines = 0		// Number of lines of header info at the start of the data file to skip
+
+		//Line is required if SoundingsPerBunch > 1
+		AncillaryFields Begin
+			Proj_Client					//Pass this field through to the output file
+			Date			= Date		//... as above
+			Flight          = Flight
+			Line            = Line		//Set this field as the line number field and pass it through to the output file
+			Fiducial        = Fiducial
+			Longitude
+			Latitude
+			Easting
+			Northing
+			Lasalt_Final
+			Radalt_Final
+			DTM
+		AncillaryFields End
+			
+		Geometry Begin
+			TX_Height =  Tx_Height_Laseralt
+			
+			TX_Roll Begin
+				Solve = no
+				Ref   = Tx_Roll
+				TFR   = Tx_Roll		//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing //Skyvan platform use TX_Pitch = -0.45 (=+0.45 in TEMPEST sign convention)
+			TX_Roll End
+
+			TX_Pitch Begin
+				Solve = no
+				Ref   = -Tx_Pitch
+				TFR   = -Tx_Pitch	//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing //Skyvan platform use TX_Pitch = -0.45 (=+0.45 in TEMPEST sign convention) Casa platform use TX_Pitch = -0.90 (=+0.90 in TEMPEST sign convention)
+			TX_Pitch End
+
+			TX_Yaw    = 0			//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing //Skyvan platform use TX_Pitch = -0.45 (=+0.45 in TEMPEST sign convention) Casa platform use TX_Pitch = -0.90 (=+0.90 in TEMPEST sign convention)
+
+			TXRX_DX Begin
+				Solve = yes
+				Ref   = HSep_PFEst
+				Std   = 0.5
+				Min   = HSep_PFEst - 10
+				Max   = HSep_PFEst + 10
+				TFR   = HSep_PFEst		//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing
+			TXRX_DX End
+
+			TXRX_DY Begin
+				Solve = no
+				Ref   = 0
+				TFR   = 0				//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing //Skyvan platform use TX_Pitch = -0.45 (=+0.45 in TEMPEST sign convention)
+			TXRX_DY End
+
+			TXRX_DZ Begin
+				Solve = yes
+				Ref   = VSep_PFEst
+				Std   = 0.5
+				Min   = VSep_PFEst - 10
+				Max   = VSep_PFEst + 10
+				TFR   = VSep_PFEst			//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing
+			TXRX_DZ End
+		
+			RX_Roll   =  0
+
+			RX_Pitch Begin
+				Solve = no
+				Ref   = 0
+				TFR   = 0		//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing
+				Std   = 0.5
+				Min   = -10
+				Max   = +10
+			RX_Pitch End
+
+			RX_Yaw    = 0
+
+		Geometry End
+
+		Earth Begin
+			NumberOfLayers  = 30
+			Conductivity Begin
+				Solve = yes
+				Ref   = 0.001
+				Std   = 0.5
+				Min   = 1e-6
+				Max   = 20
+			Conductivity End
+			Thickness =  4.00 4.40 4.84 5.32 5.86 6.44 7.09 7.79 8.57 9.43 10.37 11.41 12.55 13.81 15.19 16.71 18.38 20.22 22.24 24.46 26.91 29.60 32.56 35.82 39.40 43.34 47.67 52.44 57.68
+		Earth End
+	Input End
+
+	Output Begin
+		DataFile = output/inversion.output.asc
+		LogFile  = output/inversion.output.log
+
+		SaveDFNHeader = yes
+		SaveCSVHeader = yes
+		SaveHDRHeader = yes
+		SaveI3Header  = yes
+
+		//PositiveLayerTopDepths    = yes
+		//PositiveLayerBottomDepths = yes
+		//NegativeLayerBottomDepths = yes
+		//InterfaceElevations       = yes
+		ParameterSensitivity      = yes
+		ParameterUncertainty      = yes
+		ObservedData              = yes
+		PredictedData             = yes
+		NoiseEstimates            = yes
+
+		Verbose  = no
+		Dump     = no
+		DumpPath = output\dump
+	Output End
+
+Control End

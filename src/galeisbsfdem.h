@@ -20,7 +20,7 @@ enum  class BracketResult { BRACKETED, MINBRACKETED, ALLABOVE, ALLBELOW };
 class cTrial {
 
 public:
-	size_t order;
+	size_t insert_order;
 	double lambda;
 	double phid;
 	double phim;
@@ -229,7 +229,7 @@ private:
 	//double doublevalue(const cFieldDefinition& coldef);
 	//std::vector<double> doublevector(const cFieldDefinition& coldef, const size_t& n);
 	//std::vector<int> intvector(const cFieldDefinition& coldef, const size_t& n);
-	
+
 	Vector vObs;
 	Vector vErr;
 	Vector vPred;
@@ -1171,7 +1171,7 @@ private:
 			if (TargetPhiD < MinimumPhiD)TargetPhiD = MinimumPhiD;
 			forwardmodel(mtemp, gtemp, true);
 
-			cTrial t = targetsearch(LastLambda, TargetPhiD);
+			cTrial t = lambda_search_target(LastLambda, TargetPhiD);
 
 			dm = parameterchange(t.lambda);
 			mtemp = vParam + (t.stepfactor * dm);
@@ -1295,7 +1295,7 @@ private:
 		return dm;
 	}
 	
-	cTrial targetsearch(const double currentlambda, const double target)
+	cTrial lambda_search_target(const double currentlambda, const double target)
 	{
 		cTrialCache T;
 		T.target = target;
@@ -1535,7 +1535,7 @@ private:
 		printf("CurrentLambda = %lf CurrentPhid = %lf    Target = %lf\n", LastLambda, LastPhiD, T.target);
 		printf("N    Stepfactor       Lambda          Phid\n");
 		for (size_t i = 0; i < T.trial.size(); i++) {
-			printf("%2d %12g %12g %12g\n", (int)T.trial[i].order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
+			printf("%2d %12g %12g %12g\n", (int)T.trial[i].insert_order, T.trial[i].stepfactor, T.trial[i].lambda, T.trial[i].phid);
 		}
 		printf("\n");
 	}
@@ -1568,7 +1568,7 @@ private:
 			t.stepfactor = x;
 			t.phid = fx;
 			t.phim = phiModel(p);
-			t.order = cache.trial.size();
+			t.insert_order = cache.trial.size();
 			t.lambda = lambda;
 			cache.trial.push_back(t);
 			//printf("%lf %lf\n",x,fx);
@@ -1583,7 +1583,7 @@ private:
 			t.stepfactor = b;
 			t.phid = fb;
 			t.phim = phiModel(p);
-			t.order = cache.trial.size();
+			t.insert_order = cache.trial.size();
 			t.lambda = lambda;
 			cache.trial.push_back(t);
 			//printf("%lf %lf\n",b,fb);
@@ -1620,7 +1620,7 @@ private:
 		t0.phim = LastPhiM;
 		t0.stepfactor = 0.0;
 		t0.lambda = triallambda;
-		t0.order = cache.trial.size();
+		t0.insert_order = cache.trial.size();
 		cache.trial.push_back(t0);
 
 		cTrial t1;
@@ -1630,7 +1630,7 @@ private:
 		t1.phim = phiModel(p);
 		t1.stepfactor = 1.0;
 		t1.lambda = triallambda;
-		t1.order = cache.trial.size();
+		t1.insert_order = cache.trial.size();
 		cache.trial.push_back(t1);
 
 		double pcdiff = 100 * (t1.phid - t0.phid) / t0.phid;
@@ -1646,7 +1646,7 @@ private:
 			t3.phim = phiModel(p);
 			t3.stepfactor = gsf;
 			t3.lambda = triallambda;
-			t3.order = cache.trial.size();
+			t3.insert_order = cache.trial.size();
 			cache.trial.push_back(t3);
 			//double gsf = goldensearch(0.0,0.5,1.0,tau,vParam,dm,g,cache);
 			//printf("gsf=%lf\n",gsf);				
@@ -1656,7 +1656,7 @@ private:
 		size_t minindex = cache.minphidindex();
 
 		cTrial t = cache.trial[minindex];
-		t.order = T.trial.size();
+		t.insert_order = T.trial.size();
 		T.trial.push_back(t);
 		return t.phid;
 	}
@@ -1725,7 +1725,7 @@ public:
 		return true;
 	};
 
-	bool parserecord()
+	bool parse_record()
 	{
 		DataFileFieldStrings = fieldparsestring(DataFileRecordString.c_str(), " ,\t\r\n");
 		if (DataFileFieldStrings.size() <= 1)return false;

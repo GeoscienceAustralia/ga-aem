@@ -11,39 +11,33 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\garjmcmctdem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\fielddefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\matrix_ops.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\eigen_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\eigen_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\random_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\random_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\rjmcmc1dtdeminverter.h">
@@ -55,7 +49,7 @@
     <ClInclude Include="..\..\src\tdemsystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\vector_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\vector_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

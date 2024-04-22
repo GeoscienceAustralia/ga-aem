@@ -1,8 +1,0 @@
-System Begin
-	Name = Resolve-2006
-	Type = Frequency Domain
-	Frequencies  = 470  1800  3300  8200  40000 137000
-	Separations  = 7.91 7.91  8.99  7.91   7.91   7.91
-	Orientations = HCP   HCP   VCX   HCP    HCP    HCP
-System End
-

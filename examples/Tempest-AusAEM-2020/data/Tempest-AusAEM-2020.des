@@ -1,0 +1,231 @@
+COMM CGG PROJECT NUMBER                                                902467
+COMM AREA NUMBER:                                                           1
+COMM SURVEY COMPANY:                                   CGG Aviation Australia
+COMM CLIENT:                                             Geoscience Australia
+COMM SURVEY TYPE:                                         25Hz TEMPEST Survey
+COMM AREA NAME:       East_Yilgarn_AusAEM2020 Regional(Survey & Repeat Lines)
+COMM STATE:                                                 Western Australia
+COMM COUNTRY:                                                       Australia
+COMM SURVEY FLOWN:                                                       2020
+COMM LOCATED DATA CREATED:                                     September 2020
+COMM
+COMM DATUM:                                                             GDA94
+COMM PROJECTION:                                                          MGA
+COMM ZONE:                                                                 51
+COMM
+COMM SURVEY SPECIFICATIONS
+COMM
+COMM TRAVERSE LINE SPACING:                                           20000 m
+COMM TRAVERSE LINE DIRECTION:                                90 - 270 degrees
+COMM NOMINAL TERRAIN CLEARANCE:                                         120 m
+COMM FINAL LINE KILOMETRES:                                           6794 km
+COMM
+COMM LINE NUMBERING
+COMM
+COMM TRAVERSE LINE NUMBERS:                                 1001001 - 1025001
+COMM REPEAT LINE NUMBERS:                                 91000601 - 91002702
+COMM PRE ZERO LINE NUMBERS:                               90200601 - 90202901
+COMM POST ZERO LINE NUMBERS:                              90500601 - 90502901
+COMM
+COMM SURVEY EQUIPMENT
+COMM
+COMM AIRCRAFT:                                           Cessna C208B, VH-FHY
+COMM
+COMM MAGNETOMETER:                                Scintrex Cs-2 Cesium Vapour
+COMM INSTALLATION:                                            Stinger mounted
+COMM RESOLUTION:                                                     0.001 nT
+COMM RECORDING INTERVAL:                                                0.2 s
+COMM
+COMM ELECTROMAGNETIC SYSTEM:                                     25Hz TEMPEST
+COMM INSTALLATION:                   Transmitter loop mounted on the aircraft
+COMM                                           Receiver coils in a towed bird
+COMM COIL ORIENTATION:                                                    X,Z
+COMM RECORDING INTERVAL:                                                0.2 s
+COMM SYSTEM GEOMETRY:
+COMM HPRG CORRECTED RECEIVER DISTANCE BEHIND THE TRANSMITTER:           108 m
+COMM HPRG CORRECTED RECEIVER DISTANCE BELOW THE TRANSMITTER:             52 m
+COMM
+COMM RADAR ALTIMETER:                                          Collins Alt-50 
+COMM RECORDING INTERVAL:                                                0.1 s
+COMM
+COMM LASER ALTIMETER:                                            Riegl LD90-3 
+COMM RECORDING INTERVAL:                                                0.1 s
+COMM
+COMM NAVIGATION:                                   Real-time differential GPS
+COMM RECORDING INTERVAL:                                                1.0 s
+COMM
+COMM ACQUISITION SYSTEM:                                               FASDAS
+COMM
+COMM DATA PROCESSING
+COMM
+COMM MAGNETIC DATA
+COMM DIURNAL CORRECTION APPLIED                           base value 57762 nT
+COMM PARALLAX CORRECTION APPLIED                                        1.8 s
+COMM IGRF CORRECTION APPLIED                              base value 58129 nT
+COMM IGRF MODEL 2015 extrapolated to                               2020/07/15
+COMM
+COMM TERRAIN CLEARANCE DATA                                                   
+COMM LASER ALTIMETER: PARALLAX CORRECTION APPLIED                         0 s
+COMM RADAR ALTIMETER: PARALLAX CORRECTION APPLIED                         0 s
+COMM                                                                       
+COMM GPS ALTITUDE DATA                                                     
+COMM PARALLAX CORRECTION APPLIED                                          0 s
+COMM 
+COMM DIGITAL TERRAIN DATA
+COMM DTM CALCULATED [DTM = GPS ALTITUDE - (LASER ALT + SENSOR SEPARATION)] 
+COMM DATA CORRECTED TO AUSTRALIAN HEIGHT DATUM                             
+COMM DATA HAVE NOT BEEN MICROLEVELLED                                          
+COMM                                                                       
+COMM ELECTROMAGNETIC DATA
+COMM SYSTEM PARALLAX REMOVED, AS FOLLOWS:
+COMM    X-COMPONENT EM DATA                                               0 s
+COMM    Z-COMPONENT EM DATA                                               0 s
+COMM DATA HAVE NOT BEEN CORRECTED FOR TRANSMITTER HEIGHT, PITCH AND ROLL
+COMM DATA HAVE NOT BEEN CORRECTED FOR TRANSMITTER-RECEIVER GEOMETRY VARIATIONS
+COMM DATA HAVE NOT BEEN MICROLEVELLED
+COMM CONDUCTIVITY DEPTH INVERSION CALCULATED                     EMFlow V5.10
+COMM CONDUCTIVITY DEPTH RANGE                                     000 - 500 m
+COMM CONDUCTIVITY DEPTH INTERVAL                                          5 m
+COMM CONDUCTIVITIES CALCULATED USING HPRG CORRECTED EMXZ DATA
+COMM
+COMM ----------------------------------------------------------------------
+COMM DISCLAIMER
+COMM ----------------------------------------------------------------------
+COMM It is CGG Aviation’s understanding that the data provided to
+COMM the client is to be used for the purpose agreed between the parties.
+COMM That purpose was a significant factor in determining the scope and
+COMM level of the Services being offered to the Client. Should the purpose
+COMM for which the data is used change, the data may no longer be valid or
+COMM appropriate and any further use of, or reliance upon, the data in
+COMM those circumstances by the Client without CGG Aviation's
+COMM review and advice shall be at the Client's own or sole risk.
+COMM
+COMM The Services were performed by CGG Aviation exclusively for
+COMM the purposes of the Client. Should the data be made available in whole
+COMM or part to any third party, and such party relies thereon, that party
+COMM does so wholly at its own and sole risk and CGG Aviation
+COMM disclaims any liability to such party.
+COMM
+COMM Where the Services have involved CGG Aviation's use of any
+COMM information provided by the Client or third parties, upon which
+COMM CGG Aviation was reasonably entitled to rely, then the
+COMM Services are limited by the accuracy of such information.
+COMM CGG Aviation is not liable for any inaccuracies (including any
+COMM incompleteness) in the said information, save as otherwise provided
+COMM in the terms of the contract between the Client and CGG Aviation.
+COMM
+COMM With regard to DIGITAL TERRAIN DATA, the accuracy of the elevation
+COMM calculation is directly dependent on the accuracy of the two input
+COMM parameters laser altitude and GPS altitude. The laser and radar altitude
+COMM value may be erroneous in areas of heavy tree cover, where the altimeters
+COMM reflect the distance to the tree canopy rather than the ground. The GPS
+COMM altitude value is primarily dependent on the number of available satellites. 
+COMM Although post-processing of GPS data will yield X and Y accuracies in the
+COMM order of 1-2 metres, the accuracy of the altitude value is usually
+COMM much less, sometimes in the ±5 metre range.  Further inaccuracies
+COMM may be introduced during the interpolation and gridding process.
+COMM Because of the inherent inaccuracies of this method, no guarantee is
+COMM made or implied that the information displayed is a true
+COMM representation of the height above sea level.  Although this product
+COMM may be of some use as a general reference,
+COMM THIS PRODUCT MUST NOT BE USED FOR NAVIGATION PURPOSES.
+COMM ----------------------------------------------------------------------
+COMM
+COMM ELECTROMAGNETIC SYSTEM
+COMM
+COMM TEMPEST IS A TIME-DOMAIN SQUARE-WAVE SYSTEM,
+COMM TRANSMITTING AT A BASE FREQUENCY OF 25Hz,
+COMM WITH 2 ORTHOGONAL-AXIS RECEIVER COILS IN A TOWED BIRD.
+COMM FINAL EM OUTPUT IS RECORDED 5 TIMES PER SECOND.
+COMM THE TIMES (IN MILLISECONDS) FOR THE 15 WINDOWS ARE:
+COMM
+COMM WINDOW      START       END      CENTRE
+COMM    1        0.007      0.020      0.013
+COMM    2        0.033      0.046      0.039
+COMM    3        0.059      0.072      0.065
+COMM    4        0.085      0.123      0.104
+COMM    5        0.137      0.202      0.169
+COMM    6        0.215      0.332      0.273
+COMM    7        0.345      0.540      0.443
+COMM    8        0.554      0.853      0.703
+COMM    9        0.866      1.322      1.094
+COMM   10        1.333      2.051      1.693
+COMM   11        2.064      3.197      2.630
+COMM   12        3.210      4.993      4.102
+COMM   13        5.007      7.806      6.406
+COMM   14        7.819     12.103      9.961
+COMM   15       12.116     19.993     16.055
+COMM
+COMM PULSE WIDTH: 10 ms
+COMM
+COMM TEMPEST EM data are transformed to the response that would be
+COMM obtained with a B-field sensor for a 100% duty cycle square
+COMM waveform at the base frequency, involving a 1A change in
+COMM current (from -0.5A to +0.5A to -0.5A) in a 1sq.m transmitter.
+COMM It is this configuration, rather than the actual acquisition
+COMM configuration, which must be specified when modelling TEMPEST data.
+COMM
+COMM
+COMM LOCATED DATA FORMAT
+COMM
+COMM  Output field format : ASCII ASEG-GDF
+COMM
+COMM FIELD                     UNITS            NULL                FORMAT 
+COMM Line                                       -99999999           I10
+COMM Flight                                     -99                 I4
+COMM Fiducial                                   -999999.9           F8.1
+COMM Proj_CGG                                   -9999               I7
+COMM Proj_Client                                -99999999           I10
+COMM Date                                       -9999999            I9
+COMM Time_Local                 s               -999999.9           F10.1
+COMM Time_UTC                   s               -999999.9           F10.1
+COMM GPS_Time                   s               -999999.9           F10.1
+COMM Latitude                   deg             -99.9999999         F12.7
+COMM Longitude                  deg             -999.9999999        F13.7
+COMM Easting                    m               -99999.99           F13.2
+COMM Northing                   m               -999999.99          F13.2
+COMM GPS_Elevation              m               -999.99             F8.2
+COMM Tx_Elevation               m               -999.99             F8.2
+COMM Laseralt                   m               -999.99             F8.2
+COMM Radalt                     m               -999.99             F8.2
+COMM DTM                        m               -999.99             F8.2
+COMM Mag                        nT              -99999.999          F11.3
+COMM Tx_Height                  m               -999.99             F8.2
+COMM Tx_Pitch                   deg             -999.99             F8.2
+COMM Tx_Roll                    deg             -999.99             F8.2
+COMM Tx_Yaw                     deg             -999.99             F8.2
+COMM Tx_Bearing                 deg             -999.99             F8.2
+COMM HSep_Std                   m               -999.99             F8.2
+COMM VSep_Std                   m               -999.99             F8.2
+COMM Tx_Height_Std              m               -999.99             F8.2
+COMM HSep_PFEst                 m               -999.99             F8.2
+COMM VSep_PFEst                 m               -999.99             F8.2
+COMM HSep_gps                   m               -999.99             F8.2
+COMM TSep_gps                   m               -999.99             F8.2
+COMM VSep_gps                   m               -999.99             F8.2
+COMM Rx_Pitch                   deg             -999.99             F8.2
+COMM Rx_Roll                    deg             -999.99             F8.2
+COMM Rx_Yaw                     deg             -999.99             F8.2
+COMM Rx_Bearing                 deg             -999.99             F8.2
+COMM EMX_nonhprg[1:15]          fT              -999.999999         F12.6
+COMM EMX_hprg[1:15]             fT              -999.999999         F12.6
+COMM X_Sferics                                  -9999.999           F10.3
+COMM X_LowFreq                                  -9999.999           F10.3
+COMM X_Powerline                                -9999.999           F10.3
+COMM X_PrimaryField             fT              -9999.999           F10.3
+COMM X_VLF1                                     -9999.999           F10.3
+COMM X_VLF2                                     -9999.999           F10.3
+COMM X_VLF3                                     -9999.999           F10.3
+COMM X_VLF4                                     -9999.999           F10.3
+COMM X_Geofact                                  -9999.99999         F10.5
+COMM EMZ_nonhprg[1:15]          fT              -999.999999         F12.6
+COMM EMZ_hprg[1:15]             fT              -999.999999         F12.6
+COMM Z_Sferics                                  -9999.999           F10.3
+COMM Z_LowFreq                                  -9999.999           F10.3
+COMM Z_Powerline                                -9999.999           F10.3
+COMM Z_PrimaryField             fT              -9999.999           F10.3
+COMM Z_VLF1                                     -9999.999           F10.3
+COMM Z_VLF2                                     -9999.999           F10.3
+COMM Z_VLF3                                     -9999.999           F10.3
+COMM Z_VLF4                                     -9999.999           F10.3
+COMM Z_Geofact                                  -9999.99999         F10.5

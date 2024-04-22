@@ -20,15 +20,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -94,23 +94,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\galeiallatonce.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\galeisbstdem.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\conductivity_logs.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\petsc_wrapper.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\stacktrace.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\stopwatch.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\undefinedvalues.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\conductivity_logs.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\petsc_wrapper.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stacktrace.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stopwatch.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

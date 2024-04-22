@@ -1,15 +1,17 @@
 clc;
 clear all;
 
-%Add path to the gatdaem1d wrapper .m files and the shared library
-addpath('..\bin\x64');
-addpath('..\gatdaem1d_functions');
+% These examples are setup to be run as if your Matlab current directory is [ga-aem-install-dir]\matlab\examples
+% Add path to the gatdaem1d wrapper .m files and the shared library
+% addpath('..\bin'); % Not needed if already in your Matlab path
+% addpath('..\gatdaem1d_functions'); % Not needed if already in your Matlab path
+% addpath('C:\fftw-3.3.5-dll64'); % Not needed if already in your Windows path
 
 %Load the shared library
 gatdaem1d_loadlibrary();
 
 %Create a system object, get its handle, and some basic info
-S.stmfile = '..\..\examples\geotem-ppm\stmfiles\Geotem-ppm.stm';
+S.stmfile = '..\..\examples\GeoTEM3-GSQ823-1996\stmfiles\Geotem3-GSQ823.stm';
 S.hS  = gatdaem1d_getsystemhandle(S.stmfile);
 S.nw  = gatdaem1d_nwindows(S.hS);
 S.wt  = gatdaem1d_windowtimes(S.hS);

@@ -4,9 +4,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LibraryPath>$(FFTW_ROOT)\64bit;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(FFTW_DIR);$(LibraryPath)</LibraryPath>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>$(FFTW_ROOT)\64bit;$(IncludePath)</IncludePath>
+    <IncludePath>$(FFTW_DIR);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

@@ -12,20 +12,20 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 
 #include "blocklanguage.h"
-#include "asciicolumnfile.h"
+#include "file_formats.h"
 
 class cCTLineData {
 
 private:
-	cAsciiColumnFile A;
 	cBlock B;
+	std::vector<cAsciiColumnField> fields;
 
 public:
 	int linenumber;
 	size_t nlayers;
 	size_t nsamples;
 	bool spreadfade = false;
-	std::string inputdatumprojection;
+	std::string inputdatumprojection = "Unspecified";
 	std::vector<double> fid;
 	std::vector<double> x;
 	std::vector<double> y;
@@ -36,15 +36,29 @@ public:
 	std::vector<std::vector<double>> cp10;
 	std::vector<std::vector<double>> cp90;
 
-	cCTLineData(const cBlock& b, const std::string& dfnfile){
+	cCTLineData(const cBlock& b, const std::vector<cAsciiColumnField>& _fields) {
 		B = b;
-		A.read_dfn(dfnfile);
+		fields = _fields;
+	}
+
+	cCTLineData(const cBlock& b, const std::string& headerfile){
+		B = b;
+		cASEGGDF2Header A(headerfile);
+		if (A.isvalid()) {
+			fields = A.getfields();
+		}
+		else {
+			cHDRHeader H(headerfile);
+			if (H.isvalid()) {
+				fields = H.getfields();
+			}
+		}
 	}
 
 	void load(const std::vector<std::string>& L)
 	{
 
-		inputdatumprojection = B.getstringvalue("DatumProjection");
+		B.getvalue("DatumProjection", inputdatumprojection);
 
 		int subsample = B.getintvalue("Subsample");
 		if (isdefined(subsample) == false)subsample = 1;
@@ -57,12 +71,12 @@ public:
 		
 		bool isresistivity = false;
 		cRange<int> crcol = getcolumns("Conductivity");
-		if (crcol.valid() == false){
+		if (crcol.from == -1){
 			crcol = getcolumns("Resistivity");
 			isresistivity = true;
 		}
 
-		if (crcol.valid() == false){
+		if (crcol.from == -1){
 			std::string msg = strprint("Either a conductivity or resistivity field must be specified\n") + _SRC_;
 			throw(std::runtime_error(msg));
 		}
@@ -73,11 +87,14 @@ public:
 		if (isdefined(cunits) == false){
 			cscale = 1.0;
 		}
-		else if (strcasecmp(cunits, "S/m") == 0){
+		else if (ciequal(cunits, "S/m")){
 			cscale = 1.0;
 		}
-		else if (strcasecmp(cunits, "mS/m") == 0){
+		else if (ciequal(cunits, "mS/m")){
 			cscale = 0.001;
+		}
+		else if (ciequal(cunits, "Ohm.m")) {
+			cscale = 1.00;
 		}
 		else{
 			glog.logmsg("Unknown InputConductivityUnits %s\n", cunits.c_str());
@@ -91,9 +108,9 @@ public:
 
 		//Thickness
 		bool isconstantthickness = false;
-		std::vector<double> constantthickness;						
+		std::vector<double> constantthickness;
 		cRange<int> tcol = getcolumns("Thickness");
-		if (tcol.valid() == true){
+		if (tcol.from != -1){
 			isconstantthickness = false;
 		}
 		else{
@@ -137,7 +154,7 @@ public:
 		}
 
 		for (int si = 0; si < nsamples; si++){
-			fid[si] = M[si][fcol.from];
+			if(fcol.from >=0 ) fid[si] = M[si][fcol.from];
 			x[si] = M[si][xcol.from];
 			y[si] = M[si][ycol.from];
 			e[si] = M[si][ecol.from];
@@ -202,36 +219,47 @@ public:
 
 	}
 
-	cRange<int> getcolumns(const std::string &token){
-		return getcolumns(B, token, A);
-	}
+	int field_index_by_name(const std::string& fieldname) const {
+		int index = field_index_by_name_impl(fields, fieldname);
+		return index;
+	};
 
-	static cRange<int> getcolumns(const cBlock& b, const std::string &token, const cAsciiColumnFile& A){
-
-		std::string s = b.getstringvalue(token);
-
-		cRange<int> r;
-		int status;
-		status = sscanf(s.c_str(), "Column %d-%d", &r.from, &r.to);
-		if (status == 1){
+	static bool parse_column_range(const std::string& token, cRange<int>& r) {
+		int status = sscanf(token.c_str(), "Column %d-%d", &r.from, &r.to);
+		if (status == 1) {
 			r.to = r.from;
 			r.from--; r.to--;
-			return r;
+			return true;
 		}
-		else if (status == 2){
+		else if (status == 2) {
 			r.from--; r.to--;
+			return true;
+		}
+		else return false;
+	}
+
+	cRange<int> getcolumns(const std::string& token) {
+		return getcolumns_block_fields(B, token);
+	};
+
+	cRange<int> getcolumns_block_fields(const cBlock& b, const std::string &fieldkey){
+
+		std::string fieldvalue = b.getstringvalue(fieldkey);
+		cRange<int> r(-1,-1);
+
+		if (fields.size() == 0) {
+			bool status = parse_column_range(fieldvalue, r);
 			return r;
 		}
-		else{
-			size_t findex = A.fieldindexbyname(s);
-			if (findex >= 0 && findex < A.fields.size()) {
-				r.from = (int)A.fields[findex].startcol();
-				r.to = (int)A.fields[findex].endcol();
-				//r.from++; r.to++;
+		else {
+			int findex = field_index_by_name(fieldvalue);
+			if (findex >= 0 && findex < fields.size()) {
+				r.from = fields[findex].startcol();
+				r.to = fields[findex].endcol();
 				return r;
 			}
-			return r;//invalid;
-		}		
+		}
+		return r;//invalid;
 	}
 	
 

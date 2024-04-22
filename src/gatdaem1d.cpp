@@ -42,11 +42,11 @@ void waveform(void* hS, double* time, double* currentwaveform, double* voltagewa
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	for(size_t i=0; i<T.SamplesPerWaveform; i++){
 		time[i] = T.WaveformTime[i];
-		if(T.WaveformType == WT_TX){
+		if(T.WaveformType == cTDEmSystem::WaveFormType::TX){
 			currentwaveform[i]  = T.WaveformCurrent[i];
 		}
 
-		if(T.WaveformType == WT_RX){
+		if(T.WaveformType == cTDEmSystem::WaveFormType::RX){
 			voltagewaveform[i]  = T.WaveformReceived[i];
 		}
 	}		
@@ -135,7 +135,7 @@ void forwardmodel(void* hS,
 	cEarth1D E(nlayers, conductivity, thickness);
 	T.LEM.setproperties(E);
 	T.setupcomputations();
-	T.LEM.calculation_type = CT_FORWARDMODEL;
+	T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 	T.LEM.derivative_layer = -1;
 	T.setprimaryfields();
 	T.setsecondaryfields();
@@ -179,10 +179,10 @@ void forwardmodel_ip(void* hS,
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	cEarth1D E(nlayers, conductivity, thickness, chargeability, timeconstant, frequencydependence);
-	T.LEM.iptype = (eIPType)iptype;
+	T.LEM.iptype = (cLEM::IPType)iptype;
 	T.LEM.setproperties(E);
 	T.setupcomputations();
-	T.LEM.calculation_type = CT_FORWARDMODEL;
+	T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 	T.LEM.derivative_layer = -1;
 	T.setprimaryfields();
 	T.setsecondaryfields();
@@ -202,8 +202,8 @@ void derivative(void* hS, int dtype, int dlayer,
 	double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
 {		
 	cTDEmSystem& T = *(cTDEmSystem*)hS;		
-	T.LEM.calculation_type = (eCalculationType)dtype;
-	T.LEM.derivative_layer = dlayer-1;	//subtract one from the layer number for zero based indexing
+	T.LEM.calculation_type = (cLEM::CalculationType)dtype;
+	T.LEM.derivative_layer = (size_t)((int)(dlayer-1));	//subtract one from the layer number for zero based indexing
 	T.setprimaryfields();	
 	T.setsecondaryfields();
 
@@ -227,7 +227,7 @@ void fm_dlogc(void* hS,
 	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.LEM.setconductivitythickness(nlayers,conductivity,thickness);		
 	T.setupcomputations();
-	T.LEM.calculation_type = CT_FORWARDMODEL;		
+	T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 	T.LEM.derivative_layer = -1;	
 	T.setprimaryfields();	
 	T.setsecondaryfields();
@@ -243,7 +243,7 @@ void fm_dlogc(void* hS,
 	memcpy(p,T.Z.data(),sz); p+=nw;	
 
 	for(size_t k=0;k<(size_t)nlayers;k++){
-		T.LEM.calculation_type = CT_CONDUCTIVITYDERIVATIVE;		
+		T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
 		T.LEM.derivative_layer = k;
 		T.setprimaryfields();	
 		T.setsecondaryfields();
@@ -269,4 +269,26 @@ void fm_dlogc(void* hS,
 
 	}
 }
+
+void derivative_rx_pitch(void* hS, int n, double rx_pitch, double* xb, double* zb, double* dxbdp, double* dzbdp)
+{
+	cTDEmSystem& T = *(cTDEmSystem*)hS;
+	//T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	//T.LEM.derivative_layer = -1;
+	//T.setprimaryfields();
+	//T.setsecondaryfields();
+	
+	size_t sz = sizeof(double)*n;
+	
+	std::vector<double> dxbdpvec(n);	
+	std::vector<double> dzbdpvec(n);
+	std::vector<double> xbvec(xb,xb + n);
+	std::vector<double> zbvec(zb,zb + n);
+
+	T.drx_pitch(xbvec, zbvec, rx_pitch, dxbdpvec, dzbdpvec);
+
+	memcpy(dxbdp, dxbdpvec.data(), sz);	
+	memcpy(dzbdp, dzbdpvec.data(), sz);
+}
+
 

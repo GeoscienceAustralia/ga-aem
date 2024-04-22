@@ -5,11 +5,11 @@ clear all;
 % Compiler: Visual Studio 2019 compiler on Win10
 % Computer: Microsoft Surface 7 Intel Core i71065G& CPU @1.30Ghz 1.50GHz CPU 
 % Time to randomly popoulate c,t and forward model both Skytem HM and LM for
-% examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm	
-% examples\\bhmar-skytem\\stmfiles\\Skytem-HM.stm
+% examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm	
+% examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm
 
 
-%  nlayers qnd times below
+%  nlayers and times below
 %  n secs
 a=[1 0.968
    2 1.243

@@ -1,0 +1,91 @@
+message(STATUS "")
+message(STATUS "== Configuring external packages =====================================")
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+# Find PkgConfig
+find_package(PkgConfig QUIET)
+
+# Configure FFTW
+if(${WITH_FFTW})
+	message(STATUS "\nChecking for FFTW")
+	include(cmake/Configure-FFTW.cmake)
+	if(FFTW_FOUND)
+		message(STATUS "FFTW was found")
+	else()
+		message(WARNING "FFTW was NOT found")
+	endif()
+endif()
+
+# Configure NetCDF C++ Libraries
+if(${WITH_NETCDF})
+	message(STATUS "\nChecking for NETCDFCXX")
+	include(cmake/Configure-NETCDF_CXX.cmake)
+	if(NETCDFCXX_FOUND)
+		message(STATUS "NETCDFCXX was found")
+	else()
+		message(WARNING "NETCDFCXX was NOT found")
+	endif()
+endif()
+
+# Configure MPI if opted for
+if(${WITH_MPI})
+	message(STATUS "\nChecking for MPI")
+	find_package(MPI QUIET)
+	if(MPI_FOUND)
+		message(STATUS "MPI was found")
+	else()
+		message(WARNING "MPI was NOT found")
+	endif()
+endif()
+
+# Configure OpenMP support (This is NOT the same as MPI)
+message(STATUS "\nChecking for OpenMP")
+find_package(OpenMP QUIET)
+if(OpenMP_CXX_FOUND)
+	message(STATUS "OpenMP_CXX was found")
+else()
+	message(WARNING "OpenMP_CXX was NOT found")
+endif()
+
+# Configure GDAL if opted for
+if(${WITH_GDAL})
+	message(STATUS "\nChecking for GDAL")
+	find_package(GDAL REQUIRED QUIET)
+	if(GDAL_FOUND)
+		message(STATUS "GDAL was found")
+	else()
+		message(WARNING "GDAL was NOT found")
+	endif()
+endif()
+
+# Configure CGAL if opted for
+if(${WITH_CGAL})
+	if(MSVC)
+		message(STATUS "\nCGAL is currently disabled on Windows with MSVC as BOOST headers are not compiling")
+		#set(CGAL_DISABLE_GMP ON) #GMP is not necessary
+		#find_package(CGAL REQUIRED QUIET)
+	else()
+		message(STATUS "\nChecking for CGAL")
+		find_package(CGAL REQUIRED QUIET)
+		if(CGAL_FOUND)
+			message(STATUS "CGAL was found")
+		else()
+			message(WARNING "CGAL was NOT found")
+		endif()
+	endif()
+endif()
+
+# Configure PETSc (only used for galeiallatonce)
+if(${WITH_PETSC})
+	message(STATUS "\nChecking for PETSc")
+	include(cmake/Configure-PETSc.cmake)
+	if(PETSC_FOUND)
+		message(STATUS "PETSc was found")
+	else()
+		message(WARNING "PETSc was NOT found")
+	endif()
+endif()
+
+
+message(STATUS "== Finished configuring external packages ============================")
+message(STATUS "")

@@ -1,110 +1,205 @@
 # GA-AEM Source Code Repository
-[![Build Status](https://travis-ci.com/GeoscienceAustralia/ga-aem.svg?branch=develop)](https://travis-ci.com/GeoscienceAustralia/ga-aem)
 
-## Geoscience Australia Airborne Electromagnetics Programs
+# Description
+GA-AEM is a repository for Geoscience Australia's C++ programs and utilities for forward modelling and inversion of Airborne Electromagnetic (AEM) data. It includes Matlab and Python interfaces for forward model and derivative calculations. It also includes programs for post-processing inversion results to generate GoCAD SGrid sections, georeferenced-section images, Geoscience Australia's EarthSci and Portal curtain images and layer, depth-slice and elevation-slice grids.
 
-- Authors
-	- Ross C Brodie, Geoscience Australia (ross.c.brodie at ga.gov.au)
-	- Richard Taylor, Geoscience Australia
+## Authors
+- Dr Ross C Brodie, formerly Geoscience Australia
+- Dr Richard Taylor, formerly Geoscience Australia
 
-- Language: Mostly C++, some matlab, some python
+## Acknowledgements
+The majority of the development for this project was carried out by the authors whilst employed at Geoscience Australia. A significant part of the development was however carried out as part of a Geoscience Australia-CSIRO placement. The CSIRO Deep Earth Imaging Future Science Platform (DEI-FSP), CSIRO Discovery Program and CSIRO Research Office is acknowledged for funding and facilitating that placement.
 
-## Releases
-### Release-20160606
-	- Added Python 3.x interface for simple forward modelling and derivatives only.
-	- Added Matlab interface for simple forward modelling and derivatives only.
-	- Changed how the PPM normalisation is carried out. Now PPM normalisation is by directional-component-wise with respect to the maximum primary dB/dt or B-field at the receiver for a reference system geometry (which is usually estimated on a per flight or per survey basis). Previously PPM normalisation was with respect to the system geometry for the forward model being run.
-	- Added GEOTEM (1996 ppm system) and SPECTREM (ppm system) examples.
-	- Fixed a bug in the thickness derivative of the second bottom layer. This may have effected few-layer inversions, but not multi-layer fixed-thickness inversion.
-### Release-20160428
-	- Initial public release.
+## Pre-built Windows binaries
+For Windows users who do not wish to compile the programs themselves a package of pre-built Windows binaries are available for download from GitHub [*here*](https://github.com/GeoscienceAustralia/ga-aem/releases/tag/v2.0.0-Release-20240424).
+- Although the pre-built Windows package does not require compiling, it will require the installation of some third-party dependencies. See the section on [*third party software dependencies*](#third-party-software-dependencies) for details.
+- Then, once installed you will need to set or modify the user's *`PATH`* (and possibly *`GDAL_DATA`* and *`PROJ_LIB`*) environment variables. These may be set in the user's environment or using the example `ga-aem_vars.bat` batch file, which will probably need to be modified depending on which versions of, and where, you install ga-aem and the third-party packages.
+- See [*scripts/ga-aem_vars.bat*](scripts/ga-aem_vars.bat) and [*scripts/test_ga-aem_paths.bat*](scripts/test_ga-aem_paths.bat) for guidance on setting Windows environment variables for ga-aem.
+- Ideally you would set the variables in the user environment (e.g. *`Start Menu | search "edit environment variable for your account"`*). After setting, be sure to open a fresh command window or Windows Explorer window.
 
-## Currently included programs
-1. GAFORWARDMODELTDEM - 1D forward modelling program for AEM data
-2. GALEISBSTDEM - deterministic 1D sample by sample inversion of AEM data
-3. GARJMCMCTDEM - stochastic 1D sample by sample inversion of AEM data
-4. CTLINEDATA2SGRID - (undocumented) convert inversion outputs to GoCAD SGrids 
-5. CTLINEDATA2GEOREFIMAGE - (undocumented) convert inversion outputs to static georeferenced section images that can be displayed in a 2D GIS (a poor man's 3D).
-6. CTLINEDATA2SLICEGRIDS - (undocumented) convert inversion outputs to layer, depth and elevation-slice grids in ErMapper format
-7. CTLINEDATA2CURTAINIMAGE - (undocumented) convert inversion outputs to GA's Earth Sci curtain image format
-8. EXAMPLE_FORWARD_MODEL - (undocumented) simple C++ example of how to use the code to run a forward models.
+## Languages
+- Mostly C++.
+- Some Matlab.
+- Some Python.
 
+## Included contents
 
-## Documentation
-- [User Manual](docs/GA-AEM_Programs_User_Manual.pdf)
-- [Theoretical details for GALEISBSTDEM](docs/GALEISBSTDEM_Inversion_Algorithm_Theoretical_Details.pdf)
+### User programs
+- gaforwardmodeltdem.exe - 1D forward modelling program for time-domain AEM data
+- galeisbstdem.exe - deterministic 1D sample-by-sample or bunch-by-bunch inversion of time-domain AEM data
+- galeisbstdem-nompi.exe - as above but without any parallel MPI support or dependency
+- garjmcmctdem.exe - (undocumented) stochastic 1D sample by sample inversion of time-domain AEM data
+- galeiallatonce.exe - (undocumented) stochastic 1D sample by sample inversion of time-domain AEM data
+- ctlinedata2sgrid.exe - (undocumented) convert inversion outputs to GoCAD SGrids 
+- ctlinedata2georefimage.exe - (undocumented) convert inversion outputs to static georeferenced section images that can be displayed in a 2D GIS (a poor man's 3D).
+- ctlinedata2slicegrids.exe - (undocumented) convert inversion outputs to layer, depth and elevation-slice grids in ErMapper format
+- ctlinedata2curtainimage.exe - (undocumented) convert inversion outputs to GA's Earth Sci curtain image format
+- removelog10conductivityfromsgrid.exe - legacy program for removing the log10 conductivity from GoCAD SGrids
+### User examples
+- Examples of how to use the programs for various AEM systems.
+### For Matlab users
+- Matlab interface via MEX file (shared library) with examples.
+- See [*here*](matlab/README.md) for details.
+### For Python users
+- Python interface via shared library with examples.
+- See [*here*](python/README.md) for details.
+### For developers/coders
+- example_forward_model.exe - (for developers) simple C++ language example of how to use the code in C++ to run a forward models.
+- example_forward_model_c.exe - (for developers) simple C language example of how to use the code in C++ to run a forward models.
+### User documentation
+- [*User Manual*](docs/GA-AEM_Programs_User_Manual.pdf).
+- [*Theoretical details for GALEISBSTDEM*](docs/GALEISBSTDEM_Inversion_Algorithm_Theoretical_Details.pdf).
 
-## Building on Linux
-- cd makefiles
-- edit the file run_make.sh to setup for your compiler
-	- set the C++ compiler (e.g., cxx=g++)
-	- set the MPI C++ compiler (e.g., mpicxx=mpiCC)
-	- set the C++ compiler flags (e.g. cxxflags='-std=c++11 -O3 -Wall')
-	- set the executable directory (e.g., exedir='../bin/raijin/gnu')
-- run_make.sh
-- Matlab shared library should go into ga-aem/matlab/bin/linux (.dll on Windows or .so on linux)
-- Python shared library should go into ga-aem/python/gatdaem1d (.dll on Windows or .so on linux)
+# Cloning the repository
+When initially cloning the repository in git you should use the `--recursive` option so that all of the submodules and their respective submodules are initialized and populated with code.
+```bash
+> git clone --recursive https://github.com/GeoscienceAustralia/ga-aem.git
+```
+or if you use SSH authentication,
+```bash
+> git clone --recursive git@github.com:GeoscienceAustralia/ga-aem.git
+```
 
-## Building on Windows
-- You can build the programs with the free Microsoft Visual Studion 2013 Express.
-- Visual Studio solution and project files are supplied.
-- Open ga-aem\vs2013\ga-aem-all\ga-aem-all.sln to compile all programs plus the matlab and python shared libraries.
-- Alternatively open individual program solutions files in their respective directories.
+## Submodules
+The ga-aem project has several source code dependencies that are included as git submodules from other open-source projects. The submodules are only required for building the programs and are not required if you are just using precompiled executables. See [*here*](submodules/README.md) for details of how the submodules should be initialized and updated.
 
-## Additional source code and library dependencies
+## Third-party software dependencies
+For full functionality and to build all programs, and ultimately run them, the following packages are required: FFTW, MPI, NetCDF, GDAL and PETSc.
+- See [*here*](README-Dependencies.md) for details of how to obtain and install the dependencies.
+- Not all the dependencies are required for all the programs, as detailed below,
+	- FFTW
+		- required for galeisbstdem.exe, galeisbstdem-nompi.exe, garjmcmctdem.exe, galeiallatonce.exe, and the Matlab and Python interfaces.
+	- MPI
+		- optional for galeisbstdem.exe.
+		- required for garjmcmctdem.exe and galeiallatonce.exe.
+	- NetCDF
+		- optional for galeisbstdem.exe and galeisbstdem-nompi.exe.
+		- required for garjmcmctdem.exe.
+	- GDAL
+		- required only for ctlinedata2slicegrids.exe and ctlinedata2curtainimage.exe.
+	- PETSc
+		- required only for galeiallatonce.exe.
 
-The programs required additional code or libraries as described below.
+# Building (compiling and linking) the code
+- The programs can be built from source code on both Linux and Windows systems, and probably other architectures.
+- The ga-aem project make use of the [*CMake*](#building-with-cmake) (>=v3.16) software.
+- It is typically simpler to build the code on Linux, however note that Windows users can build and run the code easily on the free [*Ubuntu 20.04*](https://www.microsoft.com/en-au/p/ubuntu-2004/9n6svws3rx71#activetab=pivot:overviewtab) emulator app available from the Microsoft Store.
+- Nevertheless, the code definitely can be built on Windows with CMake or with the [*Microsoft Visual Studio IDE*](#building-on-windows-with-the-microsoft-visual-studio-ide).
+- Traditional Makefiles are now deprecated in ga-aem.
+## Building with CMake
+- CMake can be downloaded from *https://cmake.org/download*.
+- The CMake program uses the file [*`CMakeLists.txt`*](CMakeLists.txt) to build the executables and libraries. Unless you really know what you are doing, do ***not*** edit this file.
+- If you are building on Windows with Visual Studio you should run CMake from the **`X64 Native Tools Command Prompt for VS 2019 (or VS 2022)`** so that the MSVC compiler is set up correctly.
+### Basic CMake usage
+- CMake involves a generate step, a build step, and an install step.
+- The most basic way to use CMake is as follows:
+```bash
+> cd <ga-aem-repository-directory>                 // Change directory to the where the repo is located
+> mkdir <build-dir>                                // <build-dir> is a temporary directory for building
+> cd <build-dir>                                   // change to the <build-dir>
+> cmake -DCMAKE_BUILD_TYPE=Release ..              // generate the cache using ../CMakeLists.txt in the directory above
+> cmake --build .                                  // build all targets
+> cmake --install . --prefix <install-dir>         // install the executables, libraries, headers, docs and Matlab and Python into the <install-dir>
+```
+- The above should work on Linux if you have a C and C++ compiler installed along with all the dependencies.
+- However, it is recommend that you inspect, copy and then alter one of the provided CMake build script examples below to suit your specific purposes.
+	- MSVC on Windows [*`cmake_build_script_windows-vs2022.bat`*](cmake_build_script_windows-vs2022.bat).
+	- GNU compiler on Ubuntu [*`cmake_build_script_ubuntu.sh`*](cmake_build_script_ubuntu.sh)  (including for the Ubuntu emulator on Windows).
+	- GNU compiler on Gadi cluster [*`cmake_build_script_gadi-gnu.sh`*](cmake_build_script_gadi-gnu.sh).
+	- Intel compiler on Gadi cluster [*`cmake_build_script_gadi-intel.sh`*](cmake_build_script_gadi-intel.sh).
+- It is highly likely that you will need to set some environment variables, particularly on Windows, to help CMake find the various third-party packages. These include ***`FFTW_DIR, NETCDF_DIR, GDAL_DIR, PETSC_DIR`***. They may be set either inside the build script or in the user-environment. See [*here*](visualstudio/README.md) and [*here*](scripts/ga-aem_vars.bat) for tips.
+### CMake generate step
+- To choose a specific compiler, replace the line,
+	```bash
+	> cmake -DCMAKE_BUILD_TYPE=Release ..
+	```
+	with, for example, one of these lines for the GNU, Intel and Intel-LLVM compilers respectively,
+	```bash
+	> cmake -DCMake_C_COMPILER=gcc -DCMake_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release ..
+	> cmake -DCMake_C_COMPILER=icc -DCMake_CXX_COMPILER=icpc -DCMAKE_BUILD_TYPE=Release ..
+	> cmake -DCMake_C_COMPILER=icx -DCMake_CXX_COMPILER=icpx -DCMAKE_BUILD_TYPE=Release ..
+	```
+	or for Microsoft Visual Studio 2019 or 2022 compilers respectively,
+	```dos
+	> cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_CXX_COMPILER=msvc -DCMAKE_BUILD_TYPE=Release ..
+	> cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_COMPILER=msvc -DCMAKE_BUILD_TYPE=Release ..
+	```
+- Specific dependencies may be disabled by using one or more of the following optional command line switches in the initial generate step. These options are ON by default.
+```text
+	-DWITH_FFTW=OFF
+	-DWITH_MPI=OFF
+	-DWITH_GDAL=OFF
+	-DWITH_NETCDF=OFF
+	-DWITH_PETSC=OFF
+```
+This may be useful if, for example, you do not have the third-party packages installed or do not need that particular functionality. For example a minimalistic version of `galeisbstdem.exe` could be built with the following in the generate step,
+```bash
+	> cmake -G "Visual Studio 17 2022" -A x64 -Wno-dev -DCMAKE_CXX_COMPILER=msvc -DWITH_FFTW=ON -DWITH_MPI=OFF -DWITH_GDAL=OFF -DWITH_NETCDF=OFF -DWITH_PETSC=OFF -DCMAKE_BUILD_TYPE=Release ..
+```
+### CMake build step
+- In the build step all targets (executables/libraries) can be built,
+	```bash
+	> cmake --build . --config=Release
+	```
+	or only specific targets can be specified,
+	```bash
+	> cmake --build . --target galeisbstdem --config=Release
+	> cmake --build . --target ctlinedata2sgrid --config=Release
+	```
+- Note that in the build step, the *--config=Release* switch is required for the Visual Studio (and other [*generator*](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html) style) compilers, but it is not required for the GNU and Intel compilers on Linux.
+### CMake Install step
+- The install step installs (copies) all the executables, libraries, headers, examples, Matlab and Python interfaces to an installation directory.
+	```bash
+	> cmake --install . --prefix <install-dir>
+	```
+- The <install-dir> is a suitable installation directory, for example on Windows it might be,
+	```bash
+	> cmake --install . --prefix %LocalAppData%\GA-AEM
+	```
+## Building on Windows with the Microsoft Visual Studio IDE
+- On Windows systems you can build the programs with the [*Microsoft Visual Studio*](https://visualstudio.microsoft.com) 2019 (or later) software in a GUI based integrated development environment (IDE).  This is in fact how the code has been developed. 
+- Be certain to select and install the ***`Desktop development with C++`*** workload in the Visual Studio installer.
+- For convenience Microsoft Visual Studio project, solution and property sheet files are supplied. However some path updates will be required depending on how/where you have installed the third-party dependency libraries.
+- See [*here*](visualstudio/README.md) for more details on how to build ga-aem using the Microsoft Visual Studio IDE.
 
-1. CPP-UTILS
-	- CPP-UTILS is a repository of C++ utility classes and functions that are used across this and several other other projects.
-	- Up until Release-20160606 these source files were included in the src\ directory but were moved into a separate submodule so that they can be used and maintained easily across several different projects.
-	- CPP-UTILS is included as a git submodule of this repository (see [submodules](submodules/README.md)).
-	- Only required if you are compiling the code.
-	- Not required if you are just going to use the precompiled executables.
+# Releases
 
-2. Eigen 
-	- A C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.
-	- Language: C++
-	- Website: http://eigen.tuxfamily.org/.	
-	- Repository: https://github.com/eigenteam/eigen-git-mirror.git	
-	- Eigen is not required if you just want to run the precompiled Windows executables.
-	- Eigen is only required if you want to compile the source code.
-	- Eigen is included as a git submodule of this repository (see [submodules](submodules/README.md)).
+## v2.0.0-Release-20240424
+- Functionality changes to deterministic inversion program (galeisbstdem.exe)
+	- Added XZ amplitude inversion functionality.
+	- Added Bunch-by-bunch inversion functionality.
+	- More conservative (better) line search.
+	- Model parameter bounds and log-barrier constraint.
+	- More sanity checks on inputs and warning log output.
+	- Usability and convenience improvements.
+	- Zero and null data handling (for potentially culled data).
+	- Pass-through selected ancillary fields from input to output file.
+	- Input ASEGGDF2 DFN, HDR and CSV headers supported.
+		- Field names can be specified instead of column numbers.
+		- DFN, HDR, CSV and i3 output file headers.
+	- Vertical similarity/homogeneity constraints.
+	- Experimental output to GA's NetCDF line data format.
+	- Experimental delayed geometry inversion option.
+	- Experimental cable length constraint.
+- Functionality changes to stochastic inversion program (garjmcmctdem.exe).
+	- Parallel tempering added.
+	- NetCDF file output of probability maps for selected soundings.
+- Induced polarization forward-modelling (not inversion) capability added.
+	- Available in Matlab interface.
+	- Available in Python interface.
+- Post-processing of inversion results programs added.
+	- GoCAD SGrid generation.
+	- Georeferenced section generation.
+	- Generation of rudimentary layer, depth slice and elevation slice grids.
+	- Generation of curtain images sections for GA's EarthSci and Portal.
+- CMake build system supported and traditional Makefiles deprecated.
+## Release-20160606
+- Added Python 3.x interface for simple forward modelling and derivatives only.
+- Added Matlab interface for simple forward modelling and derivatives only.
+- Changed how the PPM normalization is carried out. Now PPM normalization is by directional-component-wise with respect to the maximum primary dB/dt or B-field at the receiver for a reference system geometry (which is usually estimated on a per flight or per survey basis). Previously PPM normalization was with respect to the system geometry for the forward model being run.
+- Added GEOTEM (1996 ppm system) and SPECTREM (ppm system) examples.
+- Fixed a bug in the thickness derivative of the second bottom layer. This may have effected few-layer inversions, but not multi-layer fixed-thickness inversion.
+## Release-20160428
+- Initial public release.
 
-
-3. Message Passing Interface (MPI)
-	- MPI is a standard used for parallel computation.  The MPI standard has been implemented in several different flavours by different consortia.
-	- See https://www.mpi-forum.org
-	- Both Windows and Linux users will need to install a suitable MPI for your system.
-	- MPI is used in the following parallel enabled programs:
-		- galeisbstdem.exe
-		- galeisbsfdem.exe
-		- garjmcmctdem.exe
-		- galeiallatonce.exe
-	- The pre-compiled Windows inversion programs require Microsoft HPC Pack 2012 because that is the flavour of MPI they have been compiled and linked with.
-	- They can be recompiled using MPICH or other flavours of MPI if required.
-	- If you do not want to install MPI on your Windows system, you can use the galeisbstdem-nompi.exe, which has not been linked with MPI but uses OpenMP shared memory parallelism instead (see manual for details).
-
-4. The Fastest Fourier Transform in the West (FFTW)
-	- FFTW is an optimised Fast Fourier Transform package developed at MIT by Matteo Frigo and Steven Johnson.
-	- See http://www.fftw.org
-	- FFTW is required if you are compiling the time-domain forward modelling or inversion programs on Windows or Linux.
-	- Linux users will need to install a suitable FFTW for your system.
-	- Windows users can obtain the header files, precompiled libraries and the runtime dlls from GitHub here,
-		- https://github.com/rcb547/fftw3.2.2.dlls.git, or
-		- git clone git@github.com:rcb547/fftw3.2.2.dlls.git.
-	- FFTW is required if you want to execute the precompiled time-domain forward modelling or inversion programs on Windows.
-	- FFTW is also required if you are just going to use the precompiled executables on Windows.
-	- The directory containing the 64-bit FFTW dlls need to be in your Windows search path.
-
-5. Portable, Extensible Toolkit for Scientific Computation (PETSc)
-	- PETSc, pronounced PET-see (the S is silent), is a suite of data structures and routines for the scalable (parallel) solution of scientific applications modeled by partial differential equations.
-	- See https://www.mcs.anl.gov/petsc.
-	- PETSc is only used by the program galeiallatonce.exe.
-	- PETSc is only required for compiling galeiallatonce.exe, not executing it.
-	- PETSc is not required for executing the precompiled Windows programs.
-	- Linux users will need to install PETSc on your system.
-	- Windows users can obtain the header files and precompiled libraries from the GitHub, here
-		- https://github.com/rcb547/petsc-3.4.3-vs2013, or
-		- git clone git@github.com:rcb547/petsc-3.4.3-vs2013.git.
 

@@ -53,10 +53,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
+    <LibraryPath>..\lib\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <PostBuildEventUseInBuild>true</PostBuildEventUseInBuild>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>..\lib\$(Platform)\$(Configuration)\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -64,10 +67,13 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_NETCDF;USEGLOBALSTACKTRACE;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_NETCDF;USEGLOBALSTACKTRACE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions> /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <BuildStlModules>false</BuildStlModules>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -83,11 +89,14 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>HAVE_NETCDF;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_NETCDF;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <ConformanceMode>false</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions> /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <BuildStlModules>false</BuildStlModules>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -99,26 +108,32 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\geophysics-netcdf\src\geophysics_netcdf.h" />
+    <ClInclude Include="..\..\src\airborne_types.h" />
+    <ClInclude Include="..\..\src\cinverter.h" />
+    <ClInclude Include="..\..\src\csbsinverter.h" />
     <ClInclude Include="..\..\src\gaaem_version.h" />
-    <ClInclude Include="..\..\src\galeisbstdem.h" />
     <ClInclude Include="..\..\src\inputmanager.h" />
+    <ClInclude Include="..\..\src\inversion_line_searcher.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\outputmanager.h" />
+    <ClInclude Include="..\..\src\tdemcomponentinfo.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\asciicolumnfile.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\eigen_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\logger.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\mpi_wrapper.h" />
+    <ClInclude Include="..\..\src\tdemsysteminfo.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\asciicolumnfile.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\eigen_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\fielddefinition.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_formats.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_constants.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\logger.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\streamredirecter.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\string_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h" />
+    <ClInclude Include="..\..\submodules\geophysics-netcdf\include\geophysics_netcdf.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

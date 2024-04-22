@@ -2,22 +2,24 @@ clc;
 clear all;
 clear mex;
 
-%Add path to the gatdaem1d wrapper .m files and the shared library
-addpath('..\bin\x64');
-addpath('..\gatdaem1d_functions');
+% These examples are setup to be run as if your Matlab current directory is [ga-aem-install-dir]\matlab\examples
+% Add path to the gatdaem1d wrapper .m files and the shared library
+% addpath('..\bin'); % Not needed if already in your Matlab path
+% addpath('..\gatdaem1d_functions'); % Not needed if already in your Matlab path
+% addpath('C:\fftw-3.3.5-dll64'); % Not needed if already in your Windows path
 
-%Load the shared library
+% Load the shared library
 gatdaem1d_loadlibrary();
 
-%Create a LM system object, get its handle, and some basic info
-LM.stmfile = '..\..\examples\bhmar-skytem\stmfiles\Skytem-LM.stm';
+% Create a LM system object, get its handle, and some basic info
+LM.stmfile = '..\..\examples\SkyTEM-BHMAR-2009\stmfiles\Skytem-LM.stm';
 LM.hS  = gatdaem1d_getsystemhandle(LM.stmfile);
 LM.nw  = gatdaem1d_nwindows(LM.hS);
 LM.wt  = gatdaem1d_windowtimes(LM.hS);
 LM.wfm = gatdaem1d_waveform(LM.hS);
 
 %Create a HM system object, get its handle, and some basic info
-HM.stmfile = '..\..\examples\bhmar-skytem\stmfiles\Skytem-HM.stm';
+HM.stmfile = '..\..\examples\SkyTEM-BHMAR-2009\stmfiles\Skytem-HM.stm';
 HM.hS  = gatdaem1d_getsystemhandle(HM.stmfile);
 HM.nw  = gatdaem1d_nwindows(HM.hS);
 HM.wt  = gatdaem1d_windowtimes(HM.hS);

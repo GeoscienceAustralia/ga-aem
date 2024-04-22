@@ -4,12 +4,6 @@
     <ClCompile Include="..\..\src\gatdaem1d.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\tdemsystem.h">
@@ -18,16 +12,16 @@
     <ClInclude Include="..\..\src\gatdaem1d.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\earth1d.h">

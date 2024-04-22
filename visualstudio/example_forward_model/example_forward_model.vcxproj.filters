@@ -14,24 +14,18 @@
     <ClCompile Include="..\..\src\example_forward_model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\earth1d.h">

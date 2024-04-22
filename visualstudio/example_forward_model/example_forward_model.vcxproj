@@ -20,15 +20,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -86,16 +86,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\example_forward_model.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\earth1d.h" />
     <ClInclude Include="..\..\src\lem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

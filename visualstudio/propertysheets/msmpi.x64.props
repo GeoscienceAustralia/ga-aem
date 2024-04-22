@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <PreprocessorDefinitions>_MPI_ENABLED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_MPI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel />
       <TreatWarningAsError />
     </ClCompile>

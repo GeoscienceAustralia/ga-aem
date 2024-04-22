@@ -8,17 +8,11 @@
 	path = submodules/eigen
 	url = https://github.com/eigenteam/eigen-git-mirror.git
 [submodule "submodules/geophysics-netcdf"]
-
 	path = submodules/geophysics-netcdf
-
-	url = git@github.com:GeoscienceAustralia/geophysics-netcdf.git
+	url = https://github.com/GeoscienceAustralia/geophysics-netcdf.git
 [submodule "submodules/netcdf-cxx4"]
+
 	path = submodules/netcdf-cxx4
-	url = git@github.com:Unidata/netcdf-cxx4.git
 
-[submodule "submodules/csv-parser"]
-
-	path = submodules/csv-parser
-
-	url = git@github.com:vincentlaucsb/csv-parser.git
+	url = https://github.com/Unidata/netcdf-cxx4.git
 

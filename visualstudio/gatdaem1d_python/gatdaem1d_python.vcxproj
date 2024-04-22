@@ -12,17 +12,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\gatdaem1d.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\gatdaem1d.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DF188472-9E4B-4F60-A96E-9D17134646B6}</ProjectGuid>
@@ -65,6 +63,7 @@
     <OutDir>..\..\python\gatdaem1d\</OutDir>
     <TargetExt>.dll</TargetExt>
     <TargetName>gatdaem1d_debug</TargetName>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -72,6 +71,7 @@
     <OutDir>..\..\python\gatdaem1d\</OutDir>
     <TargetExt>.dll</TargetExt>
     <TargetName>gatdaem1d</TargetName>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -88,6 +88,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary />
+      <AdditionalOptions>/NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent>
@@ -119,6 +121,8 @@ del $(OutDir)$(TargetName).exp
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>libfftw3-3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary />
+      <AdditionalOptions>/NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />

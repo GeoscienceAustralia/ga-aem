@@ -29,7 +29,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "gdiplus_utils.h"
 #include "stopwatch.h"
 #include "filesplitter.h"
-#include "asciicolumnfile.h"
 #include "ctlinedata.h"
 
 #include "ticpp.h"
@@ -41,9 +40,9 @@ using namespace RDP;
 class cLogger glog; //The global instance of the log file manager
 class cStackTrace gtrace; //The global instance of the stacktrace
 
-template<typename T> 
+template<typename T>
 class cBIL {
-	
+
 private:
 
 	std::vector<T> data;
@@ -52,16 +51,16 @@ private:
 
 public:
 
-	cBIL(const int& _nhpixels, const int& _nvpixels) : 
+	cBIL(const int& _nhpixels, const int& _nvpixels) :
 		nhpixels(_nhpixels), nvpixels(_nvpixels)
-	{		
+	{
 		data.resize(nhpixels * nvpixels, (T)0.0);
 	}
 
 	const T nodata_value() {
-		return (T) -32767;
+		return (T)-32767;
 	}
-			
+
 	std::string type_string(const int& v) { return "int"; }
 	std::string type_string(const float& v) { return "float"; }
 	std::string type_string(const double& v) { return "double"; }
@@ -72,7 +71,7 @@ public:
 
 	void SetPixel(const size_t& i, const size_t& j, const T& val)
 	{
-		data[(i - 1)*nhpixels + j];
+		data[(i - 1) * nhpixels + j];
 	}
 
 	void save(const std::string& filename)
@@ -85,9 +84,9 @@ public:
 	}
 
 	void savebil(const std::string& bilfilename)
-	{				
+	{
 		std::ofstream ofs(bilfilename, std::ios::out | std::ios::binary);
-		ofs.write((char*)(&data[0]), sizeof(T)*data.size());
+		ofs.write((char*)(&data[0]), sizeof(T) * data.size());
 	}
 
 	void savehdr(const std::string& hdrfilename)
@@ -99,10 +98,10 @@ public:
 		ofs << "xllcorner " << 0 << std::endl;
 		ofs << "yllcorner " << 0 << std::endl;
 		ofs << "nodata_value " << nodata_value() << std::endl;
-		ofs << "nbits " << 8*sizeof(T) << std::endl;
+		ofs << "nbits " << 8 * sizeof(T) << std::endl;
 		ofs << "pixeltype " << type_string() << std::endl;
-		if (isbigendian()) ofs << "byteorder " << "msb" << std::endl;		
-		else ofs << "byteorder " << "lsb" << std::endl;				
+		if (isbigendian()) ofs << "byteorder " << "msb" << std::endl;
+		else ofs << "byteorder " << "lsb" << std::endl;
 	}
 };
 
@@ -110,23 +109,23 @@ class cCurtainImageSection {
 
 private:
 
-	const cCTLineData& D;	
+	const cCTLineData& D;
 	size_t sequence_number = 0;
-	
-	int nhpixels;
-	int nvpixels;	
-	double h0;//Centre of left pixel column
-	double h1;//Centre of right pixel column
-	double dh;//Horizontal pixel size
-	double v0;//Centre of bottom pixel row
-	double v1;//Centre of top pixel row
-	double dv;//Vertical pixel size
+
+	int nhpixels = 0;
+	int nvpixels = 0;
+	double h0 = 0.0;//Centre of left pixel column
+	double h1 = 0.0;//Centre of right pixel column
+	double dh = 0.0;//Horizontal pixel size
+	double v0 = 0.0;//Centre of bottom pixel row
+	double v1 = 0.0;//Centre of top pixel row
+	double dv = 0.0;//Vertical pixel size
 	std::vector<double> imagefid;
 	std::vector<double> imagex;
-	std::vector<double> imagey;	
+	std::vector<double> imagey;
 	std::vector<double> imageelevation;
 
-	double gratdiv;
+	double gratdiv = 0.0;
 
 	std::string outdir;
 	std::string prefix;
@@ -136,47 +135,66 @@ private:
 	cStretch stretch;
 	std::vector<double> cbarticks;
 
-	bool autozsectiontop=true;
-	bool autozsectionbot=true;
+	Color BkgColor;
+	Color AirColor;
+	Color NullsColor;
 
-	bool   spreadfade;
-	double spreadfadelowclip;
-	double spreadfadehighclip;
-	double lowspreadfade;
-	double highspreadfade;
+	bool autozsectiontop = true;
+	bool autozsectionbot = true;
 
-	double geometrytolerance;
-	int    tilesize;
+	bool   spreadfade = 0.0;
+	double spreadfadelowclip = 0.0;
+	double spreadfadehighclip = 0.0;
+	double lowspreadfade = 0.0;
+	double highspreadfade = 0.0;
+
+	double geometrytolerance = 0.0;
+	int    tilesize = 0;
 	std::string datasetname;
 	std::string datacachename;
 
+	//std::string imageformat = "png";
+	//std::string worldfileextension = "pngw";
+
+	std::string imageformat = "jpg";
+	std::string worldfileextension = "jgw";
 public:
-	
+
 	cCurtainImageSection(const cCTLineData& _D) : D(_D)
 	{
-
+		BkgColor = Color(0, 255, 255, 255);
+		AirColor = Color(0, 255, 255, 255);
+		NullsColor = Color(255, 128, 128, 128);
 	}
 
-	void set_sequence_number(const size_t& seqn){
+	std::string image_format() {
+		return imageformat;
+	}
+
+	std::string worldfile_extension() {
+		return worldfileextension;
+	}
+
+	void set_sequence_number(const size_t& seqn) {
 		sequence_number = seqn;
 	}
 
-	void getoptions(const cBlock& b){
-		
+	void getoptions(const cBlock& b) {
+
 		spreadfade = b.getboolvalue("SpreadFade");
-		if(spreadfade){
-			spreadfadelowclip   = b.getdoublevalue("Log10SpreadLowClip");
-			spreadfadehighclip  = b.getdoublevalue("Log10SpreadHighClip");
-			lowspreadfade       = b.getdoublevalue("LowSpreadFade");
-			highspreadfade      = b.getdoublevalue("HighSpreadFade");	
+		if (spreadfade) {
+			spreadfadelowclip = b.getdoublevalue("Log10SpreadLowClip");
+			spreadfadehighclip = b.getdoublevalue("Log10SpreadHighClip");
+			lowspreadfade = b.getdoublevalue("LowSpreadFade");
+			highspreadfade = b.getdoublevalue("HighSpreadFade");
 		}
 
 		v1 = b.getdoublevalue("ElevationTop");
-		if(isdefined(v1)) autozsectiontop = false;					
+		if (isdefined(v1)) autozsectiontop = false;
 		else autozsectiontop = true;
-		
+
 		v0 = b.getdoublevalue("ElevationBottom");
-		if (isdefined(v0)) autozsectionbot = false;			
+		if (isdefined(v0)) autozsectionbot = false;
 		else autozsectionbot = true;
 
 		outdir = b.getstringvalue("OutDir");
@@ -185,41 +203,49 @@ public:
 		prefix = b.getstringvalue("Prefix");
 		suffix = b.getstringvalue("Suffix");
 
-		if (!b.getvalue("HorizontalResolution", dh)){
+		if (!b.getvalue("HorizontalResolution", dh)) {
 			std::string msg("HorizontalResolution must be defined\n");
 			throw(std::runtime_error(msg));
 		}
 
-		if (!b.getvalue("VerticalResolution", dv)){		
+		if (!b.getvalue("VerticalResolution", dv)) {
 			std::string msg("VerticalResolution must be defined\n");
 			throw(std::runtime_error(msg));
 		}
 
 		cBlock cs = b.findblock("ColourStretch");
-		cmap      = cColorMap(cs);
-		stretch   = cStretch(cs);
+		cmap = cColorMap(cs);
+		stretch = cStretch(cs);
 		cbarticks = cs.getdoublevector("ColourBarTicks");
-		
+
+		std::vector<int> bkgclr = cs.getintvector("BackgroundColour");
+		std::vector<int> airclr = cs.getintvector("AirColour");
+		std::vector<int> nullsclr = cs.getintvector("NullsColour");
+
+		if (bkgclr.size() == 4) BkgColor = Color(bkgclr[0], bkgclr[1], bkgclr[2], bkgclr[3]);
+		if (airclr.size() == 4) AirColor = Color(airclr[0], airclr[1], airclr[2], airclr[3]);
+		if (nullsclr.size() == 4) NullsColor = Color(nullsclr[0], nullsclr[1], nullsclr[2], nullsclr[3]);
+
 		gratdiv = b.getdoublevalue("ElevationGridDivision");
 
 		geometrytolerance = b.getdoublevalue("GeometryTolerance");
-		tilesize = b.getintvalue("TileSize");		
-		datasetname   = b.getstringvalue("DatasetName");
+		tilesize = b.getintvalue("TileSize");
+		datasetname = b.getstringvalue("DatasetName");
 		datacachename = b.getstringvalue("DataCacheName");
 	}
-	
-	void process(){					
+
+	void process() {
 		calculateextents();
 
-		Bitmap bm(nhpixels, nvpixels, PixelFormat32bppARGB);		
+		Bitmap bm(nhpixels, nvpixels, PixelFormat32bppARGB);
 		createbitmap(bm);
 		generatesectiondata(bm);
 		//drawgraticule();		
 		//fixtransparenttext();
 		saveimage(bm);
 		save_world_file();
-		savegeometry();		
-		saveribbontilerbatchcommand();		
+		savegeometry();
+		saveribbontilerbatchcommand();
 
 		//cBIL<float> bil(nhpixels, nvpixels);
 		//generatesectiondata(bil);
@@ -229,39 +255,39 @@ public:
 	}
 
 	void calculateextents()
-	{												
-		double hlength = D.linedistance.back();		
-		hlength = roundupnearest(hlength,dh);			
+	{
+		double hlength = D.linedistance.back();
+		hlength = roundupnearest(hlength, dh);
 		h0 = 0.0;
 		h1 = hlength;
-		nhpixels  = 1+(int)(hlength/dh);
-		
-		double zmin =  DBL_MAX;
-		double zmax = -DBL_MAX;
-		for(int si=0; si<D.nsamples; si++){
-			if(D.z[si][D.nlayers] < zmin)zmin = D.z[si][D.nlayers];
-			if (D.z[si][0]       > zmax)zmax = D.z[si][0];
+		nhpixels = 1 + (int)(hlength / dh);
+
+		double zmin = (std::numeric_limits<double>::max)();
+		double zmax = (std::numeric_limits<double>::lowest)();
+		for (int si = 0; si < D.nsamples; si++) {
+			if (D.z[si][D.nlayers] < zmin)zmin = D.z[si][D.nlayers];
+			if (D.z[si][0] > zmax)zmax = D.z[si][0];
 		}
 
-		if(autozsectionbot==true) v0 = zmin;
-		if(autozsectiontop==true) v1 = zmax;		
-		double vlength = v1-v0;
+		if (autozsectionbot == true) v0 = zmin;
+		if (autozsectiontop == true) v1 = zmax;
+		double vlength = v1 - v0;
 		//Adjust extents to nearest pixel
-		vlength = roundupnearest(vlength,dv);		
-		v0 = v1-vlength;
-		nvpixels = 1 + (int)(vlength/dv);
+		vlength = roundupnearest(vlength, dv);
+		v0 = v1 - vlength;
+		nvpixels = 1 + (int)(vlength / dv);
 	}
 
-	int wh2ix(double wh){
-		int ix = (int)roundnearest((wh-h0)/dh,1.0);
+	int wh2ix(double wh) {
+		int ix = (int)roundnearest((wh - h0) / dh, 1.0);
 		return ix;
 	}
 
-	int wv2iy(double wv){		
-		int iy = (int)roundnearest((v1-wv)/dv,1.0);
+	int wv2iy(double wv) {
+		int iy = (int)roundnearest((v1 - wv) / dv, 1.0);
 		return iy;
 	}
-		
+
 	void createbitmap(Bitmap& bm) {
 		for (int i = 0; i < nhpixels; i++) {
 			for (int j = 0; j < nvpixels; j++) {
@@ -270,29 +296,25 @@ public:
 		}
 	}
 
-	double fadevalue(const double& spread){
-		if(spread <= spreadfadelowclip)return  lowspreadfade;
-		if(spread >= spreadfadehighclip)return highspreadfade;
-		return lowspreadfade + (spread - spreadfadelowclip)/(spreadfadehighclip - spreadfadelowclip) * (highspreadfade - lowspreadfade);		
+	double fadevalue(const double& spread) {
+		if (spread <= spreadfadelowclip)return  lowspreadfade;
+		if (spread >= spreadfadehighclip)return highspreadfade;
+		return lowspreadfade + (spread - spreadfadelowclip) / (spreadfadehighclip - spreadfadelowclip) * (highspreadfade - lowspreadfade);
 	}
 
-	void fadecolor(Color& clr, const double& fade){
+	void fadecolor(Color& clr, const double& fade) {
 		//fade=0 gives original color
 		//fade=1 gives white
-		double alpha = 1.0-fade;
-		unsigned char w = (unsigned char)(255.0*fade);		
-		unsigned char r = w + (unsigned char)(clr.GetRed()   * alpha);
+		double alpha = 1.0 - fade;
+		unsigned char w = (unsigned char)(255.0 * fade);
+		unsigned char r = w + (unsigned char)(clr.GetRed() * alpha);
 		unsigned char g = w + (unsigned char)(clr.GetGreen() * alpha);
-		unsigned char b = w + (unsigned char)(clr.GetBlue()  * alpha);		
-		clr = Color(255,r,g,b);				
+		unsigned char b = w + (unsigned char)(clr.GetBlue() * alpha);
+		clr = Color(255, r, g, b);
 	}
 
-	void generatesectiondata(Bitmap& bm){
+	void generatesectiondata(Bitmap& bm) {
 
-		Color BkgColor(255,128,128,128);
-		Color AirColor(0,255,255,255);
-		Color NullsColor(255,128,128,128);
-		
 		int vp0 = wv2iy(v0);
 		int vp1 = wv2iy(v1);
 
@@ -300,11 +322,11 @@ public:
 		imagex.resize(nhpixels);
 		imagey.resize(nhpixels);
 		imageelevation.resize(nhpixels);
-				
+
 		int k = 0;
-		for (int i = 0; i < nhpixels; i++){
-			double hp = h0 + (double)i*dh;
-			while (k < D.linedistance.size() - 1 && std::abs(D.linedistance[k] - hp) > std::abs(D.linedistance[k + 1] - hp)){
+		for (int i = 0; i < nhpixels; i++) {
+			double hp = h0 + (double)i * dh;
+			while (k < D.linedistance.size() - 1 && std::abs(D.linedistance[k] - hp) > std::abs(D.linedistance[k + 1] - hp)) {
 				k++;
 			}
 
@@ -312,63 +334,52 @@ public:
 			if (std::abs(D.linedistance[k] - hp) > (2.0 * dh)) {
 				is_in_gap = true;
 			}
-			
+
 			int a = k;
 			int b = k + 1;
-			if (k == D.linedistance.size()-1){
-				a = k-1; b = k;
+			if (k == D.linedistance.size() - 1) {
+				a = k - 1; b = k;
 			}
-			imagefid[i]       = linearinterp(D.linedistance[a], D.fid[a], D.linedistance[b], D.fid[b], hp);
-			imagex[i]         = linearinterp(D.linedistance[a], D.x[a],   D.linedistance[b], D.x[b], hp);
-			imagey[i]         = linearinterp(D.linedistance[a], D.y[a],   D.linedistance[b], D.y[b], hp);;
-			imageelevation[i] = linearinterp(D.linedistance[a], D.e[a],   D.linedistance[b], D.e[b], hp);
-			
+			imagefid[i] = linearinterp(D.linedistance[a], D.fid[a], D.linedistance[b], D.fid[b], hp);
+			imagex[i] = linearinterp(D.linedistance[a], D.x[a], D.linedistance[b], D.x[b], hp);
+			imagey[i] = linearinterp(D.linedistance[a], D.y[a], D.linedistance[b], D.y[b], hp);;
+			imageelevation[i] = linearinterp(D.linedistance[a], D.e[a], D.linedistance[b], D.e[b], hp);
 
-			/*if (i > 10270) {
-				std::cout << i << " ";
-				std::cout << k << " ";
-				std::cout << std::setprecision(10) << D.linedistance[k] << " ";
-				std::cout << std::setprecision(10) << D.x[k] << " ";
-				std::cout << std::setprecision(10) << D.y[k] << " ";
-				std::cout << std::setprecision(10) << D.y[k+1] << " ";
-				std::cout << std::endl;
-			}*/
-
-			for(int j=vp1; j<=vp0; j++){				
-				bm.SetPixel(i,j,BkgColor);
+			for (int j = vp1; j <= vp0; j++) {
+				bm.SetPixel(i, j, BkgColor);
 
 				if (is_in_gap) {
 					bm.SetPixel(i, j, AirColor);
 					continue;
 				}
 
-				double zp = v1 - (double)j*dv;
-				if(zp>D.e[k]){
-					bm.SetPixel(i,j,AirColor);					
+				double zp = v1 - (double)j * dv;
+				if (zp > D.e[k]) {
+					bm.SetPixel(i, j, AirColor);
 				}
-				else{					
-					for (int li = 0; li<D.nlayers; li++){
-						if (zp < D.z[k][li] && zp >= D.z[k][li + 1]){
+				else {
+					for (size_t li = 0; li < D.nlayers; li++) {
+						if (zp < D.z[k][li] && zp >= D.z[k][li + 1]) {
 							double conductivity = D.c[k][li];
-							if(conductivity < 0.0){
-								bm.SetPixel(i,j,NullsColor);
+							if (conductivity < 0.0) {
+								bm.SetPixel(i, j, NullsColor);
 							}
-							else{							
+							else {
 								int ind = stretch.index(conductivity);
-								Color clr(255,cmap.r[ind],cmap.g[ind],cmap.b[ind]);
+								Color clr(255, cmap.r[ind], cmap.g[ind], cmap.b[ind]);
 
-								if(spreadfade){
+								if (spreadfade) {
 									double conductivity_p10 = D.cp10[k][li];
 									double conductivity_p90 = D.cp90[k][li];
 									double spread = log10(conductivity_p90) - log10(conductivity_p10);
-									double fade   = fadevalue(spread);
-									fadecolor(clr,fade);
-								}								
-								bm.SetPixel(i,j,clr);
+									double fade = fadevalue(spread);
+									fadecolor(clr, fade);
+								}
+								bm.SetPixel(i, j, clr);
 							}
 							break;
-						}						
-					}										
+						}
+					}
 				}//layer loop
 			}//v pixel loop
 		}//h pixel loop		
@@ -386,19 +397,19 @@ public:
 
 		int mini = 0;
 		for (int i = 0; i <= nhpixels; i++) {
-			double hp = h0 + (double)i*dh;
+			double hp = h0 + (double)i * dh;
 
-			while (mini < D.linedistance.size() - 1 && 
-				std::abs(D.linedistance[mini] - hp) > 
+			while (mini < D.linedistance.size() - 1 &&
+				std::abs(D.linedistance[mini] - hp) >
 				std::abs(D.linedistance[mini + 1] - hp)) {
 				mini++;
 			}
-			
+
 
 			for (int j = vp1; j <= vp0; j++) {
-				b.SetPixel(i, j, BkgValue);				
+				b.SetPixel(i, j, BkgValue);
 
-				double zp = v1 - (double)j*dv;
+				double zp = v1 - (double)j * dv;
 				if (zp > D.e[mini]) {
 					b.SetPixel(i, j, AirValue);
 				}
@@ -406,7 +417,7 @@ public:
 					for (int li = 0; li < D.nlayers; li++) {
 						if (zp < D.z[mini][li] && zp >= D.z[mini][li + 1]) {
 							double conductivity = D.c[mini][li];
-							if (conductivity < 0.0){
+							if (conductivity < 0.0) {
 								b.SetPixel(i, j, NullsValue);
 							}
 							else {
@@ -429,48 +440,48 @@ public:
 		}//h pixel loop		
 	}
 
-	void drawgraticule(Bitmap& bm){
+	void drawgraticule(Bitmap& bm) {
 
-		if (gratdiv == ud_double()) return;
+		if (gratdiv == undefinedvalue<double>()) return;
 		if (gratdiv <= 0.0) return;
 
 		Graphics gr(&bm);
-		gr.SetCompositingMode(CompositingModeSourceOver);						
-		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);		
+		gr.SetCompositingMode(CompositingModeSourceOver);
+		gr.SetTextRenderingHint(TextRenderingHintAntiAlias);
 
-		int zg1=(int)roundnearest(v0,(int)gratdiv);
-		int zg2=(int)roundnearest(v1,(int)gratdiv);
+		int zg1 = (int)roundnearest(v0, (int)gratdiv);
+		int zg2 = (int)roundnearest(v1, (int)gratdiv);
 
-		Pen blackpen(Color::Black,0);		
+		Pen blackpen(Color::Black, 0);
 		SolidBrush blackbrush(Color::Black);
-		
+
 		//Font font(L"Arial", getfontsize(), FontStyleRegular, UnitPoint);				
 		Font font(L"Arial", 12, FontStyleBold, UnitPoint);
 
 		StringFormat textformat;
 		textformat.SetAlignment(StringAlignmentFar);
 		textformat.SetLineAlignment(StringAlignmentCenter);
-		SizeF layoutsize(32767,32767);
-		SizeF textsize;				
-		gr.MeasureString(L"-0000 m",-1,&font,layoutsize,&textformat,&textsize);
+		SizeF layoutsize(32767, 32767);
+		SizeF textsize;
+		gr.MeasureString(L"-0000 m", -1, &font, layoutsize, &textformat, &textsize);
 
-		for(int zg=zg1; zg<=zg2; zg+=(int)gratdiv){
-			gr.DrawLine(&blackpen,wh2ix(h0),wv2iy(zg),wh2ix(h1),wv2iy(zg));
+		for (int zg = zg1; zg <= zg2; zg += (int)gratdiv) {
+			gr.DrawLine(&blackpen, wh2ix(h0), wv2iy(zg), wh2ix(h1), wv2iy(zg));
 
-			wchar_t s[20];				
-			swprintf(s,20,L"%5d m",zg);						
-			gr.MeasureString(s,-1,&font,layoutsize,&textformat,&textsize);
+			wchar_t s[20];
+			swprintf(s, 20, L"%5d m", zg);
+			gr.MeasureString(s, -1, &font, layoutsize, &textformat, &textsize);
 
 			int tx = wh2ix(h1);
 			int ty = wv2iy(zg);
-			if(ty > nvpixels)continue;
-			if(ty-textsize.Height < 0)continue;	
+			if (ty > nvpixels)continue;
+			if (ty - textsize.Height < 0)continue;
 			PointF txpos((Gdiplus::REAL)tx, (Gdiplus::REAL)ty);
 			gr.DrawString(s, -1, &font, txpos, &textformat, &blackbrush);
-		}		    				
+		}
 	}
 
-	void createcolorbar(){
+	void createcolorbar() {
 		makedirectorydeep(extractfiledirectory(colorbarfile()));
 		std::string title = "Conductivity (S/m)";
 		Bitmap* bm = cGDIplusHelper::colorbar(cmap, stretch, title, cbarticks);
@@ -478,57 +489,57 @@ public:
 		delete bm;
 	}
 
-	void fixtransparenttext(Bitmap& bm){
+	void fixtransparenttext(Bitmap& bm) {
 		int hp0 = wh2ix(h0);
 		int hp1 = wh2ix(h1);
 		int vp1 = wv2iy(v0);
 		int vp2 = wv2iy(v1);
-		for(int i=hp0; i<=hp1; i++){		
-			for(int j=vp2; j<=vp1; j++){
+		for (int i = hp0; i <= hp1; i++) {
+			for (int j = vp2; j <= vp1; j++) {
 				Color c;
-				bm.GetPixel(i,j,&c);				
+				bm.GetPixel(i, j, &c);
 				bm.SetPixel(i, j, Color(255, c.GetR(), c.GetG(), c.GetB()));
 			}
-		}		
+		}
 	}
 
-	std::string getdatasetname(){
+	std::string getdatasetname() {
 		std::string s = datasetname;
 		return s;
 	}
 
-	std::string basename(){
+	std::string basename() {
 		std::string bn = prefix + strprint("%d", D.linenumber) + suffix;
 		return bn;
 	}
 
-	std::string tilesetdir_nod(){
+	std::string tilesetdir_nod() {
 		std::string s = datasetname + "\\";;
 		return s;
 	}
 
-	std::string tilesetdir(){
+	std::string tilesetdir() {
 		std::string s = outdir + tilesetdir_nod();
 		return s;
 	}
 
-	std::string jpegfile_nod(){
-		std::string s = "jpeg\\" + basename() + ".jpg";
+	std::string imagefile_nod() {
+		std::string s = image_format() + "\\" + basename() + "." + image_format();
 		return s;
 	}
 
-	std::string jpegfile(){
-		std::string s = outdir + jpegfile_nod();
+	std::string imagefile() {
+		std::string s = outdir + imagefile_nod();
 		return s;
 	}
 
-	std::string jgwfile_nod() {
-		std::string s = "jpeg\\" + basename() + ".jgw";
+	std::string worldfile_nod() {
+		std::string s = image_format() + "\\" + basename() + "." + worldfile_extension();
 		return s;
 	}
 
-	std::string jgwfile() {
-		std::string s = outdir + jgwfile_nod();
+	std::string worldfile() {
+		std::string s = outdir + worldfile_nod();
 		return s;
 	}
 
@@ -547,38 +558,38 @@ public:
 		return s;
 	}
 
-	std::string xmlname(){
+	std::string xmlname() {
 		std::string s = basename() + ".xml";
 		return s;
 	}
 
-	std::string xmlpath(){
+	std::string xmlpath() {
 		std::string s = tilesetdir() + xmlname();
 		return s;
 	}
 
-	std::string datasetxmlpath(){
+	std::string datasetxmlpath() {
 		std::string s = tilesetdir() + datasetname + ".xml";
 		return s;
 	}
 
-	std::string ribbontilerbatchfilepath(){
+	std::string ribbontilerbatchfilepath() {
 		std::string s = outdir + "\\run_ribbon_tiler.bat";
 		return s;
 	}
 
-	std::string colorbarfile(){
-		std::string s = tilesetdir() + "colourbar.jpg";
+	std::string colorbarfile() {
+		std::string s = tilesetdir() + "colourbar." + image_format();
 		return s;
 	}
 
-	std::string colorbarfile_nod(){
-		std::string s = "colourbar.jpg";
+	std::string colorbarfile_nod() {
+		std::string s = "colourbar." + image_format();
 		return s;
 	}
-	
-	void saveimage(Bitmap& bm){
-		cGDIplusHelper::saveimage(&bm, jpegfile());
+
+	void saveimage(Bitmap& bm) {
+		cGDIplusHelper::saveimage(&bm, imagefile());
 	}
 
 	template<typename T>
@@ -586,35 +597,35 @@ public:
 		bil.savebil(bilfile());
 		bil.savehdr(bilfile());
 	}
-	
-	void savegeometry(){
-		
+
+	void savegeometry() {
+
 		std::vector<RDP::Point> pl(D.x.size());
 		std::vector<RDP::Point> plout;
-		for (size_t i = 0; i < D.x.size(); i++){
+		for (size_t i = 0; i < D.x.size(); i++) {
 			pl[i] = RDP::Point(D.x[i], D.y[i]);
 		}
-		
+
 		RDP::RamerDouglasPeucker(pl, geometrytolerance, plout);
-		
+
 		std::string ppath = outdir + basename() + ".points.dat";
 		std::string pfpath = outdir + basename() + ".points_filtered.dat";
 		//savepoints(pl, ppath);
 		//savepoints(plout, pfpath);
 
 		saveimage_geometry();
-				
+
 		std::vector<double> x(plout.size());
-		std::vector<double> y(plout.size());		
-		for (size_t i = 0; i < plout.size(); i++){
+		std::vector<double> y(plout.size());
+		for (size_t i = 0; i < plout.size(); i++) {
 			x[i] = plout[i].first;
 			y[i] = plout[i].second;
 		}
 
 		std::vector<double> longitude(plout.size());
-		std::vector<double> latitude(plout.size());		
+		std::vector<double> latitude(plout.size());
 		en2lonlat(x, y, longitude, latitude);
-		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";		
+		std::string pfpathll = outdir + basename() + ".points_filtered_geodetic.dat";
 		savexml(longitude, latitude);
 	}
 
@@ -624,24 +635,24 @@ public:
 		if (inepsgcode < 0) {
 			std::string msg = strprint("Invalid DatumProjection %s was specified\n", D.inputdatumprojection.c_str()) + _SRC_;
 			throw(std::runtime_error(msg));
-		}		
+		}
 		int outepsgcode = cCRS::epsgcode("WGS84|GEODETIC");
 		//transform(inepsgcode, e_in, n_in, outepsgcode, lon_out, lat_out);
 		transform(inepsgcode, e_in, n_in, outepsgcode, lat_out, lon_out);
 	}
 
-	void savepoints(const std::vector<RDP::Point>& p, const std::string& filename){
+	void savepoints(const std::vector<RDP::Point>& p, const std::string& filename) {
 		FILE* fp = fileopen(filename, "w");
-		for (size_t i = 0; i < p.size(); i++){
-			fprintf(fp, "%10lf %10lf\n", p[i].first,p[i].second);
-		}				
+		for (size_t i = 0; i < p.size(); i++) {
+			fprintf(fp, "%10lf %10lf\n", p[i].first, p[i].second);
+		}
 		fclose(fp);
 	};
 
 	void savepoints(const std::vector<double>& x, const std::vector<double>& y, const std::string& filename)
 	{
 		FILE* fp = fileopen(filename, "w");
-		for (size_t i = 0; i < x.size(); i++){
+		for (size_t i = 0; i < x.size(); i++) {
 			fprintf(fp, "%10.2lf %10.2lf\n", x[i], y[i]);
 		}
 		fclose(fp);
@@ -650,21 +661,21 @@ public:
 	void saveimage_geometry()
 	{
 		std::vector<double> imagelon(nhpixels);
-		std::vector<double> imagelat(nhpixels);		
+		std::vector<double> imagelat(nhpixels);
 		en2lonlat(imagex, imagey, imagelon, imagelat);
 		std::string xypath = outdir + "geometry\\" + basename() + ".path.txt";
-		FILE* fp = fileopen(xypath,"w");
+		FILE* fp = fileopen(xypath, "w");
 		for (size_t i = 0; i < nhpixels; i++) {
-			double hp = dh/2.0 + dh * i;
-			fprintf(fp,"%10d %10zu %10.2lf %10.2lf %10.2lf %10.2lf %12.6lf %12.6lf %10.2lf\n",
+			double hp = dh / 2.0 + dh * i;
+			fprintf(fp, "%10d %10zu %10.2lf %10.2lf %10.2lf %10.2lf %12.6lf %12.6lf %10.2lf\n",
 				D.linenumber, i + 1, hp, imagefid[i], imagex[i], imagey[i], imagelon[i], imagelat[i], imageelevation[i]);
 		}
 		fclose(fp);
 
-		double ulx = h0 - dh/2.0 + dh/2.0;
-		double uly = v1 + dv/2.0; 
-		double lrx = h1 + dh/2.0 + dh/2.0;
-		double lry = v0 - dv/2.0;
+		double ulx = h0 - dh / 2.0 + dh / 2.0;
+		double uly = v1 + dv / 2.0;
+		double lrx = h1 + dh / 2.0 + dh / 2.0;
+		double lry = v0 - dv / 2.0;
 		std::string xyext = outdir + "geometry\\" + basename() + ".extent.txt";
 		fp = fileopen(xyext, "w");
 		fprintf(fp, "%10d %10d %10d %10d %10d", D.linenumber, 0, 0, nhpixels, -nvpixels);
@@ -680,27 +691,27 @@ public:
 		//Line 4 : E : pixel size in the y - direction in map units, almost always negative[3]
 		//Line 5 : C : x - coordinate of the center of the upper left pixel
 		//Line 6 : F : y - coordinate of the center of the upper left pixel		
-		std::ofstream ofs(jgwfile());
-		ofs << dh  << std::endl;
+		std::ofstream ofs(worldfile());
+		ofs << dh << std::endl;
 		ofs << 0.0 << std::endl;
 		ofs << 0.0 << std::endl;
 		ofs << -dv << std::endl;
-		ofs << h0+dh/2.0  << std::endl;
-		ofs << v1  << std::endl;
+		ofs << h0 + dh / 2.0 << std::endl;
+		ofs << v1 << std::endl;
 	}
-	
+
 	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
-	{				
+	{
 		makedirectorydeep(extractfiledirectory(xmlpath()));
 		try
 		{
 			//Levels
 			int nlevels = nlevels = levelCount(nhpixels, nvpixels, tilesize);
-			while(nlevels == 0){
+			while (nlevels == 0) {
 				//only to get around bug in the ribbon tiler java code
 				tilesize /= 2;
-				nlevels = levelCount(nhpixels, nvpixels, tilesize);				
-			} 
+				nlevels = levelCount(nhpixels, nvpixels, tilesize);
+			}
 
 			Element a, b;
 			Document doc(xmlpath());
@@ -708,17 +719,17 @@ public:
 			std::string enc = "UTF-8";
 			std::string std = "yes";
 			Declaration dec(ver, enc, std);
-			doc.InsertEndChild(dec);			
+			doc.InsertEndChild(dec);
 
 			Element l("Layer");
 			l.SetAttribute("version", "1");
 			l.SetAttribute("layerType", "CurtainImageLayer");
 			l.InsertEndChild(Element("DisplayName", basename()));
 			l.InsertEndChild(Element("Legend", colorbarfile_nod()));
-			
+
 			bool local = true;
 			std::string url = "http://www.ga.gov.au/apps/world-wind/tiles.jsp";
-			if (local)  url   = "./";
+			if (local)  url = "./";
 
 			a = Element("Service");
 			a.SetAttribute("serviceName", "DelegatorTileService");
@@ -726,38 +737,38 @@ public:
 			l.InsertEndChild(a);
 
 			a = Element("Delegates");
-			if(local) a.InsertEndChild(Element("Delegate", "LocalRequester"));
+			if (local) a.InsertEndChild(Element("Delegate", "LocalRequester"));
 			a.InsertEndChild(Element("Delegate", "TransparentColorTransformer(255,255,255,0.2)"));
-			a.InsertEndChild(Element("Delegate", strprint("ResizeTransformer(%d,%d)",tilesize,tilesize)));
+			a.InsertEndChild(Element("Delegate", strprint("ResizeTransformer(%d,%d)", tilesize, tilesize)));
 			l.InsertEndChild(a);
-						
+
 			//Expects timestamps in the format “dd MM yyyy HH:mm:ss Z”			
 			std::string tf = "%d %m %Y %H:%M:%S +11:00";
 			std::string timestampstr = timestring(tf);
 			l.InsertEndChild(Element("LastUpdate", timestampstr));
-			
+
 			std::string dn = basename();
 			std::string dc = datacachename + "/" + basename();
 			l.InsertEndChild(Element("DatasetName", dn));
 			l.InsertEndChild(Element("DataCacheName", dc));
-			
+
 			//Image formats
-			l.InsertEndChild(Element("ImageFormat", "image/jpg"));			
-			l.InsertEndChild(Element("FormatSuffix", ".jpg"));
-			
+			l.InsertEndChild(Element("ImageFormat", "image/" + image_format()));
+			l.InsertEndChild(Element("FormatSuffix", "." + image_format()));
+
 			a = Element("AvailableImageFormats");
-			a.InsertEndChild(Element("ImageFormat", "image/jpg"));			
+			a.InsertEndChild(Element("ImageFormat", "image/" + image_format()));
 			l.InsertEndChild(a);
 
 			a = Element("NumLevels");
 			a.SetAttribute("count", nlevels);
 			a.SetAttribute("numEmpty", "0");
 			l.InsertEndChild(a);
-			
+
 			//Tilesize			
 			a = Element("TileSize");
 			b = Element("Dimension");
-			b.SetAttribute("width", strprint("%d",tilesize));
+			b.SetAttribute("width", strprint("%d", tilesize));
 			b.SetAttribute("height", strprint("%d", tilesize));
 			a.InsertEndChild(b);
 			l.InsertEndChild(a);
@@ -776,13 +787,13 @@ public:
 			l.InsertEndChild(Element("CurtainBottom", v0));
 			l.InsertEndChild(Element("FollowTerrain", "false"));
 
-			l.InsertEndChild(Element("Subsegments",2));
-			l.InsertEndChild(Element("UseTransparentTextures","true"));
-			l.InsertEndChild(Element("ForceLevelZeroLoads","true"));
-			l.InsertEndChild(Element("RetainLevelZeroTiles","image/dds"));
-			l.InsertEndChild(Element("UseMipMaps","true"));
-			l.InsertEndChild(Element("DetailHint",0.5));
-			
+			l.InsertEndChild(Element("Subsegments", 2));
+			l.InsertEndChild(Element("UseTransparentTextures", "true"));
+			l.InsertEndChild(Element("ForceLevelZeroLoads", "true"));
+			l.InsertEndChild(Element("RetainLevelZeroTiles", "image/dds"));
+			l.InsertEndChild(Element("UseMipMaps", "true"));
+			l.InsertEndChild(Element("DetailHint", 0.5));
+
 			doc.InsertEndChild(l);
 			doc.SaveFile();
 		}
@@ -790,7 +801,7 @@ public:
 		{
 			std::cout << ex.what();
 		}
-	}		
+	}
 
 	int levelCount(const int& width, const int& height, const int& tilesize)
 	{
@@ -798,7 +809,7 @@ public:
 		//https://github.com/GeoscienceAustralia/ga-worldwind-suite/blob/master/Tiler/src/main/java/au/gov/ga/worldwind/tiler/ribbon/RibbonTiler.java
 		double xCount = width / (double)tilesize;
 		double yCount = height / (double)tilesize;
-		int levels = 0;	
+		int levels = 0;
 		while (4.0 * xCount * yCount >= 1)
 		{
 			levels++;
@@ -807,11 +818,11 @@ public:
 		}
 		return levels;
 	}
-	
+
 	Element getxmlpathelement(const std::vector<double>& longitude, const std::vector<double>& latitude)
 	{
 		Element p("Path");
-		for (size_t i = 0; i < longitude.size(); i++){
+		for (size_t i = 0; i < longitude.size(); i++) {
 			Element a("LatLon");
 			a.SetAttribute("units", "degrees");
 			a.SetAttribute("latitude", strprint("%10.6lf", latitude[i]));
@@ -820,59 +831,60 @@ public:
 		}
 		return p;
 	}
-	
+
 	void saveribbontilerbatchcommand()
-	{						
+	{
 		std::ios_base::openmode mode = std::ios::app;
 		if (sequence_number == 0) mode = std::ios::trunc;
 		std::ofstream file(ribbontilerbatchfilepath().c_str(), mode);
-		
+
 		std::string s;
 		if (sequence_number == 0) s += strprint("@echo off\n\n");
-		
+
 		s += strprint("call ribbon.bat");
-		s += strprint(" -tilesize %d",tilesize);		
+		s += strprint(" -tilesize %d", tilesize);
 		s += strprint(" -noLayerDef");
-		s += strprint(" -source %s", jpegfile_nod().c_str());
+		s += strprint(" -format %s", image_format().c_str());
+		s += strprint(" -source %s", imagefile_nod().c_str());
 		s += strprint(" -output %s", tilesetdir_nod().c_str());
-		s += strprint("\n");				
-		file << s.c_str();		
-	}		
-	
+		s += strprint("\n");
+		file << s.c_str();
+	}
+
 	static void appendpause(const std::string filename)
 	{
-		std::ios_base::openmode mode = std::ios::app;		
-		std::ofstream file(filename, mode);		
+		std::ios_base::openmode mode = std::ios::app;
+		std::ofstream file(filename, mode);
 		file << "\npause\n";
 	}
 };
 
 
-void save_dataset_xml(const std::string xmlpath, 
+void save_dataset_xml(const std::string xmlpath,
 	const std::string datasetname,
 	const std::vector<std::string> names,
 	const std::vector<std::string> urls
-	)
+)
 {
 	makedirectorydeep(extractfiledirectory(xmlpath));
 	try
-	{		
+	{
 		Element a, b;
 		Document doc(xmlpath);
-		
+
 		//std::string ver = "1.0";
 		//std::string enc = "UTF-8";
 		//std::string std = "yes";
 		//Declaration dec(ver, enc, std);
 		//doc.InsertEndChild(dec);
-		
+
 		Element dl("DatasetList");
 
 		Element d("Dataset");
 		d.SetAttribute("name", datasetname);
 		//d.SetAttribute("info", "http://www.ga.gov.au/eftf");
 
-		for (size_t i = 0; i < names.size(); i++){
+		for (size_t i = 0; i < names.size(); i++) {
 			Element l("Layer");
 			l.SetAttribute("name", names[i]);
 			l.SetAttribute("url", urls[i]);
@@ -880,7 +892,7 @@ void save_dataset_xml(const std::string xmlpath,
 			d.InsertEndChild(l);
 		}
 		dl.InsertEndChild(d);
-		doc.InsertEndChild(dl);		
+		doc.InsertEndChild(dl);
 		doc.SaveFile();
 	}
 	catch (ticpp::Exception& ex)
@@ -890,17 +902,15 @@ void save_dataset_xml(const std::string xmlpath,
 }
 
 int main(int argc, char** argv)
-{		
-	ULONG_PTR token;
-	try{	
-		token = cGDIplusHelper::start();
-
-		if (argc >= 2){
+{
+	unsigned long long gdikey;
+	try {
+		if (argc >= 2) {
 			glog.logmsg("Executing %s %s\n", argv[0], argv[1]);
 			glog.logmsg("Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 			glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
 		}
-		else{
+		else {
 			glog.logmsg("Executing %s\n", argv[0]);
 			glog.logmsg("Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 			glog.logmsg("Working directory %s\n", getcurrentdirectory().c_str());
@@ -912,9 +922,57 @@ int main(int argc, char** argv)
 		cBlock b(argv[1]);
 		cBlock ib = b.findblock("Input");
 		cBlock sb = b.findblock("Section");
-		std::string dfnfile = ib.getstringvalue("DfnFile");
+		std::string headerfile;
+		if (ib.getvalue("DfnFile", headerfile) == true) {
+			glog.logmsg("Headerfile = %s'\n",headerfile.c_str());
+			glog.logmsg("Note: in future please use 'HeaderFile = ...' instead of 'DfnFile = ...'\n");
+		}
+		else if (ib.getvalue("HeaderFile", headerfile) == true) {
+			glog.logmsg("Headerfile = %s'\n", headerfile.c_str());
+		}
+		else {
+			glog.logmsg("No Headerfile defined, columns numbers to be used'\n");
+		}
+
+		int linefieldindex = -1;
+		std::string linefieldname;
+		if (ib.getvalue("line", linefieldname) == false) {
+			glog.logmsg("Error: you must define a line field name or column number for the line number field using 'Line = ...'\n");
+			return 0;
+		}
+
+		cRange<int> r;
+		std::vector<cAsciiColumnField> fields;
+		bool status = cCTLineData::parse_column_range(linefieldname, r);
+		if (status == true) {
+			linefieldindex = r.from;
+		}
+		else{
+			if (cHDRHeader::is_of_format(headerfile)) {
+				cHDRHeader H(headerfile);
+				fields = H.getfields();
+				linefieldindex = H.column_range_by_name(linefieldname).from;
+			}
+			else if (cASEGGDF2Header::is_of_format(headerfile)) {
+				cASEGGDF2Header A(headerfile);
+				fields = A.getfields();
+				linefieldindex = A.column_range_by_name(linefieldname).from;
+			}
+		}
+
+		if (linefieldindex <= 0) {
+			glog.logmsg("Error: cannot find the line field %s\n",linefieldname.c_str());
+			return 0;
+		}
+
 		std::string infiles = ib.getstringvalue("DataFiles");
 		std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
+		if (filelist.size() == 0) {
+			glog.logmsg("Error: no data files found matching %s\n", infiles.c_str());
+			return 0;
+		}
+
+		gdikey = cGDIplusHelper::start();
 		cStopWatch stopwatch;
 		size_t sequence_number = 0;
 		std::string tilerbatchfile;
@@ -923,51 +981,44 @@ int main(int argc, char** argv)
 		std::string datasetxml;
 		std::string datasetname;
 
-		for (size_t i = 0; i < filelist.size(); i++){
-			std::printf("Processing file %s %3zu of %3zu\n", filelist[i].c_str(), i + 1, filelist.size());
+		for (size_t i = 0; i < filelist.size(); i++) {
+			glog.logmsg("Processing file %s %3zu of %3zu\n", filelist[i].c_str(), i + 1, filelist.size());
 
-			std::string datafile = filelist[i];			
-
-			cCTLineData dummy(ib, dfnfile);
-			cRange<int> lcol = dummy.getcolumns("line");
-
-			cFileSplitter FS(datafile, 0, lcol.from);
+			std::string datafile = filelist[i];
+			cFileSplitter FS(datafile, 0, linefieldindex);
 			std::vector<std::string> L;
-			while (FS.getnextgroup(L) > 0){				
-				cCTLineData D(ib, dfnfile);
+			while (FS.getnextgroup(L) > 0) {
+				cCTLineData D(ib, fields);
 				D.load(L);
-				std::printf("Line %d\n", D.linenumber);
+				glog.logmsg("Line %d\n", D.linenumber);
 
 				cCurtainImageSection C(D);
-				C.set_sequence_number(sequence_number);				
+				C.set_sequence_number(sequence_number);
 				C.getoptions(sb);
-				C.process();				
+				C.process();
 				if (sequence_number == 0) C.createcolorbar();
 				sequence_number++;
 				tilerbatchfile = C.ribbontilerbatchfilepath();
-				
+
 				names.push_back(C.basename());
 				urls.push_back(C.xmlname());
-				datasetxml  = C.datasetxmlpath();
+				datasetxml = C.datasetxmlpath();
 				datasetname = C.getdatasetname();
 			}
 		}
-				
-		save_dataset_xml(datasetxml,datasetname,names,urls);
-		cCurtainImageSection::appendpause(tilerbatchfile);		
+
+		save_dataset_xml(datasetxml, datasetname, names, urls);
+		cCurtainImageSection::appendpause(tilerbatchfile);
 		printf("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
-		cGDIplusHelper::stop(token);		
+		cGDIplusHelper::stop(gdikey);
 	}
-	catch (ticpp::Exception& e){
+	catch (ticpp::Exception& e) {
 		std::cout << e.what();
-		cGDIplusHelper::stop(token);
+		cGDIplusHelper::stop(gdikey);
 	}
-	catch (std::runtime_error& e){
+	catch (std::runtime_error& e) {
 		std::cout << e.what();
-		cGDIplusHelper::stop(token);
-	}	
+		cGDIplusHelper::stop(gdikey);
+	}
 	return 0;
 }
-
-
-

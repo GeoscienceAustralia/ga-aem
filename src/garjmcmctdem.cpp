@@ -7,6 +7,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #include <vector>
+
 #include "gaaem_version.h"
 #include "general_utils.h"
 #include "file_utils.h"
@@ -14,7 +15,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "logger.h"
 #include "stacktrace.h"
 
-#if defined _MPI_ENABLED
+#ifdef ENABLE_MPI
 	#include "mpi_wrapper.h"
 #endif
 
@@ -27,7 +28,7 @@ int main(int argc, char* argv[])
 	int mpisize = 1;
 	int mpirank = 0;
 	std::string mpipname = "Standalone";
-	#if defined _MPI_ENABLED
+	#ifdef ENABLE_MPI
 		MPI_Init(&argc, &argv);
 		mpirank = cMpiEnv::world_rank();
 		mpisize = cMpiEnv::world_size();
@@ -61,14 +62,15 @@ int main(int argc, char* argv[])
 			I.parsecurrentrecord();
 			I.sample();
 			double stime = I.samplingtime;
-			double norm_mfit = I.LowestMisfit.get_misfit() / double(I.ndata);
-			glog.logmsg("Rec %6lu\t %3lu\t %5lu\t %10lf nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
+			//double norm_mfit = I.LowestMisfit.standard.stand.get_misfit() / double(I.ndata);
+			double norm_mfit = I.standard_l2misfit(I.LowestMisfit);
+			glog.logmsg("Rec %6lu\t %3lu\t %5lu\t %10lf lowest nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
 		}
 		glog.logmsg("This process finishing at %s\n", timestamp().c_str());
 		exitstatus = EXIT_SUCCESS;
 	}
 
-	#if defined _MPI_ENABLED
+	#ifdef ENABLE_MPI
 		MPI_Finalize();
 	#endif
 

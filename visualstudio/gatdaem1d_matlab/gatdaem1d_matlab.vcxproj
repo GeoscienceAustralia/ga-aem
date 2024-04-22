@@ -12,18 +12,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\gatdaem1d.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp" />
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\earth1d.h" />
     <ClInclude Include="..\..\src\gatdaem1d.h" />
     <ClInclude Include="..\..\src\lem.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\src\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6610ABFE-3E97-4F45-887C-C882873D6207}</ProjectGuid>
@@ -66,13 +64,15 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
     <TargetName>gatdaem1d_debug</TargetName>
-    <OutDir>..\..\matlab\bin\x64\</OutDir>
+    <OutDir>..\..\matlab\bin</OutDir>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
     <TargetName>gatdaem1d</TargetName>
-    <OutDir>..\..\matlab\bin\x64\</OutDir>
+    <OutDir>..\..\matlab\bin</OutDir>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -89,6 +89,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary />
+      <AdditionalOptions>/NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />
@@ -121,6 +123,8 @@ del $(OutDir)$(TargetName).exp
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary />
+      <AdditionalOptions>/NOIMPLIB /NOEXP %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
     <PostBuildEvent />

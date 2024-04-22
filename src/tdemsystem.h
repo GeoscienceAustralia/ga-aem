@@ -18,10 +18,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "blocklanguage.h"
 #include "earth1d.h"
 #include "lem.h"
-
-enum eWaveFormType { WT_TX, WT_RX };
-enum eOutputType { OT_BFIELD, OT_DBDT};
-enum eNormalizationType { NT_NONE, NT_PPM, NT_PPM_PEAKTOPEAK};
+#include "stopwatch.h"
 
 struct sTDEmNoiseModelComponent{	
 	double MultiplicativeNoise;
@@ -35,7 +32,7 @@ struct sTDEmNoiseModel{
 };
 
 struct cTDEmComponent{  
-	double Primary;
+	double Primary=0.0;
 	std::vector<double> Secondary;
 };
 
@@ -66,23 +63,18 @@ public:
 	std::vector<double> SZ;
 };
 
-enum eGeometryElementType { 
-	GE_TX_HEIGHT,
-	GE_TX_ROLL,
-	GE_TX_PITCH,
-	GE_TX_YAW,
-	GE_TXRX_DX,
-	GE_TXRX_DY,
-	GE_TXRX_DZ,
-	GE_RX_ROLL,
-	GE_RX_PITCH,
-	GE_RX_YAW
-};
-
-
 class cTDEmGeometry{
 
 public:
+	enum class ElementType {
+		tx_height, 
+		tx_roll, tx_pitch, tx_yaw, 
+		txrx_dx, txrx_dy, txrx_dz,
+		rx_roll, rx_pitch, rx_yaw,
+		unknown
+	};
+
+
 	double tx_height = 0.0;
 	double tx_roll   = 0.0;
 	double tx_pitch  = 0.0;
@@ -122,7 +114,7 @@ public:
 		b.getvalue("rx_pitch", rx_pitch);
 		b.getvalue("rx_yaw", rx_yaw);
 	}
-
+	
 	inline static size_t size(){
 		return 10;
 	}
@@ -143,7 +135,7 @@ public:
 		default:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 		}
-		return tx_height;
+		return tx_height;//this will never be reached
 	}
 
 	
@@ -151,6 +143,20 @@ public:
 	{				
 		//Remove implied constness using const_cast
 		return (*(const_cast<cTDEmGeometry*>(this)))[index]; // Correctly calls the function above.		
+	};
+
+
+	double& operator[](const std::string& gname)
+	{		
+		const size_t& i = eindex(gname);
+		return (*this)[i]; // Correctly calls the function above.
+	};
+
+	double operator[](const std::string& gname) const
+	{
+		//Remove implied constness using const_cast
+		const size_t& i = eindex(gname);
+		return (*(const_cast<cTDEmGeometry*>(this)))[i]; // Correctly calls the function above.
 	};
 	
 
@@ -163,13 +169,13 @@ public:
 	void fillundefined(const cTDEmGeometry& g)
 	{				
 		for (size_t i = 0; i < size(); i++){			
-			if ((*this)[i] == ud_double()){
+			if ((*this)[i] == undefinedvalue<double>()){
 				(*this)[i] = g[i];				
 			}			
 		}		
 	}	
 	
-	static std::string fname(const size_t& index){
+	static std::string element_name(const size_t& index){
 
 		switch (index) {
 		case 0: return "tx_height"; break;
@@ -188,10 +194,10 @@ public:
 		return "unknown";
 	};
 
-	static size_t findex(const std::string& name){
+	static size_t eindex(const std::string& name){
 
 		for (size_t i = 0; i < size(); i++){
-			if (strcasecmp(name, fname(i)) == 0) return i;
+			if (strcasecmp(name, element_name(i)) == 0) return i;
 		}				
 		glog.errormsg(_SRC_,"Geometry field name %s is bad\n", name.c_str());		
 		return 0;
@@ -236,70 +242,74 @@ public:
 		return "Error unknown geometry parameter";
 	};
 
-	static eGeometryElementType elementtype(const size_t& index){		
+	static ElementType elementtype(const size_t& index){		
 		switch (index) {
-		case 0: return GE_TX_HEIGHT; break;
-		case 1: return GE_TX_ROLL;   break;
-		case 2: return GE_TX_PITCH;  break;
-		case 3: return GE_TX_YAW;    break;		
-		case 4: return GE_TXRX_DX;   break;
-		case 5: return GE_TXRX_DY;   break;
-		case 6: return GE_TXRX_DZ;   break;
-		case 7: return GE_RX_ROLL;   break;
-		case 8: return GE_RX_PITCH;  break;
-		case 9: return GE_RX_YAW;    break;
+		case 0: return ElementType::tx_height; break;
+		case 1: return ElementType::tx_roll;   break;
+		case 2: return ElementType::tx_pitch;  break;
+		case 3: return ElementType::tx_yaw;    break;
+		case 4: return ElementType::txrx_dx;   break;
+		case 5: return ElementType::txrx_dy;   break;
+		case 6: return ElementType::txrx_dz;   break;
+		case 7: return ElementType::rx_roll;   break;
+		case 8: return ElementType::rx_pitch;  break;
+		case 9: return ElementType::rx_yaw;    break;
 		default:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 			break;
-		}
-		return GE_TX_HEIGHT;
+		}		
+		return ElementType::unknown;
 	}
 
-	static eCalculationType derivativetype(const size_t& index){		
+	static cLEM::CalculationType derivativetype(const size_t& index){
 		switch (index) {
-		case 0: return CT_HDERIVATIVE; break;
-		case 1: return CT_NONE; break;
-		case 2: return CT_NONE; break;
-		case 3: return CT_NONE; break;
-		case 4: return CT_XDERIVATIVE; break;
-		case 5: return CT_YDERIVATIVE; break;
-		case 6: return CT_ZDERIVATIVE; break;
-		case 7: return CT_NONE; break;		
-		case 8: return CT_NONE; break;
-		case 9: return CT_NONE; break;
+		case 0: return cLEM::CalculationType::HDERIVATIVE; break;
+		case 1: return cLEM::CalculationType::NONE; break;
+		case 2: return cLEM::CalculationType::NONE; break;
+		case 3: return cLEM::CalculationType::NONE; break;
+		case 4: return cLEM::CalculationType::XDERIVATIVE; break;
+		case 5: return cLEM::CalculationType::YDERIVATIVE; break;
+		case 6: return cLEM::CalculationType::ZDERIVATIVE; break;
+		case 7: return cLEM::CalculationType::NONE; break;
+		case 8: return cLEM::CalculationType::NONE; break;
+		case 9: return cLEM::CalculationType::NONE; break;
 		default:
 			glog.errormsg(_SRC_,"Geometry index %zu out of range\n", index);			
 			break;
 		}
-		return CT_NONE;
+		return cLEM::CalculationType::NONE;
 	}
 
 	void write(std::string path) const 
 	{
-		FILE* fp = fileopen(path,"w");
-		fprintf(fp, "tx_height\t%lf\n", tx_height);
-		fprintf(fp, "tx_roll\t%lf\n", tx_roll);
-		fprintf(fp, "tx_pitch\t%lf\n", tx_pitch);
-		fprintf(fp, "tx_yaw\t%lf\n", tx_yaw);
-		fprintf(fp, "txrx_dx\t%lf\n", txrx_dx);
-		fprintf(fp, "txrx_dy\t%lf\n", txrx_dy);
-		fprintf(fp, "txrx_dz\t%lf\n", txrx_dz);
-		fprintf(fp, "rx_roll\t%lf\n", rx_roll);
-		fprintf(fp, "rx_pitch\t%lf\n", rx_pitch);
-		fprintf(fp, "rx_yaw\t%lf\n", rx_yaw);
-		fclose(fp);
+		std::ofstream ofs(path);
+		for (size_t i = 0; i < size(); i++) {
+			ofs << element_name(i) << "\t" << (*this)[i] << std::endl;
+		}		
 	}
+	
+	double txrx_dh() const {
+		return std::hypot(txrx_dx, txrx_dy);
+	};
 
+	double txrx_dv() const {
+		return std::hypot(txrx_dx, txrx_dz);
+	};
+
+	double txrx_dr() const {
+		return std::sqrt(txrx_dx * txrx_dx + txrx_dy * txrx_dy + txrx_dz * txrx_dz);
+	};
+	
 };
 
 struct WindowSpecification{
-	size_t SampleLow;
-	size_t SampleHigh;
-	size_t NumberOfSamples;
+	size_t SampleLow = 0;
+	size_t SampleHigh = 0;
+	size_t NumberOfSamples = 0;
     
-	double TimeLow;
-	double TimeHigh;
-	double TimeWidth;	
+	double TimeLow = 0.0;
+	double TimeHigh = 0.0;
+	double TimeWidth = 0.0;
 
 	std::vector<size_t> Sample;
 	std::vector<double> Weight;
@@ -335,6 +345,11 @@ private:
  
 public:
 
+	enum class WaveFormType { TX, RX };
+	enum class OutputType { BFIELD, DBDT };
+	enum class NormalizationType { NONE, PPM, PPM_PEAKTOPEAK };
+
+
   std::string SystemName;
   std::string SystemType;  
   cLEM LEM;
@@ -345,21 +360,22 @@ public:
   cVec yaxis;
   cVec zaxis;
 
-  eOutputType OutputType;
-  eNormalizationType Normalisation;
+  OutputType OutputType;
+  NormalizationType Normalisation;
   
   size_t NumberOfWindows;
+  double WindowsTimeShift=0.0;
   std::string WindowWeightingScheme;
 
-  double BaseFrequency;
-  double BasePeriod;
-  double SampleFrequency;  
-  double SampleInterval;  
-  size_t SamplesPerWaveform;
-  size_t NumberOfFFTFrequencies;
-  size_t NumberOfSplinedFrequencies;
+  double BaseFrequency = 0.0;
+  double BasePeriod = 0.0;
+  double SampleFrequency = 0.0;
+  double SampleInterval = 0.0;
+  size_t SamplesPerWaveform = 0;
+  size_t NumberOfFFTFrequencies = 0;
+  size_t NumberOfSplinedFrequencies = 0;
 
-  eWaveFormType WaveformType;
+  WaveFormType WaveformType;
   std::vector<double>  WaveformTime;
   std::vector<double>  WaveformCurrent;
   std::vector<double>  WaveformReceived;
@@ -371,45 +387,46 @@ public:
   std::vector<double>  fft_frequency;    
   fftw_plan fftwplan_backward;  
 	  
-  size_t FrequenciesPerDecade;
-  size_t NumberOfDiscreteFrequencies;  
+  size_t FrequenciesPerDecade = 0;
+  size_t NumberOfDiscreteFrequencies = 0;
   std::vector<double> DiscreteFrequencies;
   std::vector<double> DiscreteFrequenciesLog10;  
-  double DiscreteFrequencyLow;
-  double DiscreteFrequencyHigh;
-  double FrequencyLog10Spacing;  
+  double DiscreteFrequencyLow = 0.0;
+  double DiscreteFrequencyHigh = 0.0;
+  double FrequencyLog10Spacing = 0.0;
   std::vector<double> LowPassFilterCutoffFrequency;
   std::vector<double> LowPassFilterOrder;
   std::vector<double> SplinedFrequencieslog10;;
 
-  double TX_LoopArea;
-  double TX_NumberOfTurns;
-  double TX_PeakCurrent;
-  double TX_PeakdIdT;
-  double TX_height;
-  double TX_roll;
-  double TX_pitch;  
-  double TX_yaw;
+  double TX_LoopArea = 0.0;
+  double TX_NumberOfTurns = 0.0;
+  double TX_PeakCurrent = 0.0;
+  double TX_PeakdIdT = 0.0;
+  double TX_height = 0.0;
+  double TX_roll = 0.0;
+  double TX_pitch = 0.0;
+  double TX_yaw = 0.0;
   cVec TX_orientation;
-  double RX_height;
-  double RX_roll;
-  double RX_pitch;
-  double RX_yaw;  
+  double RX_height = 0.0;
+  double RX_roll = 0.0;
+  double RX_pitch = 0.0;
+  double RX_yaw = 0.0;
   cVec TX_RX_separation;
 
   cTDEmGeometry NormalizationGeometry;
-  double XScale;
-  double YScale;
-  double ZScale;
-
-  //cTDEmData data;
+  double XScale = 0.0;
+  double YScale = 0.0;
+  double ZScale = 0.0;
+  
   std::vector<double> X; //Secondary X field
   std::vector<double> Y; //Secondary Y field 
   std::vector<double> Z; //Secondary Z field 
-  double PrimaryX;  //Primary X field
-  double PrimaryY;  //Primary Y field
-  double PrimaryZ;  //Primary Z field
-      
+  double PrimaryX = 0.0;  //Primary X field
+  double PrimaryY = 0.0;  //Primary Y field
+  double PrimaryZ = 0.0;  //Primary Z field
+  double RefGeomPrimaryX = 0.0;  //Primary X ref field for PPM normalisation
+  double RefGeomPrimaryY = 0.0;  //Primary Y ref field for PPM normalisation
+  double RefGeomPrimaryZ = 0.0;  //Primary Z ref field for PPM normalisation
  
   std::vector<WindowSpecification> WinSpec;
     
@@ -457,8 +474,8 @@ public:
 	  xaxis = cVec(1.0, 0.0, 0.0);
 	  yaxis = cVec(0.0, 1.0, 0.0);
 	  zaxis = cVec(0.0, 0.0, 1.0);
-	  LEM.calculation_type = CT_FORWARDMODEL;
-	  LEM.rzerotype = RZM_PROPOGATIONMATRIX;
+	  LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	  LEM.rzerotype = cLEM::RZeroMethod::PROPOGATIONMATRIX;
 	  fftwplan_backward = 0;
   }
 
@@ -488,14 +505,14 @@ public:
 
 	  bool convert_B_2_dBdT = false;
 	  bool convert_dBdT_2_B = false;
-	  if (WaveformType == WT_TX) {
-		  if (OutputType == OT_DBDT) {
+	  if (WaveformType == WaveFormType::TX) {
+		  if (OutputType == OutputType::DBDT) {
 			  convert_B_2_dBdT = true;
 		  }
 	  }
 
-	  if (WaveformType == WT_RX) {
-		  if (OutputType == OT_BFIELD) {
+	  if (WaveformType == WaveFormType::RX) {
+		  if (OutputType == OutputType::BFIELD) {
 			  convert_dBdT_2_B = true;
 		  }
 	  }
@@ -585,7 +602,7 @@ public:
 
 	  setup_splineinterp(DiscreteFrequenciesLog10, SplinedFrequencieslog10);
 
-	  LEM.setfrequencies(DiscreteFrequencies);
+	  LEM.init_frequencies(DiscreteFrequencies);
   }
   void spline(const std::vector<double>& x, const std::vector<double>& y, double yp1, double ypn, std::vector<double>& y2)
   {
@@ -754,7 +771,7 @@ public:
   void setupcomputations()
   {
 	  for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
-		  LEM.setfrequencyabscissalayers(fi);
+		  LEM.init_frequency(fi);
 	  }
   }
 
@@ -765,7 +782,7 @@ public:
 	  PrimaryY = LEM.Fields.t.p.y;
 	  PrimaryZ = LEM.Fields.t.p.z;
 
-	  if (LEM.calculation_type == CT_HDERIVATIVE) {
+	  if (LEM.calculation_type == cLEM::CalculationType::HDERIVATIVE) {
 		  //This is because when H changes Z also changes
 		  //and DZ = DH
 		  //but they should be all zero anyway
@@ -774,13 +791,13 @@ public:
 		  PrimaryZ *= 2.0;
 	  }
 
-	  if (Normalisation == NT_PPM_PEAKTOPEAK) {
+	  if (Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
 		  PrimaryX *= 2.0;
 		  PrimaryY *= 2.0;
 		  PrimaryZ *= 2.0;
 	  }
 
-	  if (OutputType == OT_DBDT) {
+	  if (OutputType == OutputType::DBDT) {
 		  //Must convert to dB/dt. This happens implicitly for the secondary via the waveform.
 		  PrimaryX *= TX_PeakdIdT;
 		  PrimaryY *= TX_PeakdIdT;
@@ -814,7 +831,7 @@ public:
 	  //Computation for discrete frequencies 	
 	  for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
 		  LEM.dointegrals(fi);
-		  LEM.setsecondaryfields(fi);
+		  LEM.setsecondaryfields(fi);		  
 		  const cdouble& x = LEM.Fields.t.s.x;
 		  const cdouble& y = LEM.Fields.t.s.y;
 		  const cdouble& z = LEM.Fields.t.s.z;
@@ -825,7 +842,7 @@ public:
 		  vi = rotatetoreceiverorientation(vi);
 
 
-		  if (LEM.calculation_type == CT_HDERIVATIVE) {
+		  if (LEM.calculation_type == cLEM::CalculationType::HDERIVATIVE) {
 			  //This is because when H changes Z also changes
 			  //and DZ = DH
 			  vr *= 2.0;
@@ -920,6 +937,9 @@ public:
   void initialise_windows()
   {
 	  NumberOfWindows = (size_t)STM.getintvalue("Receiver.NumberOfWindows");
+	  if(STM.getvalue("Receiver.TimeShift", WindowsTimeShift)==false){
+		  WindowsTimeShift = 0.0;
+	  }
 
 	  WinSpec.resize(NumberOfWindows);
 	  X.resize(NumberOfWindows);
@@ -936,8 +956,8 @@ public:
 		  if (wt[i].size() != 2) {
 			  glog.errormsg(_SRC_, "The number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
 		  }
-		  WinSpec[i].TimeLow = wt[i][0];
-		  WinSpec[i].TimeHigh = wt[i][1];
+		  WinSpec[i].TimeLow = wt[i][0] + WindowsTimeShift;
+		  WinSpec[i].TimeHigh = wt[i][1] + WindowsTimeShift;
 	  }
 
 	  WindowWeightingScheme = STM.getstringvalue("Receiver.WindowWeightingScheme");
@@ -1189,6 +1209,12 @@ public:
 	  //zi = ( -xb*sinp  + zb*cosp);
 	  //xb = (  xi*cosp  - zi*sinp);As bird sees it
 	  //zb = (  xi*sinp  + zi*cosp);						
+	  
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Must work with true field vector directions, not the PPM scaled versinn
+		  xb *= RefGeomPrimaryX;
+		  zb *= RefGeomPrimaryZ;
+	  }
 
 	  double cosp = cos(D2R*p);
 	  double sinp = sin(D2R*p);
@@ -1199,13 +1225,56 @@ public:
 	  dxbdp = D2R * (-xi * sinp - zi * cosp);
 	  dzbdp = D2R * (+xi * cosp - zi * sinp);
 
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Convert back to PPMS
+		  dxbdp /= RefGeomPrimaryX;
+		  dzbdp /= RefGeomPrimaryZ;
+	  }
   }
+
+  void drx_pitch(std::vector<double> xb, std::vector<double> zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp)
+  {
+	  //xi = (  xb*cosp  + zb*sinp);Inertial
+	  //zi = ( -xb*sinp  + zb*cosp);
+	  //xb = (  xi*cosp  - zi*sinp);As bird sees it
+	  //zb = (  xi*sinp  + zi*cosp);						
+
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Must work with true field vector directions, not the PPM scaled versinn
+		  xb *= RefGeomPrimaryX;
+		  zb *= RefGeomPrimaryZ;
+	  }
+	  
+
+	  double cosp = cos(D2R * p);
+	  double sinp = sin(D2R * p);
+
+	  //convert back to real coordinate system
+	  std::vector<double> xi = (xb * cosp + zb * sinp);
+	  std::vector<double> zi = (xb * -sinp + zb * cosp);
+
+	  dxbdp = (xi * -sinp - zi * cosp) * D2R;
+	  dzbdp = (xi * cosp - zi * sinp) * D2R;
+	  
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Convert back to PPMS
+		  dxbdp /= RefGeomPrimaryX;
+		  dzbdp /= RefGeomPrimaryZ;
+	  }
+  }
+
   void drx_roll(double yb, double zb, double r, double& dybdr, double& dzbdr)
   {
 	  //yi = (  yb*cosr  - zb*sinr);Inertial
 	  //zi = (  yb*sinr  + zb*cosr);
 	  //yb = (  yi*cosr  + zi*sinr);As bird sees it
 	  //zb = ( -yi*sinr  + zi*cosr);						
+
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Must work with true field vector directions, not the PPM scaled versinn
+		  yb *= RefGeomPrimaryY;
+		  zb *= RefGeomPrimaryZ;
+	  }
 
 	  double cosr = cos(D2R*r);
 	  double sinr = sin(D2R*r);
@@ -1216,32 +1285,25 @@ public:
 	  dybdr = D2R * (-yi * sinr + zi * cosr);
 	  dzbdr = D2R * (-yi * cosr - zi * sinr);
 
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Convert back to PPMS
+		  dybdr /= RefGeomPrimaryY;
+		  dzbdr /= RefGeomPrimaryZ;
+	  }
   }
 
-  void drx_pitch(const std::vector<double>& xb, const std::vector<double>& zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp)
-  {
-	  //xi = (  xb*cosp  + zb*sinp);Inertial
-	  //zi = ( -xb*sinp  + zb*cosp);
-	  //xb = (  xi*cosp  - zi*sinp);As bird sees it
-	  //zb = (  xi*sinp  + zi*cosp);						
-
-	  double cosp = cos(D2R*p);
-	  double sinp = sin(D2R*p);
-
-	  //convert back to real coordinate system
-	  std::vector<double> xi = (xb *  cosp + zb * sinp);
-	  std::vector<double> zi = (xb * -sinp + zb * cosp);
-
-	  dxbdp = (xi * -sinp - zi * cosp)*D2R;
-	  dzbdp = (xi * cosp - zi * sinp)*D2R;
-
-  }
-  void  drx_roll(const std::vector<double>& yb, const std::vector<double>& zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr)
+  void  drx_roll(std::vector<double> yb, std::vector<double> zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr)
   {
 	  //yi = (  yb*cosr  - zb*sinr);Inertial
 	  //zi = (  yb*sinr  + zb*cosr);
 	  //yb = (  yi*cosr  + zi*sinr);As bird sees it
 	  //zb = ( -yi*sinr  + zi*cosr);						
+
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Must work with true field vector directions, not the PPM scaled versinn
+		  yb *= RefGeomPrimaryY;
+		  zb *= RefGeomPrimaryZ;
+	  }
 
 	  double cosr = cos(D2R*r);
 	  double sinr = sin(D2R*r);
@@ -1253,10 +1315,21 @@ public:
 	  dybdr = (yi * -sinr + zi * cosr)*D2R;
 	  dzbdr = (yi * -cosr - zi * sinr)*D2R;
 
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
+		  //Convert back to PPMS
+		  dybdr /= RefGeomPrimaryY;
+		  dzbdr /= RefGeomPrimaryZ;
+	  }
   }
 
   void readsystemdescriptorfile(std::string systemdescriptorfile)
   {
+	  if (!exists(systemdescriptorfile)) {
+		  std::string msg = _SRC_;
+		  msg += strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.c_str());
+		  throw(std::runtime_error(msg));
+	  }
+
 	  STM = cBlock(systemdescriptorfile);
 	  SystemName = STM.getstringvalue("Name");
 	  SystemType = STM.getstringvalue("Type");
@@ -1283,7 +1356,7 @@ public:
 			  std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
 			  if (wp.size() > 0) {
 				  digitisewaveform(wp, WaveformTime, WaveformReceived);
-				  WaveformType = WT_RX;
+				  WaveformType = WaveFormType::RX;
 				  T_Waveform = WaveformReceived;
 				  wavformdefined = true;
 			  }
@@ -1297,7 +1370,7 @@ public:
 			  std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
 			  if (wp.size() > 0) {
 				  digitisewaveform(wp, WaveformTime, WaveformCurrent);
-				  WaveformType = WT_TX;
+				  WaveformType = WaveFormType::TX;
 				  T_Waveform = WaveformCurrent;
 				  wavformdefined = true;
 			  }
@@ -1308,7 +1381,7 @@ public:
 		  std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformCurrent");
 		  if (wp.size() > 0) {
 			  digitisewaveform(wp, WaveformTime, WaveformCurrent);
-			  WaveformType = WT_TX;
+			  WaveformType = WaveFormType::TX;
 			  T_Waveform = WaveformCurrent;
 			  wavformdefined = true;
 		  }
@@ -1318,7 +1391,7 @@ public:
 		  std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformReceived");
 		  if (wp.size() > 0) {
 			  digitisewaveform(wp, WaveformTime, WaveformReceived);
-			  WaveformType = WT_RX;
+			  WaveformType = WaveFormType::RX;
 			  T_Waveform = WaveformReceived;
 			  wavformdefined = true;
 		  }
@@ -1337,10 +1410,10 @@ public:
 
 	  std::string ot = STM.getstringvalue("ForwardModelling.OutputType");
 	  if (strcasecmp(ot, "B") == 0) {
-		  OutputType = OT_BFIELD;
+		  OutputType = OutputType::BFIELD;
 	  }
 	  else if (strcasecmp(ot, "dB/dt") == 0) {
-		  OutputType = OT_DBDT;
+		  OutputType = OutputType::DBDT;
 	  }
 	  else {
 		  glog.errormsg(_SRC_, "OutputType %s unknown (must be one of \"B\" or \"dB/dt\")\n", ot.c_str());
@@ -1355,13 +1428,13 @@ public:
 
 	  std::string n = STM.getstringvalue("ForwardModelling.SecondaryFieldNormalisation");
 	  if (strcasecmp(n, "None") == 0) {
-		  Normalisation = NT_NONE;
+		  Normalisation = NormalizationType::NONE;
 	  }
 	  else if (strcasecmp(n, "PPM") == 0) {
-		  Normalisation = NT_PPM;
+		  Normalisation = NormalizationType::PPM;
 	  }
 	  else if (strcasecmp(n, "PPMPEAKTOPEAK") == 0) {
-		  Normalisation = NT_PPM_PEAKTOPEAK;
+		  Normalisation = NormalizationType::PPM_PEAKTOPEAK;
 	  }
 	  else {
 		  glog.errormsg(_SRC_, "Normalisation %s unknown (must be one of \"None,PPM,PPMPEAKTOPEAK\")\n", n.c_str());
@@ -1415,7 +1488,7 @@ public:
 	  YScale = txscale * yos;
 	  ZScale = txscale * zos;
 
-	  if (Normalisation == NT_PPM || Normalisation == NT_PPM_PEAKTOPEAK) {
+	  if (Normalisation == NormalizationType::PPM || Normalisation == NormalizationType::PPM_PEAKTOPEAK) {
 		  cBlock b = STM.findblock("ReferenceGeometry");
 		  if (b.Entries.size() == 0) {
 			  glog.errormsg(_SRC_, "Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
@@ -1425,24 +1498,25 @@ public:
 		  setprimaryfields();
 
 		  double s = 1.0;
-		  if (Normalisation == NT_PPM) {
+		  if (Normalisation == NormalizationType::PPM) {
 			  s *= 1.0e6;
 		  }
-		  else if (Normalisation == NT_PPM_PEAKTOPEAK) {
-			  //PrimaryX *= 2.0;
-			  //PrimaryY *= 2.0;
-			  //PrimaryZ *= 2.0;
+		  else if (Normalisation == NormalizationType::PPM_PEAKTOPEAK) {			  
 			  s *= 1.0e6;
 		  }
 
-		  if (PrimaryX == 0.0) XScale = 0.0;
-		  else XScale *= (s / PrimaryX);
+		  RefGeomPrimaryX = PrimaryX;
+		  RefGeomPrimaryY = PrimaryY;
+		  RefGeomPrimaryZ = PrimaryZ;
 
-		  if (PrimaryY == 0.0) YScale = 0.0;
-		  else YScale *= (s / PrimaryY);
+		  if (RefGeomPrimaryX == 0.0) XScale = 0.0;
+		  else XScale *= (s / RefGeomPrimaryX);
 
-		  if (PrimaryZ == 0.0) ZScale = 0.0;
-		  else ZScale *= (s / PrimaryZ);
+		  if (RefGeomPrimaryY == 0.0) YScale = 0.0;
+		  else YScale *= (s / RefGeomPrimaryY);
+
+		  if (RefGeomPrimaryZ == 0.0) ZScale = 0.0;
+		  else ZScale *= (s / RefGeomPrimaryZ);
 	  }
 
   }
@@ -1538,21 +1612,28 @@ public:
 
   std::vector<std::vector<double>> readwaveformfile(const std::string& filename)
   {
+	  std::vector<std::vector<double>> w;
+	  if (!exists(filename)) {
+		  std::string msg = _SRC_;
+		  msg += strprint("\n\tD'Oh! the specified waveform file (%s) does not exist\n", filename.c_str());
+		  throw(std::runtime_error(msg));
+	  }
+
 	  FILE* fp = fileopen(filename, "r");
 	  if (fp == NULL) {
 		  glog.errormsg(_SRC_, "Unable to open waveformfile %s\n", filename.c_str());
+		  return w;
 	  }
 
-	  int num;
-	  std::vector<std::vector<double>> w;
+	  int num;	  
 	  double time, value;
-	  while ((num = fscanf(fp, "%lf %lf\n", &time, &value)) == 2) {
+	  while ((num = std::fscanf(fp, "%lf %lf\n", &time, &value)) == 2) {
 		  std::vector<double> v(2);
 		  v[0] = time;
 		  v[1] = value;
 		  w.push_back(v);
 	  }
-	  fclose(fp);
+	  std::fclose(fp);
 	  return w;
 
   }
@@ -1577,8 +1658,8 @@ public:
   {
 	  setconductivitythickness(conductivity, thickness);
 	  setgeometry(geometry);
-	  LEM.calculation_type = CT_FORWARDMODEL;
-	  LEM.derivative_layer = INT_MAX;
+	  LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	  LEM.derivative_layer = undefinedvalue<size_t>();
 
 	  setupcomputations();
 	  setprimaryfields();

@@ -1,0 +1,150 @@
+Control Begin
+
+	EMSystem Begin
+		SystemFile   = ../stmfiles/Skytem-LM.stm
+		InvertXPlusZ = no
+		InvertPrimaryPlusSecondary = no
+		ReconstructPrimaryFieldFromInputGeometry = no
+
+		XComponent Begin
+			Use = no
+		XComponent End
+
+		ZComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = no
+			Secondary              = -Column 33
+			Noise                  =  Column 72
+		ZComponent End
+	EMSystem End
+	
+	EMSystem Begin
+		SystemFile   = ../stmfiles/Skytem-HM.stm
+		InvertXPlusZ = no
+		InvertPrimaryPlusSecondary = no
+		ReconstructPrimaryFieldFromInputGeometry = no
+
+		XComponent Begin
+			Use = no
+		XComponent End
+
+		ZComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = no
+			Secondary              = -Column 51
+			Noise                  =  Column 90
+		ZComponent End
+	EMSystem End
+
+	Options Begin
+		//StartRecord       = 1
+		//EndRecord         = inf
+		Subsample         = 1
+		SoundingsPerBunch = 1
+		BunchSubsample    = 1
+
+		NormType    = L2
+		MinimumPhiD = 1.0
+		MinimumPercentageImprovement = 5.0
+		MaximumIterations = 100
+
+		//Experimental Parameter
+		BeginGeometrySolveIteration = 0
+
+		Constraints Begin
+			//Type								Alpha	Method
+			ConductivityReferenceModel			1		
+			ThicknessReferenceModel				0		
+			GeometryReferenceModel				1	
+			//ScalingFactorsReferenceModel		1		
+
+			//VerticalConductivity				333		Minimise1stDerivatives
+			VerticalConductivity				333		Minimise2ndDerivatives
+
+			//VerticalConductivitySimilarity	1
+
+			//LateralConductivity				1e3		Minimise1stDerivatives
+			//LateralConductivity				1e3		Minimise2ndDerivatives
+			//LateralConductivity				1e3		Similarity
+
+			//LateralGeometry					1e2		Similarity
+			//LateralGeometry					1e2		MinimiseAccelerationDerivatives
+			//LateralGeometry                   1e2		MinimiseAccelerations
+		Constraints End
+	Options End
+
+	Input Begin
+		DataFile    = ..\data\bhmar-skytem.dat
+		HeaderLines = 0
+
+		//Line is required if SoundingsPerBunch > 1
+		AncillaryFields Begin			
+			Survey    = Column 1
+			Date      = Column 4
+			Flight    = Column 5
+			Line      = Column 6
+			Fiducial  = Column 7
+			X         = Column 12
+			Y         = Column 13
+			GroundElevation = Column 21
+			Column 15
+			Column 16
+		AncillaryFields End
+
+		Geometry Begin
+			TX_Height Begin
+				Solve = no
+				Ref   = Column 19
+				Std   = 1
+				Min   = Column 19 - 5
+				Max   = Column 19 + 5
+			TX_Height End
+
+			TX_Roll         = Column 24
+			TX_Pitch        = Column 25
+			TX_Yaw          = Column 26
+			TXRX_DX         = Column 27
+			TXRX_DY         = Column 28
+			TXRX_DZ         = Column 29
+			RX_Roll         = Column 24
+			RX_Pitch        = Column 25
+			RX_Yaw          = Column 26
+		Geometry End
+
+		Earth Begin
+			NumberOfLayers  = 30
+			Thickness =  1.50  1.65  1.81  2.00  2.20  2.42  2.66  2.92  3.21  3.54  3.89  4.28  4.71  5.18  5.70  6.27  6.89  7.58  8.34  9.17 10.09 11.10 12.21 13.43 14.77 16.25 17.88 19.66 21.63
+			Conductivity Begin			
+				Solve = yes
+				Ref   = 0.001
+				Std   = 0.5
+				Min   = 1e-6
+				Max   = 20
+			Conductivity End
+		Earth End
+	Input End
+
+Output Begin
+		DataFile = output/inversion.output.asc
+		LogFile  = output/inversion.output.log
+
+		SaveDFNHeader = yes
+		SaveCSVHeader = yes
+		SaveHDRHeader = yes
+		SaveI3Header  = yes
+
+		PositiveLayerTopDepths    = yes
+		PositiveLayerBottomDepths = yes
+		NegativeLayerBottomDepths = yes
+		InterfaceElevations       = yes
+		ParameterSensitivity      = yes
+		ParameterUncertainty      = yes
+		ObservedData              = yes
+		PredictedData             = yes
+		NoiseEstimates            = yes
+
+		//Verbose  = no
+		//Dump     = no
+		//DumpPath = output\dump
+	Output End
+Control End

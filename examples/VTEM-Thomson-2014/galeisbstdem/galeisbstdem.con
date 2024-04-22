@@ -1,0 +1,123 @@
+Control Begin
+
+	EMSystem Begin
+		SystemFile      = ..\stmfiles\VTEM-plus-7.3ms-pulse-southernthomson.stm
+		InvertXPlusZ    = no			//yes to invert the amplitude of the data in the XZ plane
+		InvertPrimaryPlusSecondary = no //yes to invert the total field (usually only for fixed-wing systems)
+		ZComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = yes
+			MultiplicativeNoise    = 3.0
+			AdditiveNoise	       = 0.161167  0.124984  0.094229  0.073026  0.058675  0.045173  0.038207  0.026160  0.019157  0.014366  0.011281  0.009552  0.008378  0.007234  0.006111  0.005186  0.004356  0.003580  0.003004  0.002447  0.002047  0.001648  0.001398  0.001154  0.000957  0.000809  0.000687  0.000589  0.000507  0.000444  0.000405  0.000352  0.000328  0.000303  0.000301  0.000319  0.000348  0.000360  0.000344  0.000310  0.000245  0.000196  0.000219  0.000177  0.000159
+			Secondary              = -ZFinal
+		ZComponent End
+	EMSystem End
+
+	Options Begin
+		//StartRecord     = 1		//First record in file to invert
+		//EndRecord       = inf	    //Last record in file to invert
+		Subsample         = 1		//The subsample rate
+		//SoundingsPerBunch = 1		//Number of soundings in each inversion problem
+		//BunchSubsample    = 1		//Number of sounding between adjacent sounding in the bunch
+
+		NormType    = L2					//use L1 or L2 norm
+		MinimumPhiD = 1.0					//PhiD misfit value at which inversion terminates
+		MinimumPercentageImprovement = 5.0	//Minimun reduction in PhiD between iterations that causes termination
+		MaximumIterations = 100				//Maximum nuber of iteration before termination
+
+		//Experimental Parameter
+		//BeginGeometrySolveIteration = 0
+
+		Constraints Begin
+			//Type								Alpha	Method
+			ConductivityReferenceModel			1		
+			ThicknessReferenceModel				0		
+			GeometryReferenceModel				1	
+			//ScalingFactorsReferenceModel		1		
+
+			//VerticalConductivity				333		Minimise1stDerivatives
+			VerticalConductivity				333		Minimise2ndDerivatives
+
+			//VerticalConductivitySimilarity	1
+
+			//LateralConductivity				1e3		Minimise1stDerivatives
+			//LateralConductivity				1e3		Minimise2ndDerivatives
+			//LateralConductivity				1e3		Similarity
+
+			//LateralGeometry					1e2		Similarity
+			//LateralGeometry					1e2		MinimiseAccelerationDerivatives
+			//LateralGeometry                   1e2		MinimiseAccelerations
+		Constraints End
+	Options End
+	
+	Input Begin
+		DataFile    = ..\data\thomson-vtem.dat
+		HeaderFile  = ..\data\thomson-vtem.dfn
+		HeaderLines = 0 // Number of lines of header info at the start of the data file to skip
+
+		//Line is required if SoundingsPerBunch > 1
+		AncillaryFields Begin
+			project_ga					//Pass this field through to the output file
+			date
+			Flight          = flight
+			Line            = line		//Set this field as the line number field and pass it through to the output file
+			Fiducial        = fiducial
+			em_mag_data_easting
+			em_mag_data_northing
+			em_mag_data_longitude
+			em_mag_data_latitude
+			elevation_laser
+			elevation_radar
+		AncillaryFields End
+
+		Geometry Begin
+			TX_Height  = emloop_height
+			TX_Roll    = roll
+			TX_Pitch   = pitch
+			TX_Yaw     = yaw
+			TXRX_DX    = 0
+			TXRX_DY    = 0
+			TXRX_DZ    = 0
+			RX_Roll    = roll
+			RX_Pitch   = pitch
+			RX_Yaw     = yaw
+		Geometry End
+
+		Earth Begin
+			NumberOfLayers  = 30
+			Thickness =  3.00  3.30  3.62  4.00  4.40  4.84  5.32  5.84  6.42  7.08  7.78  8.56  9.42 10.36 11.40 12.54 13.78 15.16 16.68 18.34 20.18 22.20 24.42 26.86 29.54 32.50 35.76 39.32 43.26
+			Conductivity Begin			
+				Solve = yes
+				Ref   = 0.001
+				Std   = 0.5
+				Min   = 1e-6
+				Max   = 20
+			Conductivity End
+		Earth End
+	Input End
+
+	Output Begin
+		DataFile = output/inversion.output.asc
+		LogFile  = output/inversion.output.log
+
+		SaveDFNHeader = yes
+		SaveCSVHeader = yes
+		SaveHDRHeader = yes
+		SaveI3Header  = yes
+
+		PositiveLayerTopDepths    = yes
+		PositiveLayerBottomDepths = yes
+		NegativeLayerBottomDepths = yes
+		InterfaceElevations       = yes
+		ParameterSensitivity      = yes
+		ParameterUncertainty      = yes
+		ObservedData              = yes
+		PredictedData             = yes
+		NoiseEstimates            = yes
+
+		//Verbose  = no
+		//Dump     = no
+		//DumpPath = output\dump
+	Output End
+
+Control End

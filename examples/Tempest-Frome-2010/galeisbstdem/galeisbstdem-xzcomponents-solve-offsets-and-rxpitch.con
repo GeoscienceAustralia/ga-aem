@@ -1,0 +1,177 @@
+Control Begin
+	
+	EMSystem Begin
+		SystemFile = ../stmfiles/Tempest-standard.stm
+		InvertXPlusZ    = no							//yes to invert the amplitude of the data in the XZ plane
+		InvertPrimaryPlusSecondary = yes				//yes to invert the total field (usually only for fixed-wing systems)
+		ReconstructPrimaryFieldFromInputGeometry = yes	//yes to reconstruct primary field (from the input geometry) if not supplied in the data file
+
+		XComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = yes
+			MultiplicativeNoise    = 2.26
+			AdditiveNoise	       = 0.0119 0.0117 0.0093 0.0061 0.0057 0.0054 0.0051 0.0048 0.0046 0.0044 0.0043 0.0040 0.0034 0.0026 0.0034
+			Secondary              = EMX_NONHPRG
+		XComponent End
+
+		ZComponent Begin
+			Use = yes
+			EstimateNoiseFromModel = yes
+			MultiplicativeNoise    = 3.74
+			AdditiveNoise	       = 0.0094 0.0084 0.0067 0.0047 0.0045 0.0043 0.0041 0.0039 0.0036 0.0034 0.0033 0.0030 0.0024 0.0017 0.0019
+			Secondary              = -EMZ_NONHPRG
+		ZComponent End
+	EMSystem End
+
+	Options Begin
+		//StartRecord     = 1		//First record in file to invert
+		//EndRecord       = inf	    //Last record in file to invert
+		Subsample         = 1		//The subsample rate
+		//SoundingsPerBunch = 1		//Number of soundings in each inversion problem
+		//BunchSubsample    = 1		//Number of sounding between adjacent sounding in the bunch
+
+		NormType    = L2					//use L1 or L2 norm
+		MinimumPhiD = 1.0					//PhiD misfit value at which inversion terminates
+		MinimumPercentageImprovement = 5.0	//Minimun reduction in PhiD between iterations that causes termination
+		MaximumIterations = 100				//Maximum nuber of iteration before termination
+
+		//Experimental Parameter
+		//BeginGeometrySolveIteration = 0
+
+		Constraints Begin
+			//Type								Alpha	Method
+			ConductivityReferenceModel			1		
+			ThicknessReferenceModel				0		
+			GeometryReferenceModel				1		
+			
+			VerticalConductivity				1e5		Minimise2ndDerivatives
+			//VerticalConductivity				1e4		Minimise1stDerivatives
+
+			//VerticalConductivitySimilarity	1
+
+			//LateralConductivity				1e3		Minimise1stDerivatives
+			//LateralConductivity				1e3		Minimise2ndDerivatives
+			//LateralConductivity				1e3		Similarity
+
+			//LateralGeometry					1e2		Similarity
+			//LateralGeometry					1e2		MinimiseAccelerationDerivatives
+			//LateralGeometry					1e4		MinimiseAccelerations
+
+			//CableLength						1		Input			0.01
+			//CableLength						1		InputBunchMean	0.01
+			//CableLength						1		BunchSimilarity	0.01
+		Constraints End
+	Options End
+
+	Input Begin
+		DataFile	= ../data/frome-tempest.dat
+		HeaderFile  = ../data/frome-tempest.dfn
+		HeaderLines = 0		// Number of lines of header info at the start of the data file to skip
+
+		//Line is required if SoundingsPerBunch > 1
+		AncillaryFields Begin
+			Project_GA					//Pass this field through to the output file
+			Date			= Date		//... as above
+			Flight          = Flight
+			Line            = Line		//Set this field as the line number field and pass it through to the output file
+			Fiducial        = Fiducial
+			Longitude
+			Latitude
+			Easting
+			Northing
+			Lidar
+			Radalt
+			DTM
+		AncillaryFields End
+			
+		Geometry Begin
+			TX_Height =  Tx_Height
+			
+			TX_Roll Begin
+				Solve = no
+				Ref   = TX_Roll
+				TFR   = 0		//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing //Skyvan platform use TX_Pitch = -0.45 (=+0.45 in TEMPEST sign convention)
+			TX_Roll End
+
+			TX_Pitch Begin
+				Solve = no
+				Ref   = -TX_Pitch
+				TFR   = -0.45		//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing //Skyvan platform use TX_Pitch = -0.45 (=+0.45 in TEMPEST sign convention) Casa platform use TX_Pitch = -0.90 (=+0.90 in TEMPEST sign convention)
+			TX_Pitch End
+
+			TX_Yaw    = 0
+
+			TXRX_DX Begin
+				Solve = yes
+				Ref   = HSep_GPS
+				Std   = 0.5
+				Min   = HSep_GPS - 5
+				Max   = HSep_GPS + 5
+				TFR   = HSEP_RAW	//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing
+			TXRX_DX End
+
+			TXRX_DY Begin
+				Solve = no
+				Ref   = -TSep_GPS
+				TFR   = 0			//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing //Skyvan platform use TX_Pitch = -0.45 (=+0.45 in TEMPEST sign convention)
+			TXRX_DY End
+
+			TXRX_DZ Begin
+				Solve = yes
+				Ref   = VSep_GPS
+				Std   = 0.5
+				Min   = VSep_GPS - 5
+				Max   = VSep_GPS + 5
+				TFR   = VSEP_RAW //The system geometry that corresponds to the primary field removed during Fugro/CGG's processing
+			TXRX_DZ End
+		
+			RX_Roll   =  0
+			RX_Pitch Begin
+				Solve = yes
+				Ref   = 0
+				TFR   = 0		//The system geometry that corresponds to the primary field removed during Fugro/CGG's processing
+				Std   = 0.5
+				Min   = -5
+				Max   = +5
+			RX_Pitch End
+			RX_Yaw    = 0
+		Geometry End
+
+		Earth Begin
+			NumberOfLayers  = 30
+			Conductivity Begin
+				Solve = yes
+				Ref   = 0.001
+				Std   = 0.5
+				Min   = 1e-6
+				Max   = 20
+			Conductivity End
+			Thickness =  4.00 4.40 4.84 5.32 5.86 6.44 7.09 7.79 8.57 9.43 10.37 11.41 12.55 13.81 15.19 16.71 18.38 20.22 22.24 24.46 26.91 29.60 32.56 35.82 39.40 43.34 47.67 52.44 57.68
+		Earth End
+	Input End
+
+	Output Begin
+		DataFile = output/inversion.output.asc
+		LogFile  = output/inversion.output.log
+
+		SaveDFNHeader = yes
+		SaveCSVHeader = yes
+		SaveHDRHeader = yes
+		SaveI3Header  = yes
+
+		PositiveLayerTopDepths    = yes
+		PositiveLayerBottomDepths = yes
+		NegativeLayerBottomDepths = yes
+		InterfaceElevations       = yes
+		ParameterSensitivity      = yes
+		ParameterUncertainty      = yes
+		ObservedData              = yes
+		PredictedData             = yes
+		NoiseEstimates            = yes
+
+		//Verbose  = no
+		//Dump     = no
+		//DumpPath = output\dump
+	Output End
+
+Control End

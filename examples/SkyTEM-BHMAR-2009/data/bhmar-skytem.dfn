@@ -1,0 +1,37 @@
+DEFN   ST=RECD,RT=COMM;RT:A4;COMMENTS:A76
+DEFN 1 ST=RECD,RT=; Project_GA : I5 : DESC=GA Project number
+DEFN 2 ST=RECD,RT=; Project_Geoforce : I5 : DESC=Geoforce job number
+DEFN 3 ST=RECD,RT=; System : I2 : DESC=System Number
+DEFN 4 ST=RECD,RT=; Date : I9 : UNITS=yyyymmdd, DESC=Date
+DEFN 5 ST=RECD,RT=; Flight : F12.2 : DESC=Flight number
+DEFN 6 ST=RECD,RT=; Line : I8 : DESC=Line number
+DEFN 7 ST=RECD,RT=; Fiducial : F12.2 : DESC=Fiducial
+DEFN 8 ST=RECD,RT=; TimeOfDay : F9.2 : UNITS=s, DESC=Time since midnight
+DEFN 9 ST=RECD,RT=; UTC_DateTime : F19.12 : DESC=UTC DateTime
+DEFN 10 ST=RECD,RT=; UTC_Date : F12.2 : UNITS=yyyymmdd, DESC=UTC date
+DEFN 11 ST=RECD,RT=; UTC_Time : F10.2 : UNITS=s, DESC=UTC time
+DEFN 12 ST=RECD,RT=; Easting : F10.2 : UNITS=m, DESC=Easting, DATUM=GDA94, PROJECTION=MGA54
+DEFN 13 ST=RECD,RT=; Northing : F11.2 : UNITS=m, DESC=Northing, DATUM=GDA94, PROJECTION=MGA54
+DEFN 14 ST=RECD,RT=; Latitude : F13.8 : UNITS=degrees, DESC=Latitude, DATUM=GDA94, PROJECTION=GEODETIC
+DEFN 15 ST=RECD,RT=; Longitude : F13.8 : UNITS=degrees, DESC=Longitude, DATUM=GDA94, PROJECTION=GEODETIC
+DEFN 16 ST=RECD,RT=; GPS_Height : F8.1 : UNITS=m, DESC=GPS Height
+DEFN 17 ST=RECD,RT=; GroundSpeed : F7.2 : UNITS=km/hour, DESC=Ground speed
+DEFN 18 ST=RECD,RT=; Frame_Height_Laser : F9.2 : UNITS=m, DESC=Frame height from laser altimeter
+DEFN 19 ST=RECD,RT=; Frame_Height_Lidar : F9.2 : UNITS=m, DESC=Frame height derived from lidar survey
+DEFN 20 ST=RECD,RT=; Ground_Elevation_Laser : F9.2 : UNITS=m, DESC=Ground elevation from laser altimeter
+DEFN 21 ST=RECD,RT=; Ground_Elevation_Lidar : F9.2 : UNITS=m, DESC=Ground elevation derived from lidar survey
+DEFN 22 ST=RECD,RT=; AngleX : F7.2 : UNITS=degrees, DESC=Measured tilt angle in in-line direction - nose up +ve 
+DEFN 23 ST=RECD,RT=; AngleY : F7.2 : UNITS=degrees, DESC=Measured tilt angle in transverse direction - left side up +ve
+DEFN 24 ST=RECD,RT=; Frame_Roll : F7.2 : UNITS=degrees, DESC=Derived frame roll - left side up +ve as per GA-AEM coordinate system
+DEFN 25 ST=RECD,RT=; Frame_Pitch : F7.2 : UNITS=degrees, DESC=Derived frame pitch  - nose down +ve as per GA-AEM coordinate system
+DEFN 26 ST=RECD,RT=; Frame_Yaw : F7.2 : UNITS=degrees, DESC=Derived frame yaw - turn left +ve as per GA-AEM coordinate system
+DEFN 27 ST=RECD,RT=; TxRx_Dx : F7.2 : UNITS=m, DESC=Derived Tx to Rx horizontal in-line distance
+DEFN 28 ST=RECD,RT=; TxRx_Dy : F7.2 : UNITS=m, DESC=Derived Tx to Rx horizontal transverse distance
+DEFN 29 ST=RECD,RT=; TxRx_Dz : F7.2 : UNITS=m, DESC=Derived Tx to Rx vertical distance
+DEFN 30 ST=RECD,RT=; LM_Current : F7.2 : UNITS=A, DESC=Low moment peak current
+DEFN 31 ST=RECD,RT=; HM_Current : F7.2 : UNITS=A, DESC=High moment peak current
+DEFN 32 ST=RECD,RT=; Powerline_Monitor : F10.4 : DESC=Power line monitor
+DEFN 33 ST=RECD,RT=; LMZ : 18E15.5 : UNITS=V/A.m^4, DESC=Low moment dB/dt Z-component data
+DEFN 34 ST=RECD,RT=; HMZ : 21E15.5 : UNITS=V/A.m^4, DESC=High moment dB/dt Z-component data
+DEFN 35 ST=RECD,RT=; LMZ_NOISE : 18E15.5 : UNITS=V/A.m^4, DESC=Assigned low moment dB/dt Z-component noise-standard-deviation
+DEFN 36 ST=RECD,RT=; HMZ_NOISE : 21E15.5 : UNITS=V/A.m^4, DESC=Assigned low moment dB/dt Z-component noise-standard-deviation;END DEFN

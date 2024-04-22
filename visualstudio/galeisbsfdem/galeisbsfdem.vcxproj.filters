@@ -14,12 +14,6 @@
     <ClCompile Include="..\..\src\galeisbsfdem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\file_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\submodules\cpp-utils\src\general_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\fdemsystem.h">
@@ -31,28 +25,28 @@
     <ClInclude Include="..\..\src\layeredearthmodeller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\fielddefinition.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\fielddefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\matrix_ops.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\matrix_ops.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\rollpitchyaw.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\rollpitchyaw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\asciicolumnfile.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\asciicolumnfile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\src\eigen_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\eigen_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

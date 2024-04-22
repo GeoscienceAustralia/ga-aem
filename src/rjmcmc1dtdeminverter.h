@@ -135,8 +135,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	bool SaveMaps;
 	int  SaveMapsRate;
 	bool SaveChains;
-	int  SaveChainsRate;
-
+	
 	cBlock Control;
 	std::string LogFile;
 	double memoryusedatstart;
@@ -148,8 +147,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	std::string OutputDirectory;
 	std::string OutputDataFile;
 	std::string MapsDirectory;
-	std::string ChainsDirectory;
-
+	
 	size_t HeaderLines;
 	size_t SubSample;
 	size_t FirstRecord;
@@ -205,6 +203,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			makedirectory(OutputDirectory);
 		}
 
+		verbose = false;
+		OB.getvalue("Verbose", verbose);
+		if (mpiSize > 1) verbose = false;
+
 		std::string s = OutputDirectory + OB.getstringvalue("LogFile");
 		std::string rankstr = stringvalue(mpiRank, ".%04lu");
 		LogFile = insert_after_filename(s, rankstr);
@@ -224,11 +226,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		SaveMaps = SB.getboolvalue("SaveMaps");
 		SaveMapsRate = SB.getintvalue("SaveMapsRate");
 		if (SaveMapsRate == INT_MIN)SaveMapsRate = 1;
-
 		SaveChains = SB.getboolvalue("SaveChains");
-		SaveChainsRate = SB.getintvalue("SaveChainsRate");
-		if (SaveChainsRate == INT_MIN)SaveChainsRate = 1;
-
+		
 		cBlock IB = Control.findblock("Input");
 		HeaderLines = (size_t)IB.getintvalue("HeaderLines");
 		SubSample = (size_t)IB.getintvalue("Subsample");
@@ -254,16 +253,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				makedirectory(MapsDirectory);
 			}
 		}
-
-		if (SaveChains) {
-			//ChainsDirectory = OB.getstringvalue("ChainsDirectory");
-			//addtrailingseparator(ChainsDirectory);
-			//if (exists(ChainsDirectory) == false) {
-			//	glog.logmsg(0, "Creating ChainsDirectory: %s\n", ChainsDirectory.c_str());
-			//	makedirectory(ChainsDirectory);
-			//}
-		}
-
+		
 		//Load stm file
 		initialise_systems();
 		getcolumnnumbers();
@@ -363,7 +353,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		cTDEmGeometry g;
 		for (size_t gi = 0; gi < g.size(); gi++) {
-			fd_geometry[gi].initialise(b, g.fname(gi));
+			fd_geometry[gi].initialise(b, g.element_name(gi));
 		}
 
 		for (size_t i = 0; i < nsystems; i++) {
@@ -507,7 +497,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		for (size_t gi = 0; gi < IG.size(); gi++) {
 			fd_geometry[gi].getvalue(f, IG[gi]);
-		}
+		}		
 
 		for (size_t i = 0; i < nsystems; i++) {
 			cTDEmSystemInfo& S = SV[i];
@@ -598,7 +588,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 			if (S.reconstructPrimary) {
 				T.setgeometry(IG);
-				T.LEM.calculation_type = CT_FORWARDMODEL;
+				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 				T.LEM.derivative_layer = INT_MAX;
 				T.setprimaryfields();
 
@@ -752,7 +742,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		fclose(fp);
 
 		write_maps_to_file_netcdf();
-
+		
 		write_noise_maps();
 		write_nuisance_maps();
 
@@ -965,11 +955,12 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		a = nc.putAtt("x", NcType::nc_DOUBLE, xord);
 		a = nc.putAtt("y", NcType::nc_DOUBLE, yord);
 		a = nc.putAtt("elevation", NcType::nc_DOUBLE, elevation);
-		rjMcMC1DSampler::writemapstofile_netcdf(nc);
+		rjMcMC1DSampler::writemapstofile_netcdf(nc,SaveChains);		
 	}
 
 	void write_noise_maps()
 	{
+		if (mnmap.noises.size() == 0) return;
 		if (SaveMaps == false) return;
 		if ((CurrentRecord - HeaderLines - FirstRecord) / SubSample % SaveMapsRate != 0)return;
 
@@ -984,6 +975,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 	void write_nuisance_maps()
 	{
+		if (nmap.nuisance.size() == 0) return;
 		if (SaveMaps == false) return;
 		if ((CurrentRecord - HeaderLines - FirstRecord) / SubSample % SaveMapsRate != 0)return;
 
@@ -1085,7 +1077,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			T.setconductivitythickness(c, t);
 			T.setgeometry(G);
 			T.setupcomputations();
-			T.LEM.calculation_type = CT_FORWARDMODEL;
+			T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
 			T.LEM.derivative_layer = INT_MAX;
 			T.setprimaryfields();
 			T.setsecondaryfields();
@@ -1094,7 +1086,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				pred[di] = v[j];
 				di++;
 			}
-		}
+		}		
 		return pred;
 	}
 };

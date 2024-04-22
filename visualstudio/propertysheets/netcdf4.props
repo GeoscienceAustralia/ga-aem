@@ -4,8 +4,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <LibraryPath>$(NETCDF_ROOT)\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(NETCDF_ROOT)\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(NETCDF_DIR)\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(NETCDF_DIR)\include;$(IncludePath)</IncludePath>
     <_PropertySheetDisplayName>netcdf4</_PropertySheetDisplayName>
   </PropertyGroup>
   <ItemDefinitionGroup>
