@@ -11,8 +11,5 @@
 	path = submodules/geophysics-netcdf
 	url = https://github.com/GeoscienceAustralia/geophysics-netcdf.git
 [submodule "submodules/netcdf-cxx4"]
-
 	path = submodules/netcdf-cxx4
-
 	url = https://github.com/Unidata/netcdf-cxx4.git
-
