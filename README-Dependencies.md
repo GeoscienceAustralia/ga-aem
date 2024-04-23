@@ -7,6 +7,8 @@ For full functionality and to build all programs the following packages are requ
 Depending on your flavour of Linux, you are likely to need to install the packages (or later versions) for Ubuntu as follows:
 
 ```bash
+> sudo apt-get update
+> sudo apt install build-essential
 > sudo apt install cmake
 > sudo apt install gcc-9
 > sudo apt install libfftw3-dev
