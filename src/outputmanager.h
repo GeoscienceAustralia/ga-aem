@@ -295,9 +295,7 @@ private:
 	bool SaveHDRHeader = true;
 	bool SaveI3Header  = true;
 
-	bool SaveDFNHeader = true;
-	bool SaveCSVHeader = true;
-	bool SaveHDRHeader = true;
+public:
 
 	cASCIIOutputManager(const cBlock& b, const int& size, const int& rank) {
 		cOutputManager::initialise(b, size, rank);
