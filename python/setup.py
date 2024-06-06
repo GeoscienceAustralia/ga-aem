@@ -4,6 +4,7 @@
 # March 10 2017
 # Updated: Ross C Brodie, March 20 2017
 # Updated: Ross C Brodie, March 21 2024 to Version 2.0
+# Updated: Leon Foks, June 5 2024. Added .dylib 
 import sys
 import os
 from os.path import join
@@ -22,7 +23,7 @@ except ImportError:
 setup(name='gatdaem1d',
       packages=['gatdaem1d'],
       package_dir={'gatdaem1d':'gatdaem1d'},
-      package_data={'gatdaem1d':['gatdaem1d.so', 'gatdaem1d.dll']},
+      package_data={'gatdaem1d':['gatdaem1d.so', 'gatdaem1d.dll', 'gatdaem1d.dylib']},
       scripts=[],
       version=2.0,
       description='Time-domain airborne electromagnetic forward modelling.',
