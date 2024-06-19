@@ -11,26 +11,27 @@ end
 
 nlayers=length(E.conductivity);
 if(nlayers ~= 1+length(E.thickness))
-    error('Sorry the size of thicknesses must be one less than the size of conductivity');;
+    error('Sorry the length of thicknesses must be one less than the length of conductivity');;
 end
 
 if(nargin == 4)
     if(strcmpi(iptypestr,'colecole'))
-        iptype=0;
-    elseif(strcmpi(iptypestr,'pelton'))
         iptype=1;
+    elseif(strcmpi(iptypestr,'pelton'))
+        iptype=2;
     else
-        error('Sorry iptypestr must "colecole" or "pelton"');
+        error('Sorry for IP modelling iptypestr must be either "colecole" or "pelton"');
     end
+
     
     if(isfield(E,'chargeability'))
         if(nlayers ~= length(E.chargeability))
-            error('Sorry the size of chargeability must equal to the size of conductivity');;
+            error('Sorry the length of chargeability must equal to the length of conductivity');;
         end
         
         if(isfield(E,'timeconstant'))
             if(nlayers ~= length(E.timeconstant))
-                error('Sorry the size of timeconstant must be equal to the size of conductivity');;
+                error('Sorry the length of timeconstant must be equal to the length of conductivity');;
             end
         else
             error('Sorry you must set the timeconstant');;
@@ -38,7 +39,7 @@ if(nargin == 4)
         
         if(isfield(E,'frequencydependence'))
             if(nlayers ~= length(E.frequencydependence))
-                error('Sorry the size of frequencydependence must equal to the size of conductivity');;
+                error('Sorry the length of frequencydependence must equal to the length of conductivity');;
             end
         else
             error('Sorry you must set the frequencedependence');;
