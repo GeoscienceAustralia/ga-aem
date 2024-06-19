@@ -167,6 +167,11 @@ This may be useful if, for example, you do not have the third-party packages ins
 
 # Releases
 
+## v2.0.1-Release-20240619
+- Changed Pelton and ColeCole index for IP modelling in Matlab
+- Allowed line number in column index 0 for ctlinedata* programs
+- Linux script cmake_build_python_bindings.sh added for building python bindings alone
+- Allow gatdaem1d.dylib as shared library name in python bindings
 ## v2.0.0-Release-20240424
 - Functionality changes to deterministic inversion program (galeisbstdem.exe)
 	- Added XZ amplitude inversion functionality.
