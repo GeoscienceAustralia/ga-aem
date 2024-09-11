@@ -26,51 +26,56 @@ class cPetscDistShellMatrix;//forward declaration only
 #define __SDIR__ "src\\"
 #endif
 
+#if PETSC_VERSION_LT(3,19,0)
+// In Petsc Version 3.19.0 PETSC_NULL was deprecated and replaced with PETSC_NULL 
+#define PETSC_NULLPTR NULL
+#endif
+
 #define CHKERR(ierr) cPetscObject::chkerrabort(ierr, __LINE__, __FUNCTION__,__FILE__,__SDIR__)
 #define dbgprint cPetscObject::debugprint(__LINE__, __FUNCTION__,__FILE__,__SDIR__)
 
-class cSparseMatrixEntries{
+class cSparseMatrixEntries {
 
 public:
 	std::vector<PetscInt> rowind;
 	std::vector<PetscInt> colind;
 	std::vector<double> value;
 
-	cSparseMatrixEntries(){ resize(0); }
-	cSparseMatrixEntries(const PetscInt nnz){ resize(nnz); }
+	cSparseMatrixEntries() { resize(0); }
+	cSparseMatrixEntries(const PetscInt nnz) { resize(nnz); }
 
-	void resize(const PetscInt nnz){
+	void resize(const PetscInt nnz) {
 		rowind.resize(nnz);
 		colind.resize(nnz);
 		value.resize(nnz);
-	};	
+	};
 };
 
-class cOwnership{
-	
+class cOwnership {
+
 public:
 
 	PetscInt start;//index of first 
 	PetscInt end;//index of last + 1
 
-	cOwnership(){
+	cOwnership() {
 		start = -1;
-		end   = -1;
+		end = -1;
 	};
 
-	cOwnership(const PetscInt _start, const PetscInt _end){
+	cOwnership(const PetscInt _start, const PetscInt _end) {
 		start = _start;
-		end   = _end;
+		end = _end;
 	}
 
-	cOwnership(const int size, const int rank, const PetscInt nglobal){
+	cOwnership(const int size, const int rank, const PetscInt nglobal) {
 		set_petsc_default(size, rank, nglobal);
 	}
 
 	void set_petsc_default(const int size, const int rank, const PetscInt nglobal)
-	{		
+	{
 		end = 0;
-		for (PetscInt i = 0; i <= rank; i++){
+		for (PetscInt i = 0; i <= rank; i++) {
 			PetscInt n = nglobal / (PetscInt)size + ((nglobal % (PetscInt)size) > i);
 			end += n;
 			start = end - n;
@@ -81,15 +86,15 @@ public:
 	{
 		return end - start;
 	};  //number of local items
-	
-	PetscInt globalind(const PetscInt& ilocal) const 
+
+	PetscInt globalind(const PetscInt& ilocal) const
 	{
-		return start + ilocal; 
+		return start + ilocal;
 	}
 
 	PetscInt localind(const PetscInt& iglobal) const
 	{
-		return iglobal - start; 
+		return iglobal - start;
 	}
 
 	bool owns(const PetscInt& iglobal) const
@@ -100,25 +105,25 @@ public:
 
 };
 
-class cPetscObject{
-	
+class cPetscObject {
+
 private:
-	
-public:	
-		
-	cPetscObject(){ };
+
+public:
+
+	cPetscObject() { };
 
 	virtual const PetscObject* pobj() const = 0;
 
 	void setname(const std::string& inname) {
-		if (pobj()){
+		if (pobj()) {
 			PetscErrorCode ierr = PetscObjectSetName(*pobj(), inname.c_str()); CHKERR(ierr);
 		}
 	}
 
 	const char* cname() const
 	{
-		if (pobj()){
+		if (pobj()) {
 			const char* name;
 			PetscErrorCode ierr = PetscObjectGetName(*pobj(), &name);
 			CHKERR(ierr);
@@ -129,7 +134,7 @@ public:
 
 	const std::string name() const
 	{
-		if (cname()){
+		if (cname()) {
 			return std::string(cname());
 		}
 		return std::string("unnamed");
@@ -143,7 +148,7 @@ public:
 		return comm;
 	}
 
-	int mpisize() const 
+	int mpisize() const
 	{
 		int size;
 		PetscErrorCode ierr = MPI_Comm_size(mpicomm(), &size);
@@ -151,20 +156,20 @@ public:
 		return size;
 	}
 
-	int mpirank() const 
+	int mpirank() const
 	{
 		int rank;
 		PetscErrorCode ierr = MPI_Comm_rank(mpicomm(), &rank); CHKERR(ierr);
 		return rank;
 	}
 
-	PetscErrorCode mpibarrier() const 
+	PetscErrorCode mpibarrier() const
 	{
 		PetscErrorCode ierr = MPI_Barrier(mpicomm()); CHKERR(ierr);
 		return ierr;
 	}
 
-	std::string mpiprocname() const 
+	std::string mpiprocname() const
 	{
 		char name[MPI_MAX_PROCESSOR_NAME + 1];
 		int len;
@@ -191,20 +196,20 @@ public:
 		printf("sizeof(PetscMPIInt) = %zu\n", sizeof(PetscMPIInt));
 	};
 
-	static void chkerrabort(PetscErrorCode ierr, const int linenumber, const char* functionname, const char* srcfile, const char* srcdirectory){
+	static void chkerrabort(PetscErrorCode ierr, const int linenumber, const char* functionname, const char* srcfile, const char* srcdirectory) {
 		do {
-			if (PetscUnlikely(ierr)){
+			if (PetscUnlikely(ierr)) {
 #if PETSC_VERSION_LT(3,5,0)
-				PetscError(PETSC_COMM_SELF,linenumber,functionname,srcfile,srcdirectory,ierr,PETSC_ERROR_REPEAT," ");
+				PetscError(PETSC_COMM_SELF, linenumber, functionname, srcfile, srcdirectory, ierr, PETSC_ERROR_REPEAT, " ");
 #else
-				PetscError(PETSC_COMM_SELF,linenumber,functionname,srcfile,ierr,PETSC_ERROR_REPEAT," ");
+				PetscError(PETSC_COMM_SELF, linenumber, functionname, srcfile, ierr, PETSC_ERROR_REPEAT, " ");
 #endif
 				MPI_Abort(PETSC_COMM_SELF, ierr);
 			}
-		} while (0);		
+		} while (0);
 	}
 
-	static void debugprint(const int linenumber, const char* functionname, const char* srcfile, const char* srcdirectory){
+	static void debugprint(const int linenumber, const char* functionname, const char* srcfile, const char* srcdirectory) {
 		PetscPrintf(PETSC_COMM_WORLD, "**Debug: at line %d : function %s : file %s : directory %s\n", linenumber, functionname, srcfile, srcdirectory);
 	}
 
@@ -219,20 +224,20 @@ class cPetscDistVector : public cPetscObject {
 
 private:
 	bool isowner = true;
-	Vec* pVec = PETSC_NULL;	
+	Vec* pVec = PETSC_NULLPTR;
 
-	const PetscObject* pobj() const{
+	const PetscObject* pobj() const {
 		if (pVec) return (PetscObject*)pVec;
-		else return (PetscObject*)PETSC_NULL;
+		else return (PetscObject*)PETSC_NULLPTR;
 	}
 
 	void deallocate()
 	{
-		if (allocated()){
-			if (isowner){
+		if (allocated()) {
+			if (isowner) {
 				//printf("Destroying Vector %s\n", name().c_str());
 				PetscErrorCode ierr = VecDestroy(pVec);	CHKERR(ierr);
-				pVec = PETSC_NULL;				
+				pVec = PETSC_NULLPTR;
 			}
 		}
 	}
@@ -240,32 +245,32 @@ private:
 	void resize(const MPI_Comm comm, const PetscInt _localsize, const PetscInt _globalsize)
 	{
 		std::string myname = name();
-		if (allocated()){
-			if (localsize() == _localsize && globalsize() == _globalsize){
+		if (allocated()) {
+			if (localsize() == _localsize && globalsize() == _globalsize) {
 				return;
 			}
-			else deallocate();			
+			else deallocate();
 		}
 		create(myname, comm, _localsize, _globalsize);
 	}
 
 public:
-	
+
 	cPetscDistVector() {};
 
 	cPetscDistVector(const std::string inname, const MPI_Comm comm, const PetscInt localsize, const PetscInt globalsize, const double value = 0.0)
-	{				
+	{
 		create(inname, comm, localsize, globalsize, value);
 	}
-	
+
 	cPetscDistVector(const MPI_Comm comm, const PetscInt localsize, const PetscInt globalsize)
-	{				
-		create(comm, localsize, globalsize);		
+	{
+		create(comm, localsize, globalsize);
 	}
 
 	cPetscDistVector(const cPetscDistVector& rhs)
-	{				
-		PetscErrorCode ierr;		
+	{
+		PetscErrorCode ierr;
 		pVec = new Vec;
 		ierr = VecDuplicate(rhs.vec(), ncvecptr()); CHKERR(ierr);
 		ierr = VecCopy(rhs.vec(), vec()); CHKERR(ierr);
@@ -273,13 +278,13 @@ public:
 	}
 
 	cPetscDistVector(Vec& vec)
-	{		
+	{
 		isowner = false;
 		pVec = &vec;
 	}
 
 	cPetscDistVector(cPetscDistVector&& rhs)
-	{				
+	{
 		//std::swap(isowner, rhs.isowner);
 		std::swap(pVec, rhs.pVec);
 	}
@@ -311,7 +316,7 @@ public:
 	}
 
 	void create(const MPI_Comm comm, const PetscInt _localsize, const PetscInt _globalsize)
-	{				
+	{
 		pVec = new Vec;
 		PetscErrorCode ierr = VecCreateMPI(comm, _localsize, _globalsize, ncvecptr()); CHKERR(ierr);
 	}
@@ -319,14 +324,14 @@ public:
 	void create(const std::string& inname, const MPI_Comm comm, const PetscInt _localsize, const PetscInt _globalsize)
 	{
 		create(comm, _localsize, _globalsize);
-		setname(inname);		
+		setname(inname);
 	}
 
 	void create(const std::string& inname, const MPI_Comm comm, const PetscInt _localsize, const PetscInt _globalsize, const double value)
 	{
-		create(comm, _localsize, _globalsize);				
-		setname(inname);		
-		set(value);		
+		create(comm, _localsize, _globalsize);
+		setname(inname);
+		set(value);
 	}
 
 	cOwnership ownership() const
@@ -339,7 +344,7 @@ public:
 
 	PetscInt globalsize() const
 	{
-		if (vec()){
+		if (vec()) {
 			PetscInt N;
 			PetscErrorCode ierr = VecGetSize(vec(), &N); CHKERR(ierr);
 			return N;
@@ -349,7 +354,7 @@ public:
 
 	PetscInt localsize() const
 	{
-		if (pVec){
+		if (pVec) {
 			PetscInt n;
 			PetscErrorCode ierr = VecGetLocalSize(vec(), &n); CHKERR(ierr);
 			return n;
@@ -360,7 +365,7 @@ public:
 	const double* getlocalreadonlyarray() const
 	{
 		const double* localarray;
-		if (allocated()==false){
+		if (allocated() == false) {
 			PetscPrintf(mpicomm(), "Error cPetscDistVector::getlocalarray() (%s) attempting to access NULL vec() pointer\n", name().c_str());
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
@@ -376,7 +381,7 @@ public:
 	double* getlocalarray()
 	{
 		double* localarray;
-		if (vec() == 0){
+		if (vec() == 0) {
 			PetscPrintf(mpicomm(), "Error cPetscDistVector::getlocalarray() (%s) attempting to access NULL vec() pointer\n", cname());
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
@@ -399,7 +404,7 @@ public:
 	void set_local(const std::vector<double>& v)
 	{
 		double* a = getlocalarray();
-		for (PetscInt i = 0; i<localsize(); ++i){
+		for (PetscInt i = 0; i < localsize(); ++i) {
 			a[i] = v[i];
 		}
 		restorelocalarray(a);
@@ -415,7 +420,7 @@ public:
 		VecScatterBegin(ctx, vec(), V_SEQ, INSERT_VALUES, SCATTER_FORWARD);
 		VecScatterEnd(ctx, vec(), V_SEQ, INSERT_VALUES, SCATTER_FORWARD);
 		VecGetArray(V_SEQ, &a);
-		for (size_t i = 0; i<(size_t)globalsize(); i++) v[i] = a[i];
+		for (size_t i = 0; i < (size_t)globalsize(); i++) v[i] = a[i];
 		VecRestoreArray(V_SEQ, &a);
 		VecScatterDestroy(&ctx);
 		VecDestroy(&V_SEQ);
@@ -451,17 +456,17 @@ public:
 
 	double localmemory() const
 	{
-		return (double)localsize()*sizeof(PetscReal);	
+		return (double)localsize() * sizeof(PetscReal);
 	}
 
 	double globalmemory() const
 	{
-		return (double)globalsize()*sizeof(PetscReal);
+		return (double)globalsize() * sizeof(PetscReal);
 	}
 
 	void printsize() const
 	{
-		if (!vec()){
+		if (!vec()) {
 			PetscPrintf(mpicomm(), "Vector %s (not valid)\n", cname());
 			return;
 		}
@@ -480,9 +485,9 @@ public:
 	}
 	void printdistributions() const
 	{
-		for (int i = 0; i < mpisize(); i++){
+		for (int i = 0; i < mpisize(); i++) {
 			mpibarrier();
-			if (i == mpirank()){
+			if (i == mpirank()) {
 				printf("%s rank %d owns %d to %d  - total of %d rows\n",
 					mpiprocname().c_str(),
 					mpirank(),
@@ -497,15 +502,15 @@ public:
 	void printvalues(const std::string& format)
 	{
 		double* a = getlocalarray();
-		for (int p = 0; p < mpisize(); p++){
+		for (int p = 0; p < mpisize(); p++) {
 			mpibarrier();
-			if (p == mpirank()){
+			if (p == mpirank()) {
 				cOwnership r = ownership();
-				for (PetscInt i = 0; i<r.nlocal(); i++){
+				for (PetscInt i = 0; i < r.nlocal(); i++) {
 					printf(format.c_str(), a[i]);
 					fflush(stdout);
 				}
-				if (p == (mpisize() - 1)){
+				if (p == (mpisize() - 1)) {
 					printf("=============\n");
 					fflush(stdout);
 				}
@@ -518,19 +523,19 @@ public:
 	void writetextfile(const std::string& filename)
 	{
 		double* a = getlocalarray();
-		for (int p = 0; p < mpisize(); p++){
+		for (int p = 0; p < mpisize(); p++) {
 			mpibarrier();
-			if (p == mpirank()){
+			if (p == mpirank()) {
 				FILE* fp;
-				if (p == 0){
+				if (p == 0) {
 					fp = fileopen(filename, "w");
 				}
-				else{
+				else {
 					fp = fileopen(filename, "a");
 				}
 
 				cOwnership r = ownership();
-				for (PetscInt i = 0; i<r.nlocal(); i++){
+				for (PetscInt i = 0; i < r.nlocal(); i++) {
 					fprintf(fp, "%20.16le\n", a[i]);
 				}
 				fclose(fp);
@@ -542,22 +547,22 @@ public:
 	}
 
 	cPetscDistVector& operator=(const cPetscDistVector& rhs)
-	{				
-		PetscErrorCode ierr;				
-		if (localsize() != rhs.localsize() || globalsize() != rhs.globalsize() ){			
+	{
+		PetscErrorCode ierr;
+		if (localsize() != rhs.localsize() || globalsize() != rhs.globalsize()) {
 			deallocate();
 			pVec = new Vec;
 			ierr = VecDuplicate(rhs.vec(), ncvecptr()); CHKERR(ierr);
 		}
-		ierr = VecCopy(rhs.vec(), ncvec()); CHKERR(ierr);					
+		ierr = VecCopy(rhs.vec(), ncvec()); CHKERR(ierr);
 		//printf("Assigned %s = %s\n", cname(), rhs.cname());
 		return *this;
 	}
 
 	cPetscDistVector& operator<<(const cPetscDistVector& rhs)
 	{
-		PetscErrorCode ierr;		
-		ierr = VecCopy(rhs.vec(), ncvec()); CHKERR(ierr);		
+		PetscErrorCode ierr;
+		ierr = VecCopy(rhs.vec(), ncvec()); CHKERR(ierr);
 		return *this;
 	}
 
@@ -566,7 +571,7 @@ public:
 		PetscErrorCode ierr = VecAXPY(vec(), 1.0, rhs.vec()); CHKERR(ierr);
 		return *this;
 	}
-	
+
 	cPetscDistVector& operator-=(const cPetscDistVector& rhs)
 	{
 		PetscErrorCode ierr = VecAXPY(vec(), -1.0, rhs.vec()); CHKERR(ierr);
@@ -593,7 +598,7 @@ public:
 
 	cPetscDistVector& operator=(const double& value)
 	{
-		set(value);		
+		set(value);
 		return *this;
 	}
 
@@ -601,7 +606,7 @@ public:
 	{
 		double* a = getlocalarray();
 		cOwnership r = ownership();
-		for (PetscInt i = 0; i<r.nlocal(); ++i){
+		for (PetscInt i = 0; i < r.nlocal(); ++i) {
 			a[i] += value;
 		}
 		restorelocalarray(a);
@@ -651,20 +656,20 @@ public:
 		PetscErrorCode ierr = VecScale(b.vec(), s); CHKERR(ierr);
 		return b;
 	}
-	
+
 	void pow(const double& p)
-	{		
-		double* v = getlocalarray();		
-		for (size_t i = 0; i < (size_t)localsize(); i++){
-			v[i] = std::pow(v[i],p);
+	{
+		double* v = getlocalarray();
+		for (size_t i = 0; i < (size_t)localsize(); i++) {
+			v[i] = std::pow(v[i], p);
 		}
 		restorelocalarray(v);
 		return;
 	}
-		
+
 };
 
-class cPetscDistVectorLocalView{
+class cPetscDistVectorLocalView {
 
 private:
 	cPetscDistVector* pv;
@@ -672,16 +677,16 @@ private:
 
 public:
 
-	cPetscDistVectorLocalView(cPetscDistVector& v){
+	cPetscDistVectorLocalView(cPetscDistVector& v) {
 		pv = &v;
 		data = pv->getlocalarray();
 	}
 
-	~cPetscDistVectorLocalView(){
+	~cPetscDistVectorLocalView() {
 		pv->restorelocalarray(data);
 	}
 
-	double& operator[](const size_t& i){
+	double& operator[](const size_t& i) {
 		return data[i];
 	}
 
@@ -692,15 +697,15 @@ class cPetscDistMatrix : public cPetscObject {
 	friend class cPetscDistShellMatrix;
 
 private:
-		
-	Mat* pMat = PETSC_NULL;
+
+	Mat* pMat = PETSC_NULLPTR;
 	bool isowner = true;
 	std::vector<PetscInt> mRowInd;
 	std::vector<PetscInt> mColInd;
 
-	const PetscObject* pobj() const{
+	const PetscObject* pobj() const {
 		if (pMat) return (PetscObject*)pMat;
-		else return (PetscObject*)PETSC_NULL;
+		else return (PetscObject*)PETSC_NULLPTR;
 	}
 
 	bool allocated() const {
@@ -710,16 +715,16 @@ private:
 
 	void deallocate()
 	{
-		if (allocated()){
-			if (isowner){
+		if (allocated()) {
+			if (isowner) {
 				//printf("Destroying Matrix %s\n", name().c_str());
 				PetscErrorCode ierr = MatDestroy(pMat); CHKERR(ierr);
-				pMat = PETSC_NULL;
+				pMat = PETSC_NULLPTR;
 			}
 		}
 	}
 
-	bool init_sparse(const MPI_Comm comm, const PetscInt& _nlocalrows, const PetscInt& _nlocalcols, const PetscInt& _nglobalrows, const PetscInt& _nglobalcols){
+	bool init_sparse(const MPI_Comm comm, const PetscInt& _nlocalrows, const PetscInt& _nlocalcols, const PetscInt& _nglobalrows, const PetscInt& _nglobalcols) {
 		deallocate();
 		pMat = new Mat;
 		PetscErrorCode ierr;
@@ -731,12 +736,12 @@ private:
 	}
 
 public:
-	
+
 	//Constructors & Destructors
 	cPetscDistMatrix() {};
-	
+
 	cPetscDistMatrix(const cPetscDistMatrix& rhs)
-	{					
+	{
 		PetscErrorCode ierr;
 		pMat = new Mat;
 		ierr = MatDuplicate(rhs.mat(), MAT_COPY_VALUES, pMat); CHKERR(ierr);
@@ -758,7 +763,7 @@ public:
 	Mat& ncmat() const { return *pMat; }
 	const Mat* matptr() const { return pMat; }
 	Mat* ncmatptr() const { return pMat; }
-	
+
 	PetscInt nglobalrows() const
 	{
 		PetscErrorCode ierr;
@@ -771,7 +776,7 @@ public:
 	{
 		PetscErrorCode ierr;
 		PetscInt M, N;
-ierr = MatGetSize(mat(), &M, &N); CHKERR(ierr);
+		ierr = MatGetSize(mat(), &M, &N); CHKERR(ierr);
 		return N;
 	};
 
@@ -779,7 +784,7 @@ ierr = MatGetSize(mat(), &M, &N); CHKERR(ierr);
 	{
 		PetscErrorCode ierr;
 		PetscInt m, n;
-ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
+		ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		return m;
 	};
 
@@ -790,7 +795,7 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		//see http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatMPIAIJSetPreallocation.html		
 		PetscErrorCode ierr;
 		PetscInt m, n;
-ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
+		ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		return n;
 	};
 
@@ -820,21 +825,21 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		return rowownership().localind(globalrow);
 	};
 
-	void create_sparse(const std::string& name, const MPI_Comm comm, const PetscInt& _nlocalrows, const PetscInt& _nlocalcols, const PetscInt& _nglobalrows, const PetscInt& _nglobalcols){
+	void create_sparse(const std::string& name, const MPI_Comm comm, const PetscInt& _nlocalrows, const PetscInt& _nlocalcols, const PetscInt& _nglobalrows, const PetscInt& _nglobalcols) {
 		init_sparse(comm, _nlocalrows, _nlocalcols, _nglobalrows, _nglobalcols);
-		setname(name);		
+		setname(name);
 	}
 
 	bool create_diagonal_structure(const std::string& name, const MPI_Comm comm, const PetscInt& localsize, const PetscInt& globalsize)
 	{
 		create_sparse(name, comm, localsize, localsize, globalsize, globalsize);
 		PetscErrorCode ierr;
-		ierr = MatMPIAIJSetPreallocation(mat(), 1, PETSC_NULL, 0, PETSC_NULL); CHKERR(ierr);		
-		const cOwnership r = rowownership();		
-		for (PetscInt gi = r.start; gi<r.end; gi++){
+		ierr = MatMPIAIJSetPreallocation(mat(), 1, PETSC_NULLPTR, 0, PETSC_NULLPTR); CHKERR(ierr);
+		const cOwnership r = rowownership();
+		for (PetscInt gi = r.start; gi < r.end; gi++) {
 			ierr = MatSetValue(mat(), gi, gi, 0.0, INSERT_VALUES); CHKERR(ierr);
 		}
-		assemble();		
+		assemble();
 		return true;
 	}
 
@@ -860,14 +865,14 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		//W_ii = (1/d_i)^2		
 		cPetscDistVector d = v;
 		d.pow(power);
-		create_diagonal(name, d);		
+		create_diagonal(name, d);
 		return true;
 	}
 
 	bool create_diagonal_local(const std::string& name, const MPI_Comm comm, const std::vector<double>& localdiagonal)
-	{				
-		create_diagonal_structure(name,comm,(PetscInt)localdiagonal.size(),PETSC_DETERMINE);
-		set_diagonal_local(localdiagonal);				
+	{
+		create_diagonal_structure(name, comm, (PetscInt)localdiagonal.size(), PETSC_DETERMINE);
+		set_diagonal_local(localdiagonal);
 		return true;
 	}
 
@@ -892,7 +897,7 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		//}
 
 		//Set the matrix type
-		if (mattype != "mpidense" && mattype != "elemental"){
+		if (mattype != "mpidense" && mattype != "elemental") {
 			PetscPrintf(comm, "Error: cPetscDistMatrix::create_dense() the matrix type should be either be 'mpidense' or 'elemental' \n");
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
@@ -922,15 +927,15 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		if (_nglobalcols <= 0) _nglobalcols = cmax + 1;
 
 		PetscInt nnz = (PetscInt)rowind.size();
-		if ((int)colind.size() != nnz || (int)values.size() != nnz){
+		if ((int)colind.size() != nnz || (int)values.size() != nnz) {
 			printf("cPetscDistMatrix::create_globalindices(...) rowind, colind, and vals must be the same size\n");
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
-		if (rmin<0 || rmax >= _nglobalrows){
+		if (rmin < 0 || rmax >= _nglobalrows) {
 			printf("cPetscDistMatrix::create_globalindices(...) row index out of range\n");
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
-		if (cmin<0 || cmax >= _nglobalcols){
+		if (cmin < 0 || cmax >= _nglobalcols) {
 			printf("cPetscDistMatrix::create_globalindices(...) column index out of range\n");
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
@@ -945,13 +950,13 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		cOwnership cown = columnownership();
 
 		//Preallocate
-		for (PetscInt i = 0; i<nnz; ++i){
-			if (rown.owns(rowind[i])){
+		for (PetscInt i = 0; i < nnz; ++i) {
+			if (rown.owns(rowind[i])) {
 				PetscInt lr = lri(rowind[i]);
-				if (cown.owns(colind[i])){
+				if (cown.owns(colind[i])) {
 					d_nnz[lr]++;
 				}
-				else{
+				else {
 					o_nnz[lr]++;
 				}
 			}
@@ -959,15 +964,15 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 
 		//Cater for duplicates in one location
 		PetscInt nlc = nlocalcols();
-		for (PetscInt k = 0; k < nlr; k++){
+		for (PetscInt k = 0; k < nlr; k++) {
 			if (d_nnz[k] > nlc)d_nnz[k] = nlc;
 			if (o_nnz[k] > _nglobalcols - nlc)o_nnz[k] = _nglobalcols - nlc;
 		}
 		ierr = MatMPIAIJSetPreallocation(mat(), 0, d_nnz.data(), 0, o_nnz.data()); CHKERR(ierr);
 
 		//Now set the values
-		for (PetscInt i = 0; i < nnz; ++i){
-			if (rown.owns(rowind[i])){
+		for (PetscInt i = 0; i < nnz; ++i) {
+			if (rown.owns(rowind[i])) {
 				ierr = MatSetValue(mat(), rowind[i], colind[i], values[i], ADD_VALUES); CHKERR(ierr);
 			}
 		}
@@ -978,19 +983,20 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 
 	bool preallocate(const PetscInt d_nz, const PetscInt o_nz) const
 	{
-		PetscErrorCode ierr = MatMPIAIJSetPreallocation(mat(), d_nz, PETSC_NULL, o_nz, PETSC_NULL); CHKERR(ierr);
+		PetscErrorCode ierr = MatMPIAIJSetPreallocation(mat(), d_nz, PETSC_NULLPTR, o_nz, PETSC_NULLPTR); CHKERR(ierr);
 		return true;
 	}
 
 	bool preallocate(std::vector<PetscInt>& d_nnz, std::vector<PetscInt>& o_nnz) const
 	{
-		PetscErrorCode ierr = MatMPIAIJSetPreallocation(mat(), (PetscInt)PETSC_NULL, d_nnz.data(), (PetscInt)PETSC_NULL, o_nnz.data());
+		const PetscInt ignore = 0;
+		PetscErrorCode ierr = MatMPIAIJSetPreallocation(mat(), ignore, d_nnz.data(), ignore, o_nnz.data());
 		CHKERR(ierr);
 		return true;
 	}
 
 	bool inownerdiagonalblock(const PetscInt& ri, const PetscInt& ci) const
-	{		
+	{
 		if (rowownership().owns(ri) && columnownership().owns(ci)) return true;
 		else return false;
 	}
@@ -1001,13 +1007,13 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 	}
 
 	bool isassembled() const {
-		if (mat() == PETSC_NULL)return false;
+		if (mat() == PETSC_NULLPTR)return false;
 		PetscBool status;
 		PetscErrorCode ierr = MatAssembled(mat(), &status); CHKERR(ierr);
 		if (status == PETSC_TRUE)return true;
 		return false;
 	}
-	
+
 	void set(const PetscInt globalrow, const PetscInt globalcol, double value)
 	{
 		PetscErrorCode  ierr;
@@ -1015,47 +1021,47 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		CHKERR(ierr);
 	};
 
-	bool set_diagonal_local(const std::vector<double>& localdiagonal){
-		
-		if (nglobalrows() != nglobalcols()){
+	bool set_diagonal_local(const std::vector<double>& localdiagonal) {
+
+		if (nglobalrows() != nglobalcols()) {
 			printf("cPetscDistMatrix::set_diagonal_local() not a square matrix\n");
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
-		else if((int)localdiagonal.size() != nlocalrows()){
+		else if ((int)localdiagonal.size() != nlocalrows()) {
 			printf("cPetscDistMatrix::set_diagonal_local() incompatible size\n");
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
-		
+
 		PetscErrorCode ierr;
 		const cOwnership r = rowownership();
 		PetscInt k = 0;
-		for (PetscInt gi = r.start; gi < r.end; gi++){
+		for (PetscInt gi = r.start; gi < r.end; gi++) {
 			ierr = MatSetValue(mat(), gi, gi, localdiagonal[k], INSERT_VALUES); CHKERR(ierr);
 			k++;
 		}
-		assemble();		
+		assemble();
 		return true;
 	}
 
-	PetscErrorCode setrow(const PetscInt globalrow,  const std::vector<PetscInt>& globalcols, const std::vector<double>& values)
-	{				
+	PetscErrorCode setrow(const PetscInt globalrow, const std::vector<PetscInt>& globalcols, const std::vector<double>& values)
+	{
 		PetscErrorCode  ierr;
-		ierr = MatSetValues(mat(),1,&globalrow, (PetscInt)globalcols.size(),globalcols.data(),values.data(),INSERT_VALUES); CHKERR(ierr);
+		ierr = MatSetValues(mat(), 1, &globalrow, (PetscInt)globalcols.size(), globalcols.data(), values.data(), INSERT_VALUES); CHKERR(ierr);
 		return ierr;
 	}
 
-	PetscErrorCode setrowdense(const PetscInt globalrow,  const std::vector<PetscInt>& globalcols, const std::vector<double>& rowvalues)
-	{		
-		PetscErrorCode  ierr;		
+	PetscErrorCode setrowdense(const PetscInt globalrow, const std::vector<PetscInt>& globalcols, const std::vector<double>& rowvalues)
+	{
+		PetscErrorCode  ierr;
 		PetscInt nlr = nlocalrows();
-		PetscInt nc  = nglobalcols();
-		double* a=NULL;
-		Mat lMat;		
+		PetscInt nc = nglobalcols();
+		double* a = NULL;
+		Mat lMat;
 		PetscInt localrow = lri(globalrow);
 		ierr = MatDenseGetLocalMatrix(mat(), &lMat); CHKERR(ierr);
 		ierr = MatDenseGetArray(lMat, &a); CHKERR(ierr);
-		for(PetscInt j=0; j<nc; ++j){ 			
-			a[localrow + j*nlr] = rowvalues[j];
+		for (PetscInt j = 0; j < nc; ++j) {
+			a[localrow + j * nlr] = rowvalues[j];
 		}
 		ierr = MatDenseRestoreArray(lMat, &a); CHKERR(ierr);
 		return ierr;
@@ -1063,27 +1069,27 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 
 	double get(const PetscInt globalrow, const PetscInt globalcol) const
 	{
-		double value;		
+		double value;
 		PetscErrorCode ierr = MatGetValues(mat(), 1, &globalrow, 1, &globalcol, &value); CHKERR(ierr);
 		return value;
 	};
 
-	PetscErrorCode assemble(){
+	PetscErrorCode assemble() {
 		PetscErrorCode ierr;
 		ierr = MatAssemblyBegin(mat(), MAT_FINAL_ASSEMBLY); CHKERR(ierr);
 		ierr = MatAssemblyEnd(mat(), MAT_FINAL_ASSEMBLY); CHKERR(ierr);
 		return ierr;
 	};
 
-	void add(const cPetscDistMatrix& A, const double s=1.0)
-	{					
+	void add(const cPetscDistMatrix& A, const double s = 1.0)
+	{
 		PetscErrorCode ierr = MatAXPY(mat(), s, A.mat(), DIFFERENT_NONZERO_PATTERN); CHKERR(ierr);
 	}
 
-	void setindexset(){
+	void setindexset() {
 		IS isrows, iscols;
 		PetscInt lnrow, lncol;
-		const PetscInt *rind, *cind;
+		const PetscInt* rind, * cind;
 		MatGetOwnershipIS(mat(), &isrows, &iscols);
 		ISGetLocalSize(isrows, &lnrow);
 		ISGetLocalSize(iscols, &lncol);
@@ -1164,10 +1170,10 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 		return s;
 	}
 
-	void printinfostring(int rank=0) const
+	void printinfostring(int rank = 0) const
 	{
 		std::string s = infostring();
-		if (mpirank() == rank){
+		if (mpirank() == rank) {
 			printf(s.c_str());
 			fflush(stdout);
 		}
@@ -1177,26 +1183,26 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 	{
 		printf("Matrix (%s) size = %d x %d\n", cname(), nglobalrows(), nglobalcols());
 	}
-	
+
 	void printdistributions() const
 	{
-		for (int i = 0; i < mpisize(); i++){
+		for (int i = 0; i < mpisize(); i++) {
 			mpibarrier();
-			if (i == mpirank()){
+			if (i == mpirank()) {
 				printf("%s rank %d owns rows %d to %d  - total of %d rows\n", mpiprocname().c_str(), mpirank(), rowownership().start, rowownership().end - 1, nlocalrows());
 				fflush(stdout);
-			}			
+			}
 		}
 	}
-	
+
 	void printvalues(const std::string& format = "%7.3lf\t") const
 	{
 		mpibarrier();
-		for (int p = 0; p<mpisize(); p++){
+		for (int p = 0; p < mpisize(); p++) {
 			mpibarrier();
-			if (p == mpirank()){
-				for (PetscInt i = rowownership().start; i<rowownership().end; i++){
-					for (PetscInt j = 0; j<nglobalcols(); j++){
+			if (p == mpirank()) {
+				for (PetscInt i = rowownership().start; i < rowownership().end; i++) {
+					for (PetscInt j = 0; j < nglobalcols(); j++) {
 						double val;
 						MatGetValue(mat(), i, j, &val);
 						printf(format.c_str(), val);
@@ -1210,10 +1216,10 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 	PetscErrorCode writetextfile(const std::string& filename)const
 	{
 		std::string mtype = type();
-		if (mtype == "mpiaij" || mtype == "seqaij"){
+		if (mtype == "mpiaij" || mtype == "seqaij") {
 			writetextfilesparse(filename);
 		}
-		else if (mtype == "mpidense" || mtype == "seqdense" || mtype == "elemental"){
+		else if (mtype == "mpidense" || mtype == "seqdense" || mtype == "elemental") {
 			PetscViewer viewer;
 			PetscViewerASCIIOpen(mpicomm(), filename.c_str(), &viewer);
 			MatView(mat(), viewer);
@@ -1224,38 +1230,38 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 
 	PetscErrorCode writetextfilesparse(const std::string& filename) const
 	{
-		for (int p = 0; p<mpisize(); p++){
+		for (int p = 0; p < mpisize(); p++) {
 			mpibarrier();
-			if (p == mpirank()){
+			if (p == mpirank()) {
 				FILE* fp;
-				if (p == 0){
+				if (p == 0) {
 					fp = fileopen(filename, "w");
 				}
-				else{
+				else {
 					fp = fileopen(filename, "a");
 				}
 
 				bool writezeroatlowerright = true;
 				cOwnership r = rowownership();
-				for (PetscInt gi = r.start; gi<r.end; gi++){
+				for (PetscInt gi = r.start; gi < r.end; gi++) {
 					PetscInt nnz;
 					const PetscInt* colind;
 					const double* val;
 
 					PetscErrorCode ierr = MatGetRow(mat(), gi, &nnz, &colind, &val); CHKERR(ierr);
-					for (PetscInt j = 0; j<nnz; j++){
+					for (PetscInt j = 0; j < nnz; j++) {
 						fprintf(fp, "%d\t%d\t%20.16le\n", gi, colind[j], val[j]);
 					}
 
-					if (gi == nglobalrows() - 1){
-						if (colind[nnz - 1] == nglobalcols() - 1){
+					if (gi == nglobalrows() - 1) {
+						if (colind[nnz - 1] == nglobalcols() - 1) {
 							writezeroatlowerright = false;
 						}
 					}
 					ierr = MatRestoreRow(mat(), gi, &nnz, &colind, &val); CHKERR(ierr);
 				}
 				//Always write a zero into last row/col if it is empty
-				if (p == mpisize() - 1 && writezeroatlowerright){
+				if (p == mpisize() - 1 && writezeroatlowerright) {
 					fprintf(fp, "%d\t%d\t%20.16le\n", nglobalrows() - 1, nglobalcols() - 1, 0.0);
 				}
 
@@ -1269,30 +1275,30 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 
 	void vecmult(const cPetscDistVector& x, cPetscDistVector& b) const
 	{
-		if(nglobalcols() != x.globalsize()){
+		if (nglobalcols() != x.globalsize()) {
 			printf("cPetscDistMatrix::vecmult() matrix %s and vector %s dimensions are not compatible\n", cname(), x.cname());
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
 
-		if (nglobalrows() != b.globalsize()){
+		if (nglobalrows() != b.globalsize()) {
 			printf("cPetscDistMatrix::vecmult() matrix %s and vector %s dimensions are not compatible\n", cname(), b.cname());
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
-		
+
 		PetscErrorCode ierr = MatMult(mat(), x.vec(), b.vec()); CHKERR(ierr);
 	}
 
 	cPetscDistVector vecmult(const cPetscDistVector& x) const
 	{
-	cPetscDistVector b(mpicomm(), nlocalrows(), nglobalrows());
-	vecmult(x, b);
-	return b;
+		cPetscDistVector b(mpicomm(), nlocalrows(), nglobalrows());
+		vecmult(x, b);
+		return b;
 	}
 
 	void matmult(const cPetscDistMatrix& B, cPetscDistMatrix& C) const
 	{
 		PetscErrorCode ierr;
-		if (nglobalcols() != B.nglobalrows()){
+		if (nglobalcols() != B.nglobalrows()) {
 			printf("cPetscDistMatrix::matmult() matrix %s and matrix %s dimensions are not compatible\n", cname(), B.cname());
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
@@ -1300,44 +1306,44 @@ ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
 	}
 
 	cPetscDistMatrix matmult(const cPetscDistMatrix& B) const
-	{				
+	{
 		cPetscDistMatrix C;
 		matmult(B, C);
 		return C;
 	}
-	
+
 	void transvecmult(const cPetscDistVector& x, cPetscDistVector& b) const
-	{		
-	PetscErrorCode ierr = MatMultTranspose(mat(), x.vec(), b.ncvec()); CHKERR(ierr);
+	{
+		PetscErrorCode ierr = MatMultTranspose(mat(), x.vec(), b.ncvec()); CHKERR(ierr);
 	}
 
 	cPetscDistVector transvecmult(const cPetscDistVector& x) const
-	{		
-cPetscDistVector b(mpicomm(), nlocalcols(), nglobalcols());
-transvecmult(x, b);
-return b;
+	{
+		cPetscDistVector b(mpicomm(), nlocalcols(), nglobalcols());
+		transvecmult(x, b);
+		return b;
 	}
 
 	void transmatmult(const cPetscDistMatrix& B, cPetscDistMatrix& C) const
 	{
 		PetscErrorCode ierr;
-		if (nglobalrows() != B.nglobalrows()){
+		if (nglobalrows() != B.nglobalrows()) {
 			printf("cPetscDistMatrix::transmatmult() matrix %s and matrix %s dimensions are not compatible\n", cname(), B.cname());
 			throw(strprint("Error: exception throw from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__));
 		}
 		ierr = MatTransposeMatMult(mat(), B.mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, C.ncmatptr()); CHKERR(ierr);
 	}
-	
+
 	cPetscDistMatrix transmatmult(const cPetscDistMatrix& B) const
-	{		
+	{
 		cPetscDistMatrix C;
-		transmatmult(B,C);
-		return C;		
+		transmatmult(B, C);
+		return C;
 	}
 
 	void leftdiagonalscale(const cPetscDistVector& v) const
 	{
-		PetscErrorCode ierr = MatDiagonalScale(mat(), v.vec(),PETSC_NULL);	CHKERR(ierr);
+		PetscErrorCode ierr = MatDiagonalScale(mat(), v.vec(), PETSC_NULLPTR);	CHKERR(ierr);
 		return;
 	}
 
@@ -1350,10 +1356,10 @@ return b;
 	{
 		//A x = b
 		cPetscDistVector x;//solution vector that will be returned
-		if (initialguess.globalsize() == 0){
-			x.create("x",mpicomm(), nlocalcols(), nglobalcols(), 0.0);
+		if (initialguess.globalsize() == 0) {
+			x.create("x", mpicomm(), nlocalcols(), nglobalcols(), 0.0);
 		}
-		else{
+		else {
 			x = initialguess;
 		}
 
@@ -1365,7 +1371,7 @@ return b;
 		PetscErrorCode ierr;
 		ierr = KSPCreate(mpicomm(), &ksp); CHKERR(ierr);
 #if PETSC_VERSION_LT(3,5,0)
-		ierr = KSPSetOperators(ksp, mat(), mat(), SAME_NONZERO_PATTERN); CHKERR(ierr);		
+		ierr = KSPSetOperators(ksp, mat(), mat(), SAME_NONZERO_PATTERN); CHKERR(ierr);
 #else
 		ierr = KSPSetOperators(ksp, mat(), mat()); CHKERR(ierr);
 #endif
@@ -1410,7 +1416,7 @@ return b;
 		std::string reasonstring = std::string(KSPConvergedReasons[reason]);
 		ierr = KSPDestroy(&ksp);
 
-		if (mpirank() == 0){
+		if (mpirank() == 0) {
 			std::string s;
 			s += strprint("CG %s ", reasonstring.c_str());
 			s += strprint("%d Its ", niterations);
@@ -1430,8 +1436,8 @@ return b;
 	{
 		printf("Entering cPetscDistMatrix& operator=(const cPetscDistMatrix& rhs)\n");
 		PetscErrorCode ierr;
-		deallocate();		
-		pMat = new Mat;		
+		deallocate();
+		pMat = new Mat;
 		ierr = MatDuplicate(rhs.mat(), MAT_COPY_VALUES, ncmatptr()); CHKERR(ierr);
 		printf("Leaving cPetscDistMatrix& operator=(const cPetscDistMatrix& rhs)\n");
 		return *this;
@@ -1449,33 +1455,33 @@ return b;
 		return *this;
 	}
 
-	cPetscDistVector operator*(const cPetscDistVector& x) const 
+	cPetscDistVector operator*(const cPetscDistVector& x) const
 	{
-	cPetscDistVector b = vecmult(x);
-	return b;
+		cPetscDistVector b = vecmult(x);
+		return b;
 	}
-	
+
 	cPetscDistVector operator^(const cPetscDistVector& x) const
 	{
 		//b = A'b;
-	cPetscDistVector b = transvecmult(x);
-	return b;
+		cPetscDistVector b = transvecmult(x);
+		return b;
 	}
 
-	cPetscDistMatrix operator+(const cPetscDistMatrix& B) const 
-	{		
+	cPetscDistMatrix operator+(const cPetscDistMatrix& B) const
+	{
 		cPetscDistMatrix C(*this);
 		C += B;
 		return C;
 	}
 
-	cPetscDistMatrix operator*(const double& s) const 
+	cPetscDistMatrix operator*(const double& s) const
 	{
 		cPetscDistMatrix B(*this);
 		PetscErrorCode ierr = MatScale(B.mat(), s); CHKERR(ierr);
-		return B;		
+		return B;
 	}
-	
+
 	cPetscDistMatrix operator*(const cPetscDistMatrix& B) const
 	{
 		cPetscDistMatrix C;
@@ -1498,24 +1504,24 @@ class cPetscDistShellMatrix : public cPetscObject {
 private:
 
 	//Private data members		
-	Mat* pMat = PETSC_NULL;
+	Mat* pMat = PETSC_NULLPTR;
 
-	const PetscObject* pobj() const{
-		if (pMat) return (PetscObject*) pMat;
-		else return (PetscObject*) PETSC_NULL;
+	const PetscObject* pobj() const {
+		if (pMat) return (PetscObject*)pMat;
+		else return (PetscObject*)PETSC_NULLPTR;
 	}
 
-public:		
+public:
 	bool _converged;
 	KSPConvergedReason _conv_reason_code;
 	std::string _conv_reason_str;
-	PetscInt _niterations;	
+	PetscInt _niterations;
 	double _rnorm_start;
-	double _rnorm_end;	
+	double _rnorm_end;
 	double _solve_time;
 
 	//Constructors & Destructors		
-	cPetscDistShellMatrix(const std::string& name, const MPI_Comm& comm, const PetscInt& nlocalrows, const PetscInt& nlocalcols, const PetscInt& nglobalrows, const PetscInt& nglobalcols, void* context){
+	cPetscDistShellMatrix(const std::string& name, const MPI_Comm& comm, const PetscInt& nlocalrows, const PetscInt& nlocalcols, const PetscInt& nglobalrows, const PetscInt& nglobalcols, void* context) {
 		create(name, comm, nlocalrows, nlocalcols, nglobalrows, nglobalcols, context);
 	}
 
@@ -1531,23 +1537,23 @@ public:
 
 	//Member Functions			
 	void create(const std::string& name, const MPI_Comm& comm, const PetscInt& _nlocalrows, const PetscInt& _nlocalcols, const PetscInt& _nglobalrows, const PetscInt& _nglobalcols, void* context)
-	{		
-		PetscErrorCode ierr;		
+	{
+		PetscErrorCode ierr;
 		pMat = new Mat;
 		ierr = MatCreateShell(comm,
 			_nlocalrows, _nlocalcols,
 			_nglobalrows, _nglobalcols,
-			context,ncmatptr()); CHKERR(ierr);		
+			context, ncmatptr()); CHKERR(ierr);
 		setname(name);
 	}
 
-	bool set_multiply_function_vec(void* func){
+	bool set_multiply_function_vec(void* func) {
 		PetscErrorCode ierr;
-		ierr = MatShellSetOperation(mat(), MATOP_MULT,(void(*)(void))func); CHKERR(ierr);		
+		ierr = MatShellSetOperation(mat(), MATOP_MULT, (void(*)(void))func); CHKERR(ierr);
 		return true;
 	}
 
-	
+
 	PetscInt nglobalrows() const
 	{
 		PetscErrorCode ierr;
@@ -1573,7 +1579,7 @@ public:
 	};
 
 	PetscInt nlocalcols() const
-	{		
+	{
 		PetscErrorCode ierr;
 		PetscInt m, n;
 		ierr = MatGetLocalSize(mat(), &m, &n); CHKERR(ierr);
@@ -1581,7 +1587,7 @@ public:
 	};
 
 	cPetscDistVector vecmult(const cPetscDistVector& x) const
-	{		
+	{
 		cPetscDistVector b(mpicomm(), nlocalcols(), nglobalcols());
 		vecmult(x, b);
 		return b;
@@ -1589,20 +1595,20 @@ public:
 
 	void vecmult(const cPetscDistVector& x, cPetscDistVector& b) const
 	{
-	PetscErrorCode ierr = MatMult(mat(), x.vec(), b.vec()); CHKERR(ierr);
+		PetscErrorCode ierr = MatMult(mat(), x.vec(), b.vec()); CHKERR(ierr);
 	}
 
-	static PetscErrorCode kspmonitor(KSP ksp, PetscInt n, double rnorm, void *context)
-	{				
+	static PetscErrorCode kspmonitor(KSP ksp, PetscInt n, double rnorm, void* context)
+	{
 		int k;
-		if (n>1000)k = 1000;
-		else if (n>100)k = 100;
-		else if (n>10)k = 10;
+		if (n > 1000)k = 1000;
+		else if (n > 100)k = 100;
+		else if (n > 10)k = 10;
 		else k = 1;
 
-		if (n%k == 0){
+		if (n % k == 0) {
 			cPetscDistShellMatrix* pA = (cPetscDistShellMatrix*)context;
-			if (pA->mpirank() == 0){
+			if (pA->mpirank() == 0) {
 				//printf("CG Iteration %6d residual norm = %8.6le\n", n, rnorm);
 			}
 			if (n == 0) pA->_rnorm_start = rnorm;
@@ -1611,13 +1617,13 @@ public:
 	}
 
 	cPetscDistVector solve_CG(const cPetscDistMatrix& P, const cPetscDistVector& b, const cPetscDistVector& initialguess = cPetscDistVector())
-	{		
+	{
 		//A x = b
 		cPetscDistVector x;//solution vector that will be returned
-		if (initialguess.globalsize() == 0){			
-			x.create("x",mpicomm(), nlocalcols(), nglobalcols(), 0.0);
+		if (initialguess.globalsize() == 0) {
+			x.create("x", mpicomm(), nlocalcols(), nglobalcols(), 0.0);
 		}
-		else{	
+		else {
 			x = initialguess;
 		}
 
@@ -1652,38 +1658,38 @@ public:
 		//ierr = KSPSetTolerances(ksp, PETSC_DEFAULT,PETSC_DEFAULT,PETSC_DEFAULT, maxits); CHKERR(ierr);
 
 		//Point to function that monitors/outputs convergence progress at each CG iteration
-		ierr = KSPMonitorSet(ksp, kspmonitor, this, PETSC_NULL); CHKERR(ierr);
+		ierr = KSPMonitorSet(ksp, kspmonitor, this, PETSC_NULLPTR); CHKERR(ierr);
 		//See also PETSC functions KSPMonitorDefault, KSPMonitorTrueResidualNorm, KSPMonitorTrueResidualMaxNorm
-		//ierr = KSPMonitorSet(ksp, KSPMonitorDefault, PETSC_NULL, PETSC_NULL); CHKERR(ierr);
-				
+		//ierr = KSPMonitorSet(ksp, KSPMonitorDefault, PETSC_NULLPTR, PETSC_NULLPTR); CHKERR(ierr);
+
 		//Setup and run the Conjugate Gradients algorithm
 		ierr = KSPSetUp(ksp); CHKERR(ierr);
 
 		double t1 = gettime();
 		ierr = KSPSolve(ksp, b.vec(), x.vec()); CHKERR(ierr);
 		double t2 = gettime();
-				
+
 		ierr = KSPGetIterationNumber(ksp, &_niterations); CHKERR(ierr);
 		ierr = KSPGetResidualNorm(ksp, &_rnorm_end); CHKERR(ierr);
 		ierr = KSPGetConvergedReason(ksp, &_conv_reason_code); CHKERR(ierr);
-		
+
 		_solve_time = t2 - t1;
 		_conv_reason_str = std::string(KSPConvergedReasons[_conv_reason_code]);
-		if (_conv_reason_code <= 0){
+		if (_conv_reason_code <= 0) {
 			_converged = false;
 		}
-		else{
+		else {
 			_converged = true;
 		}
 
-		ierr = KSPDestroy(&ksp);		
+		ierr = KSPDestroy(&ksp);
 		return x;
 	}
-	
-	std::string convergence_summary(){		
+
+	std::string convergence_summary() {
 		std::string s;
 		if (_converged) s += strprint("CG Converged\n");
-		else  s += strprint("CG Diverged\n");		
+		else  s += strprint("CG Diverged\n");
 		s += strprint("\tCG Iterations=%d\n", _niterations);
 		s += strprint("\tReason = %d (%s)\n", _conv_reason_code, _conv_reason_str.c_str());
 		s += strprint("\tResidual norm at start = %8.6le\n", _rnorm_start);
@@ -1695,11 +1701,11 @@ public:
 	}
 
 	//Operators
-	cPetscDistVector operator*(const cPetscDistVector& x) const 
-	{				
-	cPetscDistVector b(mpicomm(), nlocalcols(), nglobalcols());
-	vecmult(x, b);
-	return b;
+	cPetscDistVector operator*(const cPetscDistVector& x) const
+	{
+		cPetscDistVector b(mpicomm(), nlocalcols(), nglobalcols());
+		vecmult(x, b);
+		return b;
 	}
 
 };

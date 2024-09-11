@@ -34,9 +34,6 @@
     <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\petsc_wrapper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\submodules\cpp-utils\include\stacktrace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -50,6 +47,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\petsc_wrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
