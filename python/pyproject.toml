@@ -1,6 +1,6 @@
 [build-system]
-requires = ["meson-python"]
-build-backend = "mesonpy"
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "gatdaem1d"
@@ -10,7 +10,10 @@ readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
 authors = [{ name = "Ross C Brodie", email = "ross.c.brodie@ga.gov.au" }]
 keywords = ["electromagnetic", "geophysics"]
-dependencies = ["numpy"]
+dependencies = [
+    "numpy",
+    "matplotlib"
+]
 classifiers = [
     'License :: OSI Approved',
     'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
@@ -19,8 +22,8 @@ classifiers = [
     'Topic :: Electromagnetic :: Airborne :: Forward modelling :: Geophysics'
 ]
 
-[tool.spin]
-package = 'gatdaem1d'
-
 [tool.setuptools.packages.find]
-gatdaem1d = ["."]
+where = ["."]
+
+[tool.setuptools.package-data]
+gatdaem1d = ['gatdaem1d.*']
