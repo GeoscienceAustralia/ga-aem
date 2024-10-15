@@ -12,7 +12,7 @@ cptr = np.ctypeslib.as_ctypes;
 #Function to load the shared library
 def load_library():
     files = os.listdir(os.path.dirname(os.path.realpath(__file__)))
-    libname = [file for file in files if 'gatdaem1d_ext' in file][0]
+    libname = [file for file in files if 'gatdaem1d' in file][0]
     libname = os.path.join(os.path.dirname(os.path.realpath(__file__)),libname)
     lib = ctypes.CDLL(libname)
     return lib;
