@@ -3,7 +3,7 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cpp .o
 
-cxxflags   += -fPIC
+cxxflags   += -fPIC -O3
 ldflags    += -shared
 bindir     = gatdaem1d
 
