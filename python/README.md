@@ -4,23 +4,20 @@
 The Python (>=v3.5) interface consists of a C/C++ shared library (.so on Linux or .dll on Windows) called gatdaem1d which contains time-domain forward modelling and derivative functions which are called by the Python interpreter.
 
 ## Compiling and installing the C/C++ shared libraries
-First the shared library needs to be built with CMake.  See one of the CMake build scripts in the root directory of the ga-aem source code repository. If you are only interested in the Python interface, you need only build the ***`python_bindings`*** target.
+Ensure that the GNU C++ compiler is available, and FFTW has been installed.
 
-## Install directory contents
-After being built successfully the install directory should contain,
-- [ga-aem-install-dir]/python contains the package set up or installation function `setup.py`.
-- [ga-aem-install-dir]/python/gatdaem1d contains the file `__init__.py` which is the package's Python classes and function code. It is also where the compiled shared library will reside after compilation.
-	- On Linux the shared library is [ga-aem-install-dir]/python/gatdaem1d/gatdaem1d.so.
-	- On Windows the shared library is [ga-aem-install-dir]/python/gatdaem1d/gatdaem1d.dll.
-- [ga-aem-install-dir]/python/examples contains example Python usage code.
+Mac OSX currently has issues using cmake and brew installed gcc compilers. So we are stuck using a Makefile. Simply type "make" in the python folder.  On Linux, the easiest option is to use "make" also.
+
+Two environment variables need to be set before compilation using "export cxx=g++" and "export FFTW_ROOT=<path to FFTW>".
+
+On Windows, follow the documentation in the root folder.  Once the library is compiled, go ahead and pip install.
 
 ## PIP install of the Python package
 - To install as a python package you can then,
 ```bash
-	cd [ga-aem-install-dir]/python
-	python -m pip install .
+	pip install .
 ```
-- Note that **`python`** may need to be **`python3`** on your system.
+- Note that **`python`** may need to be **`python3`** on your system, and make sure the correct environment is activated/sourced.
 
 ## Examples
 - The directory [ga-aem-install-dir]/python/examples contains an example of how to use the gatdaem1d package.
