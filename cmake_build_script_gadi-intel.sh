@@ -1,6 +1,6 @@
 #!/bin/sh
 
-module load intel-compiler-llvm/2024.0.2
+module load intel-compiler-llvm/2024.2.1
 module load cmake/3.21.4
 module load fftw3/3.3.8
 module load netcdf/4.7.1
