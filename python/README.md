@@ -17,7 +17,9 @@ On Windows, follow the documentation in the root folder.  Once the library is co
 ```bash
 	pip install .
 ```
-- Note that **`python`** may need to be **`python3`** on your system, and make sure the correct environment is activated/sourced.
+- Note 1: You may need to update pip with **`pip install --upgrade pip`** before running the **`pip install .`** command.  This is particularly the case if the **`pip install .`** command reports "...Building wheels for collected packages: UNKNOWN...".
+- Note 2: The **`python`** command may need to be **`python3`** on your system.
+- Note 3: Make sure the correct environment is activated/sourced.
 
 ## Examples
 - The directory [ga-aem-install-dir]/python/examples contains an example of how to use the gatdaem1d package.
