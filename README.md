@@ -166,7 +166,10 @@ This may be useful if, for example, you do not have the third-party packages ins
 - See [*here*](visualstudio/README.md) for more details on how to build ga-aem using the Microsoft Visual Studio IDE.
 
 # Releases
-
+## v2.0.3-Release-20241114
+- Revert to Makefiles instead of CMmake for Python build on linux.  Plus change to pyproject.toml inplace of setup.py.
+## v2.0.2-Release-20240911
+- Catered for deprecation of PETSC_NULL from Petsc v3.19 onward.
 ## v2.0.1-Release-20240619
 - Changed Pelton and ColeCole index for IP modelling in Matlab
 - Allowed line number in column index 0 for ctlinedata* programs
