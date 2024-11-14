@@ -11,12 +11,9 @@ cptr = np.ctypeslib.as_ctypes;
 
 #Function to load the shared library
 def load_library():
-    import platform;
-    if(platform.system() == "Windows"):
-        ext = '.dll'
-    else:
-        ext = '.so'
-    libname = os.path.join(os.path.dirname(os.path.realpath(__file__)),"gatdaem1d"+ext)
+    files = os.listdir(os.path.dirname(os.path.realpath(__file__)))
+    libname = [file for file in files if 'gatdaem1d' in file][0]
+    libname = os.path.join(os.path.dirname(os.path.realpath(__file__)),libname)
     lib = ctypes.CDLL(libname)
     return lib;
 

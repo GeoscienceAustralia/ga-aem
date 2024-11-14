@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\lem.h" />
+    <ClInclude Include="..\..\src\petsc_wrapper.h" />
     <ClInclude Include="..\..\src\tdemsystem.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\conductivity_logs.h" />
@@ -104,7 +105,6 @@
     <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\petsc_wrapper.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\stacktrace.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\stopwatch.h" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h" />

@@ -43,12 +43,15 @@ For Windows users who do not wish to compile the programs themselves a package o
 ### For Python users
 - Python interface via shared library with examples.
 - See [*here*](python/README.md) for details.
-### For developers/coders
-- example_forward_model.exe - (for developers) simple C++ language example of how to use the code in C++ to run a forward models.
-- example_forward_model_c.exe - (for developers) simple C language example of how to use the code in C++ to run a forward models.
 ### User documentation
+- <span style="color:red">***Note that the User Manual has not yet been updated to reflect changes made for v2.0.0-Release-20240424. However the examples and control files have been updated to reflect the latest changes to the code.***</span>
 - [*User Manual*](docs/GA-AEM_Programs_User_Manual.pdf).
 - [*Theoretical details for GALEISBSTDEM*](docs/GALEISBSTDEM_Inversion_Algorithm_Theoretical_Details.pdf).
+### For developers/coders
+- example_forward_model.exe - simple example of how to use ga-aem via C++ language code to run forward models.
+	- does not get installed as its only useful for developers.
+- example_forward_model_c.exe - simple example of how to use ga-aem via C language code to run forward models.
+	- does not get installed as its only useful for developers.
 
 # Cloning the repository
 When initially cloning the repository in git you should use the `--recursive` option so that all of the submodules and their respective submodules are initialized and populated with code.
@@ -163,7 +166,15 @@ This may be useful if, for example, you do not have the third-party packages ins
 - See [*here*](visualstudio/README.md) for more details on how to build ga-aem using the Microsoft Visual Studio IDE.
 
 # Releases
-
+## v2.0.3-Release-20241114
+- Revert to Makefiles instead of CMmake for Python build on linux.  Plus change to pyproject.toml inplace of setup.py.
+## v2.0.2-Release-20240911
+- Catered for deprecation of PETSC_NULL from Petsc v3.19 onward.
+## v2.0.1-Release-20240619
+- Changed Pelton and ColeCole index for IP modelling in Matlab
+- Allowed line number in column index 0 for ctlinedata* programs
+- Linux script cmake_build_python_bindings.sh added for building python bindings alone
+- Allow gatdaem1d.dylib as shared library name in python bindings
 ## v2.0.0-Release-20240424
 - Functionality changes to deterministic inversion program (galeisbstdem.exe)
 	- Added XZ amplitude inversion functionality.

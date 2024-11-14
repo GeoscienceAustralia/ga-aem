@@ -118,14 +118,16 @@ set(target example_forward_model)
 add_executable(${target} src/example_forward_model.cpp)
 target_link_libraries(${target} PRIVATE cpp-utils)
 target_link_libraries(${target} PRIVATE FFTW::FFTW)
-install(TARGETS ${target} DESTINATION bin OPTIONAL)
+# There is no need to install this example as its just for developers
+#install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Add the pure C example executable
 set(target example_forward_model_c)
 add_executable(${target} src/example_forward_model_c.c)
 target_link_libraries(${target} PRIVATE gatdaem1d-static)
 target_link_libraries(${target} PRIVATE cpp-utils)
-install(TARGETS ${target} DESTINATION bin OPTIONAL)
+# There is no need to install this example as its just for developers
+#install(TARGETS ${target} DESTINATION bin OPTIONAL)
 
 # Add galeisbstdem executable
 set(target galeisbstdem)

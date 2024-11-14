@@ -267,11 +267,11 @@ public:
 
 		HeaderFile = undefinedvalue<std::string>();
 		if (b.getvalue("DfnFile", HeaderFile) == true) {
-			glog.logmsg("Headerfile = %s'\n", HeaderFile.c_str());
+			glog.logmsg("Headerfile = %s\n", HeaderFile.c_str());
 			glog.logmsg("Note: in future please use 'HeaderFile = ...' instead of 'DfnFile = ...'\n");
 		}
 		else if (b.getvalue("HeaderFile", HeaderFile) == true) {
-			glog.logmsg("Headerfile = %s'\n", HeaderFile.c_str());
+			glog.logmsg("Headerfile = %s\n", HeaderFile.c_str());
 		}
 		else {
 			glog.logmsg("No Headerfile defined, columns numbers to be used'\n");
