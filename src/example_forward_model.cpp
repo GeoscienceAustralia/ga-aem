@@ -25,8 +25,8 @@ class cStackTrace gtrace; //The global instance of the stacktrace
 int skytem_example_ip()
 {
 	//Load the AEM system specification files for the Skytem moments //only do this once				
-	//cTDEmSystem S("..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm");	
-	cTDEmSystem S("..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-HM.stm");
+	//cTDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");	
+	cTDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
 	
 
 	//Load the system geometry 
@@ -72,9 +72,9 @@ int skytem_example()
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
 	//LM = Low moment pulse
-	cTDEmSystem LM("..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm");
+	cTDEmSystem LM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");
 	//HM = high moment pulse	
-	cTDEmSystem HM("..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-HM.stm");
+	cTDEmSystem HM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
 
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
@@ -123,9 +123,9 @@ int skytem_computation_time()
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
 	//LM = Low moment pulse
-	cTDEmSystem LM("..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-LM.stm");
+	cTDEmSystem LM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");
 	//HM = high moment pulse	
-	cTDEmSystem HM("..\\..\\examples\\bhmar-skytem\\stmfiles\\Skytem-HM.stm");
+	cTDEmSystem HM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
 
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
@@ -164,8 +164,8 @@ int skytem_computation_time()
 }
 
 int main(int argc, char* argv[])
-{		
-	//skytem_example();		
+{
+	//skytem_example();
 	//skytem_example_ip();
 	skytem_computation_time();
 	prompttocontinue();
