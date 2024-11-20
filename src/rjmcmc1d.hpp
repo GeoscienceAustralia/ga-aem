@@ -19,10 +19,10 @@ Richard L. Taylor, Geoscience Australia.
 #include <iomanip>
 
 //custom headers
-#include "general_utils.h"
-#include "random_utils.h"
-#include "vector_utils.h"
-#include "ptrvec.h"
+#include "general_utils.hpp"
+#include "random_utils.hpp"
+#include "vector_utils.hpp"
+#include "ptrvec.hpp"
 
 //third-party headers
 #ifdef ENABLE_MPI

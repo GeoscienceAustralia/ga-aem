@@ -12,8 +12,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <vector>
 
-#include "inputmanager.h"
-#include "fielddefinition.h"
+#include "inputmanager.hpp"
+#include "fielddefinition.hpp"
 
 class cScaleFactorsStruct {
 

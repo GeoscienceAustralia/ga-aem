@@ -7,11 +7,11 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #include <stdio.h>
-#include "tdemsystem.h"
+#include "tdemsystem.hpp"
 
 #define  EXPORT_FCNS
-#include "shrhelp.h"
-#include "earth1d.h"
+#include "shrhelp.hpp"
+#include "earth1d.hpp"
 #include "gatdaem1d.h"
 
 

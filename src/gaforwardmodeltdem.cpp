@@ -8,13 +8,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <cstring>
 
-#include "gaaem_version.h"
-#include "general_utils.h"
-#include "file_utils.h"
-#include "blocklanguage.h"
-#include "earth1d.h"
-#include "lem.h"
-#include "tdemsystem.h"
+#include "gaaem_version.hpp"
+#include "general_utils.hpp"
+#include "file_utils.hpp"
+#include "blocklanguage.hpp"
+#include "earth1d.hpp"
+#include "lem.hpp"
+#include "tdemsystem.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 

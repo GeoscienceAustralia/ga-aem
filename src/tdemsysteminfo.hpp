@@ -9,8 +9,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #ifndef _tdemsysteminfo_H
 #define _tdemsysteminfo_H
 
-#include "tdemcomponentinfo.h"
-#include "inputmanager.h"
+#include "tdemcomponentinfo.hpp"
+#include "inputmanager.hpp"
 
 class cTDEmSystemInfo {
 

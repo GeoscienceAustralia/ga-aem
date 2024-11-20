@@ -11,9 +11,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <numeric>
 #include <vector>
 
-#include "gaaem_version.h"
-#include "general_utils.h"
-#include "file_utils.h"
+#include "gaaem_version.hpp"
+#include "general_utils.hpp"
+#include "file_utils.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 

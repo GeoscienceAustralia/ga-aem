@@ -15,12 +15,12 @@ Richard L. Taylor, Geoscience Australia.
 #include <memory>
 
 //custom headers
-#include "gaaem_version.h"
-#include "blocklanguage.h"
-#include "fielddefinition.h"
-#include "tdemsystem.h"
-#include "file_formats.h"
-#include "rjmcmc1d.h"
+#include "gaaem_version.hpp"
+#include "blocklanguage.hpp"
+#include "fielddefinition.hpp"
+#include "tdemsystem.hpp"
+#include "file_formats.hpp"
+#include "rjmcmc1d.hpp"
 
 class cTDEmSystemInfo{
 

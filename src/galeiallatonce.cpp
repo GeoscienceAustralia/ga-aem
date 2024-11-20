@@ -15,20 +15,20 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <stdexcept>
 #include <mpi.h>
 
-#include "gaaem_version.h"
-#include "radius_searcher.h"
-#include "file_utils.h"
-#include "file_formats.h"
-#include "lem.h"
-#include "tdemsystem.h"
-#include "polygon.h"
-#include "mpi_wrapper.h"
-#include "petsc_wrapper.h"
+#include "gaaem_version.hpp"
+#include "radius_searcher.hpp"
+#include "file_utils.hpp"
+#include "file_formats.hpp"
+#include "lem.hpp"
+#include "tdemsystem.hpp"
+#include "polygon.hpp"
+#include "mpi_wrapper.hpp"
+#include "petsc_wrapper.hpp"
 
-#include "stopwatch.h"
-#include "conductivity_logs.h"
-#include "radius_searcher.h"
-#include "inversion_line_searcher.h"
+#include "stopwatch.hpp"
+#include "conductivity_logs.hpp"
+#include "radius_searcher.hpp"
+#include "inversion_line_searcher.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 

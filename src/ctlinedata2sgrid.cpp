@@ -11,17 +11,17 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <numeric>
 #include <vector>
 
-#include "gaaem_version.h"
-#include "undefinedvalues.h"
-#include "file_formats.h"
-#include "general_types.h"
-#include "general_utils.h"
-#include "file_utils.h"
-#include "blocklanguage.h"
-#include "geometry3d.h"
-#include "stopwatch.h"
-#include "ctlinedata.h"
-#include "filesplitter.h"
+#include "gaaem_version.hpp"
+#include "undefinedvalues.hpp"
+#include "file_formats.hpp"
+#include "general_types.hpp"
+#include "general_utils.hpp"
+#include "file_utils.hpp"
+#include "blocklanguage.hpp"
+#include "geometry3d.hpp"
+#include "stopwatch.hpp"
+#include "ctlinedata.hpp"
+#include "filesplitter.hpp"
 
 #include "ticpp.h"
 using namespace ticpp;

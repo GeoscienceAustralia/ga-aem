@@ -18,15 +18,15 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <functional>
 #include <variant>
 
-#include "general_types.h"
-#include "string_utils.h"
-#include "vector_utils.h"
+#include "general_types.hpp"
+#include "string_utils.hpp"
+#include "vector_utils.hpp"
 
-#include "airborne_types.h"
-#include "cinverter.h"
-#include "tdemsystem.h"
-#include "tdemsysteminfo.h"
-#include "samplebunch.h"
+#include "airborne_types.hpp"
+#include "cinverter.hpp"
+#include "tdemsystem.hpp"
+#include "tdemsysteminfo.hpp"
+#include "samplebunch.hpp"
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
 

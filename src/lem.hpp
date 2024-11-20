@@ -12,10 +12,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cmath>
 #include <complex>
 #include <vector>
-#include "geometry3d.h"
-#include "general_constants.h"
-#include "general_utils.h"
-#include "earth1d.h"
+#include "geometry3d.hpp"
+#include "general_constants.hpp"
+#include "general_utils.hpp"
+#include "earth1d.hpp"
 
 //Formulation mainly from the book 
 //Geo-Electromagnetism, Wait James, R. Academic Press 1982

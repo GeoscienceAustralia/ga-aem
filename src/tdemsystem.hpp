@@ -12,13 +12,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <stdexcept>
 #include <complex>
 #include "fftw3.h"
-#include "vector_utils.h"
-#include "general_utils.h"
-#include "geometry3d.h"
-#include "blocklanguage.h"
-#include "earth1d.h"
-#include "lem.h"
-#include "stopwatch.h"
+#include "vector_utils.hpp"
+#include "general_utils.hpp"
+#include "geometry3d.hpp"
+#include "blocklanguage.hpp"
+#include "earth1d.hpp"
+#include "lem.hpp"
+#include "stopwatch.hpp"
 
 struct sTDEmNoiseModelComponent{	
 	double MultiplicativeNoise;

@@ -11,7 +11,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <algorithm>
 #include <vector>
-#include <file_utils.h>
+#include <file_utils.hpp>
 
 using DoublePair = std::pair<double, double>;
 

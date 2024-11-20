@@ -16,19 +16,19 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <random>
 
-#include "gaaem_version.h"
-#include "file_utils.h"
-#include "tdemsystem.h"
-#include "vector_utils.h"
-#include "cinverter.h"
-#include "csbsinverter.h"
-#include "logger.h"
-#include "streamredirecter.h"
+#include "gaaem_version.hpp"
+#include "file_utils.hpp"
+#include "tdemsystem.hpp"
+#include "vector_utils.hpp"
+#include "cinverter.hpp"
+#include "csbsinverter.hpp"
+#include "logger.hpp"
+#include "streamredirecter.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 
 #ifdef ENABLE_MPI
-#include "mpi_wrapper.h"
+#include "mpi_wrapper.hpp"
 #endif
 
 #ifdef _OPENMP

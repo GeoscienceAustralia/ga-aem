@@ -12,20 +12,20 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <cstring>
 
-#include "gaaem_version.h"
-#include "undefinedvalues.h"
-#include "general_types.h"
-#include "general_utils.h"
-#include "colormap.h"
-#include "file_utils.h"
-#include "blocklanguage.h"
-#include "geometry3d.h"
-#include "stretch.h"
-#include "file_formats.h"
-#include "filesplitter.h"
-#include "ctlinedata.h"
-#include "gdiplus_utils.h"
-#include "stopwatch.h"
+#include "gaaem_version.hpp"
+#include "undefinedvalues.hpp"
+#include "general_types.hpp"
+#include "general_utils.hpp"
+#include "colormap.hpp"
+#include "file_utils.hpp"
+#include "blocklanguage.hpp"
+#include "geometry3d.hpp"
+#include "stretch.hpp"
+#include "file_formats.hpp"
+#include "filesplitter.hpp"
+#include "ctlinedata.hpp"
+#include "gdiplus_utils.hpp"
+#include "stopwatch.hpp"
 
 
 class cLogger glog; //The global instance of the log file manager

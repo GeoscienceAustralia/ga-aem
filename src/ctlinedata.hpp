@@ -11,8 +11,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <vector>
 
-#include "blocklanguage.h"
-#include "file_formats.h"
+#include "blocklanguage.hpp"
+#include "file_formats.hpp"
 
 class cCTLineData {
 

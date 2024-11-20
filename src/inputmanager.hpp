@@ -9,9 +9,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #ifndef _inputmanager_H_
 #define _inputmanager_H_
 
-#include "samplebunch.h"
-#include "asciicolumnfile.h"
-#include "fielddefinition.h"
+#include "samplebunch.hpp"
+#include "asciicolumnfile.hpp"
+#include "fielddefinition.hpp"
 
 #if defined HAVE_NETCDF
 #include "geophysics_netcdf.hpp"

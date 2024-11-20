@@ -16,15 +16,15 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <algorithm>
 
 #include <Eigen/Dense>
-#include "general_constants.h"
-#include "general_types.h"
-#include "inputmanager.h"
-#include "outputmanager.h"
-#include "blocklanguage.h"
-#include "eigen_utils.h"
-#include "gaaem_version.h"
-#include "samplebunch.h"
-#include "inversion_line_searcher.h"
+#include "general_constants.hpp"
+#include "general_types.hpp"
+#include "inputmanager.hpp"
+#include "outputmanager.hpp"
+#include "blocklanguage.hpp"
+#include "eigen_utils.hpp"
+#include "gaaem_version.hpp"
+#include "samplebunch.hpp"
+#include "inversion_line_searcher.hpp"
 
 #if defined _OPENMP
 #include <omp.h>

@@ -14,8 +14,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "petscmat.h"
 #include "petscksp.h"
 
-#include "file_utils.h"
-#include "general_utils.h"
+#include "file_utils.hpp"
+#include "general_utils.hpp"
 
 class cOwnership;//forward declaration only
 class cPetscDistVector;//forward declaration only

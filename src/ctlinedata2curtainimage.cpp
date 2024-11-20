@@ -15,26 +15,26 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <iostream>
 #include <iomanip>
 
-#include "gaaem_version.h"
-#include "general_types.h"
-#include "general_utils.h"
-#include "general_types.h"
-#include "file_utils.h"
-#include "blocklanguage.h"
-#include "geometry3d.h"
-#include "crs.h"
-#include "gdal_utils.h"
-#include "stretch.h"
-#include "colormap.h"
-#include "gdiplus_utils.h"
-#include "stopwatch.h"
-#include "filesplitter.h"
-#include "ctlinedata.h"
+#include "gaaem_version.hpp"
+#include "general_types.hpp"
+#include "general_utils.hpp"
+#include "general_types.hpp"
+#include "file_utils.hpp"
+#include "blocklanguage.hpp"
+#include "geometry3d.hpp"
+#include "crs.hpp"
+#include "gdal_utilities.hpp"
+#include "stretch.hpp"
+#include "colormap.hpp"
+#include "gdiplus_utils.hpp"
+#include "stopwatch.hpp"
+#include "filesplitter.hpp"
+#include "ctlinedata.hpp"
 
 #include "ticpp.h"
 using namespace ticpp;
 
-#include "RamerDouglasPeucker.h"
+#include "RamerDouglasPeucker.hpp"
 using namespace RDP;
 
 class cLogger glog; //The global instance of the log file manager

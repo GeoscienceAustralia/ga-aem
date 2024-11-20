@@ -8,14 +8,14 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <vector>
 
-#include "gaaem_version.h"
-#include "general_utils.h"
-#include "file_utils.h"
-#include "rjmcmc1dtdeminverter.h"
-#include "logger.h"
+#include "gaaem_version.hpp"
+#include "general_utils.hpp"
+#include "file_utils.hpp"
+#include "rjmcmc1dtdeminverter.hpp"
+#include "logger.hpp"
 
 #ifdef ENABLE_MPI
-	#include "mpi_wrapper.h"
+	#include "mpi_wrapper.hpp"
 #endif
 
 class cLogger glog; //The global instance of the log file manager

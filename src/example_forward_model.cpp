@@ -12,13 +12,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cstring>
 #include <iostream>
 
-#include "general_utils.h"
-#include "file_utils.h"
-#include "random_utils.h"
-#include "blocklanguage.h"
-#include "vector_utils.h"
-#include "lem.h"
-#include "tdemsystem.h"
+#include "general_utils.hpp"
+#include "file_utils.hpp"
+#include "random_utils.hpp"
+#include "blocklanguage.hpp"
+#include "vector_utils.hpp"
+#include "lem.hpp"
+#include "tdemsystem.hpp"
 class cLogger glog; //The global instance of the log file manager
 
 int skytem_example_ip()

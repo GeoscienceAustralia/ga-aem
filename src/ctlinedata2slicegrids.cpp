@@ -12,7 +12,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cstring>
 #include <vector>
 #include <algorithm>
-#include "streamredirecter.h"
+#include "streamredirecter.hpp"
 
 #if defined _OPENMP
 #include <omp.h>
@@ -25,12 +25,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <gdal_alg.h>
 #include <ogr_spatialref.h>
 
-#include "gaaem_version.h"
-#include "general_utils.h"
-#include "file_utils.h"
-#include "vector_utils.h"
-#include "asciicolumnfile.h"
-#include "blocklanguage.h"
+#include "gaaem_version.hpp"
+#include "general_utils.hpp"
+#include "file_utils.hpp"
+#include "vector_utils.hpp"
+#include "asciicolumnfile.hpp"
+#include "blocklanguage.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 

@@ -12,12 +12,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <list>
 #include <iterator>
 #include <optional>
-#include "asciicolumnfile.h"
-#include "fielddefinition.h"
+#include "asciicolumnfile.hpp"
+#include "fielddefinition.hpp"
 
 
 #ifdef ENABLE_MPI
-#include "mpi_wrapper.h"
+#include "mpi_wrapper.hpp"
 #endif
 
 #ifdef HAVE_NETCDF
