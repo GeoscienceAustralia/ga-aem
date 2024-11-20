@@ -6,8 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef _tdemsystem_H
-#define _tdemsystem_H
+#pragma once
 
 #include <stdexcept>
 #include <complex>
@@ -1694,5 +1693,5 @@ public:
   }
 
 };
-#endif
+
 

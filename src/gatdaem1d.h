@@ -1,5 +1,4 @@
-#ifndef gatdaem1d_H
-#define gatdaem1d_H
+#pragma once
 
 #ifndef EXPORTED_FUNCTION
 	#define EXPORTED_FUNCTION
@@ -24,4 +23,3 @@ EXPORTED_FUNCTION void derivative(void* hS, int dtype, int dlayer, double* PX, d
 EXPORTED_FUNCTION void fm_dlogc(void* hS, const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw, const int nlayers, const double* conductivity, const double* thickness, double* R);
 EXPORTED_FUNCTION void derivative_rx_pitch(void* hS, int n, double rx_pitch, double* xb, double* zb, double* dxbdp, double* dzbdp);
 
-#endif

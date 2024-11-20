@@ -8,8 +8,7 @@ Ross C. Brodie, Geoscience Australia,
 Richard L. Taylor, Geoscience Australia.
 */
 
-#ifndef _rjmcmc1dtdeminverter_H
-#define _rjmcmc1dtdeminverter_H
+#pragma once
 
 //standard library headers
 #include <memory>
@@ -1091,4 +1090,3 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	}
 };
 
-#endif

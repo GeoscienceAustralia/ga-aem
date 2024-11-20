@@ -8,8 +8,7 @@ Ross C. Brodie, Geoscience Australia,
 Richard L. Taylor, Geoscience Australia.
 */
 
-#ifndef _rjMcMC1D_H_
-#define _rjMcMC1D_H_
+#pragma once
 
 //standard library headers
 #include <climits>
@@ -1792,5 +1791,3 @@ public:
 
 };
 
-
-#endif

@@ -6,8 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef galeisbsfdem_H
-#define galeisbsfdem_H
+#pragma once
 
 #include "eigen_utils.h"
 #include "asciicolumnfile.h"
@@ -1805,4 +1804,3 @@ public:
 	}
 };
 
-#endif

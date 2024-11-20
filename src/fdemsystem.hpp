@@ -7,8 +7,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 
-#ifndef _fdemsystemclass_H
-#define _fdemsystemclass_H
+#pragma once
 
 #include <cstring>
 #include <vector>
@@ -480,8 +479,4 @@ public:
 		
 	}
 };
-
-#endif
-
-
 

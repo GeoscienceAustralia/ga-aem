@@ -6,9 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef _large_loop_H
-#define _large_loop_H
-
+#pragma once
 
 #include <vector>
 #include "general_constants.h"
@@ -91,5 +89,3 @@ class cLargeLoop {
 //	printf("%lg %lg %lg\n", B.x, B.y, B.z);
 //};
 
-
-#endif

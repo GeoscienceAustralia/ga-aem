@@ -6,8 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef _inputmanager_H_
-#define _inputmanager_H_
+#pragma once
 
 #include "samplebunch.hpp"
 #include "asciicolumnfile.hpp"
@@ -430,5 +429,4 @@ public:
 };
 #endif
 
-#endif
 

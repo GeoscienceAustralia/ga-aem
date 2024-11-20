@@ -6,8 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef _inversion_line_searcher_H
-#define _inversion_line_searcher_H
+#pragma once
 
 #include <algorithm>
 #include <vector>
@@ -254,7 +253,4 @@ public:
 		return os;
 	}
 };
-
-
-#endif
 

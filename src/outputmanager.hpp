@@ -6,8 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef _outputmanager_H_
-#define _outputmanager_H_
+#pragma once
 
 #include <list>
 #include <iterator>
@@ -729,7 +728,5 @@ public:
 		return of->var->putRecord(pointindex, vals);
 	}
 };
-#endif
-
 #endif
 

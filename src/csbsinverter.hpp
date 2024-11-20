@@ -6,8 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef _csbsinverter_H
-#define _csbsinverter_H
+#pragma once
 
 #include <stdio.h>
 #include <sstream>
@@ -2997,4 +2996,3 @@ public:
 	}
 };
 
-#endif

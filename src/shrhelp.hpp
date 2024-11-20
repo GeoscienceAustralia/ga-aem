@@ -5,8 +5,7 @@
  * define EXPORT_FCNS before including this file in source files that build the library
  * no defines are needed to use the library. */
  
-#ifndef SHRHELP
-#define SHRHELP
+#pragma once
 
 #ifdef _WIN32
 	#ifdef EXPORT_FCNS
@@ -22,4 +21,3 @@
 	#endif
 #endif
 
-#endif

@@ -6,9 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#ifndef _gaaem_version_H
-#define _gaaem_version_H
+#pragma once
 
 constexpr auto GAAEM_VERSION = "v2.0.3-Release-20241114";
 
-#endif
