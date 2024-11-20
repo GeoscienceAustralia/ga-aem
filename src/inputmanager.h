@@ -12,8 +12,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "samplebunch.h"
 #include "asciicolumnfile.h"
 #include "fielddefinition.h"
+
 #if defined HAVE_NETCDF
 #include "geophysics_netcdf.hpp"
+using namespace GeophysicsNetCDF;
 #endif
 
 class cInputManager {
@@ -177,7 +179,7 @@ public:
 		initialise(b);
 	}
 
-	~cASCIIInputManager() {	};
+	~cASCIIInputManager() {};
 
 	void initialise(const cBlock& b)
 	{
@@ -387,7 +389,7 @@ public:
 class cNetCDFInputManager : public cInputManager {
 
 private:
-	cGeophysicsNcFile NC;
+	GeophysicsNetCDF::GFile NC;
 
 public:
 
@@ -396,7 +398,7 @@ public:
 		initialise(b);
 	}
 
-	~cNetCDFInputManager() {	};
+	~cNetCDFInputManager() {};
 
 	void initialise(const cBlock& b)
 	{
