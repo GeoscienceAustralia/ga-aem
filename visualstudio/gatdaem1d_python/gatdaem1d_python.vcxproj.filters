@@ -6,25 +6,25 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\tdemsystem.h">
+    <ClInclude Include="..\..\src\tdemsystem.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\gatdaem1d.h">
+    <ClInclude Include="..\..\src\gatdaem1d.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\lem.h">
+    <ClInclude Include="..\..\src\lem.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

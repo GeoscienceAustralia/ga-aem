@@ -90,10 +90,10 @@
     <ClCompile Include="..\..\src\removelog10conductivityfromsgrid.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

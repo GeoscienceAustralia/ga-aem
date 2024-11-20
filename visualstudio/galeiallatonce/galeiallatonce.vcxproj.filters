@@ -16,40 +16,40 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\conductivity_logs.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\conductivity_logs.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\stacktrace.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stacktrace.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\stopwatch.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stopwatch.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\lem.h">
+    <ClInclude Include="..\..\src\lem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\tdemsystem.h">
+    <ClInclude Include="..\..\src\tdemsystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\petsc_wrapper.h">
+    <ClInclude Include="..\..\src\petsc_wrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

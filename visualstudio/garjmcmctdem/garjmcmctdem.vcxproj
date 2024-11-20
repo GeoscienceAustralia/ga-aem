@@ -98,18 +98,18 @@
     <ClCompile Include="..\..\src\garjmcmctdem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\rjmcmc1d.h" />
-    <ClInclude Include="..\..\src\rjmcmc1dtdeminverter.h" />
-    <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\eigen_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\fielddefinition.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\matrix_ops.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\random_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\vector_utils.h" />
+    <ClInclude Include="..\..\src\rjmcmc1d.hpp" />
+    <ClInclude Include="..\..\src\rjmcmc1dtdeminverter.hpp" />
+    <ClInclude Include="..\..\src\tdemsystem.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\eigen_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\fielddefinition.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\matrix_ops.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\random_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\vector_utils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

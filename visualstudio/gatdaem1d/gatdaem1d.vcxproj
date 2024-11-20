@@ -97,7 +97,7 @@
     <ClCompile Include="..\..\src\gatdaem1d.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\gatdaem1d.h" />
+    <ClInclude Include="..\..\src\gatdaem1d.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

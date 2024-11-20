@@ -114,7 +114,7 @@ del $(OutDir)$(TargetName).exp</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\gatdaem1d.h" />
+    <ClInclude Include="..\..\src\gatdaem1d.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

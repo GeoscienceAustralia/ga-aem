@@ -16,25 +16,25 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_constants.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_constants.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_types.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\lem.h">
+    <ClInclude Include="..\..\src\lem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

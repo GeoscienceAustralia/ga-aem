@@ -92,19 +92,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\cinverter.h" />
-    <ClInclude Include="..\..\src\csbsinverter.h" />
-    <ClInclude Include="..\..\src\large_loop.h" />
-    <ClInclude Include="..\..\src\lem.h" />
-    <ClInclude Include="..\..\src\outputmanager.h" />
-    <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\fielddefinition.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\matrix_ops.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.h" />
+    <ClInclude Include="..\..\src\cinverter.hpp" />
+    <ClInclude Include="..\..\src\csbsinverter.hpp" />
+    <ClInclude Include="..\..\src\large_loop.hpp" />
+    <ClInclude Include="..\..\src\lem.hpp" />
+    <ClInclude Include="..\..\src\outputmanager.hpp" />
+    <ClInclude Include="..\..\src\tdemsystem.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\fielddefinition.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\matrix_ops.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />

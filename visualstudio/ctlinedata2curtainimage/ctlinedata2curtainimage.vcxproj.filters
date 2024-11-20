@@ -21,46 +21,46 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\colormap.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\colormap.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\gdal_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\gdal_utils.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\RamerDouglasPeucker.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\RamerDouglasPeucker.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\stretch.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stretch.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\ticpp\ticpp.h">
+    <ClInclude Include="..\..\submodules\ticpp\ticpp.hpp">
       <Filter>tinyxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\ticpp\ticppapi.h">
+    <ClInclude Include="..\..\submodules\ticpp\ticppapi.hpp">
       <Filter>tinyxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\ticpp\ticpprc.h">
+    <ClInclude Include="..\..\submodules\ticpp\ticpprc.hpp">
       <Filter>tinyxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\ticpp\tinystr.h">
+    <ClInclude Include="..\..\submodules\ticpp\tinystr.hpp">
       <Filter>tinyxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\ticpp\tinyxml.h">
+    <ClInclude Include="..\..\submodules\ticpp\tinyxml.hpp">
       <Filter>tinyxml</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_formats.h">
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_formats.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

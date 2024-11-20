@@ -14,7 +14,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\gatdaem1d.h">
+    <ClInclude Include="..\..\src\gatdaem1d.hpp">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

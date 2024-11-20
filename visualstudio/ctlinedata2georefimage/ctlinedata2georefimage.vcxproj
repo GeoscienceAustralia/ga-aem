@@ -85,9 +85,9 @@
     <ClCompile Include="..\..\src\ctlinedata2georefimage.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

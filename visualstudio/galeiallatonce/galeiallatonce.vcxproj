@@ -96,18 +96,18 @@
     <ClCompile Include="..\..\src\galeiallatonce.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\lem.h" />
-    <ClInclude Include="..\..\src\petsc_wrapper.h" />
-    <ClInclude Include="..\..\src\tdemsystem.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\conductivity_logs.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\stacktrace.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\stopwatch.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h" />
+    <ClInclude Include="..\..\src\lem.hpp" />
+    <ClInclude Include="..\..\src\petsc_wrapper.hpp" />
+    <ClInclude Include="..\..\src\tdemsystem.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\conductivity_logs.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\geometry3d.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stacktrace.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stopwatch.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

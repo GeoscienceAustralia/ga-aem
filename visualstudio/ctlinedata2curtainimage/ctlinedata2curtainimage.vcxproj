@@ -103,20 +103,20 @@ icacls $(OutDir)$(TargetName)$(TargetExt) /grant Everyone:RX</Command>
     <ClCompile Include="..\..\submodules\ticpp\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\colormap.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_formats.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\gdal_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\RamerDouglasPeucker.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\stretch.h" />
-    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.h" />
-    <ClInclude Include="..\..\submodules\ticpp\ticpp.h" />
-    <ClInclude Include="..\..\submodules\ticpp\ticppapi.h" />
-    <ClInclude Include="..\..\submodules\ticpp\ticpprc.h" />
-    <ClInclude Include="..\..\submodules\ticpp\tinystr.h" />
-    <ClInclude Include="..\..\submodules\ticpp\tinyxml.h" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\colormap.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_formats.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\gdal_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\RamerDouglasPeucker.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\stretch.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.hpp" />
+    <ClInclude Include="..\..\submodules\ticpp\ticpp.hpp" />
+    <ClInclude Include="..\..\submodules\ticpp\ticppapi.hpp" />
+    <ClInclude Include="..\..\submodules\ticpp\ticpprc.hpp" />
+    <ClInclude Include="..\..\submodules\ticpp\tinystr.hpp" />
+    <ClInclude Include="..\..\submodules\ticpp\tinyxml.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
