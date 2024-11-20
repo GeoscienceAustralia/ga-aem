@@ -20,7 +20,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "lem.h"
 #include "tdemsystem.h"
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 int skytem_example_ip()
 {

@@ -33,7 +33,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "blocklanguage.h"
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 using namespace std;
 

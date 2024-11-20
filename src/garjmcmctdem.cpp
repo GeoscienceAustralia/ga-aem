@@ -13,14 +13,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "file_utils.h"
 #include "rjmcmc1dtdeminverter.h"
 #include "logger.h"
-#include "stacktrace.h"
 
 #ifdef ENABLE_MPI
 	#include "mpi_wrapper.h"
 #endif
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 int main(int argc, char* argv[])
 {

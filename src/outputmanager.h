@@ -677,7 +677,7 @@ public:
 			if (of.ncdimname.size()) {
 				dim = NC.addDim(of.ncdimname, of.bands);
 			}
-			
+
 			of.var = std::make_shared<GVar>(NC.addgetSampleVar(of.name, of.nctype(), dim));
 
 			for (const auto& [key, value] : of.atts) {

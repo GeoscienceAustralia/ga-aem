@@ -38,7 +38,6 @@ using namespace ticpp;
 using namespace RDP;
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 template<typename T>
 class cBIL {

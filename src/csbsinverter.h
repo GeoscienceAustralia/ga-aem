@@ -261,7 +261,8 @@ public:
 	cLinearConstraint() {};
 
 	cLinearConstraint(const std::string& _key, const std::vector<std::string>& _allowed_methods, const std::string& _initials, const std::string& _description)
-		: cConstraint(_key, _allowed_methods, _initials, _description) {};
+		: cConstraint(_key, _allowed_methods, _initials, _description) {
+	};
 
 	bool parse(const std::string& controlstring) {
 
@@ -300,7 +301,8 @@ public:
 	cNonLinearConstraint() {};
 
 	cNonLinearConstraint(const std::string& _key, const std::vector<std::string>& _allowed_methods, const std::string& _subscript, const std::string& _description)
-		: cConstraint(_key, _allowed_methods, _subscript, _description) {};
+		: cConstraint(_key, _allowed_methods, _subscript, _description) {
+	};
 
 	bool parse(const std::string& controlstring) {
 
@@ -444,8 +446,7 @@ public:
 	cSBSInverter(const std::string& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline)
 		: cInverter(controlfile, size, rank, usingopenmp, commandline)
 	{
-		_GSTPUSH_
-			try {
+		try {
 			initialise(controlfile);
 		}
 		catch (const std::string& msg) {
@@ -1443,7 +1444,7 @@ public:
 		//Make sure calculation is not subject to log(0) or divide by 0
 		if (x <= L) x = L + (U - L) / 1000.0;
 		else if (x >= U) x = U - (U - L) / 1000.0;
-		
+
 		const double dv = (n * (L + U - 2.0 * x)) / ((L - x) * (U - x));
 		return dv;
 	}
@@ -2197,9 +2198,7 @@ public:
 	};
 
 	bool read_bunch(const size_t& record) {
-		_GSTITEM_
-
-			bool bunchstatus = false;
+		bool bunchstatus = false;
 		int fi = AncFld[0].keyindex("line");
 		if (fi > 0) {
 			//only if linenumber is specified
@@ -2479,8 +2478,6 @@ public:
 	}
 
 	void iterate() {
-		_GSTITEM_
-
 		setup_parameter_bounds();
 		CIS.iteration = 0;
 		//CIS.lambda = 1e8;
@@ -2572,8 +2569,7 @@ public:
 	}
 
 	int execute() {
-		_GSTITEM_
-			bool readstatus = true;
+		bool readstatus = true;
 		int paralleljob = 0;
 		do {
 			int record = ((int)StartRecord - 1) + paralleljob * (int)IM->subsamplerate();
@@ -2669,7 +2665,7 @@ public:
 
 		Matrix JtV = J.transpose() * V;
 		Matrix JtVJ = JtV * J;
-		
+
 		Matrix A = JtVJ + lambda * Wm;
 		Vector b = JtV * (d - g + J * m);
 		b += lambda * (Wr * m0);
@@ -2975,7 +2971,7 @@ public:
 		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
 	}
 
-	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary, const std::string& units, const bool& reconstructedprimaryflag=false)
+	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary, const std::string& units, const bool& reconstructedprimaryflag = false)
 	{
 		std::string DN_WINDOW = "em_window";
 		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);

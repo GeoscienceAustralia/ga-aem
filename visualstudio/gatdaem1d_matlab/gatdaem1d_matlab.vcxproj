@@ -62,14 +62,14 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <TargetName>gatdaem1d_debug</TargetName>
     <OutDir>..\..\matlab\bin</OutDir>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Program Files\MATLAB\R2009a\extern\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <TargetName>gatdaem1d</TargetName>
     <OutDir>..\..\matlab\bin</OutDir>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>

@@ -695,8 +695,7 @@ public:
 
 	void initialise(const std::string& controlfile)
 	{
-		_GSTITEM_
-			loadcontrolfile(controlfile);
+		loadcontrolfile(controlfile);
 		set_field_definitions();
 		setup_data();
 		setup_parameters();

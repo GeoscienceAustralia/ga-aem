@@ -27,7 +27,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 using namespace ticpp;
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 class cSGridCreator {
 

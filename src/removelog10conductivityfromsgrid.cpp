@@ -16,7 +16,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "file_utils.h"
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 int main(int argc, char** argv)
 {	

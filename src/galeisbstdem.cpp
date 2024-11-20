@@ -22,12 +22,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "vector_utils.h"
 #include "cinverter.h"
 #include "csbsinverter.h"
-#include "stacktrace.h"
 #include "logger.h"
 #include "streamredirecter.h"
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 #ifdef ENABLE_MPI
 #include "mpi_wrapper.h"

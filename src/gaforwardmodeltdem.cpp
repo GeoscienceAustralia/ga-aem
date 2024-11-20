@@ -17,7 +17,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "tdemsystem.h"
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 int process(std::string controlfile);
 int parseinputrecord(const char* record, cTDEmGeometry& G, cEarth1D& E);

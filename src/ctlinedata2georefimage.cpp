@@ -29,7 +29,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 class cGeorefSection {
 

@@ -29,10 +29,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "conductivity_logs.h"
 #include "radius_searcher.h"
 #include "inversion_line_searcher.h"
-#include "stacktrace.h"
 
 class cLogger glog; //The global instance of the log file manager
-class cStackTrace gtrace; //The global instance of the stacktrace
 
 class cSystemInfo;
 
