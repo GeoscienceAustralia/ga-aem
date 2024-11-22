@@ -405,7 +405,7 @@ public:
 	}
 
 	void write_headers() {
-		sFilePathParts fpp = getfilepathparts(datafilename());
+		sFilePathParts fpp(datafilename());
 		sort_field_atts();
 		if (SaveDFNHeader) {
 			std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";

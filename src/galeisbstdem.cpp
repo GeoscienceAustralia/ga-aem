@@ -7,23 +7,17 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #include <iostream>
-#include <cstdio>
-#include <cfloat>
-#include <cmath>
-#include <cstring>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <random>
+
+#include "string_print.hpp"
+#include "logger.hpp"
+#include "file_utils.hpp"
+#include "vector_utils.hpp"
+#include "streamredirecter.hpp"
 
 #include "gaaem_version.hpp"
-#include "file_utils.hpp"
 #include "tdemsystem.hpp"
-#include "vector_utils.hpp"
 #include "cinverter.hpp"
 #include "csbsinverter.hpp"
-#include "logger.hpp"
-#include "streamredirecter.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 
@@ -47,7 +41,44 @@ int finaliseandexit() {
 	return EXIT_FAILURE;
 }
 
+int test() {
+	int dummy;
+
+	std::string fpath = "c:/AA/x/s/fred.txt";
+	std::string fpath1 = "c:\\AA\\x\\s\\fred.txt";
+
+	sFilePathParts_old s;
+	s = getfilepathparts_old(fpath);
+	sFilePathParts c(fpath);
+	std::cout << s.directory << std::endl;
+	std::cout << s.prefix << std::endl;
+	std::cout << s.extension << std::endl;
+
+	std::cout << c.directory << std::endl;
+	std::cout << c.prefix << std::endl;
+	std::cout << c.extension << std::endl;
+
+	std::string d = extractfiledirectory(fpath);
+	std::string d1 = extractfiledirectory(fpath1);
+	std::cout << d << std::endl;
+	std::cout << d1 << std::endl;
+
+	std::string ps = pathseparatorstring();
+	std::cout << ps << std::endl;
+
+	std::cout << extractfiledirectory_nosep(fpath) << std::endl;
+	std::cout << extractfiledirectory(fpath) << std::endl;
+	std::cout << extractfilepath_noextension(fpath) << std::endl;
+	std::cout << extractfilename(fpath) << std::endl;
+	std::cout << extractfilename_noextension(fpath) << std::endl;
+	std::cout << extractfileextension(fpath) << std::endl;
+
+	return 0;
+};
+
 int main(int argc, char** argv) {
+	test();
+	return 0;
 	std::string commandline = commandlinestring(argc, argv);
 	glog.logmsg(0, "%s\n", commandline.c_str());
 	glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
@@ -67,7 +98,7 @@ int main(int argc, char** argv) {
 #endif
 
 	std::string wlogpath = "warning.log";
-	if (mpirank == 0) deletefile(wlogpath);
+	if (mpirank == 0) std::filesystem::remove(wlogpath);
 #ifdef ENABLE_MPI
 	cMpiEnv::world_barrier();
 #endif

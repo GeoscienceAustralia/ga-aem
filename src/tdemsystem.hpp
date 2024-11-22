@@ -1323,7 +1323,7 @@ public:
 
   void readsystemdescriptorfile(std::string systemdescriptorfile)
   {
-	  if (!exists(systemdescriptorfile)) {
+	  if (!fs::exists(systemdescriptorfile)) {
 		  std::string msg = _SRC_;
 		  msg += strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.c_str());
 		  throw(std::runtime_error(msg));
@@ -1351,7 +1351,7 @@ public:
 	  if (wavformdefined == false) {
 		  std::string path = b.getstringvalue("WaveformReceived.File");
 		  if (isdefined(path)) {
-			  sFilePathParts fpp = getfilepathparts(systemdescriptorfile);
+			  sFilePathParts fpp(systemdescriptorfile);
 			  std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
 			  if (wp.size() > 0) {
 				  digitisewaveform(wp, WaveformTime, WaveformReceived);
@@ -1365,7 +1365,7 @@ public:
 	  if (wavformdefined == false) {
 		  std::string path = b.getstringvalue("WaveformCurrent.File");
 		  if (isdefined(path)) {
-			  sFilePathParts fpp = getfilepathparts(systemdescriptorfile);
+			  sFilePathParts fpp(systemdescriptorfile);
 			  std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
 			  if (wp.size() > 0) {
 				  digitisewaveform(wp, WaveformTime, WaveformCurrent);
@@ -1612,7 +1612,7 @@ public:
   std::vector<std::vector<double>> readwaveformfile(const std::string& filename)
   {
 	  std::vector<std::vector<double>> w;
-	  if (!exists(filename)) {
+	  if (!fs::exists(filename)) {
 		  std::string msg = _SRC_;
 		  msg += strprint("\n\tD'Oh! the specified waveform file (%s) does not exist\n", filename.c_str());
 		  throw(std::runtime_error(msg));

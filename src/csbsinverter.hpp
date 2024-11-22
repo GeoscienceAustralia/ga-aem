@@ -154,7 +154,7 @@ public:
 			if (DumpBasePath[DumpBasePath.length() - 1] != pathseparator()) {
 				DumpBasePath.append(pathseparatorstring());
 			}
-			makedirectorydeep(DumpBasePath.c_str());
+			makedirectory(DumpBasePath);
 		}
 	}
 };
@@ -475,8 +475,7 @@ public:
 		Verbose = ob.getboolvalue("verbose");
 
 		if (Rank == 0) {
-			std::string od = extractfiledirectory(OO.LogFile);
-			makedirectorydeep(od);
+			makedirectory_for(OO.LogFile);
 		}
 
 #ifdef ENABLE_MPI
@@ -519,8 +518,7 @@ public:
 		}
 
 		if (Rank == 0) {
-			std::string od = extractfiledirectory(OM->datafilename());
-			makedirectorydeep(od);
+			makedirectory_for(OM->datafilename());
 		}
 #ifdef ENABLE_MPI
 		cMpiEnv::world_barrier();
@@ -1503,7 +1501,7 @@ public:
 	void dump_W_matrices() {
 		if (OO.Dump) {
 			const std::string dp = dumppath();
-			makedirectorydeep(dp);
+			makedirectory(dp);
 			writetofile(Wd, dp + "Wd.dat");
 			writetofile(Wr, dp + "Wr.dat");
 
@@ -2393,7 +2391,7 @@ public:
 	void dump_first_iteration() {
 
 		const std::string dp = dumppath();
-		makedirectorydeep(dumppath());
+		makedirectory(dumppath());
 
 		const size_t si = Bunch.master_index();
 		cGeomStruct& g = G[si];
@@ -2428,7 +2426,7 @@ public:
 
 	void dump_iteration(const cIterationState& state) {
 		const std::string dp = dumppath();
-		makedirectorydeep(dp);
+		makedirectory(dp);
 		writetofile(Obs, dp + "d.dat");
 		writetofile(Err, dp + "e.dat");
 		writetofile(state.param, dp + "m.dat");

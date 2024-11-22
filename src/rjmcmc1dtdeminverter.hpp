@@ -197,7 +197,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		cBlock OB = Control.findblock("Output");
 		std::string OutputDirectory = OB.getstringvalue("Directory");
 		addtrailingseparator(OutputDirectory);
-		if (exists(OutputDirectory) == false) {
+		if (fs::exists(OutputDirectory) == false) {
 			glog.logmsg(0, "Creating OutputDirectory: %s\n", OutputDirectory.c_str());
 			makedirectory(OutputDirectory);
 		}
@@ -247,7 +247,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		if (SaveMaps) {
 			MapsDirectory = OB.getstringvalue("MapsDirectory");
 			addtrailingseparator(MapsDirectory);
-			if (exists(MapsDirectory) == false) {
+			if (fs::exists(MapsDirectory) == false) {
 				glog.logmsg(0, "Creating MapsDirectory: %s\n", MapsDirectory.c_str());
 				makedirectory(MapsDirectory);
 			}
@@ -725,12 +725,12 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		rjMcMC1DSampler::sample();
 		std::string dstr = results_string();
 
-		sFilePathParts fpp = getfilepathparts(OutputDataFile);
+		sFilePathParts fpp(OutputDataFile);
 		std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
 		std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
 
 		//Output header file
-		if (exists(hdrfile) == false) {
+		if (fs::exists(hdrfile) == false) {
 			OI.write_simple_header(hdrfile);
 			OI.write_aseggdf_header(aseggdffile);
 		}

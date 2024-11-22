@@ -507,7 +507,7 @@ public:
 	}
 
 	void save() {
-		makedirectorydeep(outdir);
+		makedirectory(outdir);
 		if (SavePNG) {
 			saveimage(*pBitmap,"png");
 			saveworldfile(worldfile("pngw"));

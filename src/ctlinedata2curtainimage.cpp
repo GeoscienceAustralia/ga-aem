@@ -481,7 +481,7 @@ public:
 	}
 
 	void createcolorbar() {
-		makedirectorydeep(extractfiledirectory(colorbarfile()));
+		makedirectory_for(colorbarfile());
 		std::string title = "Conductivity (S/m)";
 		Bitmap* bm = cGDIplusHelper::colorbar(cmap, stretch, title, cbarticks);
 		cGDIplusHelper::saveimage(bm, colorbarfile());
@@ -701,7 +701,7 @@ public:
 
 	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
 	{
-		makedirectorydeep(extractfiledirectory(xmlpath()));
+		makedirectory(xmlpath());
 		try
 		{
 			//Levels
@@ -743,7 +743,7 @@ public:
 
 			//Expects timestamps in the format “dd MM yyyy HH:mm:ss Z”			
 			std::string tf = "%d %m %Y %H:%M:%S +11:00";
-			std::string timestampstr = timestring(tf);
+			std::string timestampstr = timestring_fmt(tf);
 			l.InsertEndChild(Element("LastUpdate", timestampstr));
 
 			std::string dn = basename();
@@ -865,7 +865,7 @@ void save_dataset_xml(const std::string xmlpath,
 	const std::vector<std::string> urls
 )
 {
-	makedirectorydeep(extractfiledirectory(xmlpath));
+	makedirectory(xmlpath);
 	try
 	{
 		Element a, b;

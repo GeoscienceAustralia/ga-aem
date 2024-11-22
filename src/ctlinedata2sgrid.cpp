@@ -417,7 +417,7 @@ public:
 
 void save_dataset_xml(const std::string xmlpath, const std::string datasetname, const std::vector<std::string> names, const std::vector<std::string> urls)
 {
-	makedirectorydeep(extractfiledirectory(xmlpath));
+	makedirectory_for(xmlpath);
 	try
 	{
 		Element a, b;

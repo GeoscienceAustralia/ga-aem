@@ -190,7 +190,7 @@ public:
 
 		if (isdefined(HeaderFileName)) {
 			fixseparator(HeaderFileName);
-			if (!exists(HeaderFileName)) {
+			if (!fs::exists(HeaderFileName)) {
 				std::string msg = _SRC_;
 				msg += strprint("\n\tD'oh! the specified header file (%s) does not exist\n", HeaderFileName.c_str());
 				throw(std::runtime_error(msg));
@@ -198,7 +198,7 @@ public:
 		}
 
 		fixseparator(DataFileName);
-		if (!exists(DataFileName)) {
+		if (!fs::exists(DataFileName)) {
 			std::string msg = _SRC_;
 			msg += strprint("\n\tD'Oh! the specified data file (%s) does not exist\n", DataFileName.c_str());
 			throw(std::runtime_error(msg));
