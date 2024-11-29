@@ -3,4 +3,7 @@ Control Begin
 	InputModelFile    = input_model_Geotem3-GSQ823.txt
 	OutputDataFile    = output_Geotem3-GSQ823.asc
 	OutputDataHeader  = output_Geotem3-GSQ823.hdr
+	IPModel = none
+	//IPModel = colecole
+	//IPModel = pelton
 Control End

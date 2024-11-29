@@ -3,4 +3,7 @@ Control Begin
 	InputModelFile    = input_model_vtem.txt
 	OutputDataFile    = output_vtem.asc
 	OutputDataHeader  = output_vtem.hdr
+	IPModel = none
+	//IPModel = colecole
+	//IPModel = pelton
 Control End

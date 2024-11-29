@@ -3,4 +3,7 @@ Control Begin
 	InputModelFile    = input_model_spectrem.txt
 	OutputDataFile    = output_spectrem.asc
 	OutputDataHeader  = output_spectrem.hdr
+	IPModel = none
+	//IPModel = colecole
+	//IPModel = pelton
 Control End

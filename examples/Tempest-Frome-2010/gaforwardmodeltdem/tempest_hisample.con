@@ -3,4 +3,7 @@ Control Begin
 	InputModelFile    = input_model_tempest.txt
 	OutputDataFile    = output_tempest-hisample.asc
 	OutputDataHeader  = output_tempest-hisample.hdr
+	IPModel = none
+	//IPModel = colecole
+	//IPModel = pelton
 Control End

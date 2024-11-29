@@ -15,6 +15,7 @@ examples/ctlinedata-programs/earthsci
 examples/ctlinedata-programs/georef_sections
 examples/ctlinedata-programs/sgrids
 examples/ctlinedata-programs/grids
+examples/*/gaforwardmodeltdem/output_*
 
 # Ignore output from julia synthetic tests
 julia/output

@@ -1,6 +1,9 @@
 Control Begin
 	SystemFile        = ..\stmfiles\Skytem-LM.stm
 	InputModelFile    = input_model_skytem.txt
-	OutputDataFile    = output_model_Skytem-LM.asc
+	OutputDataFile    = output_model_Skytem-LM.csv  //Use .csv extension for CSV output or any other extension for space delimited output
 	OutputDataHeader  = output_model_Skytem-LM.hdr
+	//IPModel = none
+	IPModel = colecole
+	//IPModel = pelton
 Control End
