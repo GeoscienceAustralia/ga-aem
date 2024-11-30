@@ -3,7 +3,7 @@ Control Begin
 	InputModelFile    = input_model_skytem.txt
 	OutputDataFile    = output_model_Skytem-HM.csv //Use .csv extension for CSV output or any other extension for space delimited output
 	OutputDataHeader  = output_model_Skytem-HM.hdr
-		//IPModel = none
+	//IPModel = none
 	IPModel = colecole
 	//IPModel = pelton
 Control End
