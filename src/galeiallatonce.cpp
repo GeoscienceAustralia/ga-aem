@@ -869,7 +869,7 @@ public:
 		glog.logmsg(0, "Processes=%lu\tRank=%lu\n", mpisize, mpirank);
 		glog.logmsg(0, "Processor name = %s\n", mpipname.c_str());
 		if (mpirank == 0) Control.print();
-		glog.log(Control.get_as_string());
+		glog.log_to_file(Control.get_as_string());
 
 		InputOp = cInputOptions(Control.findblock("Input"));
 		InversionOp = cInversionOptions(Control.findblock("Options"));
@@ -950,7 +950,7 @@ public:
 			ConductivityLogPercentError = b.getdoublevalue("PercentError");
 			glog.logmsg(0, "Reading conductivity logs\n");
 			std::string ldir = b.getstringvalue("Directory");
-			auto flist = getfilelist(ldir, "con");
+			auto flist = DirectoryAccess::getfilelist(ldir, ".con");
 			for (size_t k = 0; k < flist.size(); k++) {
 				cConductivityLog clog(flist[k], true);
 				cPoint p(clog.x, clog.y);
@@ -974,20 +974,18 @@ public:
 	bool count_samples() {
 
 		if (mpirank == 0) {
-			FILE* fp = fileopen(InputOp.DataFile, "r");
-			if (fp == NULL) {
-				glog.logmsg(0, "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
-				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-				throw(e);
+			std::ifstream ifs(InputOp.DataFile);
+			if (!ifs) {
+				glog.errormsg(_SRC_,"Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
 			}
 
 			std::string s;
 			for (size_t i = 0; i < InputOp.HeaderLines; i++) {
-				filegetline(fp, s);
+				filegetline_ifs(ifs, s);
 			}
 
 			size_t k = 0;
-			while (filegetline(fp, s)) {
+			while (filegetline_ifs(ifs, s)) {
 				if (k % InputOp.SubSample == 0) {
 					std::vector<std::string> tokens = tokenize(s);
 					int line = (int)fdline.get(tokens);
@@ -1000,15 +998,12 @@ public:
 				}
 				k++;
 			}
-			fclose(fp);
 		}
 		mpicomm.bcast(filerecordindex);
 		nsamples = filerecordindex.size();
 
 		if (nsamples == 0) {
-			glog.logmsg(0, "There were no samples in the included lines and/or line ranges and/or polygon\n");
-			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw e;
+			glog.errormsg(_SRC_,"There were no samples in the included lines and/or line ranges and/or polygon\n");
 		}
 
 		ndata = calculate_ndata();
@@ -1082,17 +1077,15 @@ public:
 
 		allocate_data_arrays();
 
-		FILE* fp = fileopen(InputOp.DataFile, "r");
-		if (fp == NULL) {
-			glog.logmsg(0, "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
-			std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
-			throw e;
+		std::ifstream ifs(InputOp.DataFile);
+		if (!ifs) {
+			glog.errormsg(_SRC_, "Unable to open input DataFile %s\n", InputOp.DataFile.c_str());
 		}
 
 		std::string s;
 		size_t rec = 0;
 		size_t gsi = 0;
-		while (filegetline(fp, s)) {
+		while (filegetline_ifs(ifs, s)) {
 			if (rec == filerecordindex[gsi]) {
 				std::vector<std::string> tokens = tokenize(s);
 				RS.x[gsi] = fdx.get(tokens);
@@ -1107,11 +1100,8 @@ public:
 			}
 			rec++;
 		}
-		fclose(fp);
-
 		RS.initialise(InversionOp.CorrelationRadius);
 		return true;
-
 	}
 
 	void test_write_neighbours() {
@@ -1135,11 +1125,10 @@ public:
 
 	void write_xy(const std::string& filename, const std::vector<double>& x, const std::vector<double>& y)
 	{
-		FILE* fp = fileopen(filename, "w");
+		std::ofstream ofs = ofstream_ex(filename);
 		for (size_t i = 0; i < x.size(); i++) {
-			fprintf(fp, "%lf,%lf\n", x[i], y[i]);
+			ofs << strprint("%lf,%lf\n", x[i], y[i]);
 		}
-		fclose(fp);
 	}
 
 	size_t calculate_nchan() {
@@ -2092,8 +2081,7 @@ public:
 		for (int p = 0; p < mpisize; p++) {
 			if (p == mpirank) {
 				if (mpirank == 0) {
-					FILE* fp = fileopen(filename, "w");
-					fclose(fp);
+					std::ofstream ofs = ofstream_ex(filename);
 				}
 				append_my_results(filename, m, g);
 			}
@@ -2112,7 +2100,7 @@ public:
 
 		cOutputFileInfo OI;
 		std::string buf;
-		FILE* fp = fileopen(filename, "a");
+		std::ofstream ofs = ofstream_ex(filename, std::ios_base::app);
 		for (size_t lsi = 0; lsi < (size_t)sown.nlocal(); lsi++) {
 			size_t gsi = sown.globalind((PetscInt)lsi);
 			//size_t lpi = mdist.localind(gpindex_c(gsi, 0));
@@ -2311,24 +2299,23 @@ public:
 			//Carriage return
 			buf += strprint("\n");
 			if ((int)lsi == sown.nlocal() - 1 || buf.size() >= 2048) {
-				fprintf(fp, buf.c_str());
-				fflush(fp);
+				ofs << buf.c_str();
+				ofs << std::flush;
 				buf.resize(0);
 			}
 
 			OI.lockfields();
 			if (lsi == 0 && mpirank == 0) {
-				sFilePathParts fpp(filename);
-				std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
+				FilePathParts fpp(filename);
+				std::string hdrfile = fpp.directory + fpp.stem + ".hdr";
 				OI.write_simple_header(hdrfile);
 
-				std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
+				std::string aseggdffile = fpp.directory + fpp.stem + ".dfn";
 				OI.write_aseggdf_header(aseggdffile);
 			}
 		}
 		m.restorelocalreadonlyarray(mlocal);
 		g.restorelocalreadonlyarray(glocal);
-		fclose(fp);
 	};
 
 	std::vector<double> get_sample_phid(const cPetscDistVector& g) {

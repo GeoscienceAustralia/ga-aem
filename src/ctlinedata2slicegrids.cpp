@@ -550,8 +550,8 @@ public:
 
 		std::string outdir = b.getstringvalue("OutputDir");
 		fixseparator(outdir);
-		addtrailingseparator(outdir);
-		if (!fs::exists(outdir)) makedirectory_for(outdir);
+		add_trailing_separator(outdir);
+		if (!fs::exists(outdir)) makedirectory(outdir);
 
 		for (size_t i = 0; i < nlayers; i++) {
 			double t1 = gettime();
@@ -579,8 +579,8 @@ public:
 
 		std::string outdir = b.getstringvalue("OutputDir");
 		fixseparator(outdir);
-		addtrailingseparator(outdir);
-		if (!fs::exists(outdir)) makedirectory_for(outdir);
+		add_trailing_separator(outdir);
+		if (!fs::exists(outdir)) makedirectory(outdir);
 
 		std::vector<std::vector<double>> slices = getslices(b);
 		size_t nslices = slices.size();
@@ -633,7 +633,7 @@ public:
 
 		std::string outdir = b.getstringvalue("OutputDir");
 		fixseparator(outdir);
-		addtrailingseparator(outdir);
+		add_trailing_separator(outdir);
 		if (!fs::exists(outdir)) makedirectory(outdir);
 
 		std::vector<std::vector<double>> slices = getslices(b);
@@ -766,7 +766,7 @@ int main(int argc, char** argv)
 {
 	std::string wlogpath = "warning.log";
 	std::filesystem::remove(wlogpath);
-	std::ofstream log(wlogpath, std::ios::app);
+	std::ofstream log(wlogpath, std::ios_base::app);
 	cStreamRedirecter cerrredirect(log, std::cerr);
 	std::cerr << "Warning log opening " << timestamp() << std::endl;
 

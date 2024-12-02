@@ -108,17 +108,16 @@ public:
 
 	void write(const std::string& filepath) const 
 	{
-		FILE* fp = fileopen(filepath, "w");
+		std::ofstream ofs = ofstream_ex(filepath);
 		size_t nl = conductivity.size();
 		for (size_t i = 0; i < nl; i++) {
 			if (i < thickness.size()) {
-				fprintf(fp, "%e\t%e\n", conductivity[i], thickness[i]);
+				ofs << strprint("%e\t%e\n", conductivity[i], thickness[i]);
 			}
 			else {
-				fprintf(fp, "%e\tInf\n", conductivity[i]);
+				ofs << strprint("%e\tInf\n", conductivity[i]);
 			}
 		}
-		fclose(fp);
 	}
 
 	std::vector<double> dummy_thickness() const {

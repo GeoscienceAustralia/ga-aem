@@ -36,7 +36,7 @@ int main(int argc, char** argv)
 	double t1 = gettime();
 	std::string indir  = argv[1];
 	std::string outdir = argv[2];
-	std::vector<std::string> flist = getfilelist(indir, "sg");
+	std::vector<std::string> flist = DirectoryAccess::getfilelist(indir, ".sg");
 	for (size_t i = 0; i < flist.size(); i++) {
 		std::string isg = flist[i];
 		std::string osg = outdir + pathseparatorstring() + extractfilename(isg);
@@ -47,29 +47,27 @@ int main(int argc, char** argv)
 		bool status;
 
 		//Header file
-		FILE* isgfp = fileopen(isg, "r");
-		FILE* osgfp = fileopen(osg, "w");
-		while ((status = filegetline(isgfp, s))) {			
+		std::ifstream isgfs(isg);
+		std::ofstream osgfs(osg);
+		while ((status = filegetline_ifs(isgfs, s))) {			
 			if(strcmp(s.c_str(),"*painted*variable:Log10Conductivity") == 0){
-				std::fprintf(osgfp,"*painted*variable:Conductivity\n");
+				osgfs << "*painted*variable:Conductivity" << std::endl;
 			}
 			else if(strcmp(s.c_str(),"PROPERTY 2 Log10Conductivity") == 0) continue;
 			else if(strcmp(s.c_str(),"PROP_UNIT 2 log10S/m") == 0) continue;
 			else if(strcmp(s.c_str(),"PROP_NO_DATA_VALUE 2 -999") == 0) continue;						
 			else {
-				std::fprintf(osgfp, "%s\n", s.c_str());
+				osgfs << s << std::endl;
 			}
 		}
-		fclose(isgfp);
-		fclose(osgfp);
 
 		//Data file
-		FILE* isdfp = fileopen(isd, "r");
-		FILE* osdfp = fileopen(osd, "w");				
-		status = filegetline(isdfp, s);
-		std::fprintf(osdfp, "%s\n",s.c_str());
+		std::ifstream isdfs(isd);
+		std::ofstream osdfs(osd);
+		status = filegetline_ifs(isdfs, s);
+		osdfs << s << std::endl;
 		
-		status = filegetline(isdfp, s);
+		status = filegetline_ifs(isdfs, s);
 		auto t = tokenize(s);		
 		if (t.size() != 9) {
 			std::printf("Error unknown format: number of items in line 2 of %s is not 9",isd.c_str());
@@ -79,17 +77,22 @@ int main(int argc, char** argv)
 			std::printf("Error unknown format: item 6 in line 2 of %s must be Log10Conductivity", isd.c_str());
 			exit(1);
 		}
-		std::fprintf(osdfp, "*   X   Y   Z  Conductivity I   J   K\n");
+		osdfs << "*   X   Y   Z  Conductivity I   J   K\n";
 
-		status = filegetline(isdfp, s);
-		std::fprintf(osdfp, "%s\n", s.c_str());
+		status = filegetline_ifs(isdfs, s);
+		osdfs << s << std::endl;
 
-		while ((status = filegetline(isdfp, s))) {
+		while ((status = filegetline_ifs(isdfs, s))) {
 			t = tokenize(s);
-			std::fprintf(osdfp, "%s %s %s %s %s %s %s\n",t[0].c_str(), t[1].c_str(), t[2].c_str(), t[3].c_str(), t[5].c_str(), t[6].c_str(), t[7].c_str());				
+			osdfs
+				<< t[0] << " "
+				<< t[1] << " "
+				<< t[2] << " "
+				<< t[3] << " "
+				<< t[5] << " "
+				<< t[6] << " "
+				<< t[7] << std::endl;
 		}
-		fclose(isdfp);
-		fclose(osdfp);
 	}
 	
 	double t2 = gettime();

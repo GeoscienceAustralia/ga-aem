@@ -21,26 +21,24 @@ Author: Ross C. Brodie, Geoscience Australia.
 class cLogger glog; //The global instance of the log file manager
 
 int main(int argc, char* argv[])
-{
+{	
 	int exitstatus;
 	int mpisize = 1;
 	int mpirank = 0;
 	std::string mpipname = "Standalone";
 	#ifdef ENABLE_MPI
-		MPI_Init(&argc, &argv);
+		cMpiEnv::start(argc, argv);
 		mpirank = cMpiEnv::world_rank();
 		mpisize = cMpiEnv::world_size();
 		mpipname = cMpiEnv::processor_name();
-		if (mpirank == 0)printf("MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
+		glog.logmsg(0,"MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
 	#endif
 
-	if (mpirank == 0){
-		printf("%s\n", commandlinestring(argc, argv).c_str());
-		printf("%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
-	}
+	glog.logmsg(0,"%s\n", commandlinestring(argc, argv).c_str());
+	glog.logmsg(0,"%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 
 	if(argc!=2){
-		printf("Usage: %s control_file_name\n",argv[0]);
+		glog.logmsg(0,"Usage: %s control_file_name\n",argv[0]);
 		exitstatus = EXIT_FAILURE;
 	}
 	else{
@@ -62,14 +60,15 @@ int main(int argc, char* argv[])
 			double stime = I.samplingtime;
 			//double norm_mfit = I.LowestMisfit.standard.stand.get_misfit() / double(I.ndata);
 			double norm_mfit = I.standard_l2misfit(I.LowestMisfit);
-			glog.logmsg("Rec %6lu\t %3lu\t %5lu\t %10lf lowest nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
+			glog.logmsg(0,"Rec %6lu\t %3lu\t %5lu\t %10lf lowest nmfit=%.1lf stime=%.3lfs\n", I.CurrentRecord, I.flightnumber, I.linenumber, I.fidnumber, norm_mfit, stime);
 		}
-		glog.logmsg("This process finishing at %s\n", timestamp().c_str());
+		glog.logmsg(0,"This process finishing at %s\n", timestamp().c_str());
 		exitstatus = EXIT_SUCCESS;
 	}
 
 	#ifdef ENABLE_MPI
-		MPI_Finalize();
+		cMpiEnv::stop();
+		glog.logmsg(0,"Finalizing MPI\n");
 	#endif
 
 	return exitstatus;

@@ -60,16 +60,13 @@ public:
 		else {
 			cBlock b = parent.findblock(key);
 			if (b.empty() == true) {
-				std::string msg;
-				msg += strprint("Could not find control file block: %s\n", key.c_str());
-				glog.errormsg(msg);
+				std::string msg = strprint("Could not find control file block: %s.", key.c_str());
+				glog.errormsg(_SRC_, msg);
 			}
 
 			if (blockinit(b) == false) {
-				std::string msg;
-				msg += strprint("Could not parse control file block: %s\n", key.c_str());
-				std::cerr << msg;
-				glog.errormsg(msg);
+				std::string msg = strprint("Could not parse control file block: %s.", key.c_str());
+				glog.errormsg(_SRC_, msg);
 			}
 			return true;
 		}
@@ -780,20 +777,18 @@ public:
 
 	void write(const Vector& v, std::string path) const
 	{
-		FILE* fp = fileopen(path, "w");
+		std::ofstream ofs = ofstream_ex(path);
 		for (auto i = 0; i < v.rows(); i++) {
-			fprintf(fp, "%le\n", v[i]);
+			ofs << std::scientific << v[i]  << std::endl;
 		}
-		fclose(fp);
 	}
 
 	void write(const std::vector<double>& v, std::string path) const
 	{
-		FILE* fp = fileopen(path, "w");
+		std::ofstream ofs = ofstream_ex(path);
 		for (size_t i = 0; i < v.size(); i++) {
-			fprintf(fp, "%le\n", v[i]);
+			ofs << std::scientific  << v[i] << std::endl;
 		}
-		fclose(fp);
 	}
 
 	std::string rec_it_str() const

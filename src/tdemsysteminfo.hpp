@@ -43,9 +43,9 @@ public:
 
 		glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
 		T.readsystemdescriptorfile(stmfile);
-		glog.log("==============System file %s\n", stmfile.c_str());
-		glog.log(T.STM.get_as_string());
-		glog.log("==========================================================================\n");
+		glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
+		glog.log_to_file(T.STM.get_as_string());
+		glog.log_to_file("==========================================================================\n");
 		nwindows = T.NumberOfWindows;
 
 		invertXPlusZ = b.getboolvalue("InvertXPlusZ");

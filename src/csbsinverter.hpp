@@ -97,7 +97,7 @@ public:
 		}
 
 		if (oss.str().size() > 0) {
-			glog.errormsg(oss.str());
+			glog.errormsg(_SRC_,oss.str());
 		}
 
 	}
@@ -273,7 +273,7 @@ public:
 		if (alreadyparsed == true) {
 			std::ostringstream msg;
 			msg << "Constraint has already been set: " << std::endl << controlstring << std::endl;
-			glog.errormsg(msg.str());
+			glog.errormsg(_SRC_, msg.str());
 		};
 
 		is >> alpha;
@@ -313,7 +313,7 @@ public:
 		if (alreadyparsed == true) {
 			std::ostringstream msg;
 			msg << "Constraint has already been set: " << std::endl << controlstring << std::endl;
-			glog.errormsg(msg.str());
+			glog.errormsg(_SRC_, msg.str());
 		};
 
 		is >> alpha;
@@ -451,10 +451,6 @@ public:
 		catch (const std::string& msg) {
 			std::cerr << msg;
 			glog.logmsg(msg);
-		}
-		catch (const std::runtime_error& e) {
-			std::cerr << e.what();
-			glog.logmsg(std::string(e.what()));
 		}
 		catch (const std::exception& e) {
 			std::cerr << e.what();
@@ -596,14 +592,14 @@ public:
 
 	int cindex(const size_t& si, const size_t& li) {
 		if (solve_conductivity() == false) {
-			glog.errormsg("Out of boundes in cindex()\n");
+			glog.errormsg(_SRC_, "Out of boundes in cindex().");
 		}
 		return (int)(si * nParamPerSounding + cOffset + li);
 	}
 
 	int tindex(const size_t& si, const size_t& li) {
 		if (solve_thickness() == false) {
-			glog.errormsg("Out of boundes in tindex()\n");
+			glog.errormsg(_SRC_,"Out of boundes in tindex().");
 		}
 		return (int)(si * nParamPerSounding + tOffset + li);
 	}
@@ -645,9 +641,8 @@ public:
 		else {
 			glog.logmsg(0, "Standalone Processes=%d\tRank=%d\n", Size, Rank);
 		}
-
 		glog.logmsg(0, "Control file %s\n", Control.Filename.c_str());
-		glog.log(Control.get_as_string());
+		glog.log_to_file(Control.get_as_string());
 		glog.flush();
 	}
 
@@ -698,7 +693,7 @@ public:
 			NormType = eNormType::L2;
 		}
 		else {
-			glog.errormsg("Unknown NormType %s\n", nt.c_str());
+			glog.errormsg(_SRC_, "Unknown NormType %s.", nt.c_str());
 		}
 
 		MaxIterations = b.getsizetvalue("MaximumIterations");
@@ -762,7 +757,7 @@ public:
 			else {
 				std::stringstream msg;
 				msg << "Unknown constraint " << key << std::endl;
-				glog.errormsg(msg.str());
+				glog.errormsg(_SRC_, msg.str());
 			}
 		}
 		if (NLCbounds.alreadyparsed == false) {
@@ -777,7 +772,7 @@ public:
 
 		if (nSoundings > 1) {
 			if (AncFld[0].keyindex("line") < 0) {
-				glog.errormsg("Must specify a linenumber field\n");
+				glog.errormsg(_SRC_, "Must specify a linenumber field.");
 			}
 		}
 
@@ -789,7 +784,7 @@ public:
 		if (status == false) {
 			std::stringstream msg;
 			msg << "The NumberOfLayers must be specified in Input.Earth\n";
-			glog.errormsg(msg.str());
+			glog.errormsg(_SRC_,msg.str());
 		}
 
 		fdC = cInvertibleFieldDefinition(b, "Conductivity");
@@ -825,8 +820,8 @@ public:
 			cInvertibleFieldDefinition f(parent, key);
 			bool a = g.add(key, f);
 			if (a == false) {
-				std::string msg = strprint("Parameter %s has already been already added\n", key.c_str());
-				glog.errormsg(msg);
+				std::string msg = strprint("Parameter %s has already been already added.", key.c_str());
+				glog.errormsg(_SRC_, msg);
 			}
 		}
 		return g;
@@ -1343,7 +1338,7 @@ public:
 				C.data[si] = 0.0;
 			}
 			else {
-				glog.errormsg("");
+				glog.errormsg(_SRC_, "Unknown NLCcablen.method.");
 			}
 			C.W(si, si) = s / (C.err[si] * C.err[si]);
 		}
@@ -2350,14 +2345,14 @@ public:
 
 			if (inpstatus == false) {
 				std::ostringstream msg;
-				msg << "Error: no 'Input or Ref' defined for " << ename << std::endl;
-				glog.errormsg(msg.str());
+				msg << "No 'Input or Ref' defined for " << ename << std::endl;
+				glog.errormsg(_SRC_, msg.str());
 			}
 
 			if (refstatus == false) {
 				std::ostringstream msg;
-				msg << "Error: no 'Ref or Input' defined for " << ename << std::endl;
-				glog.errormsg(msg.str());
+				msg << "No 'Ref or Input' defined for " << ename << std::endl;
+				glog.errormsg(_SRC_, msg.str());
 			}
 
 			bool tfrstatus = IM->read(ge.tfr, g.tfr[gi]);
@@ -2369,8 +2364,8 @@ public:
 				bool stdstatus = IM->read(ge.std, g.std[gi]);
 				if (stdstatus == false) {
 					std::ostringstream msg;
-					msg << "Error: no 'Std' defined for " << ename << std::endl;
-					glog.errormsg(msg.str());
+					msg << "No 'Std' defined for " << ename << std::endl;
+					glog.errormsg(_SRC_, msg.str());
 				}
 
 				bool minstatus = IM->read(ge.min, g.min[gi]);
@@ -2590,7 +2585,7 @@ public:
 					if (OutputMessage.size() > 0) {
 						std::cerr << s.str();
 					}
-					glog.logmsg(s.str());
+					glog.logmsg(0,s.str());
 				}
 			}
 			paralleljob++;

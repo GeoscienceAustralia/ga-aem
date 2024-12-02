@@ -495,50 +495,46 @@ public:
 		nentries++;
 	}
 
-	void writedata(FILE* fp) {
+	void writedata(std::string filename) {
+		std::ofstream ofs = ofstream_ex(filename);
 		size_t nn = noises.size();
 		for (size_t i = 0; i < nn; i++) {
 			//do statistics and histogram for each noise process
 			cStats<double> s(noises[i]);
 			cHistogram<double, size_t> hist(noises[i],s.min,s.max,NUM_NOISE_HISTOGRAM_BINS);
 
-			fprintf(fp, "%zu %zu", datalims[i].first, datalims[i].second);
-			fprintf(fp, " %lf", s.min);
-			fprintf(fp, " %lf", s.max);
-			fprintf(fp, " %lf", s.mean);
-			fprintf(fp, " %lf", s.std);
-			fprintf(fp, " %zu", get_nentries());
+			ofs << strprint("%zu %zu", datalims[i].first, datalims[i].second);
+			ofs << strprint(" %lf", s.min);
+			ofs << strprint(" %lf", s.max);
+			ofs << strprint(" %lf", s.mean);
+			ofs << strprint(" %lf", s.std);
+			ofs << strprint(" %zu", get_nentries());
 
-			fprintf(fp, " %zu", hist.nbins);
+			ofs << strprint(" %zu", hist.nbins);
 			for (size_t j = 0; j<hist.nbins; j++){
-				fprintf(fp, " %lf", hist.centre[j]);
+				ofs << strprint(" %lf", hist.centre[j]);
 			}
 			for (size_t j = 0; j<hist.nbins; j++){
-				fprintf(fp, " %zu", hist.count[j]);
+				ofs << strprint(" %zu", hist.count[j]);
 			}
-			fprintf(fp, "\n");
+			ofs << std::endl;
 		}
 		for (size_t i = 0; i<nn; i++){
 			for (size_t j = 0; j<nn; j++){
 				double cov = covariance(noises[i], noises[j]);
-				fprintf(fp, " %15.6e", cov);
+				ofs << strprint(" %15.6e", cov);
 			}
-			fprintf(fp, "\n");
+			ofs << std::endl;
 		}
 
 		for (size_t i = 0; i<nn; i++){
 			for (size_t j = 0; j<nn; j++){
 				double cor = correlation(noises[i], noises[j]);
-				fprintf(fp, " %15.6e", cor);
+				ofs << strprint(" %15.6e", cor);
 			}
-			fprintf(fp, "\n");
+			ofs << std::endl;
 		}
-
-		for (size_t i = 0; i<nn; i++){
-			bwrite(fp, noises[i]);
-		}
-
-
+		bwrite(ofs, noises);
 	}
 
 };
@@ -586,50 +582,47 @@ public:
 		nentries++;
 	}
 
-	void writedata(FILE* fp)
+	void writedata(const std::string& filename)
 	{
+		std::ofstream ofs = ofstream_ex(filename);
 		size_t nn = nuisance.size();
 		for (size_t i = 0; i<nn; i++){
 			cStats<double> s(nuisance[i]);
 			cHistogram<double, size_t> hist(nuisance[i],s.min,s.max,NUM_NUISANCE_HISTOGRAM_BINS);
 
-			fprintf(fp, "%s", typestring[i].c_str());
-			fprintf(fp, " %lf", s.min);
-			fprintf(fp, " %lf", s.max);
-			fprintf(fp, " %lf", s.mean);
-			fprintf(fp, " %lf", s.std);
-			fprintf(fp, " %zu", get_nentries());
+			ofs << strprint("%s", typestring[i].c_str());
+			ofs << strprint(" %lf", s.min);
+			ofs << strprint(" %lf", s.max);
+			ofs << strprint(" %lf", s.mean);
+			ofs << strprint(" %lf", s.std);
+			ofs << strprint(" %zu", get_nentries());
 
-			fprintf(fp, " %zu", hist.nbins);
+			ofs << strprint(" %zu", hist.nbins);
 			for (size_t j = 0; j<hist.nbins; j++){
-				fprintf(fp, " %lf", hist.centre[j]);
+				ofs << strprint(" %lf", hist.centre[j]);
 			}
 			for (size_t j = 0; j<hist.nbins; j++){
-				fprintf(fp, " %zu", hist.count[j]);
+				ofs << strprint(" %zu", hist.count[j]);
 			}
-			fprintf(fp, "\n");
+			ofs << std::endl;
 		}
 
 		for (size_t i = 0; i<nn; i++){
 			for (size_t j = 0; j<nn; j++){
 				double cov = covariance(nuisance[i], nuisance[j]);
-				fprintf(fp, " %15.6e", cov);
+				ofs << strprint(" %15.6e", cov);
 			}
-			fprintf(fp, "\n");
+			ofs << std::endl;
 		}
 
 		for (size_t i = 0; i<nn; i++){
 			for (size_t j = 0; j<nn; j++){
 				double cor = correlation(nuisance[i], nuisance[j]);
-				fprintf(fp, " %15.6e", cor);
+				ofs << strprint(" %15.6e", cor);
 			}
-			fprintf(fp, "\n");
+			ofs << std::endl;
 		}
-
-		for (size_t i = 0; i<nn; i++){
-			bwrite(fp, nuisance[i]);
-		}
-
+		bwrite(ofs, nuisance);
 	}
 };
 

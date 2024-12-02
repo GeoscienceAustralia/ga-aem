@@ -77,8 +77,8 @@ public:
 		cBlock b = mControl.findblock("SGrid");
 		binary = b.getboolvalue("Binary");
 		sgriddir = b.getstringvalue("OutDir");
-
-		addtrailingseparator(sgriddir);
+		fixseparator(sgriddir);
+		add_trailing_separator(sgriddir);
 
 		sgridprefix = "";
 		sgridsuffix = "";
@@ -111,10 +111,10 @@ public:
 		std::string sgriddatafile = sgridname() + ".sg.data";
 		std::string sgriddatapath = sgriddir + sgridname() + ".sg.data";
 		std::string sgridhdrpath = sgriddir + sgridname() + ".sg";
-		FILE* fp_data = fileopen(sgriddatapath, "w");
-		fprintf(fp_data, "*\n");
-		fprintf(fp_data, "*   X   Y   Z  Conductivity I   J   K\n");
-		fprintf(fp_data, "*\n");
+		std::ofstream ofs = ofstream_ex(sgriddatapath);
+		ofs << strprint("*\n");
+		ofs << strprint("*   X   Y   Z  Conductivity I   J   K\n");
+		ofs << strprint("*\n");
 
 		for (int wi = 0; wi < 2; wi++) {
 			for (int li = 0; li <= D.nlayers; li++) {
@@ -175,45 +175,41 @@ public:
 						}
 					}
 
-					fprintf(fp_data, "%8.1f %9.1f %7.1f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, si, li, wi);
+					ofs << strprint("%8.1f %9.1f %7.1f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, si, li, wi);
 				}
 			}
 		}
-		fclose(fp_data);
 
-		FILE* fp_hdr = fileopen(sgridhdrpath, "w");
+		std::ofstream ofs_hdr = ofstream_ex(sgridhdrpath);
+		ofs_hdr << strprint("GOCAD SGrid 1\n");
+		ofs_hdr << strprint("HEADER {\n");
+		ofs_hdr << strprint("name:%s\n", sgridname().c_str());
+		ofs_hdr << strprint("painted:true\n");
+		ofs_hdr << strprint("*painted*variable:Conductivity\n");
+		ofs_hdr << strprint("cage:false\n");
+		ofs_hdr << strprint("volume:true\n");
+		ofs_hdr << strprint("*volume*grid:false\n");
+		ofs_hdr << strprint("*volume*transparency_allowed:false\n");
+		ofs_hdr << strprint("*volume*points:false\n");
+		ofs_hdr << strprint("shaded_painted:false\n");
+		ofs_hdr << strprint("precise_painted:true\n");
+		ofs_hdr << strprint("*psections*grid:false\n");
+		ofs_hdr << strprint("*psections*solid:true\n");
+		ofs_hdr << strprint("dead_cells_faces:false\n");
+		ofs_hdr << strprint("}\n");
 
-		fprintf(fp_hdr, "GOCAD SGrid 1\n");
-		fprintf(fp_hdr, "HEADER {\n");
-		fprintf(fp_hdr, "name:%s\n", sgridname().c_str());
-		fprintf(fp_hdr, "painted:true\n");
-		fprintf(fp_hdr, "*painted*variable:Conductivity\n");
-		fprintf(fp_hdr, "cage:false\n");
-		fprintf(fp_hdr, "volume:true\n");
-		fprintf(fp_hdr, "*volume*grid:false\n");
-		fprintf(fp_hdr, "*volume*transparency_allowed:false\n");
-		fprintf(fp_hdr, "*volume*points:false\n");
-		fprintf(fp_hdr, "shaded_painted:false\n");
-		fprintf(fp_hdr, "precise_painted:true\n");
-		fprintf(fp_hdr, "*psections*grid:false\n");
-		fprintf(fp_hdr, "*psections*solid:true\n");
-		fprintf(fp_hdr, "dead_cells_faces:false\n");
-		fprintf(fp_hdr, "}\n");
+		ofs_hdr << strprint("\n");
+		ofs_hdr << strprint("AXIS_N %zu %zu %d\n", D.nsamples + 1, D.nlayers + 1, 2);
+		ofs_hdr << strprint("PROP_ALIGNMENT CELLS\n");
+		ofs_hdr << strprint("ASCII_DATA_FILE %s\n", sgriddatafile.c_str());
 
-		fprintf(fp_hdr, "\n");
-		fprintf(fp_hdr, "AXIS_N %zu %zu %d\n", D.nsamples + 1, D.nlayers + 1, 2);
-		fprintf(fp_hdr, "PROP_ALIGNMENT CELLS\n");
-		fprintf(fp_hdr, "ASCII_DATA_FILE %s\n", sgriddatafile.c_str());
+		ofs_hdr << strprint("\n");
+		ofs_hdr << strprint("PROPERTY 1 Conductivity\n");
+		ofs_hdr << strprint("PROP_UNIT 1 S/m\n");
+		ofs_hdr << strprint("PROP_NO_DATA_VALUE 1 -999\n");
 
-		fprintf(fp_hdr, "\n");
-		fprintf(fp_hdr, "PROPERTY 1 Conductivity\n");
-		fprintf(fp_hdr, "PROP_UNIT 1 S/m\n");
-		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 1 -999\n");
-
-		fprintf(fp_hdr, "\n");
-		fprintf(fp_hdr, "END\n");
-		fclose(fp_hdr);
-
+		ofs_hdr << strprint("\n");
+		ofs_hdr << strprint("END\n");
 	}
 
 	void create_sgrid_prop_alignment_points() {
@@ -223,23 +219,23 @@ public:
 
 		std::string sgridhdrpath = sgriddir + sgridname() + ".sg";
 
-		FILE* fp_asciidata = (FILE*)NULL;
-		FILE* fp_points = (FILE*)NULL;
-		FILE* fp_property = (FILE*)NULL;
+		std::ofstream ofs_asciidata;
+		std::ofstream ofs_points;
+		std::ofstream ofs_property;
 
 		std::string asciidatapath = sgriddir + sgridname() + ".sg.data";
 		std::string pointspath = sgriddir + sgridname() + "_points@@";
 		std::string proppath = sgriddir + sgridname() + "_Conductivity@@";
 
 		if (binary) {
-			fp_points = fileopen(pointspath, "w+b");
-			fp_property = fileopen(proppath, "w+b");
+			ofs_points = ofstream_ex(pointspath, std::ios_base::out | std::ios_base::binary);
+			ofs_points = ofstream_ex(proppath, std::ios_base::out | std::ios_base::binary);
 		}
 		else {
-			fp_asciidata = fileopen(asciidatapath, "w");
-			fprintf(fp_asciidata, "*\n");
-			fprintf(fp_asciidata, "*   X   Y   Z  Conductivity  I   J   K\n");
-			fprintf(fp_asciidata, "*\n");
+			ofs_asciidata = ofstream_ex(asciidatapath);
+			ofs_asciidata << strprint("*\n");
+			ofs_asciidata << strprint("*   X   Y   Z  Conductivity  I   J   K\n");
+			ofs_asciidata << strprint("*\n");
 		};
 
 		for (int li = 0; li < D.nlayers; li++) {
@@ -253,7 +249,7 @@ public:
 					zc = (D.z[si][li] + D.z[si][li + 1]) / 2.0;
 				}
 				else {
-					printf("Error\n");
+					glog.errormsg(_SRC_,"Error: sample out of range\n");
 				}
 
 				c0 = NullOutputProperty;
@@ -291,73 +287,64 @@ public:
 						swap_endian(&fc0, 1);
 					}
 
-					fwrite(&fxc, sizeof(float), 1, fp_points);
-					fwrite(&fyc, sizeof(float), 1, fp_points);
-					fwrite(&fzc, sizeof(float), 1, fp_points);
-					fwrite(&fc0, sizeof(float), 1, fp_property);
+					ofs_points.write(reinterpret_cast<char*>(&fxc), sizeof(float));
+					ofs_points.write(reinterpret_cast<char*>(&fyc), sizeof(float));
+					ofs_points.write(reinterpret_cast<char*>(&fzc), sizeof(float));
+					ofs_points.write(reinterpret_cast<char*>(&fc0), sizeof(float));
 				}
 				else {
-					fprintf(fp_asciidata, "%8.1f %9.1f %7.1f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, si, li, 0);
+					ofs_asciidata << strprint("%8.1f %9.1f %7.1f %10.6f %4d %4d %4d\n", xc, yc, zc, c0, si, li, 0);
 				}
 			}
 		}
+
+		std::ofstream ofs_hdr = ofstream_ex(sgridhdrpath);
+		ofs_hdr << strprint("GOCAD SGrid 1\n");
+		ofs_hdr << strprint("HEADER {\n");
+		ofs_hdr << strprint("name:%s\n", sgridname().c_str());
+		ofs_hdr << strprint("painted:true\n");
+		ofs_hdr << strprint("*painted*variable:Conductivity\n");
+		ofs_hdr << strprint("ascii:on\n");
+		ofs_hdr << strprint("double_precision_binary:off\n");
+		ofs_hdr << strprint("cage:false\n");
+		ofs_hdr << strprint("volume:true\n");
+		ofs_hdr << strprint("*volume*grid:false\n");
+		ofs_hdr << strprint("*volume*transparency_allowed:false\n");
+		ofs_hdr << strprint("*volume*points:false\n");
+		ofs_hdr << strprint("shaded_painted:false\n");
+		ofs_hdr << strprint("precise_painted:true\n");
+		ofs_hdr << strprint("*psections*grid:false\n");
+		ofs_hdr << strprint("*psections*solid:true\n");
+		ofs_hdr << strprint("dead_cells_faces:false\n");
+		ofs_hdr << strprint("}\n");
+
+		ofs_hdr << strprint("\n");
+		ofs_hdr << strprint("AXIS_N %zu %zu %d\n", D.nsamples, D.nlayers, 1);
+		ofs_hdr << strprint("PROP_ALIGNMENT POINTS\n");
+
 		if (binary) {
-			fclose(fp_points);
-			fclose(fp_property);
+			ofs_hdr << strprint("POINTS_FILE %s\n", extractfilename(pointspath).c_str());
 		}
 		else {
-			fclose(fp_asciidata);
+			ofs_hdr << strprint("ASCII_DATA_FILE %s\n", extractfilename(asciidatapath).c_str());
 		}
 
-
-		FILE* fp_hdr = fileopen(sgridhdrpath, "w");
-		fprintf(fp_hdr, "GOCAD SGrid 1\n");
-		fprintf(fp_hdr, "HEADER {\n");
-		fprintf(fp_hdr, "name:%s\n", sgridname().c_str());
-		fprintf(fp_hdr, "painted:true\n");
-		fprintf(fp_hdr, "*painted*variable:Conductivity\n");
-		fprintf(fp_hdr, "ascii:on\n");
-		fprintf(fp_hdr, "double_precision_binary:off\n");
-		fprintf(fp_hdr, "cage:false\n");
-		fprintf(fp_hdr, "volume:true\n");
-		fprintf(fp_hdr, "*volume*grid:false\n");
-		fprintf(fp_hdr, "*volume*transparency_allowed:false\n");
-		fprintf(fp_hdr, "*volume*points:false\n");
-		fprintf(fp_hdr, "shaded_painted:false\n");
-		fprintf(fp_hdr, "precise_painted:true\n");
-		fprintf(fp_hdr, "*psections*grid:false\n");
-		fprintf(fp_hdr, "*psections*solid:true\n");
-		fprintf(fp_hdr, "dead_cells_faces:false\n");
-		fprintf(fp_hdr, "}\n");
-
-		fprintf(fp_hdr, "\n");
-		fprintf(fp_hdr, "AXIS_N %zu %zu %d\n", D.nsamples, D.nlayers, 1);
-		fprintf(fp_hdr, "PROP_ALIGNMENT POINTS\n");
-
+		ofs_hdr << strprint("\n");
+		ofs_hdr << strprint("PROPERTY 1 Conductivity\n");
+		ofs_hdr << strprint("PROP_UNIT 1 S/m\n");
+		ofs_hdr << strprint("PROP_NO_DATA_VALUE 1 -999\n");
 		if (binary) {
-			fprintf(fp_hdr, "POINTS_FILE %s\n", extractfilename(pointspath).c_str());
-		}
-		else {
-			fprintf(fp_hdr, "ASCII_DATA_FILE %s\n", extractfilename(asciidatapath).c_str());
-		}
-
-		fprintf(fp_hdr, "\n");
-		fprintf(fp_hdr, "PROPERTY 1 Conductivity\n");
-		fprintf(fp_hdr, "PROP_UNIT 1 S/m\n");
-		fprintf(fp_hdr, "PROP_NO_DATA_VALUE 1 -999\n");
-		if (binary) {
-			fprintf(fp_hdr, "PROP_FILE 1 %s\n", extractfilename(proppath).c_str());
-			fprintf(fp_hdr, "PROP_ESIZE 1 4\n");
-			fprintf(fp_hdr, "PROP_ETYPE 1 IEEE\n");
-			fprintf(fp_hdr, "PROP_ALIGNMENT 1 POINTS\n");
-			fprintf(fp_hdr, "PROP_FORMAT 1 RAW\n");
-			fprintf(fp_hdr, "PROP_OFFSET 1 0\n");
+			ofs_hdr << strprint("PROP_FILE 1 %s\n", extractfilename(proppath).c_str());
+			ofs_hdr << strprint("PROP_ESIZE 1 4\n");
+			ofs_hdr << strprint("PROP_ETYPE 1 IEEE\n");
+			ofs_hdr << strprint("PROP_ALIGNMENT 1 POINTS\n");
+			ofs_hdr << strprint("PROP_FORMAT 1 RAW\n");
+			ofs_hdr << strprint("PROP_OFFSET 1 0\n");
 		}
 
 
-		fprintf(fp_hdr, "\n");
-		fprintf(fp_hdr, "END\n");
-		fclose(fp_hdr);
+		ofs_hdr << strprint("\n");
+		ofs_hdr << strprint("END\n");
 	}
 
 	std::string sgridname() {
@@ -510,7 +497,7 @@ int main(int argc, char** argv)
 		}
 
 		std::string infiles = ib.getstringvalue("DataFiles");
-		std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
+		std::vector<std::string> filelist = DirectoryAccess::getfilelist_multi_pattern(infiles);
 		if (filelist.size() == 0) {
 			glog.logmsg("Error: no data files found matching %s\n", infiles.c_str());
 			return 0;

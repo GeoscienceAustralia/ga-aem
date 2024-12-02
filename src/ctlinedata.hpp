@@ -76,8 +76,8 @@ public:
 		}
 
 		if (crcol.from == -1){
-			std::string msg = strprint("Either a conductivity or resistivity field must be specified\n") + _SRC_;
-			throw(std::runtime_error(msg));
+			std::string msg = strprint("Either a conductivity or resistivity field must be specified\n");
+			glog.errormsg(_SRC_, msg);
 		}
 		nlayers = crcol.to - crcol.from + 1;
 

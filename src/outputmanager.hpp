@@ -405,25 +405,25 @@ public:
 	}
 
 	void write_headers() {
-		sFilePathParts fpp(datafilename());
+		FilePathParts fpp(datafilename());
 		sort_field_atts();
 		if (SaveDFNHeader) {
-			std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
+			std::string aseggdffile = fpp.directory + fpp.stem + ".dfn";
 			write_aseggdf_header(aseggdffile);
 		}
 
 		if (SaveCSVHeader) {
-			std::string csvfile = fpp.directory + fpp.prefix + ".csv";
+			std::string csvfile = fpp.directory + fpp.stem + ".csv";
 			write_csv_header(csvfile);
 		}
 
 		if (SaveHDRHeader) {
-			std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
+			std::string hdrfile = fpp.directory + fpp.stem + ".hdr";
 			write_simple_header(hdrfile);
 		}
 
 		if (SaveI3Header) {
-			std::string i3file = fpp.directory + fpp.prefix + ".i3";
+			std::string i3file = fpp.directory + fpp.stem + ".i3";
 			write_i3_header(i3file);
 		}
 	};
@@ -607,7 +607,7 @@ public:
 			glog.logmsg(0, "Creating Output NetCDF DataFile %s\n", DataFileName.c_str());
 			GFile inncfile(srcfile, NcFile::FileMode::read);
 			GFile outncfile(datafilename(), NcFile::FileMode::replace);
-			outncfile.subsample(srcfile, subsample, include_varnames, exclude_varnames);
+			outncfile.subsample(inncfile, subsample, include_varnames, exclude_varnames);
 		}
 
 #ifdef ENABLE_MPI

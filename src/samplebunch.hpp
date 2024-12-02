@@ -26,7 +26,7 @@ public:
 				return;
 			}
 		}
-		glog.errormsg("Error in cSampleBunch()");
+		glog.errormsg(_SRC_,"Error in cSampleBunch()");
 		return;
 	}
 

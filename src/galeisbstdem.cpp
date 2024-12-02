@@ -32,7 +32,8 @@ omp_lock_t fftw_thread_lock;
 
 void finalise() {
 #ifdef ENABLE_MPI
-	MPI_Finalize();
+	glog.logmsg(0, "Finalizing MPI\n");
+	cMpiEnv::stop();
 #endif
 }
 
@@ -41,48 +42,8 @@ int finaliseandexit() {
 	return EXIT_FAILURE;
 }
 
-int test() {
-	int dummy;
-
-	std::string fpath = "c:/AA/x/s/fred.txt";
-	std::string fpath1 = "c:\\AA\\x\\s\\fred.txt";
-
-	sFilePathParts_old s;
-	s = getfilepathparts_old(fpath);
-	sFilePathParts c(fpath);
-	std::cout << s.directory << std::endl;
-	std::cout << s.prefix << std::endl;
-	std::cout << s.extension << std::endl;
-
-	std::cout << c.directory << std::endl;
-	std::cout << c.prefix << std::endl;
-	std::cout << c.extension << std::endl;
-
-	std::string d = extractfiledirectory(fpath);
-	std::string d1 = extractfiledirectory(fpath1);
-	std::cout << d << std::endl;
-	std::cout << d1 << std::endl;
-
-	std::string ps = pathseparatorstring();
-	std::cout << ps << std::endl;
-
-	std::cout << extractfiledirectory_nosep(fpath) << std::endl;
-	std::cout << extractfiledirectory(fpath) << std::endl;
-	std::cout << extractfilepath_noextension(fpath) << std::endl;
-	std::cout << extractfilename(fpath) << std::endl;
-	std::cout << extractfilename_noextension(fpath) << std::endl;
-	std::cout << extractfileextension(fpath) << std::endl;
-
-	return 0;
-};
-
 int main(int argc, char** argv) {
-	test();
-	return 0;
 	std::string commandline = commandlinestring(argc, argv);
-	glog.logmsg(0, "%s\n", commandline.c_str());
-	glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
-
 	int mpisize = 1;
 	int mpirank = 0;
 	bool usingopenmp = false;
@@ -90,20 +51,24 @@ int main(int argc, char** argv) {
 	std::string controlfile;
 	std::string mpipname = "No MPI - Standalone";
 
-#ifdef ENABLE_MPI
-	MPI_Init(&argc, &argv);
-	mpirank = cMpiEnv::world_rank();
-	mpisize = cMpiEnv::world_size();
-	mpipname = cMpiEnv::processor_name();
-#endif
+	#ifdef ENABLE_MPI
+		cMpiEnv::start(argc, argv);
+		mpirank = cMpiEnv::world_rank();
+		mpisize = cMpiEnv::world_size();
+		mpipname = cMpiEnv::processor_name();
+		//glog.logmsg(0, "%s\n", commandline.c_str());
+		//glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
+		//glog.logmsg(0, "MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
+	#endif
 
 	std::string wlogpath = "warning.log";
 	if (mpirank == 0) std::filesystem::remove(wlogpath);
-#ifdef ENABLE_MPI
-	cMpiEnv::world_barrier();
-#endif
 
-	std::ofstream log(wlogpath, std::ios::app);
+	#ifdef ENABLE_MPI
+		cMpiEnv::world_barrier();
+	#endif
+
+	std::ofstream log(wlogpath, std::ios_base::app);
 	cStreamRedirecter cerrredirect(log, std::cerr);
 	if (mpirank == 0) std::cerr << "Warning log opening " << timestamp() << std::endl;
 
@@ -129,19 +94,19 @@ int main(int argc, char** argv) {
 	else if (argc == 3) {
 		usingopenmp = true;
 		openmpsize = atoi(argv[2]);
-#if defined _OPENMP			
-		glog.set_num_omp_threads(openmpsize);
-		int openmpmaxthreads = omp_get_max_threads();
-		if (openmpsize > openmpmaxthreads) {
-			std::string msg = strprint("**Warning: The number of requested threads (%d) is more than the processors available (%d)\n", openmpsize, openmpmaxthreads);
-			std::cerr << msg << std::endl;
-			glog.logmsg(0, msg);
-		}
-		else if (openmpsize < 1) {
-			glog.logmsg(0, "**Error: %d is a silly number of threads\n", openmpsize);
-			return finaliseandexit();
-		}
-#elif 
+		#if defined _OPENMP
+			glog.set_num_omp_threads(openmpsize);
+			int openmpmaxthreads = omp_get_max_threads();
+			if (openmpsize > openmpmaxthreads) {
+				std::string msg = strprint("**Warning: The number of requested threads (%d) is more than the processors available (%d).\n", openmpsize, openmpmaxthreads);
+				std::cerr << msg << std::endl;
+				glog.logmsg(0, msg);
+			}
+			else if (openmpsize < 1) {
+				glog.logmsg(0, "%d is a silly number of threads.\n", openmpsize);
+				return finaliseandexit();
+			}
+		#elif 
 		glog.logmsg(0, "Usage: %s control_file_name [number_of_openmp_threads]\n", argv[0]);
 		glog.logmsg(0, "       **Error: This executable has not been compiled with OpenMP enabbled\n");
 		glog.logmsg(0, "       **Compile with OpenMP or do not specify [number_of_openmp_threads]\n");
@@ -151,21 +116,21 @@ int main(int argc, char** argv) {
 
 	controlfile = std::string(argv[1]);
 	if (usingopenmp) {
-#if defined _OPENMP			
+		#if defined _OPENMP
 		omp_init_lock(&fftw_thread_lock);
-#pragma omp parallel num_threads(openmpsize)
-		{
-			int openmprank = omp_get_thread_num();
-			std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
-		}
-		std::cerr << "Warning log closing " << timestamp() << std::endl;
-#endif
+		#pragma omp parallel num_threads(openmpsize)
+			{
+				int openmprank = omp_get_thread_num();
+				std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
+			}
+			std::cerr << "Warning log closing " << timestamp() << std::endl;
+		#endif
 	}
 	else {
 		std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter>(controlfile, mpisize, mpirank, usingopenmp, commandline);
-#ifdef ENABLE_MPI
-		cMpiEnv::world_barrier();
-#endif
+		#ifdef ENABLE_MPI
+			cMpiEnv::world_barrier();
+		#endif
 		if (mpirank == 0) std::cerr << "Warning log closing " << timestamp() << std::endl;
 	}
 

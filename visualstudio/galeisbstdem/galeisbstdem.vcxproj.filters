@@ -91,5 +91,8 @@
     <ClInclude Include="..\..\src\outputmanager.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

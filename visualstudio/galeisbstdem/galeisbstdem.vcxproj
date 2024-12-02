@@ -103,7 +103,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -128,6 +128,7 @@
     <ClInclude Include="..\..\submodules\cpp-utils\include\file_formats.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\general_constants.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\logger.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\streamredirecter.hpp" />

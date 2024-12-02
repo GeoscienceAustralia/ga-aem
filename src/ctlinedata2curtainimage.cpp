@@ -11,7 +11,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <numeric>
 #include <vector>
 #include <valarray>
-#include <cstring>
+#include <string>
 #include <iostream>
 #include <iomanip>
 
@@ -75,16 +75,16 @@ public:
 
 	void save(const std::string& filename)
 	{
-		sFilePathParts fpp(filename);
-		std::string bilpath = fpp.directory + pathseparatorstring() + fpp.prefix + ".bil";
-		std::string hdrpath = fpp.directory + pathseparatorstring() + fpp.prefix + ".hdr";
+		FilePathParts fpp(filename);
+		std::string bilpath = fpp.directory + pathseparatorstring() + fpp.stem + ".bil";
+		std::string hdrpath = fpp.directory + pathseparatorstring() + fpp.stem + ".hdr";
 		savebil(bilpath);
 		savehdr(hdrpath);
 	}
 
 	void savebil(const std::string& bilfilename)
 	{
-		std::ofstream ofs(bilfilename, std::ios::out | std::ios::binary);
+		std::ofstream ofs(bilfilename, std::ios_base::out | std::ios_base::binary);
 		ofs.write((char*)(&data[0]), sizeof(T) * data.size());
 	}
 
@@ -197,7 +197,8 @@ public:
 		else autozsectionbot = true;
 
 		outdir = b.getstringvalue("OutDir");
-		addtrailingseparator(outdir);
+		fixseparator(outdir);
+		add_trailing_separator(outdir);
 
 		prefix = b.getstringvalue("Prefix");
 		suffix = b.getstringvalue("Suffix");
@@ -573,7 +574,7 @@ public:
 	}
 
 	std::string ribbontilerbatchfilepath() {
-		std::string s = outdir + "\\run_ribbon_tiler.bat";
+		std::string s = outdir + "run_ribbon_tiler.bat";
 		return s;
 	}
 
@@ -632,8 +633,8 @@ public:
 	{
 		int inepsgcode = cCRS::epsgcode(D.inputdatumprojection);
 		if (inepsgcode < 0) {
-			std::string msg = strprint("Invalid DatumProjection %s was specified\n", D.inputdatumprojection.c_str()) + _SRC_;
-			throw(std::runtime_error(msg));
+			std::string msg = strprint("Invalid DatumProjection %s was specified\n", D.inputdatumprojection.c_str());
+			glog.errormsg(_SRC_, msg);			
 		}
 		int outepsgcode = cCRS::epsgcode("WGS84|GEODETIC");
 		//transform(inepsgcode, e_in, n_in, outepsgcode, lon_out, lat_out);
@@ -641,20 +642,18 @@ public:
 	}
 
 	void savepoints(const std::vector<RDP::Point>& p, const std::string& filename) {
-		FILE* fp = fileopen(filename, "w");
+		std::ofstream ofs = ofstream_ex(filename);
 		for (size_t i = 0; i < p.size(); i++) {
-			fprintf(fp, "%10lf %10lf\n", p[i].first, p[i].second);
+			ofs << strprint("%10lf %10lf\n", p[i].first, p[i].second);
 		}
-		fclose(fp);
 	};
 
 	void savepoints(const std::vector<double>& x, const std::vector<double>& y, const std::string& filename)
 	{
-		FILE* fp = fileopen(filename, "w");
+		std::ofstream ofs = ofstream_ex(filename);
 		for (size_t i = 0; i < x.size(); i++) {
-			fprintf(fp, "%10.2lf %10.2lf\n", x[i], y[i]);
+			ofs << strprint("%10.2lf %10.2lf\n", x[i], y[i]);
 		}
-		fclose(fp);
 	};
 
 	void saveimage_geometry()
@@ -663,23 +662,22 @@ public:
 		std::vector<double> imagelat(nhpixels);
 		en2lonlat(imagex, imagey, imagelon, imagelat);
 		std::string xypath = outdir + "geometry\\" + basename() + ".path.txt";
-		FILE* fp = fileopen(xypath, "w");
+		std::ofstream ofs = ofstream_ex(xypath);
 		for (size_t i = 0; i < nhpixels; i++) {
 			double hp = dh / 2.0 + dh * i;
-			fprintf(fp, "%10d %10zu %10.2lf %10.2lf %10.2lf %10.2lf %12.6lf %12.6lf %10.2lf\n",
+			ofs << strprint("%10d %10zu %10.2lf %10.2lf %10.2lf %10.2lf %12.6lf %12.6lf %10.2lf\n",
 				D.linenumber, i + 1, hp, imagefid[i], imagex[i], imagey[i], imagelon[i], imagelat[i], imageelevation[i]);
 		}
-		fclose(fp);
 
 		double ulx = h0 - dh / 2.0 + dh / 2.0;
 		double uly = v1 + dv / 2.0;
 		double lrx = h1 + dh / 2.0 + dh / 2.0;
 		double lry = v0 - dv / 2.0;
+		
 		std::string xyext = outdir + "geometry\\" + basename() + ".extent.txt";
-		fp = fileopen(xyext, "w");
-		fprintf(fp, "%10d %10d %10d %10d %10d", D.linenumber, 0, 0, nhpixels, -nvpixels);
-		fprintf(fp, " %10.2lf %10.2lf %10.2lf %10.2lf\n", ulx, uly, lrx, lry);
-		fclose(fp);
+		std::ofstream ofsext = ofstream_ex(xyext);
+		ofsext << strprint("%10d %10d %10d %10d %10d", D.linenumber, 0, 0, nhpixels, -nvpixels);
+		ofsext << strprint(" %10.2lf %10.2lf %10.2lf %10.2lf\n", ulx, uly, lrx, lry);
 	};
 
 	void save_world_file()
@@ -701,7 +699,8 @@ public:
 
 	void savexml(const std::vector<double> longitude, const std::vector<double> latitude)
 	{
-		makedirectory(xmlpath());
+		std::string xmlfile = xmlpath();
+		bool status = makedirectory_for(xmlfile);
 		try
 		{
 			//Levels
@@ -713,7 +712,7 @@ public:
 			}
 
 			Element a, b;
-			Document doc(xmlpath());
+			Document doc(xmlfile);
 			std::string ver = "1.0";
 			std::string enc = "UTF-8";
 			std::string std = "yes";
@@ -833,8 +832,8 @@ public:
 
 	void saveribbontilerbatchcommand()
 	{
-		std::ios_base::openmode mode = std::ios::app;
-		if (sequence_number == 0) mode = std::ios::trunc;
+		std::ios_base::openmode mode = std::ios_base::app;
+		if (sequence_number == 0) mode = std::ios_base::trunc;
 		std::ofstream file(ribbontilerbatchfilepath().c_str(), mode);
 
 		std::string s;
@@ -852,7 +851,7 @@ public:
 
 	static void appendpause(const std::string filename)
 	{
-		std::ios_base::openmode mode = std::ios::app;
+		std::ios_base::openmode mode = std::ios_base::app;
 		std::ofstream file(filename, mode);
 		file << "\npause\n";
 	}
@@ -865,7 +864,7 @@ void save_dataset_xml(const std::string xmlpath,
 	const std::vector<std::string> urls
 )
 {
-	makedirectory(xmlpath);
+	makedirectory_for(xmlpath);
 	try
 	{
 		Element a, b;
@@ -923,7 +922,7 @@ int main(int argc, char** argv)
 		cBlock sb = b.findblock("Section");
 		std::string headerfile;
 		if (ib.getvalue("DfnFile", headerfile) == true) {
-			glog.logmsg("Headerfile = %s\n",headerfile.c_str());
+			glog.logmsg("Headerfile = %s\n", headerfile.c_str());
 			glog.logmsg("Note: in future please use 'HeaderFile = ...' instead of 'DfnFile = ...'\n");
 		}
 		else if (ib.getvalue("HeaderFile", headerfile) == true) {
@@ -946,7 +945,7 @@ int main(int argc, char** argv)
 		if (status == true) {
 			linefieldindex = r.from;
 		}
-		else{
+		else {
 			if (cHDRHeader::is_of_format(headerfile)) {
 				cHDRHeader H(headerfile);
 				fields = H.getfields();
@@ -960,12 +959,12 @@ int main(int argc, char** argv)
 		}
 
 		if (linefieldindex < 0) {
-			glog.logmsg("Error: cannot find the line field %s\n",linefieldname.c_str());
+			glog.logmsg("Error: cannot find the line field %s\n", linefieldname.c_str());
 			return 0;
 		}
 
 		std::string infiles = ib.getstringvalue("DataFiles");
-		std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
+		std::vector<std::string> filelist = DirectoryAccess::getfilelist_multi_pattern(infiles);
 		if (filelist.size() == 0) {
 			glog.logmsg("Error: no data files found matching %s\n", infiles.c_str());
 			return 0;
@@ -1008,14 +1007,14 @@ int main(int argc, char** argv)
 
 		save_dataset_xml(datasetxml, datasetname, names, urls);
 		cCurtainImageSection::appendpause(tilerbatchfile);
-		printf("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
+		glog.logmsg("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
 		cGDIplusHelper::stop(gdikey);
 	}
 	catch (ticpp::Exception& e) {
 		std::cout << e.what();
 		cGDIplusHelper::stop(gdikey);
 	}
-	catch (std::runtime_error& e) {
+	catch (std::exception& e) {
 		std::cout << e.what();
 		cGDIplusHelper::stop(gdikey);
 	}

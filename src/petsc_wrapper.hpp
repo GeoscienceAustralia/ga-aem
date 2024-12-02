@@ -525,19 +525,18 @@ public:
 		for (int p = 0; p < mpisize(); p++) {
 			mpibarrier();
 			if (p == mpirank()) {
-				FILE* fp;
+				std::ofstream ofs;
 				if (p == 0) {
-					fp = fileopen(filename, "w");
+					ofs = ofstream_ex(filename);
 				}
 				else {
-					fp = fileopen(filename, "a");
+					ofs = ofstream_ex(filename, std::ios_base::app);
 				}
 
 				cOwnership r = ownership();
 				for (PetscInt i = 0; i < r.nlocal(); i++) {
-					fprintf(fp, "%20.16le\n", a[i]);
+					ofs << strprint("%20.16le\n", a[i]);
 				}
-				fclose(fp);
 			}
 			mpibarrier();
 		}
@@ -1232,12 +1231,12 @@ public:
 		for (int p = 0; p < mpisize(); p++) {
 			mpibarrier();
 			if (p == mpirank()) {
-				FILE* fp;
+				std::ofstream ofs;
 				if (p == 0) {
-					fp = fileopen(filename, "w");
+					ofs = ofstream_ex(filename);
 				}
 				else {
-					fp = fileopen(filename, "a");
+					ofs = ofstream_ex(filename, std::ios_base::app);
 				}
 
 				bool writezeroatlowerright = true;
@@ -1249,7 +1248,7 @@ public:
 
 					PetscErrorCode ierr = MatGetRow(mat(), gi, &nnz, &colind, &val); CHKERR(ierr);
 					for (PetscInt j = 0; j < nnz; j++) {
-						fprintf(fp, "%d\t%d\t%20.16le\n", gi, colind[j], val[j]);
+						ofs << strprint("%d\t%d\t%20.16le\n", gi, colind[j], val[j]);
 					}
 
 					if (gi == nglobalrows() - 1) {
@@ -1261,11 +1260,8 @@ public:
 				}
 				//Always write a zero into last row/col if it is empty
 				if (p == mpisize() - 1 && writezeroatlowerright) {
-					fprintf(fp, "%d\t%d\t%20.16le\n", nglobalrows() - 1, nglobalcols() - 1, 0.0);
+					ofs << strprint("%d\t%d\t%20.16le\n", nglobalrows() - 1, nglobalcols() - 1, 0.0);
 				}
-
-				fclose(fp);
-
 			}
 		}
 		mpibarrier();

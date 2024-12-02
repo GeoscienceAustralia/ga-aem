@@ -57,7 +57,7 @@ public:
 
 	virtual bool get_bunch(cSampleBunch& bunch, const cFieldDefinition& fd, const int& pointindex, const int& bunchsize, const int& bunchsubsample)
 	{
-		glog.errormsg(_SRC_ + "\nfunction not yet implemented\n");
+		glog.errormsg(_SRC_,"Function not yet implemented.");
 		return false;
 	};
 
@@ -66,12 +66,12 @@ public:
 	virtual bool parse_record() { return true; }
 
 	virtual bool get_acsiicolumnfield(const cFieldDefinition& fd, cAsciiColumnField& c) const {
-		glog.errormsg(_SRC_, "get_acsiicolumnfield() not yet implemented\n");
+		glog.errormsg(_SRC_, "Function not yet implemented.");
 		return true;
 	}
 
 	virtual bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {
-		glog.errormsg(_SRC_, "set_variant_type() not yet implemented\n");
+		glog.errormsg(_SRC_, "Function not yet implemented.");
 		return true;
 	}
 
@@ -191,17 +191,15 @@ public:
 		if (isdefined(HeaderFileName)) {
 			fixseparator(HeaderFileName);
 			if (!fs::exists(HeaderFileName)) {
-				std::string msg = _SRC_;
-				msg += strprint("\n\tD'oh! the specified header file (%s) does not exist\n", HeaderFileName.c_str());
-				throw(std::runtime_error(msg));
+				std::string msg = strprint("D'oh! the specified header file (%s) does not exist.", HeaderFileName.c_str());
+				glog.errormsg(_SRC_ , msg);
 			}
 		}
 
 		fixseparator(DataFileName);
 		if (!fs::exists(DataFileName)) {
-			std::string msg = _SRC_;
-			msg += strprint("\n\tD'Oh! the specified data file (%s) does not exist\n", DataFileName.c_str());
-			throw(std::runtime_error(msg));
+			std::string msg = strprint("D'Oh! the specified data file (%s) does not exist.", DataFileName.c_str());
+			glog.errormsg(_SRC_, msg);
 		}
 
 		AF.openfile(DataFileName);
@@ -230,9 +228,8 @@ public:
 				AF.parsetype = cAsciiColumnFile::ParseType::FIXEDWIDTH;
 			}
 			else {
-				std::string msg = _SRC_;
-				msg += strprint("\n\tD'oh! the specified header file (%s) is not .dfn or .csv or .csvh or .hdr\n", HeaderFileName.c_str());
-				throw(std::runtime_error(msg));
+				std::string msg = strprint("D'oh! the specified header file (%s) is not .dfn or .csv or .csvh or .hdr.", HeaderFileName.c_str());
+				glog.errormsg(_SRC_, msg);
 			}
 		}
 		else {
@@ -249,8 +246,7 @@ public:
 	bool is_record_valid() {
 		bool status = AF.is_record_valid();
 		if (status == false) {
-			std::string msg;
-			msg = strprint("Skipping non-valid record at line %zu of Input DataFile %s\n", record(), datafilename().c_str());
+			std::string msg = strprint("Skipping non-valid record at line %zu of Input DataFile %s.", record(), datafilename().c_str());
 			glog.logmsg(msg);
 			std::cerr << msg;
 

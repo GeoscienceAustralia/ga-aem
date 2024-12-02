@@ -120,7 +120,7 @@ public:
 		}
 
 		outdir = b.getstringvalue("OutDir");
-		addtrailingseparator(outdir);
+		add_trailing_separator(outdir);
 
 		prefix = b.getstringvalue("Prefix");
 		suffix = b.getstringvalue("Suffix");
@@ -507,7 +507,7 @@ public:
 	}
 
 	void save() {
-		makedirectory(outdir);
+		bool status = makedirectory(outdir);
 		if (SavePNG) {
 			saveimage(*pBitmap,"png");
 			saveworldfile(worldfile("pngw"));
@@ -533,14 +533,13 @@ public:
 		double ix0 = x0 - (dh / dv) * vshift * sin(angle);
 		double iy0 = y0 + (dh / dv) * vshift * cos(angle);
 
-		FILE* fp = fileopen(worldfilepath, "w");
-		fprintf(fp, "%lf\n", dh * cos(angle));
-		fprintf(fp, "%lf\n", dh * sin(angle));
-		fprintf(fp, "%lf\n", dh * sin(angle));
-		fprintf(fp, "%lf\n", -dh * cos(angle));
-		fprintf(fp, "%lf\n", ix0);
-		fprintf(fp, "%lf\n", iy0);
-		fclose(fp);
+		std::ofstream ofs = ofstream_ex(worldfilepath);
+		ofs << strprint("%lf\n", dh * cos(angle));
+		ofs << strprint("%lf\n", dh * sin(angle));
+		ofs << strprint("%lf\n", dh * sin(angle));
+		ofs << strprint("%lf\n", -dh * cos(angle));
+		ofs << strprint("%lf\n", ix0);
+		ofs << strprint("%lf\n", iy0);
 	}
 
 };
@@ -610,7 +609,7 @@ int main(int argc, char** argv)
 		}
 
 		std::string infiles = ib.getstringvalue("DataFiles");
-		std::vector<std::string> filelist = cDirectoryAccess::getfilelist(infiles);
+		std::vector<std::string> filelist = DirectoryAccess::getfilelist_multi_pattern(infiles);
 		if (filelist.size() == 0) {
 			glog.logmsg("Error: no data files found matching %s\n", infiles.c_str());
 			return 0;
@@ -634,7 +633,7 @@ int main(int argc, char** argv)
 				S.process();
 			}
 		}
-		printf("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
+		glog.logmsg("Done ... \nElapsed time = %.3lf seconds\n", stopwatch.etimenow());
 		cGDIplusHelper::stop(gdikey);
 	}
 	catch (std::runtime_error& e) {

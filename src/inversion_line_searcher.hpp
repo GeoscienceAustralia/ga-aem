@@ -140,7 +140,7 @@ public:
 		const double& x1 = trials[i1].first;
 		const double& y1 = trials[i1].second;
 		if (x1 == x0) {
-			glog.errormsg(_SRC_ + "\nDivide by zero error 'a' in linear estimate");
+			glog.errormsg(_SRC_,"Divide by zero error 'a' in linear estimate");
 		}
 		if (y1 == y0) {
 			return (x0 + x1) / 2.0;
@@ -161,14 +161,14 @@ public:
 
 		double denom = (x1 - x2) * (x1 - x3) * (x2 - x3);
 		if (denom == 0) {
-			glog.errormsg(_SRC_ + "\nDivide by zero error 'denom' in quadratic estimate");
+			glog.errormsg(_SRC_,"Divide by zero error 'denom' in quadratic estimate");
 		}
 		double a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom;
 		double b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / denom;
 		//double c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / denom;
 		double xmin = -b / (2.0 * a);
 		if (a == 0) {
-			glog.errormsg(_SRC_ + "\nDivide by zero error 'a' in quadratic estimate");
+			glog.errormsg(_SRC_,"Divide by zero error 'a' in quadratic estimate");
 		}
 		//double ymin = c - b*b / (4 * a);
 		return xmin;

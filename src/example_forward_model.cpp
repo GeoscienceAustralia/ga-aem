@@ -164,9 +164,14 @@ int skytem_computation_time()
 
 int main(int argc, char* argv[])
 {
-	//skytem_example();
-	//skytem_example_ip();
-	skytem_computation_time();
-	prompttocontinue();
+	try {
+		//skytem_example();
+		//skytem_example_ip();
+		skytem_computation_time();
+	}
+	catch (std::exception& e) {
+		std::cout << e.what();
+	}
+	return 0;
 }
 

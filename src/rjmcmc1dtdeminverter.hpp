@@ -140,7 +140,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	double memoryusedatstart;
 
 	std::string InputDataFile;
-	FILE*  fp_indata;
+	std::ifstream ifs_indata;
 
 	size_t Outputcolumn; //output column number
 	std::string OutputDirectory;
@@ -185,7 +185,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 	~rjmcmc1dTDEmInverter()
 	{
-		fclose(fp_indata);
 		glog.close();
 	}
 
@@ -196,7 +195,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		cBlock OB = Control.findblock("Output");
 		std::string OutputDirectory = OB.getstringvalue("Directory");
-		addtrailingseparator(OutputDirectory);
+		fixseparator(OutputDirectory);
+		add_trailing_separator(OutputDirectory);
 		if (fs::exists(OutputDirectory) == false) {
 			glog.logmsg(0, "Creating OutputDirectory: %s\n", OutputDirectory.c_str());
 			makedirectory(OutputDirectory);
@@ -218,7 +218,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		glog.logmsg(0, "Version %s Compiled at %s on %s\n", GAAEM_VERSION, __TIME__, __DATE__);
 		glog.logmsg(0, "Working directory %s\n", getcurrentdirectory().c_str());
 		glog.logmsg(0, "Processes=%lu\tRank=%lu\n", mpiSize, mpiRank);
-		glog.log(Control.get_as_string());
+		glog.log_to_file(Control.get_as_string());
 
 		//Type of sampling Multichain or not
 		cBlock SB = Control.findblock("Sampler");
@@ -238,7 +238,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		InputDataFile = IB.getstringvalue("DataFile");
 		fixseparator(InputDataFile);
-		fp_indata = fileopen(InputDataFile, "r");
+		ifs_indata = std::ifstream(InputDataFile);
 
 		s = OutputDirectory + OB.getstringvalue("DataFile");
 		fixseparator(s);
@@ -246,7 +246,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		if (SaveMaps) {
 			MapsDirectory = OB.getstringvalue("MapsDirectory");
-			addtrailingseparator(MapsDirectory);
+			fixseparator(MapsDirectory);
+			add_trailing_separator(MapsDirectory);
 			if (fs::exists(MapsDirectory) == false) {
 				glog.logmsg(0, "Creating MapsDirectory: %s\n", MapsDirectory.c_str());
 				makedirectory(MapsDirectory);
@@ -273,9 +274,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
 			T.readsystemdescriptorfile(stmfile);
 
-			glog.log("==============System file %s\n", stmfile.c_str());
-			glog.log(T.STM.get_as_string());
-			glog.log("==========================================================================\n");
+			glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
+			glog.log_to_file(T.STM.get_as_string());
+			glog.log_to_file("==========================================================================\n");
 
 			S.nwindows = T.NumberOfWindows;
 			S.useX = b.getboolvalue("UseXComponent");
@@ -452,7 +453,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 	bool readnextrecord()
 	{
-		if (filegetline(fp_indata, CurrentRecordString) == false) {
+		if (filegetline_ifs(ifs_indata, CurrentRecordString) == false) {
 			return false;
 		}
 		else {
@@ -725,9 +726,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		rjMcMC1DSampler::sample();
 		std::string dstr = results_string();
 
-		sFilePathParts fpp(OutputDataFile);
-		std::string hdrfile = fpp.directory + fpp.prefix + ".hdr";
-		std::string aseggdffile = fpp.directory + fpp.prefix + ".dfn";
+		FilePathParts fpp(OutputDataFile);
+		std::string hdrfile = fpp.directory + fpp.stem + ".hdr";
+		std::string aseggdffile = fpp.directory + fpp.stem + ".dfn";
 
 		//Output header file
 		if (fs::exists(hdrfile) == false) {
@@ -736,9 +737,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		}
 
 		//Output data record
-		FILE* fp = fileopen(OutputDataFile, "a");
-		fprintf(fp, dstr.c_str());
-		fclose(fp);
+		std::ofstream ofs = ofstream_ex(OutputDataFile, std::ios_base::app);
+		ofs << dstr;
 
 		write_maps_to_file_netcdf();
 		
@@ -965,11 +965,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		std::string fileprefix = prefixstring();
 		std::string fname = MapsDirectory + fileprefix + ".npmap";
-
-		FILE* fp = fileopen(fname, "w");
-		mnmap.writedata(fp);
-		fclose(fp);
-
+		mnmap.writedata(fname);
 	}
 
 	void write_nuisance_maps()
@@ -980,9 +976,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		std::string fileprefix = prefixstring();
 		std::string fname = MapsDirectory + fileprefix + ".numap";
-		FILE* fp = fileopen(fname, "w");
-		nmap.writedata(fp);
-		fclose(fp);
+		nmap.writedata(fname);
 	}
 
 	cTDEmGeometry getgeometry(const rjMcMC1DModel& m)
