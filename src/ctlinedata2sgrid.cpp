@@ -25,6 +25,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include "ticpp.h"
 using namespace ticpp;
+using namespace Geometry3D;
 
 class cLogger glog; //The global instance of the log file manager
 
@@ -148,7 +149,7 @@ public:
 
 					double ang = 90;
 					if (wi == 1)ang = -90;
-					cVec vr = (cellwidth / 2.0) * v.rotate(ang, cVec(0.0, 0.0, 1.0)).unit();
+					cVec vr = (cellwidth / 2.0) * v.rotate(ang, Geometry3D::zaxis).unit();
 					xc = xc + vr.x;
 					yc = yc + vr.y;
 

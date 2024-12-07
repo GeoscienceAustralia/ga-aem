@@ -113,6 +113,7 @@
     <ClInclude Include="..\..\src\airborne_types.hpp" />
     <ClInclude Include="..\..\src\cinverter.hpp" />
     <ClInclude Include="..\..\src\csbsinverter.hpp" />
+    <ClInclude Include="..\..\src\fixed_point_spline.hpp" />
     <ClInclude Include="..\..\src\gaaem_version.hpp" />
     <ClInclude Include="..\..\src\inputmanager.hpp" />
     <ClInclude Include="..\..\src\inversion_line_searcher.hpp" />

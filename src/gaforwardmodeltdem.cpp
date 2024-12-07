@@ -18,6 +18,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 class cLogger glog; //The global instance of the log file manager
 
+using namespace AEM;
+
 static int parseinputrecord(const char* record, cTDEmGeometry& G, cEarth1D& E)
 {
 	std::vector<double> v = getdoublevector(record, " ,\t\r\n");
@@ -178,7 +180,7 @@ static int process(std::string controlfilename)
 	std::string sysfile = C.getstringvalue("Control.SystemFile");
 	glog.logmsg("Opening AEM system file %s\n", sysfile.c_str());
 	cTDEmSystem T(sysfile.c_str());
-	T.LEM.iptype = (cLEM::IPType)iptype;
+	T.lem().iptype = (cLEM::IPType)iptype;
 
 	glog.logmsg("Opening input file %s\n", inputfile.c_str());
 	std::ifstream ofsin = ifstream_ex(inputfile);
@@ -187,7 +189,7 @@ static int process(std::string controlfilename)
 
 	glog.logmsg("Opening output header file %s\n", outputhdr.c_str());
 	std::ofstream ofshdr = ofstream_ex(outputhdr);
-	writehdr(ofshdr, T.NumberOfWindows);
+	writehdr(ofshdr, T.nwindows());
 
 	cTDEmResponse R;
 	size_t recnum = 1;

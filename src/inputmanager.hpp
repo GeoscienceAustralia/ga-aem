@@ -272,6 +272,7 @@ public:
 
 	template<typename T>
 	bool get_one(const cFieldDefinition& fd, const size_t& pointindex, T& val) {
+		std::cout << "get_one()" << " " << pointindex << std::endl;
 		if (load_record(pointindex)) {
 			if (parse_record()) {
 				if (fd.isinitialised()) {
@@ -287,49 +288,54 @@ public:
 		return false;
 	}
 
-	bool get_bunch(cSampleBunch& bunch, const cFieldDefinition& fd, const int& pointindex, const int& bunchsize, const int& bunchsubsample)
+	bool get_bunch(cSampleBunch& bunch, const cFieldDefinition& line_fd, const int& pointindex, const int& bunchsize, const int& bunchsubsample)
 	{
-		int line;
-		bool status = get_one(fd, pointindex, line);
+		int pa = pointindex;
 
-		if (status == false) return false;
+		if (bunchsize > 1) {
+			std::cout << (_SRC_).c_str() << std::endl;
+			int line;
+			bool status = get_one(line_fd, pointindex, line);
 
-		int pn = pointindex;
-		int ln = line;
+			if (status == false) return false;
 
-		int pa = pointindex - bunchsubsample * ((bunchsize - 1) / 2);
-		while (pa < 0) pa += bunchsubsample;
-		pn = pointindex - bunchsubsample;
-		if (pn < pa) pn = pa;
+			int pn = pointindex;
+			int ln = line;
 
-		while (pn > pa) {
-			bool status = get_one(fd, pn, ln);
-			if (status && ln == line) {
-				pn -= bunchsubsample;
+			int pa = pointindex - bunchsubsample * ((bunchsize - 1) / 2);
+			while (pa < 0) pa += bunchsubsample;
+			pn = pointindex - bunchsubsample;
+			if (pn < pa) pn = pa;
+
+			while (pn > pa) {
+				bool status = get_one(line_fd, pn, ln);
+				if (status && ln == line) {
+					pn -= bunchsubsample;
+				}
+				else {
+					pa = pn + bunchsubsample;
+					break;
+				}
 			}
-			else {
-				pa = pn + bunchsubsample;
-				break;
-			}
-		}
 
-		int pb = pa + bunchsubsample * (bunchsize - 1);
-		pn = pointindex;
-		ln = line;
-		while (pn <= pb) {
-			bool status = get_one(fd, pn, ln);
-			if (status && ln == line) {
-				pn += bunchsubsample;
-			}
-			else {
-				pb = pn - bunchsubsample;
-				pa = pb - bunchsubsample * (bunchsize - 1);
-				break;
+			int pb = pa + bunchsubsample * (bunchsize - 1);
+			pn = pointindex;
+			ln = line;
+			while (pn <= pb) {
+				bool status = get_one(line_fd, pn, ln);
+				if (status && ln == line) {
+					pn += bunchsubsample;
+				}
+				else {
+					pb = pn - bunchsubsample;
+					pa = pb - bunchsubsample * (bunchsize - 1);
+					break;
+				}
 			}
 		}
 
 		std::vector<std::size_t> indices = increment((size_t)bunchsize, (size_t)pa, (size_t)bunchsubsample);
-		bunch = cSampleBunch(indices, pointindex);
+		bunch = cSampleBunch(pointindex, indices);
 		return true;
 	};
 

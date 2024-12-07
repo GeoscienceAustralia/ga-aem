@@ -21,6 +21,8 @@ Richard L. Taylor, Geoscience Australia.
 #include "file_formats.hpp"
 #include "rjmcmc1d.hpp"
 
+using namespace AEM;
+
 class cTDEmSystemInfo{
 
 public:
@@ -272,13 +274,13 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			cTDEmSystem& T = S.T;
 			std::string stmfile = b.getstringvalue("SystemFile");
 			glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
-			T.readsystemdescriptorfile(stmfile);
+			T.read_system_descriptor_file(stmfile);
 
 			glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
-			glog.log_to_file(T.STM.get_as_string());
+			glog.log_to_file(T.stm().get_as_string());
 			glog.log_to_file("==========================================================================\n");
 
-			S.nwindows = T.NumberOfWindows;
+			S.nwindows = T.nwindows();
 			S.useX = b.getboolvalue("UseXComponent");
 			S.useY = b.getboolvalue("UseYComponent");
 			S.useZ = b.getboolvalue("UseZComponent");
@@ -588,8 +590,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 			if (S.reconstructPrimary) {
 				T.setgeometry(IG);
-				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-				T.LEM.derivative_layer = INT_MAX;
+				T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+				T.lem().derivative_layer = INT_MAX;
 				T.setprimaryfields();
 
 				S.oPX = T.PrimaryX;
@@ -709,7 +711,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 					n->value = sqrt(IG.txrx_dx * IG.txrx_dx + IG.txrx_dz * IG.txrx_dz);
 					break;
 				case TDEMNuisance::Type::TXRX_ANGLE:
-					n->value = R2D * atan2(IG.txrx_dz, IG.txrx_dx);
+					n->value = R2D<double> * std::atan2(IG.txrx_dz, IG.txrx_dx);
 					break;
 				default:break;
 				}
@@ -1022,8 +1024,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		}
 
 		if (angledistance == true) {
-			OG.txrx_dx = distance * cos(D2R * angle);
-			OG.txrx_dz = distance * sin(D2R * angle);
+			OG.txrx_dx = distance * cos(D2R<double> * angle);
+			OG.txrx_dz = distance * sin(D2R<double> * angle);
 		}
 		return OG;
 	}
@@ -1070,8 +1072,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			T.setconductivitythickness(c, t);
 			T.setgeometry(G);
 			T.setupcomputations();
-			T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-			T.LEM.derivative_layer = INT_MAX;
+			T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+			T.lem().derivative_layer = INT_MAX;
 			T.setprimaryfields();
 			T.setsecondaryfields();
 			std::vector<double> v = collect(S, T);

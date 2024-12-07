@@ -888,7 +888,7 @@ public:
 
 	static double gaussian_pdf(const double mean, const double std, const double x)
 	{
-		double p = std::exp(-0.5 * std::pow((x - mean) / std, 2.0)) / (std::sqrt(TWOPI)*std);
+		double p = std::exp(-0.5 * std::pow((x - mean) / std, 2.0)) / (std::sqrt(TWOPI<double>)*std);
 		return p;
 	}
 

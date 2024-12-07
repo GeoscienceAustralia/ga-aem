@@ -19,6 +19,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 //Formulation mainly from the book 
 //Geo-Electromagnetism, Wait James, R. Academic Press 1982
 
+using namespace Geometry3D;
+
 typedef std::complex<double> cdouble;
 
 struct HankelTransform{
@@ -185,9 +187,7 @@ private:
 	double XonR, YonR;
 	cVec Source_Orientation;
 	double xyrotation, cosxyrotation, sinxyrotation;
-	cVec xaxis;
-	cVec yaxis;
-	
+		
 	//Hankle Stuff  
 	size_t NumIntegrands;
 	double LowerFractionalWidth;
@@ -213,9 +213,6 @@ public:
 
 	void initialise()
 	{
-		xaxis = cVec(1.0, 0.0, 0.0);
-		yaxis = cVec(0.0, 1.0, 0.0);
-
 		NumLayers = 0;
 		NumFrequencies = 0;
 		NumIntegrands = 3;
@@ -350,7 +347,7 @@ public:
 		setproperties(c, t);
 	};
 
-	cVec pitchrolldipole(double pitch, double roll)
+	cVec pitchrolldipole_xxx(double pitch, double roll)
 	{
 		//X = +ve in flight direction
 		//Y = +ve on left wing
@@ -361,9 +358,9 @@ public:
 		//Left wing up is positive roll  Y->Z axis
 		//Nose down is positive pitch	 Z->X axis
 
-		cVec orientation = cVec(0.0, 0.0, 1.0);
-		if (pitch != 0.0) orientation = orientation.rotate(pitch, yaxis);
-		if (roll != 0.0) orientation = orientation.rotate(roll, xaxis);
+		cVec orientation = Geometry3D::zaxis;
+		orientation.rotate_inplace(pitch, Geometry3D::yaxis);
+		orientation.rotate_inplace(roll, Geometry3D::xaxis);
 		return orientation;
 	};
 
@@ -377,10 +374,10 @@ public:
 		}
 		else{
 			xyrotation = atan2(Source_Orientation.y, Source_Orientation.x);
-			xyrotation = xyrotation*R2D - 90.0;
+			xyrotation = xyrotation*R2D<double> - 90.0;
 		}
-		cosxyrotation = cos(xyrotation*D2R);
-		sinxyrotation = sin(xyrotation*D2R);
+		cosxyrotation = cos(xyrotation*D2R<double>);
+		sinxyrotation = sin(xyrotation*D2R<double>);
 	}
 
 	void xyrotate(const double& xin, const double& yin, double* xout, double* yout)
@@ -507,8 +504,8 @@ public:
 		if (Frequency.size() != NumFrequencies)Frequency.resize(NumFrequencies);
 		if (Hankel.size() != NumFrequencies)Hankel.resize(NumFrequencies);
 		for (size_t fi = 0; fi < NumFrequencies; fi++) {
-			double omega = TWOPI * frequencies[fi];
-			double muzeroomega = MUZERO * omega;
+			double omega = TWOPI<double> * frequencies[fi];
+			double muzeroomega = MUZERO<double> * omega;
 			Frequency[fi].Frequency = frequencies[fi];
 			Frequency[fi].Omega = omega;
 			Frequency[fi].MuZeroOmega = muzeroomega;
@@ -1007,9 +1004,9 @@ public:
 		if (Source_Orientation.z == 0.0)return;//ie no vertical dipole contribution
 
 		if (calculation_type == CalculationType::FORWARDMODEL){
-			Fields.v.p.x = THREEONFOURPI*X*(Z - H) / BigR5;
-			Fields.v.p.y = THREEONFOURPI*Y*(Z - H) / BigR5;
-			Fields.v.p.z = THREEONFOURPI*(Z - H)*(Z - H) / BigR5 - ONEONFOURPI / BigR3;
+			Fields.v.p.x = THREEONFOURPI<double>*X*(Z - H) / BigR5;
+			Fields.v.p.y = THREEONFOURPI<double>*Y*(Z - H) / BigR5;
+			Fields.v.p.z = THREEONFOURPI<double>*(Z - H)*(Z - H) / BigR5 - ONEONFOURPI<double> / BigR3;
 		}
 		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE || calculation_type == CalculationType::THICKNESSDERIVATIVE){
 			Fields.v.p.x = 0.0;
@@ -1022,18 +1019,18 @@ public:
 			Fields.v.p.z = 0.0;
 		}
 		else if (calculation_type == CalculationType::ZDERIVATIVE){
-			Fields.v.p.x = THREEONFOURPI*X*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
-			Fields.v.p.y = THREEONFOURPI*Y*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
-			Fields.v.p.z = THREEONFOURPI*(3.0*(Z - H) / BigR5 - 5.0*(Z - H)*(Z - H)*(Z - H) / BigR7);
+			Fields.v.p.x = THREEONFOURPI<double>*X*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
+			Fields.v.p.y = THREEONFOURPI<double>*Y*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
+			Fields.v.p.z = THREEONFOURPI<double>*(3.0*(Z - H) / BigR5 - 5.0*(Z - H)*(Z - H)*(Z - H) / BigR7);
 		}
 		else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE){
-			double dxdX = THREEONFOURPI*(Z - H)*(1.0 / BigR5 - 5.0*X*X / BigR7);
-			double dydX = THREEONFOURPI*Y*(Z - H)*-5.0*X / BigR7;
-			double dzdX = THREEONFOURPI*(Z - H)*(Z - H)*-5.0*X / BigR7 - ONEONFOURPI*-3.0*X / BigR5;
+			double dxdX = THREEONFOURPI<double>*(Z - H)*(1.0 / BigR5 - 5.0*X*X / BigR7);
+			double dydX = THREEONFOURPI<double>*Y*(Z - H)*-5.0*X / BigR7;
+			double dzdX = THREEONFOURPI<double>*(Z - H)*(Z - H)*-5.0*X / BigR7 - ONEONFOURPI<double>*-3.0*X / BigR5;
 
-			double dxdY = THREEONFOURPI*X*(Z - H)*-5.0*Y / BigR7;
-			double dydY = THREEONFOURPI*(Z - H)*(1.0 / BigR5 - 5.0*Y*Y / BigR7);
-			double dzdY = THREEONFOURPI*(Z - H)*(Z - H)*-5.0*Y / BigR7 - ONEONFOURPI*-3.0*Y / BigR5;
+			double dxdY = THREEONFOURPI<double>*X*(Z - H)*-5.0*Y / BigR7;
+			double dydY = THREEONFOURPI<double>*(Z - H)*(1.0 / BigR5 - 5.0*Y*Y / BigR7);
+			double dzdY = THREEONFOURPI<double>*(Z - H)*(Z - H)*-5.0*Y / BigR7 - ONEONFOURPI<double>*-3.0*Y / BigR5;
 
 			if (calculation_type == CalculationType::XDERIVATIVE){
 				double dXdXo = cosxyrotation;
@@ -1067,30 +1064,30 @@ public:
 		if (Source_Orientation.z == 0.0)return;//ie no vertical dipole contribution
 
 		if (calculation_type == CalculationType::FORWARDMODEL){
-			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.FM;
-			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.FM;
-			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.FM;
+			Fields.v.s.x = -ONEONFOURPI<double> * XonR * Hankel[fi].I1.FM;
+			Fields.v.s.y = -ONEONFOURPI<double> * YonR * Hankel[fi].I1.FM;
+			Fields.v.s.z = -ONEONFOURPI<double> * Hankel[fi].I0.FM;
 		}
 		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE){
-			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.dC;
-			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dC;
-			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dC;
+			Fields.v.s.x = -ONEONFOURPI<double> * XonR * Hankel[fi].I1.dC;
+			Fields.v.s.y = -ONEONFOURPI<double> * YonR * Hankel[fi].I1.dC;
+			Fields.v.s.z = -ONEONFOURPI<double> * Hankel[fi].I0.dC;
 		}
 		else if (calculation_type == CalculationType::THICKNESSDERIVATIVE){
-			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.dT;
-			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dT;
-			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dT;
+			Fields.v.s.x = -ONEONFOURPI<double> * XonR * Hankel[fi].I1.dT;
+			Fields.v.s.y = -ONEONFOURPI<double> * YonR * Hankel[fi].I1.dT;
+			Fields.v.s.z = -ONEONFOURPI<double> * Hankel[fi].I0.dT;
 		}
 		else if (calculation_type == CalculationType::HDERIVATIVE){
 			//these are negative of d/dz derivatives
-			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.dH;
-			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dH;
-			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dH;
+			Fields.v.s.x = -ONEONFOURPI<double> * XonR * Hankel[fi].I1.dH;
+			Fields.v.s.y = -ONEONFOURPI<double> * YonR * Hankel[fi].I1.dH;
+			Fields.v.s.z = -ONEONFOURPI<double> * Hankel[fi].I0.dH;
 		}
 		else if (calculation_type == CalculationType::ZDERIVATIVE){
-			Fields.v.s.x = -ONEONFOURPI * XonR * Hankel[fi].I1.dZ;
-			Fields.v.s.y = -ONEONFOURPI * YonR * Hankel[fi].I1.dZ;
-			Fields.v.s.z = -ONEONFOURPI * Hankel[fi].I0.dZ;
+			Fields.v.s.x = -ONEONFOURPI<double> * XonR * Hankel[fi].I1.dZ;
+			Fields.v.s.y = -ONEONFOURPI<double> * YonR * Hankel[fi].I1.dZ;
+			Fields.v.s.z = -ONEONFOURPI<double> * Hankel[fi].I0.dZ;
 		}
 		else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE) {
 
@@ -1098,13 +1095,13 @@ public:
 			cdouble dxdY = 0.0; cdouble dydY = 0.0; cdouble dzdY = 0.0;
 
 			if(R != 0.0){
-				dxdX = -ONEONFOURPI * (Hankel[fi].I1.FM*(1.0 / R - X * X / R3) + XonR * Hankel[fi].I1.dR * XonR);
-				dydX = -ONEONFOURPI * Y * (Hankel[fi].I1.FM*(-X / R3) + (1.0 / R) * Hankel[fi].I1.dR * XonR);
-				dzdX = -ONEONFOURPI * Hankel[fi].I0.dR * XonR;
+				dxdX = -ONEONFOURPI<double> * (Hankel[fi].I1.FM*(1.0 / R - X * X / R3) + XonR * Hankel[fi].I1.dR * XonR);
+				dydX = -ONEONFOURPI<double> * Y * (Hankel[fi].I1.FM*(-X / R3) + (1.0 / R) * Hankel[fi].I1.dR * XonR);
+				dzdX = -ONEONFOURPI<double> * Hankel[fi].I0.dR * XonR;
 
-				dxdY = -ONEONFOURPI * X * (Hankel[fi].I1.FM*(-Y / R3) + (1.0 / R) * Hankel[fi].I1.dR * YonR);
-				dydY = -ONEONFOURPI * (Hankel[fi].I1.FM*(1.0 / R - Y * Y / R3) + YonR * Hankel[fi].I1.dR * YonR);
-				dzdY = -ONEONFOURPI * Hankel[fi].I0.dR * YonR;
+				dxdY = -ONEONFOURPI<double> * X * (Hankel[fi].I1.FM*(-Y / R3) + (1.0 / R) * Hankel[fi].I1.dR * YonR);
+				dydY = -ONEONFOURPI<double> * (Hankel[fi].I1.FM*(1.0 / R - Y * Y / R3) + YonR * Hankel[fi].I1.dR * YonR);
+				dzdY = -ONEONFOURPI<double> * Hankel[fi].I0.dR * YonR;
 			}
 
 			if (calculation_type == CalculationType::XDERIVATIVE){
@@ -1146,9 +1143,9 @@ public:
 		if (Source_Orientation.x == 0.0 && Source_Orientation.y == 0.0)return;//ie. not horizontal dipole contribution
 
 		if (calculation_type == CalculationType::FORWARDMODEL){
-			Fields.h.p.x = THREEONFOURPI*X*Y / BigR5;
-			Fields.h.p.y = THREEONFOURPI*Y*Y / BigR5 - ONEONFOURPI / BigR3;
-			Fields.h.p.z = THREEONFOURPI*Y*(Z - H) / BigR5;
+			Fields.h.p.x = THREEONFOURPI<double>*X*Y / BigR5;
+			Fields.h.p.y = THREEONFOURPI<double>*Y*Y / BigR5 - ONEONFOURPI<double> / BigR3;
+			Fields.h.p.z = THREEONFOURPI<double>*Y*(Z - H) / BigR5;
 		}
 		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE || calculation_type == CalculationType::THICKNESSDERIVATIVE){
 			Fields.h.p.x = 0.0;
@@ -1161,18 +1158,18 @@ public:
 			Fields.h.p.z = 0.0;
 		}
 		else if (calculation_type == CalculationType::ZDERIVATIVE){
-			Fields.h.p.x = THREEONFOURPI*X*Y*(-5.0*(Z - H) / BigR7);
-			Fields.h.p.y = THREEONFOURPI*Y*Y*(-5.0*(Z - H) / BigR7) - ONEONFOURPI*(-3.0*(Z - H) / BigR5);
-			Fields.h.p.z = THREEONFOURPI*Y*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
+			Fields.h.p.x = THREEONFOURPI<double>*X*Y*(-5.0*(Z - H) / BigR7);
+			Fields.h.p.y = THREEONFOURPI<double>*Y*Y*(-5.0*(Z - H) / BigR7) - ONEONFOURPI<double>*(-3.0*(Z - H) / BigR5);
+			Fields.h.p.z = THREEONFOURPI<double>*Y*(1.0 / BigR5 - 5.0*(Z - H)*(Z - H) / BigR7);
 		}
 		else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE){
-			double dxdX = THREEONFOURPI*Y*(1.0 / BigR5 - 5.0*X*X / BigR7);
-			double dydX = THREEONFOURPI*Y*Y*-5.0*X / BigR7 + ONEONFOURPI*3.0*X / BigR5;
-			double dzdX = THREEONFOURPI*Y*(Z - H)*-5.0*X / BigR7;
+			double dxdX = THREEONFOURPI<double>*Y*(1.0 / BigR5 - 5.0*X*X / BigR7);
+			double dydX = THREEONFOURPI<double>*Y*Y*-5.0*X / BigR7 + ONEONFOURPI<double>*3.0*X / BigR5;
+			double dzdX = THREEONFOURPI<double>*Y*(Z - H)*-5.0*X / BigR7;
 
-			double dxdY = THREEONFOURPI*X*(1.0 / BigR5 - 5.0*Y*Y / BigR7);
-			double dydY = THREEONFOURPI*(3.0*Y / BigR5 - 5.0*Y*Y*Y / BigR7);
-			double dzdY = THREEONFOURPI*(Z - H)*(1.0 / BigR5 - 5.0*Y*Y / BigR7);
+			double dxdY = THREEONFOURPI<double>*X*(1.0 / BigR5 - 5.0*Y*Y / BigR7);
+			double dydY = THREEONFOURPI<double>*(3.0*Y / BigR5 - 5.0*Y*Y*Y / BigR7);
+			double dzdY = THREEONFOURPI<double>*(Z - H)*(1.0 / BigR5 - 5.0*Y*Y / BigR7);
 
 			if (calculation_type == CalculationType::XDERIVATIVE){
 				double dXdXo = cosxyrotation;
@@ -1210,29 +1207,29 @@ public:
 		if (Source_Orientation.x == 0.0 && Source_Orientation.y == 0.0)return;//ie. not horizontal dipole contribution
 
 		if (calculation_type == CalculationType::FORWARDMODEL){
-			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.FM / R - Hankel[fi].I0.FM);
-			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.FM / R3 - Y*Y*Hankel[fi].I0.FM / R2);
-			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.FM;
+			Fields.h.s.x = ONEONFOURPI<double> * (X*Y) / (R2)* (2.0*Hankel[fi].I2.FM / R - Hankel[fi].I0.FM);
+			Fields.h.s.y = ONEONFOURPI<double> * ((Y*Y - X*X)*Hankel[fi].I2.FM / R3 - Y*Y*Hankel[fi].I0.FM / R2);
+			Fields.h.s.z = ONEONFOURPI<double> * Y/R * Hankel[fi].I1.FM;
 		}
 		else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE){
-			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dC / R - Hankel[fi].I0.dC);
-			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dC / R3 - Y*Y*Hankel[fi].I0.dC / R2);
-			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dC;
+			Fields.h.s.x = ONEONFOURPI<double> * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dC / R - Hankel[fi].I0.dC);
+			Fields.h.s.y = ONEONFOURPI<double> * ((Y*Y - X*X)*Hankel[fi].I2.dC / R3 - Y*Y*Hankel[fi].I0.dC / R2);
+			Fields.h.s.z = ONEONFOURPI<double> * Y/R * Hankel[fi].I1.dC;
 		}
 		else if (calculation_type == CalculationType::THICKNESSDERIVATIVE){
-			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dT / R - Hankel[fi].I0.dT);
-			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dT / R3 - Y*Y*Hankel[fi].I0.dT / R2);
-			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dT;
+			Fields.h.s.x = ONEONFOURPI<double> * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dT / R - Hankel[fi].I0.dT);
+			Fields.h.s.y = ONEONFOURPI<double> * ((Y*Y - X*X)*Hankel[fi].I2.dT / R3 - Y*Y*Hankel[fi].I0.dT / R2);
+			Fields.h.s.z = ONEONFOURPI<double> * Y/R * Hankel[fi].I1.dT;
 		}
 		else if (calculation_type == CalculationType::HDERIVATIVE){
-			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dH / R - Hankel[fi].I0.dH);
-			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dH / R3 - Y*Y*Hankel[fi].I0.dH / R2);
-			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dH;
+			Fields.h.s.x = ONEONFOURPI<double> * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dH / R - Hankel[fi].I0.dH);
+			Fields.h.s.y = ONEONFOURPI<double> * ((Y*Y - X*X)*Hankel[fi].I2.dH / R3 - Y*Y*Hankel[fi].I0.dH / R2);
+			Fields.h.s.z = ONEONFOURPI<double> * Y/R * Hankel[fi].I1.dH;
 		}
 		else if (calculation_type == CalculationType::ZDERIVATIVE){
-			Fields.h.s.x = ONEONFOURPI * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dZ / R - Hankel[fi].I0.dZ);
-			Fields.h.s.y = ONEONFOURPI * ((Y*Y - X*X)*Hankel[fi].I2.dZ / R3 - Y*Y*Hankel[fi].I0.dZ / R2);
-			Fields.h.s.z = ONEONFOURPI * Y/R * Hankel[fi].I1.dZ;
+			Fields.h.s.x = ONEONFOURPI<double> * (X*Y) / (R2)* (2.0*Hankel[fi].I2.dZ / R - Hankel[fi].I0.dZ);
+			Fields.h.s.y = ONEONFOURPI<double> * ((Y*Y - X*X)*Hankel[fi].I2.dZ / R3 - Y*Y*Hankel[fi].I0.dZ / R2);
+			Fields.h.s.z = ONEONFOURPI<double> * Y/R * Hankel[fi].I1.dZ;
 		}
 		else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE){
 			cdouble a, c, d, e, f, h;
@@ -1274,17 +1271,17 @@ public:
 			dgdx = e*Hankel[fi].I2.dR*XonR + Hankel[fi].I2.FM*dedx - (f*Hankel[fi].I0.dR*XonR + Hankel[fi].I0.FM*dfdx);
 			dgdy = e*Hankel[fi].I2.dR*YonR + Hankel[fi].I2.FM*dedy - (f*Hankel[fi].I0.dR*YonR + Hankel[fi].I0.FM*dfdy);
 
-			cdouble dxdX = ONEONFOURPI*(a*dbdx + b*dadx);
-			cdouble dxdY = ONEONFOURPI*(a*dbdy + b*dady);
+			cdouble dxdX = ONEONFOURPI<double>*(a*dbdx + b*dadx);
+			cdouble dxdY = ONEONFOURPI<double>*(a*dbdy + b*dady);
 
-			cdouble dydX = ONEONFOURPI*(dgdx);
-			cdouble dydY = ONEONFOURPI*(dgdy);
+			cdouble dydX = ONEONFOURPI<double>*(dgdx);
+			cdouble dydY = ONEONFOURPI<double>*(dgdy);
 
 			h = Y / R;
 			dhdx = -X*Y / R3;
 			dhdy = 1.0 / R - Y*Y / R3;
-			cdouble dzdX = ONEONFOURPI*(Hankel[fi].I1.FM*dhdx + h*Hankel[fi].I1.dR*XonR);
-			cdouble dzdY = ONEONFOURPI*(Hankel[fi].I1.FM*dhdy + h*Hankel[fi].I1.dR*YonR);
+			cdouble dzdX = ONEONFOURPI<double>*(Hankel[fi].I1.FM*dhdx + h*Hankel[fi].I1.dR*XonR);
+			cdouble dzdY = ONEONFOURPI<double>*(Hankel[fi].I1.FM*dhdy + h*Hankel[fi].I1.dR*YonR);
 
 			if (calculation_type == CalculationType::XDERIVATIVE){
 				double dXdXo = cosxyrotation;

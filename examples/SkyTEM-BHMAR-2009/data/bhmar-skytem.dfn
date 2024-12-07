@@ -31,7 +31,7 @@ DEFN 29 ST=RECD,RT=; TxRx_Dz : F7.2 : UNITS=m, DESC=Derived Tx to Rx vertical di
 DEFN 30 ST=RECD,RT=; LM_Current : F7.2 : UNITS=A, DESC=Low moment peak current
 DEFN 31 ST=RECD,RT=; HM_Current : F7.2 : UNITS=A, DESC=High moment peak current
 DEFN 32 ST=RECD,RT=; Powerline_Monitor : F10.4 : DESC=Power line monitor
-DEFN 33 ST=RECD,RT=; LMZ : 18E15.5 : UNITS=V/A.m^4, DESC=Low moment dB/dt Z-component data
-DEFN 34 ST=RECD,RT=; HMZ : 21E15.5 : UNITS=V/A.m^4, DESC=High moment dB/dt Z-component data
-DEFN 35 ST=RECD,RT=; LMZ_NOISE : 18E15.5 : UNITS=V/A.m^4, DESC=Assigned low moment dB/dt Z-component noise-standard-deviation
-DEFN 36 ST=RECD,RT=; HMZ_NOISE : 21E15.5 : UNITS=V/A.m^4, DESC=Assigned low moment dB/dt Z-component noise-standard-deviation;END DEFN
+DEFN 33 ST=RECD,RT=; LMZ : 18E15.5 : NULL=-9.999999e+06,  UNITS=V/A.m^4, DESC=Low moment dB/dt Z-component data
+DEFN 34 ST=RECD,RT=; HMZ : 21E15.5 : NULL=-9.999999e+06,  UNITS=V/A.m^4, DESC=High moment dB/dt Z-component data
+DEFN 35 ST=RECD,RT=; LMZ_NOISE : 18E15.5 : NULL=-9.999999e+06, UNITS=V/A.m^4, DESC=Assigned low moment dB/dt Z-component noise-standard-deviation
+DEFN 36 ST=RECD,RT=; HMZ_NOISE : 21E15.5 : NULL=-9.999999e+06, UNITS=V/A.m^4, DESC=Assigned low moment dB/dt Z-component noise-standard-deviation;END DEFN

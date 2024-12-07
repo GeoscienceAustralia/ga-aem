@@ -13,12 +13,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 class cSampleBunch {
 
-//public:
-	std::vector<size_t> indices;
+private:
 	size_t master;//index of the "central" sample (not necessarily middle of array
+	std::vector<size_t> indices;
 public:
 	cSampleBunch() {};
-	cSampleBunch(const std::vector<size_t>& _indices, const size_t& masterindex) {
+	cSampleBunch(const size_t& masterindex, const std::vector<size_t>& _indices) {
 		indices = _indices;
 		for (size_t i = 0; i < indices.size(); i++) {
 			if (indices[i] == masterindex) {

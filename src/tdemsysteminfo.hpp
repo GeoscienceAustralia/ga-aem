@@ -11,6 +11,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "tdemcomponentinfo.hpp"
 #include "inputmanager.hpp"
 
+using namespace AEM;
+
 class cTDEmSystemInfo {
 
 public:
@@ -42,11 +44,11 @@ public:
 		fixseparator(stmfile);
 
 		glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
-		T.readsystemdescriptorfile(stmfile);
+		T.read_system_descriptor_file(stmfile);
 		glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
-		glog.log_to_file(T.STM.get_as_string());
+		glog.log_to_file(T.stm().get_as_string());
 		glog.log_to_file("==========================================================================\n");
-		nwindows = T.NumberOfWindows;
+		nwindows = T.nwindows();
 
 		invertXPlusZ = b.getboolvalue("InvertXPlusZ");
 		invertPrimaryPlusSecondary = b.getboolvalue("InvertPrimaryPlusSecondary");

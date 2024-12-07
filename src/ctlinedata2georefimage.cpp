@@ -27,6 +27,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "gdiplus_utils.hpp"
 #include "stopwatch.hpp"
 
+using namespace Geometry3D;
 
 class cLogger glog; //The global instance of the log file manager
 

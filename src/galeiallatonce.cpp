@@ -32,6 +32,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 class cLogger glog; //The global instance of the log file manager
 
+using namespace AEM;
+
 class cSystemInfo;
 
 class cTDEmComponentInfo;
@@ -256,7 +258,7 @@ public:
 
 	}
 
-	size_t ndata() {
+	size_t ndata() const {
 		if (Use)return nw;
 		else return 0;
 	};
@@ -324,14 +326,19 @@ private:
 	size_t nw;
 
 public:
+	inline static const size_t XCOMP = AEMSystem::XCOMP;
+	inline static const size_t YCOMP = AEMSystem::YCOMP;
+	inline static const size_t ZCOMP = AEMSystem::ZCOMP;
+	inline static const size_t NCOMP = AEMSystem::NCOMP;
+
 	cTDEmSystem T;
 	bool InvertTotalField;
 	std::vector<cTDEmComponentInfo> Comp;
 	cSystemInfo() { 	};
 	bool initialise(const cBlock& b) {
 		std::string stm = b.getstringvalue("SystemFile");
-		T.readsystemdescriptorfile(stm);
-		nw = T.NumberOfWindows;
+		T.read_system_descriptor_file(stm);
+		nw = T.nwindows();
 
 		bool status;
 		status = b.getvalue("InvertTotalField", InvertTotalField);
@@ -339,22 +346,22 @@ public:
 			InvertTotalField = false;
 		}
 
-		Comp.resize(3);
-		Comp[0] = cTDEmComponentInfo(b.findblock("XComponent"), nw, InvertTotalField);
-		Comp[1] = cTDEmComponentInfo(b.findblock("YComponent"), nw, InvertTotalField);
-		Comp[2] = cTDEmComponentInfo(b.findblock("ZComponent"), nw, InvertTotalField);
+		Comp.resize(NCOMP);
+		Comp[XCOMP] = cTDEmComponentInfo(b.findblock("XComponent"), nw, InvertTotalField);
+		Comp[YCOMP] = cTDEmComponentInfo(b.findblock("YComponent"), nw, InvertTotalField);
+		Comp[ZCOMP] = cTDEmComponentInfo(b.findblock("ZComponent"), nw, InvertTotalField);
 
-		Comp[0].basedindex = 0;
-		Comp[1].basedindex = 0;
-		Comp[2].basedindex = 0;
-		if (Comp[0].Use) Comp[1].basedindex += nw;
-		if (Comp[0].Use) Comp[2].basedindex += nw;
-		if (Comp[1].Use) Comp[2].basedindex += nw;
+		Comp[XCOMP].basedindex = 0;
+		Comp[YCOMP].basedindex = 0;
+		Comp[ZCOMP].basedindex = 0;
+		if (Comp[XCOMP].Use) Comp[XCOMP].basedindex += nw;
+		if (Comp[XCOMP].Use) Comp[ZCOMP].basedindex += nw;
+		if (Comp[YCOMP].Use) Comp[ZCOMP].basedindex += nw;
 		return true;
 	};
 
 	size_t ndata() {
-		return Comp[0].ndata() + Comp[1].ndata() + Comp[2].ndata();
+		return Comp[XCOMP].ndata() + Comp[YCOMP].ndata() + Comp[ZCOMP].ndata();
 	}
 
 	inline size_t dindex(const size_t& component, const size_t& window) {
@@ -398,8 +405,8 @@ public:
 	bool forward_model(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry) {
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-		T.LEM.derivative_layer = INT_MAX;
+		T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+		T.lem().derivative_layer = INT_MAX;
 		T.setupcomputations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
@@ -410,8 +417,8 @@ public:
 		size_t nlayers = conductivity.size();
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-		T.LEM.derivative_layer = INT_MAX;
+		T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+		T.lem().derivative_layer = INT_MAX;
 		T.setupcomputations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
@@ -430,7 +437,7 @@ public:
 		predicted.resize(ndata());
 		for (size_t ci = 0; ci < Comp.size(); ci++) {
 			if (Comp[ci].Use == false)continue;
-			for (size_t wi = 0; wi < T.NumberOfWindows; wi++) {
+			for (size_t wi = 0; wi < T.nwindows(); wi++) {
 				predicted[dindex(ci, wi)] = T.secondary(ci, wi);
 				if (Comp[ci].InvertTotalField) {
 					predicted[dindex(ci, wi)] += T.primary(ci);
@@ -446,15 +453,15 @@ public:
 			}
 
 			for (size_t li = 0; li < nlayers; li++) {
-				T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
-				T.LEM.derivative_layer = li;
+				T.lem().calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
+				T.lem().derivative_layer = li;
 				T.setupcomputations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
 
 				for (size_t ci = 0; ci < Comp.size(); ci++) {
 					if (Comp[ci].Use == false)continue;
-					for (size_t wi = 0; wi < T.NumberOfWindows; wi++) {
+					for (size_t wi = 0; wi < T.nwindows(); wi++) {
 						derivatives[dindex(ci, wi)][li] = T.secondary(ci, wi);
 						if (Comp[ci].InvertTotalField) {
 							derivatives[dindex(ci, wi)][li] += T.primary(ci);
@@ -470,7 +477,7 @@ public:
 					T.drx_pitch(X, Z, geometry.rx_pitch, dxbdp, dzbdp);
 					for (size_t ci = 0; ci < Comp.size(); ci++) {
 						if (Comp[ci].Use == false)continue;
-						for (size_t wi = 0; wi < T.NumberOfWindows; wi++) {
+						for (size_t wi = 0; wi < T.nwindows(); wi++) {
 							if (ci == 0)      derivatives[dindex(ci, wi)][gi + nlayers] = dxbdp[wi];
 							else if (ci == 1) derivatives[dindex(ci, wi)][gi + nlayers] = 0.0;
 							else              derivatives[dindex(ci, wi)][gi + nlayers] = dzbdp[wi];
@@ -478,14 +485,14 @@ public:
 					}
 				}
 				else {
-					T.LEM.calculation_type = cTDEmGeometry::derivativetype(UGI[gi]);
-					T.LEM.derivative_layer = INT_MAX;
+					T.lem().calculation_type = cTDEmGeometry::derivativetype(UGI[gi]);
+					T.lem().derivative_layer = INT_MAX;
 					T.setupcomputations();
 					T.setprimaryfields();
 					T.setsecondaryfields();
 					for (size_t ci = 0; ci < Comp.size(); ci++) {
 						if (Comp[ci].Use == false) continue;
-						for (size_t wi = 0; wi < T.NumberOfWindows; wi++) {
+						for (size_t wi = 0; wi < T.nwindows(); wi++) {
 							derivatives[dindex(ci, wi)][gi + nlayers] = T.secondary(ci, wi);
 							if (Comp[ci].InvertTotalField) {
 								derivatives[dindex(ci, wi)][gi + nlayers] += T.primary(ci);
@@ -883,7 +890,7 @@ public:
 		for (size_t i = 0; i < bv.size(); i++) {
 			T[i].initialise(bv[i]);
 			std::string stmfile = bv[i].getstringvalue("SystemFile");
-			std::string str = T[i].T.STM.get_as_string();
+			std::string str = T[i].T.stm().get_as_string();
 			glog.logmsg(0, "==============System file %s\n", stmfile.c_str());
 			glog.logmsg(0, str.c_str());
 		}

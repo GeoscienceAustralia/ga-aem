@@ -29,6 +29,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
 
+using namespace AEM;
+
 class cGeomStruct {
 
 public:
@@ -336,10 +338,10 @@ class cSBSInverter : public cInverter {
 
 	double ErrorAddition = 0.0;
 	using cIFDMap = cKeyVec<std::string, cInvertibleFieldDefinition, caseinsensetiveequal<std::string>>;
-	const size_t XCOMP = 0;
-	const size_t YCOMP = 1;
-	const size_t ZCOMP = 2;
-	const size_t XZAMP = 3;
+	inline static const size_t XCOMP = 0;
+	inline static const size_t YCOMP = 1;
+	inline static const size_t ZCOMP = 2;
+	inline static const size_t XZAMP = 3;
 	std::vector<std::vector<std::vector<std::vector<int>>>> _dindex_;
 
 	int    BeginGeometrySolveIteration = 0;
@@ -1598,8 +1600,8 @@ public:
 				cTDEmSystem& T = S.T;
 				if (S.reconstructPrimary) {
 					T.setgeometry(G[si].tfr);
-					T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-					T.LEM.derivative_layer = undefinedvalue<size_t>();
+					T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+					T.lem().derivative_layer = undefinedvalue<size_t>();
 					T.setprimaryfields();
 
 					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PrimaryX;
@@ -1915,7 +1917,7 @@ public:
 			S.predicted.resize(nSoundings);
 
 			cTDEmSystem& T = S.T;
-			const size_t nw = T.NumberOfWindows;
+			const size_t& nw = T.nwindows();
 			for (size_t si = 0; si < nSoundings; si++) {
 				const cEarth1D& e = ev[si];
 				const cTDEmGeometry& g = gv[si];
@@ -1923,8 +1925,8 @@ public:
 				T.setgeometry(g);
 
 				//Forwardmodel
-				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-				T.LEM.derivative_layer = undefinedvalue<size_t>();
+				T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+				T.lem().derivative_layer = undefinedvalue<size_t>();
 				T.setupcomputations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
@@ -1969,7 +1971,7 @@ public:
 
 			std::vector<double> scalefactors = get_scalefactors(sysi, parameters);
 
-			const size_t nw = T.NumberOfWindows;
+			const size_t& nw = T.nwindows();
 			for (size_t si = 0; si < nSoundings; si++) {
 				const cEarth1D& e = ev[si];
 				const cTDEmGeometry& g = gv[si];
@@ -1977,8 +1979,8 @@ public:
 				T.setgeometry(g);
 
 				//Forwardmodel
-				T.LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-				T.LEM.derivative_layer = undefinedvalue<size_t>();
+				T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+				T.lem().derivative_layer = undefinedvalue<size_t>();
 				T.setupcomputations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
@@ -1994,8 +1996,9 @@ public:
 				}
 
 				if (S.invertXPlusZ) {
-					xzfm.resize(T.NumberOfWindows);
-					for (size_t wi = 0; wi < T.NumberOfWindows; wi++) {
+					const size_t& nw = T.nwindows();
+					xzfm.resize(nw);
+					for (size_t wi = 0; wi < nw; wi++) {
 						xzfm[wi] = std::hypot(xfm[wi], zfm[wi]);
 					}
 				}
@@ -2046,8 +2049,8 @@ public:
 					if (solve_conductivity()) {
 						for (size_t li = 0; li < nLayers; li++) {
 							const int pindex = cindex(si, li);
-							T.LEM.calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
-							T.LEM.derivative_layer = li;
+							T.lem().calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
+							T.lem().derivative_layer = li;
 							T.setprimaryfields();
 							T.setsecondaryfields();
 
@@ -2062,8 +2065,8 @@ public:
 					if (solve_thickness()) {
 						for (size_t li = 0; li < nLayers - 1; li++) {
 							const int pindex = tindex(si, li);
-							T.LEM.calculation_type = cLEM::CalculationType::THICKNESSDERIVATIVE;
-							T.LEM.derivative_layer = li;
+							T.lem().calculation_type = cLEM::CalculationType::THICKNESSDERIVATIVE;
+							T.lem().derivative_layer = li;
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2077,8 +2080,8 @@ public:
 					if (FreeGeometry) {
 						if (solve_geometry_element("tx_height")) {
 							const size_t pindex = gindex(si, "tx_height");
-							T.LEM.calculation_type = cLEM::CalculationType::HDERIVATIVE;
-							T.LEM.derivative_layer = undefinedvalue<size_t>();
+							T.lem().calculation_type = cLEM::CalculationType::HDERIVATIVE;
+							T.lem().derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2087,8 +2090,8 @@ public:
 
 						if (solve_geometry_element("txrx_dx")) {
 							const size_t pindex = gindex(si, "txrx_dx");
-							T.LEM.calculation_type = cLEM::CalculationType::XDERIVATIVE;
-							T.LEM.derivative_layer = undefinedvalue<size_t>();
+							T.lem().calculation_type = cLEM::CalculationType::XDERIVATIVE;
+							T.lem().derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2097,8 +2100,8 @@ public:
 
 						if (solve_geometry_element("txrx_dy")) {
 							const size_t pindex = gindex(si, "txrx_dy");
-							T.LEM.calculation_type = cLEM::CalculationType::YDERIVATIVE;
-							T.LEM.derivative_layer = undefinedvalue<size_t>();
+							T.lem().calculation_type = cLEM::CalculationType::YDERIVATIVE;
+							T.lem().derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2107,8 +2110,8 @@ public:
 
 						if (solve_geometry_element("txrx_dz")) {
 							const size_t pindex = gindex(si, "txrx_dz");
-							T.LEM.calculation_type = cLEM::CalculationType::ZDERIVATIVE;
-							T.LEM.derivative_layer = undefinedvalue<size_t>();
+							T.lem().calculation_type = cLEM::CalculationType::ZDERIVATIVE;
+							T.lem().derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2166,7 +2169,7 @@ public:
 	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
 	{
 		const cTDEmSystemInfo& S = SV[sysi];
-		const size_t& nw = S.T.NumberOfWindows;
+		const size_t& nw = S.T.nwindows();
 		if (S.invertXPlusZ) {
 			for (size_t wi = 0; wi < nw; wi++) {
 				M(dindex(si, sysi, XZAMP, wi), pindex) = (xfm[wi] * xdrv[wi] + zfm[wi] * zdrv[wi]) / xzfm[wi];

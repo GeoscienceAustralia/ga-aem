@@ -21,6 +21,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "tdemsystem.hpp"
 class cLogger glog; //The global instance of the log file manager
 
+using namespace AEM;
+
 int skytem_example_ip()
 {
 	//Load the AEM system specification files for the Skytem moments //only do this once				
@@ -60,7 +62,7 @@ int skytem_example_ip()
 	//Run the forward model
 	S.forwardmodel(G, E, R);	
 	for (size_t i = 0; i < R.SZ.size(); i++){
-		double wct = 0.5*(S.WinSpec[i].TimeHigh + S.WinSpec[i].TimeLow);
+		double wct = 0.5*(S.Win.WinSpec[i].TimeHigh + S.Win.WinSpec[i].TimeLow);
 		printf("%zu %10e %10e\n", i, wct, R.SZ[i]);		
 	}	
 	return 0;
