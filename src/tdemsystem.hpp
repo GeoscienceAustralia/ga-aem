@@ -20,9 +20,22 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "earth1d.hpp"
 #include "lem.hpp"
 #include "fixed_point_spline.hpp"
-//#include "geometry3d.hpp"
+#include "rollpitchyaw.hpp"
 
 namespace AEM {
+
+	inline static Mat3 YPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
+		const Mat3 Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
+		return Rot;
+	};
+
+	inline static Mat3 invYPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
+		const Mat3 Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
+		//std::cout << Rot << std::endl;
+		Mat3 RotT = Rot.transpose();
+		//std::cout << RotT << std::endl;
+		return RotT;
+	};
 
 	struct sTDEmNoiseModelComponent {
 		double MultiplicativeNoise;
@@ -311,18 +324,33 @@ namespace AEM {
 			return std::sqrt(txrx_dx * txrx_dx + txrx_dy * txrx_dy + txrx_dz * txrx_dz);
 		};
 
-		cVec tx_orientation(const cVec& tx_reference_orientation) const {
-			cVec v = tx_reference_orientation;
-			v.rotate_inplace(tx_yaw, Geometry3D::zaxis);
-			v.rotate_inplace(tx_pitch, Geometry3D::yaxis);
-			v.rotate_inplace(tx_roll, Geometry3D::xaxis);
+		Vec3 tx_orientation(const Vec3& tx_reference_orientation) const {
+			//Vec3 v(1, 2, 3);
+			//Mat3 Rot = YPR(tx_roll, tx_pitch, tx_yaw);
+			//Mat3 invRot = invYPR(tx_roll, tx_pitch, tx_yaw);
+			//Vec3 v1 = Rot * v;
+			//Vec3 v2 = invRot * v1;
+			//std::cout << v << std::endl << std::endl;
+			//std::cout << v1 << std::endl << std::endl;
+			//std::cout << v2 << std::endl << std::endl;
+
+			//Vec3 v = tx_reference_orientation;
+			//v.rotate_inplace(tx_yaw, Geometry3D::zaxis);
+			//v.rotate_inplace(tx_pitch, Geometry3D::yaxis);
+			//v.rotate_inplace(tx_roll, Geometry3D::xaxis);
+			Mat3 Rot = YPR(tx_roll, tx_pitch, tx_yaw);
+			return Rot * tx_reference_orientation;
+		}
+
+		Vec3 txrx_separation() const {
+			Vec3 v = Vec3(txrx_dx, txrx_dy, txrx_dz);
 			return v;
 		}
 
-		cVec txrx_separation() const {
-			cVec v = cVec(txrx_dx, txrx_dy, txrx_dz);
-			return v;
-		}
+		inline Mat3 inertial_to_rx_frame_rotation_matrix() const {
+			// Mat3 inertial_to_rx_frame_rotation_matrix() const {
+			return invYPR(rx_roll, rx_pitch, rx_yaw);
+		};
 
 	};
 
@@ -353,7 +381,7 @@ namespace AEM {
 		double NumberOfTurns = 0.0;
 		double PeakCurrent = 0.0;
 		double PeakdIdT = 0.0;
-		cVec Reference_Orientation = Geometry3D::zaxis;
+		Vec3 Reference_Orientation = Vec3::UnitZ();
 	};
 
 	class Waveform {
@@ -840,8 +868,8 @@ namespace AEM {
 	protected:
 		std::string SystemName;
 		std::string SystemType;
-		cLEM LEM;
 		cBlock STM;
+		cLEM LEM;
 
 		bool SaveDiagnosticFiles = false;
 
@@ -947,6 +975,7 @@ namespace AEM {
 			inverse_fftplan = 0;
 		}
 
+		// Setup
 		void read_system_descriptor_file(const std::string& systemdescriptorfile) {
 			if (!fs::exists(systemdescriptorfile)) {
 				std::string msg = strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.c_str());
@@ -968,66 +997,8 @@ namespace AEM {
 
 			WvForm.initialise(b, systemdescriptorfile);
 
-			/*
-			BaseFrequency = b.getdoublevalue("BaseFrequency");
-			BasePeriod = 1.0 / BaseFrequency;
-			SampleFrequency = b.getdoublevalue("WaveformDigitisingFrequency");
-			bool wavformdefined = false;
-			if (wavformdefined == false) {
-				std::string path = b.getstringvalue("WaveformReceived.File");
-				if (isdefined(path)) {
-					FilePathParts fpp(systemdescriptorfile);
-					std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
-					if (wp.size() > 0) {
-						digitisewaveform(wp, WaveformTime, WaveformReceived);
-						WaveformType = Waveform::Type::RX;
-						T_Waveform = WaveformReceived;
-						wavformdefined = true;
-					}
-				}
-			}
-
-			if (wavformdefined == false) {
-				std::string path = b.getstringvalue("WaveformCurrent.File");
-				if (isdefined(path)) {
-					FilePathParts fpp(systemdescriptorfile);
-					std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
-					if (wp.size() > 0) {
-						digitisewaveform(wp, WaveformTime, WaveformCurrent);
-						WaveformType = Waveform::Type::TX;
-						T_Waveform = WaveformCurrent;
-						wavformdefined = true;
-					}
-				}
-			}
-
-			if (wavformdefined == false) {
-				std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformCurrent");
-				if (wp.size() > 0) {
-					digitisewaveform(wp, WaveformTime, WaveformCurrent);
-					WaveformType = Waveform::Type::TX;
-					T_Waveform = WaveformCurrent;
-					wavformdefined = true;
-				}
-			}
-
-			if (wavformdefined == false) {
-				std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformReceived");
-				if (wp.size() > 0) {
-					digitisewaveform(wp, WaveformTime, WaveformReceived);
-					WaveformType = Waveform::Type::RX;
-					T_Waveform = WaveformReceived;
-					wavformdefined = true;
-				}
-			}
-
-			if (wavformdefined == false) {
-				glog.errormsg(_SRC_, "The waveform is not defined\n");
-			}
-			*/
-
 			cBlock rxblock = STM.findblock("Receiver");
-			initialise_windows(rxblock);
+			WindScheme = WindowingScheme(rxblock, WvForm);
 
 			LEM.ModellingLoopRadius = STM.getdoublevalue("ForwardModelling.ModellingLoopRadius");
 			if (!isdefined(LEM.ModellingLoopRadius)) {
@@ -1087,18 +1058,17 @@ namespace AEM {
 				Filters.push_back(LowPassFilter(v1[i], v2[i]));
 			}
 
-
 			system_setup();
 		};
 
 		void system_setup() {
-			create_transforms();
 			setup_discrete_frequencies();
+			setup_transforms();
 			setup_splines();
 			setup_scaling();
 		}
 
-		void create_transforms() {
+		void setup_transforms() {
 			WvForm.NumFrequencies = WvForm.NumSamples / 2 + 1;
 			WvForm.fft_frequency.resize(WvForm.NumFrequencies);
 
@@ -1257,40 +1227,28 @@ namespace AEM {
 			LEM.init_frequencies(DiscreteFrequencies);
 		}
 
+		// Modelling
 		void setearthproperties(const cEarth1D& E) {
 			LEM.setproperties(E);
 		}
 
-		void setconductivitythickness(const size_t nlayers, const double* conductivity, const double* thickness)
-		{
+		void setconductivitythickness(const size_t nlayers, const double* conductivity, const double* thickness){
 			LEM.setconductivitythickness(nlayers, conductivity, thickness);
 		}
 
-		void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness)
-		{
+		void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness){
 			LEM.setconductivitythickness(conductivity, thickness);
 		}
 
-		void setgeometry(const cTDEmGeometry& G)
-		{
-			//X = +ve in flight direction
-			//Y = +ve on left wing
-			//Z = +ve vertical up
-			//ie different to Fugro convention
-
-			//Steer left is positive yaw     X->Y axis
-			//Left wing up is positive roll  Y->Z axis
-			//Nose down is positive pitch	 Z->X axis
-
+		void setgeometry(const cTDEmGeometry& G) {
 			Geometry = G;
-			cVec tx_reference_orientation = Geometry3D::zaxis;
-
-			const cVec sep = Geometry.txrx_separation();
+			Vec3 tx_reference_orientation = Vec3::UnitZ();
+			const Vec3 sep = Geometry.txrx_separation();
 			const double& h = Geometry.tx_height;
-			const double& x = sep.x;
-			const double& y = sep.y;
-			const double& z = h + sep.z;
-			const cVec tx_orientation = Geometry.tx_orientation(Tx.Reference_Orientation);
+			const double& x = sep.x();
+			const double& y = sep.y();
+			const double& z = h + sep.z();
+			const Vec3 tx_orientation = Geometry.tx_orientation(Tx.Reference_Orientation);
 			LEM.setgeometry(tx_orientation, h, x, y, z);
 		};
 
@@ -1300,10 +1258,10 @@ namespace AEM {
 			}
 		}
 
-		void setprimaryfields(){
+		void setprimaryfields() {
 			LEM.setprimaryfields();
-			cVec v(LEM.Fields.t.p.x, LEM.Fields.t.p.y, LEM.Fields.t.p.z);
-			
+			Vec3 v(LEM.Fields.t.p.x, LEM.Fields.t.p.y, LEM.Fields.t.p.z);
+
 			if (LEM.calculation_type == cLEM::CalculationType::HDERIVATIVE) {
 				//This is because when H changes Z also changes
 				//and DZ = DH
@@ -1320,20 +1278,66 @@ namespace AEM {
 				v *= Tx.PeakdIdT;
 			}
 
-			rotate_field_to_receiver_frame(v);
-			
-			Comp[XCOMP].Primary = v.x * Scale[XCOMP];
-			Comp[YCOMP].Primary = v.y * Scale[YCOMP];
-			Comp[ZCOMP].Primary = v.z * Scale[ZCOMP];
+			// Rotate field to Rx frame
+			const Mat3 RotMatrix = Geometry.inertial_to_rx_frame_rotation_matrix();
+			v = RotMatrix * v;
 
-		}
+			Comp[XCOMP].Primary = v.x() * Scale[XCOMP];
+			Comp[YCOMP].Primary = v.y() * Scale[YCOMP];
+			Comp[ZCOMP].Primary = v.z() * Scale[ZCOMP];
+		};
 
-		void rotate_field_to_receiver_frame(cVec& fvec)
-		{
-			//Rotating in opposite sense because we are rotating the axes and doing it in the reverse order
-			fvec.rotate_inplace(-Geometry.rx_roll, Geometry3D::xaxis);
-			fvec.rotate_inplace(-Geometry.rx_pitch, Geometry3D::yaxis);
-			fvec.rotate_inplace(-Geometry.rx_yaw, Geometry3D::zaxis);
+		void setsecondaryfields() {
+			//Computation for discrete frequencies 	
+			const Mat3 RotMatrix = Geometry.inertial_to_rx_frame_rotation_matrix();
+			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
+				LEM.dointegrals(fi);
+				LEM.setsecondaryfields(fi);
+				const cdouble& x = LEM.Fields.t.s.x;
+				const cdouble& y = LEM.Fields.t.s.y;
+				const cdouble& z = LEM.Fields.t.s.z;
+				Vec3 vr = Vec3(x.real(), y.real(), z.real());
+				Vec3 vi = Vec3(x.imag(), y.imag(), z.imag());
+
+				// Rotate field to Rx frame
+				vr = RotMatrix * vr;
+				vi = RotMatrix * vi;
+
+				if (LEM.calculation_type == cLEM::CalculationType::HDERIVATIVE) {
+					//This is because when H changes Z also changes
+					//and DZ = DH
+					vr *= 2.0;
+					vi *= 2.0;
+				}
+
+				Comp[XCOMP].IR_discrete_real[fi] = vr.x();
+				Comp[XCOMP].IR_discrete_imag[fi] = vi.x();
+				Comp[YCOMP].IR_discrete_real[fi] = vr.y();
+				Comp[YCOMP].IR_discrete_imag[fi] = vi.y();
+				Comp[ZCOMP].IR_discrete_real[fi] = vr.z();
+				Comp[ZCOMP].IR_discrete_imag[fi] = vi.z();
+			};
+
+			//Spline discreet frequencies		
+			for (size_t i = 0; i < NCOMP; i++) {
+				if (Scale[i] == 0.0) return;
+				spline_component(i);
+			}
+
+			for (size_t i = 0; i < NCOMP; i++) {
+				if (Scale[i] == 0.0) return;
+				inverse_fft_window_scale_component(i);
+			}
+
+			if (SaveDiagnosticFiles) {
+				write_discretefrequencies("diag_discretefrequencies.txt");
+				write_splinedfrequencies("diag_splinedfrequencies.txt");
+				WvForm.write_frequencydomainwaveform("diag_frequencydomainwaveform.txt");
+			}
+
+			if (SaveDiagnosticFiles) {
+				WindScheme.write_windows("diag_windows.txt", XS(), YS(), ZS());
+			}
 		}
 
 		void spline_component(const size_t& component) {
@@ -1377,68 +1381,6 @@ namespace AEM {
 
 			// Scale
 			C.Secondary *= Scale[component];
-		}
-
-		void setsecondaryfields() {
-			//Computation for discrete frequencies 	
-			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
-				LEM.dointegrals(fi);
-				LEM.setsecondaryfields(fi);
-				const cdouble& x = LEM.Fields.t.s.x;
-				const cdouble& y = LEM.Fields.t.s.y;
-				const cdouble& z = LEM.Fields.t.s.z;
-				cVec vr = cVec(x.real(), y.real(), z.real());
-				cVec vi = cVec(x.imag(), y.imag(), z.imag());
-
-				rotate_field_to_receiver_frame(vr);
-				rotate_field_to_receiver_frame(vi);
-
-				if (LEM.calculation_type == cLEM::CalculationType::HDERIVATIVE) {
-					//This is because when H changes Z also changes
-					//and DZ = DH
-					vr *= 2.0;
-					vi *= 2.0;
-				}
-
-				Comp[XCOMP].IR_discrete_real[fi] = vr.x;
-				Comp[XCOMP].IR_discrete_imag[fi] = vi.x;
-				Comp[YCOMP].IR_discrete_real[fi] = vr.y;
-				Comp[YCOMP].IR_discrete_imag[fi] = vi.y;
-				Comp[ZCOMP].IR_discrete_real[fi] = vr.z;
-				Comp[ZCOMP].IR_discrete_imag[fi] = vi.z;
-
-				//HxR[fi] = vr.x;
-				//HxI[fi] = vi.x;
-				//HyR[fi] = vr.y;
-				//HyI[fi] = vi.y;
-				//HzR[fi] = vr.z;
-				//HzI[fi] = vi.z;
-			}
-
-			//Spline discreet frequencies		
-			for (size_t i = 0; i < NCOMP; i++) {
-				if (Scale[i] == 0.0) return;
-				spline_component(i);
-			}
-
-			for (size_t i = 0; i < NCOMP; i++) {
-				if (Scale[i] == 0.0) return;
-				inverse_fft_window_scale_component(i);
-			}
-
-			if (SaveDiagnosticFiles) {
-				write_discretefrequencies("diag_discretefrequencies.txt");
-				write_splinedfrequencies("diag_splinedfrequencies.txt");
-				WvForm.write_frequencydomainwaveform("diag_frequencydomainwaveform.txt");
-			}
-
-			if (SaveDiagnosticFiles) {
-				WindScheme.write_windows("diag_windows.txt", XS(), YS(), ZS());
-			}
-		}
-
-		void initialise_windows(const cBlock& rxblock) {
-			WindScheme = WindowingScheme(rxblock, WvForm);
 		}
 
 		void write_discretefrequencies(const fs::path& path) const {
