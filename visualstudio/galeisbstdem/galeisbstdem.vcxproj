@@ -132,6 +132,7 @@
     <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\logger.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\mpi_wrapper.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\rollpitchyaw.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\streamredirecter.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\string_utils.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.hpp" />

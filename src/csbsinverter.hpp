@@ -1604,9 +1604,9 @@ public:
 					T.lem().derivative_layer = undefinedvalue<size_t>();
 					T.setprimaryfields();
 
-					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PrimaryX;
-					if (S.CompInfo[YCOMP].Use) S.CompInfo[YCOMP].data[si].P = T.PrimaryY;
-					if (S.CompInfo[ZCOMP].Use) S.CompInfo[ZCOMP].data[si].P = T.PrimaryZ;
+					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PX();
+					if (S.CompInfo[YCOMP].Use) S.CompInfo[YCOMP].data[si].P = T.PY();
+					if (S.CompInfo[ZCOMP].Use) S.CompInfo[ZCOMP].data[si].P = T.PZ();
 				}
 
 				if (S.invertXPlusZ) {
@@ -1927,17 +1927,17 @@ public:
 				//Forwardmodel
 				T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
 				T.lem().derivative_layer = undefinedvalue<size_t>();
-				T.setupcomputations();
+				T.setup_computations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
 
 				cTDEmData& d = S.predicted[si];
-				d.xcomponent().Primary = T.PrimaryX;
-				d.ycomponent().Primary = T.PrimaryY;
-				d.zcomponent().Primary = T.PrimaryZ;
-				d.xcomponent().Secondary = T.X;
-				d.ycomponent().Secondary = T.Y;
-				d.zcomponent().Secondary = T.Z;
+				d.xcomponent().Primary = T.PX();
+				d.ycomponent().Primary = T.PY();
+				d.zcomponent().Primary = T.PZ();
+				d.xcomponent().Secondary = T.XS();
+				d.ycomponent().Secondary = T.YS();
+				d.zcomponent().Secondary = T.ZS();
 			}
 		}
 	}
@@ -1981,18 +1981,18 @@ public:
 				//Forwardmodel
 				T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
 				T.lem().derivative_layer = undefinedvalue<size_t>();
-				T.setupcomputations();
+				T.setup_computations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
 
-				std::vector<double> xfm = T.X * scalefactors[XCOMP];
-				std::vector<double> yfm = T.Y * scalefactors[YCOMP];
-				std::vector<double> zfm = T.Z * scalefactors[ZCOMP];
+				std::vector<double> xfm = T.XS() * scalefactors[XCOMP];
+				std::vector<double> yfm = T.YS() * scalefactors[YCOMP];
+				std::vector<double> zfm = T.ZS() * scalefactors[ZCOMP];
 				std::vector<double> xzfm;
 				if (S.invertPrimaryPlusSecondary) {
-					xfm += T.PrimaryX * scalefactors[XCOMP];
-					yfm += T.PrimaryY * scalefactors[YCOMP];
-					zfm += T.PrimaryZ * scalefactors[ZCOMP];
+					xfm += T.PX() * scalefactors[XCOMP];
+					yfm += T.PY() * scalefactors[YCOMP];
+					zfm += T.PZ() * scalefactors[ZCOMP];
 				}
 
 				if (S.invertXPlusZ) {
@@ -2156,13 +2156,13 @@ public:
 	void fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv)
 	{
 		cTDEmSystem& T = S.T;
-		xdrv = T.X;
-		ydrv = T.Y;
-		zdrv = T.Z;
+		xdrv = T.XS();
+		ydrv = T.YS();
+		zdrv = T.ZS();
 		if (S.invertPrimaryPlusSecondary) {
-			xdrv += T.PrimaryX;
-			ydrv += T.PrimaryY;
-			zdrv += T.PrimaryZ;
+			xdrv += T.PX();
+			ydrv += T.PY();
+			zdrv += T.PZ();
 		}
 	}
 

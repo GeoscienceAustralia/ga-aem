@@ -62,7 +62,7 @@ int skytem_example_ip()
 	//Run the forward model
 	S.forwardmodel(G, E, R);	
 	for (size_t i = 0; i < R.SZ.size(); i++){
-		double wct = 0.5*(S.Win.WinSpec[i].TimeHigh + S.Win.WinSpec[i].TimeLow);
+		double wct = S.window(i).centre_time();
 		printf("%zu %10e %10e\n", i, wct, R.SZ[i]);		
 	}	
 	return 0;

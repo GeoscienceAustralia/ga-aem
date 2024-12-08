@@ -277,7 +277,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			T.read_system_descriptor_file(stmfile);
 
 			glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
-			glog.log_to_file(T.stm().get_as_string());
+			glog.log_to_file(T.system_descriptor_block().get_as_string());
 			glog.log_to_file("==========================================================================\n");
 
 			S.nwindows = T.nwindows();
@@ -594,9 +594,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				T.lem().derivative_layer = INT_MAX;
 				T.setprimaryfields();
 
-				S.oPX = T.PrimaryX;
-				S.oPY = T.PrimaryY;
-				S.oPZ = T.PrimaryZ;
+				S.oPX = T.PX();
+				S.oPY = T.PY();
+				S.oPZ = T.PZ();
 			}
 
 			if (S.useX) {
@@ -1035,14 +1035,14 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		std::vector<double> v(S.nchans);
 		std::vector<double> x, y, z;
 		if (S.useTotal) {
-			if (S.useX) x = T.X + T.PrimaryX;
-			if (S.useY) y = T.Y + T.PrimaryY;
-			if (S.useZ) z = T.Z + T.PrimaryZ;
+			if (S.useX) x = T.XS() + T.PX();
+			if (S.useY) y = T.YS() + T.PY();
+			if (S.useZ) z = T.ZS() + T.PZ();
 		}
 		else {
-			if (S.useX) x = T.X;
-			if (S.useY) y = T.Y;
-			if (S.useZ) z = T.Z;
+			if (S.useX) x = T.XS();
+			if (S.useY) y = T.YS();
+			if (S.useZ) z = T.ZS();
 		}
 
 		size_t nx = x.size();
@@ -1071,7 +1071,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			cTDEmSystem& T = S.T;
 			T.setconductivitythickness(c, t);
 			T.setgeometry(G);
-			T.setupcomputations();
+			T.setup_computations();
 			T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
 			T.lem().derivative_layer = INT_MAX;
 			T.setprimaryfields();

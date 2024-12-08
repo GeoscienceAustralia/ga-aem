@@ -97,5 +97,8 @@
     <ClInclude Include="..\..\src\fixed_point_spline.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\include\rollpitchyaw.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

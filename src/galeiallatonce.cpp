@@ -407,7 +407,7 @@ public:
 		T.setgeometry(geometry);
 		T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
 		T.lem().derivative_layer = INT_MAX;
-		T.setupcomputations();
+		T.setup_computations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
 		return true;
@@ -419,19 +419,19 @@ public:
 		T.setgeometry(geometry);
 		T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
 		T.lem().derivative_layer = INT_MAX;
-		T.setupcomputations();
+		T.setup_computations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
 
 
 		//Save for later derivative calculations
-		std::vector<double> X = T.X;
-		std::vector<double> Y = T.Y;
-		std::vector<double> Z = T.Z;
+		std::vector<double> X = T.XS();
+		std::vector<double> Y = T.YS();
+		std::vector<double> Z = T.ZS();
 		if (InvertTotalField) {
-			X += T.PrimaryX;
-			Y += T.PrimaryY;
-			Z += T.PrimaryZ;
+			X += T.PX();
+			Y += T.PY();
+			Z += T.PZ();
 		}
 
 		predicted.resize(ndata());
@@ -455,7 +455,7 @@ public:
 			for (size_t li = 0; li < nlayers; li++) {
 				T.lem().calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
 				T.lem().derivative_layer = li;
-				T.setupcomputations();
+				T.setup_computations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
 
@@ -487,7 +487,7 @@ public:
 				else {
 					T.lem().calculation_type = cTDEmGeometry::derivativetype(UGI[gi]);
 					T.lem().derivative_layer = INT_MAX;
-					T.setupcomputations();
+					T.setup_computations();
 					T.setprimaryfields();
 					T.setsecondaryfields();
 					for (size_t ci = 0; ci < Comp.size(); ci++) {
@@ -890,7 +890,7 @@ public:
 		for (size_t i = 0; i < bv.size(); i++) {
 			T[i].initialise(bv[i]);
 			std::string stmfile = bv[i].getstringvalue("SystemFile");
-			std::string str = T[i].T.stm().get_as_string();
+			std::string str = T[i].T.system_descriptor_block().get_as_string();
 			glog.logmsg(0, "==============System file %s\n", stmfile.c_str());
 			glog.logmsg(0, str.c_str());
 		}
@@ -2261,16 +2261,16 @@ public:
 						if (S.InvertTotalField) {
 							OI.addfield("predicted_" + sys + cid[ci] + "P", 'E', 15, 6);
 							OI.setdescription("Predicted " + sys + cid[ci] + "-component primary field");
-							if (ci == 0) buf += strprint("%15.6le", S.T.PrimaryX);
-							else if (ci == 1) buf += strprint("%15.6le", S.T.PrimaryY);
-							else              buf += strprint("%15.6le", S.T.PrimaryZ);
+							if (ci == 0) buf += strprint("%15.6le", S.T.PX());
+							else if (ci == 1) buf += strprint("%15.6le", S.T.PY());
+							else              buf += strprint("%15.6le", S.T.PZ());
 
 							OI.addfield("predicted_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
 							OI.setdescription("Predicted " + sys + cid[ci] + "-component secondary field windows");
 							for (size_t w = 0; w < C.nw; w++) {
-								if (ci == 0) buf += strprint("%15.6le", S.T.X[w]);
-								else if (ci == 1) buf += strprint("%15.6le", S.T.Y[w]);
-								else              buf += strprint("%15.6le", S.T.Z[w]);
+								if (ci == 0) buf += strprint("%15.6le", S.T.XS()[w]);
+								else if (ci == 1) buf += strprint("%15.6le", S.T.YS()[w]);
+								else              buf += strprint("%15.6le", S.T.ZS()[w]);
 							}
 						}
 						else {

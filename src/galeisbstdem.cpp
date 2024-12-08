@@ -8,6 +8,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <iostream>
 
+#include "tdemsystem.hpp"
+
 #include "string_print.hpp"
 #include "logger.hpp"
 #include "file_utils.hpp"
@@ -18,6 +20,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "tdemsystem.hpp"
 #include "cinverter.hpp"
 #include "csbsinverter.hpp"
+#include "rollpitchyaw.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 

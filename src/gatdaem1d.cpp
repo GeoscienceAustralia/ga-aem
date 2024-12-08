@@ -34,19 +34,19 @@ void deletehandle(void* hS)
 int nsamplesperwaveform(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (int)T.WFM.NumSamples;
+	return (int)T.waveform().NumSamples;
 }
 
 void waveform(void* hS, double* time, double* currentwaveform, double* voltagewaveform)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	for (size_t i = 0; i < T.WFM.NumSamples; i++) {
-		time[i] = T.WFM.Time[i];
-		if (T.WFM.Type == Waveform::Type::TX) {
-			currentwaveform[i] = T.WFM.Value[i];
+	for (size_t i = 0; i < T.waveform().NumSamples; i++) {
+		time[i] = T.waveform().Time[i];
+		if (T.waveform().Type == Waveform::Type::TX) {
+			currentwaveform[i] = T.waveform().Value[i];
 		}
-		if (T.WFM.Type == Waveform::Type::RX) {
-			voltagewaveform[i] = T.WFM.Value[i];
+		if (T.waveform().Type == Waveform::Type::RX) {
+			voltagewaveform[i] = T.waveform().Value[i];
 		}
 	}
 }
@@ -60,25 +60,25 @@ int nwindows(void* hS)
 int nturns(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (int)T.Tx.NumberOfTurns;
+	return (int)T.transmitter().NumberOfTurns;
 }
 
 double peakcurrent(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (double)T.Tx.PeakCurrent;
+	return (double)T.transmitter().PeakCurrent;
 }
 
 double looparea(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (double)T.Tx.LoopArea;
+	return (double)T.transmitter().LoopArea;
 }
 
 double basefrequency(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (double)T.WFM.BaseFrequency;
+	return (double)T.waveform().BaseFrequency;
 }
 
 int nlayers(void* hS)
@@ -91,15 +91,16 @@ void windowtimes(void* hS, double* low, double* high)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	for (size_t i = 0; i < T.nwindows(); i++) {
-		low[i] = T.Win.WinSpec[i].TimeLow;
-		high[i] = T.Win.WinSpec[i].TimeHigh;
+		low[i] = T.window(i).TimeLow;
+		high[i] = T.window(i).TimeHigh;
 	}
 }
 
 void setgeometry(void* hS, const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	const cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	T.setgeometry(G);
 }
 
 void setearth(void* hS, int nlayers, double* conductivity, double* thickness)
@@ -130,10 +131,11 @@ void forwardmodel(void* hS,
 	double* SZ)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	T.setgeometry(G);
 	cEarth1D E(nlayers, conductivity, thickness);
 	T.lem().setproperties(E);
-	T.setupcomputations();
+	T.setup_computations();
 	T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
 	T.lem().derivative_layer = -1;
 	T.setprimaryfields();
@@ -142,12 +144,12 @@ void forwardmodel(void* hS,
 	size_t nw = T.nwindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = T.PrimaryX;
-	*PY = T.PrimaryY;
-	*PZ = T.PrimaryZ;
-	memcpy(SX, T.X.data(), sz);
-	memcpy(SY, T.Y.data(), sz);
-	memcpy(SZ, T.Z.data(), sz);
+	*PX = T.PX();
+	*PY = T.PY();
+	*PZ = T.PZ();
+	memcpy(SX, T.XS().data(), sz);
+	memcpy(SY, T.YS().data(), sz);
+	memcpy(SZ, T.ZS().data(), sz);
 }
 
 void forwardmodel_ip(void* hS,
@@ -176,11 +178,12 @@ void forwardmodel_ip(void* hS,
 	double* SZ)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	T.setgeometry(G);
 	cEarth1D E(nlayers, conductivity, thickness, chargeability, timeconstant, frequencydependence);
 	T.lem().iptype = (cLEM::IPType)iptype;
 	T.lem().setproperties(E);
-	T.setupcomputations();
+	T.setup_computations();
 	T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
 	T.lem().derivative_layer = -1;
 	T.setprimaryfields();
@@ -189,12 +192,12 @@ void forwardmodel_ip(void* hS,
 	size_t nw = T.nwindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = T.PrimaryX;
-	*PY = T.PrimaryY;
-	*PZ = T.PrimaryZ;
-	memcpy(SX, T.X.data(), sz);
-	memcpy(SY, T.Y.data(), sz);
-	memcpy(SZ, T.Z.data(), sz);
+	*PX = T.PX();
+	*PY = T.PY();
+	*PZ = T.PZ();
+	memcpy(SX, T.XS().data(), sz);
+	memcpy(SY, T.YS().data(), sz);
+	memcpy(SZ, T.ZS().data(), sz);
 }
 
 void derivative(void* hS, int dtype, int dlayer,
@@ -209,12 +212,12 @@ void derivative(void* hS, int dtype, int dlayer,
 	size_t nw = T.nwindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = T.PrimaryX;
-	*PY = T.PrimaryY;
-	*PZ = T.PrimaryZ;
-	memcpy(SX, T.X.data(), sz);
-	memcpy(SY, T.Y.data(), sz);
-	memcpy(SZ, T.Z.data(), sz);
+	*PX = T.PX();
+	*PY = T.PY();
+	*PZ = T.PZ();
+	memcpy(SX, T.XS().data(), sz);
+	memcpy(SY, T.YS().data(), sz);
+	memcpy(SZ, T.ZS().data(), sz);
 }
 
 void fm_dlogc(void* hS,
@@ -223,9 +226,10 @@ void fm_dlogc(void* hS,
 	double* R)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	T.setgeometry(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	T.setgeometry(G);
 	T.lem().setconductivitythickness(nlayers, conductivity, thickness);
-	T.setupcomputations();
+	T.setup_computations();
 	T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
 	T.lem().derivative_layer = -1;
 	T.setprimaryfields();
@@ -234,12 +238,12 @@ void fm_dlogc(void* hS,
 	size_t nw = T.nwindows();
 	size_t sz = sizeof(double) * nw;
 	double* p = R;
-	*p = T.PrimaryX; p++;
-	memcpy(p, T.X.data(), sz); p += nw;
-	*p = T.PrimaryY; p++;
-	memcpy(p, T.Y.data(), sz); p += nw;
-	*p = T.PrimaryZ; p++;
-	memcpy(p, T.Z.data(), sz); p += nw;
+	*p = T.PX(); p++;
+	memcpy(p, T.XS().data(), sz); p += nw;
+	*p = T.PY(); p++;
+	memcpy(p, T.YS().data(), sz); p += nw;
+	*p = T.PZ(); p++;
+	memcpy(p, T.ZS().data(), sz); p += nw;
 
 	for (size_t k = 0; k < (size_t)nlayers; k++) {
 		T.lem().calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
@@ -248,21 +252,21 @@ void fm_dlogc(void* hS,
 		T.setsecondaryfields();
 
 		double c = T.lem().Layer[k].Conductivity;
-		*p = T.PrimaryX * c; p++;
+		*p = T.PX() * c; p++;
 		for (size_t w = 0; w < nw; w++) {
-			*p = T.X[w] * c;
+			*p = T.XS()[w] * c;
 			p++;
 		}
 
-		*p = T.PrimaryY * c; p++;
+		*p = T.PY() * c; p++;
 		for (size_t w = 0; w < nw; w++) {
-			*p = T.Y[w] * c;
+			*p = T.YS()[w] * c;
 			p++;
 		}
 
-		*p = T.PrimaryZ * c; p++;
+		*p = T.PZ() * c; p++;
 		for (size_t w = 0; w < nw; w++) {
-			*p = T.Z[w] * c;
+			*p = T.ZS()[w] * c;
 			p++;
 		}
 
