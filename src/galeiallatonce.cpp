@@ -337,7 +337,7 @@ public:
 	cSystemInfo() { 	};
 	bool initialise(const cBlock& b) {
 		std::string stm = b.getstringvalue("SystemFile");
-		T.read_system_descriptor_file(stm);
+		T = cTDEmSystem(stm);
 		nw = T.nwindows();
 
 		bool status;
@@ -405,8 +405,8 @@ public:
 	bool forward_model(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry) {
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
-		T.lem().derivative_layer = INT_MAX;
+		T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
+		T.lem().derivative_layer = std::numeric_limits<size_t>::max();
 		T.setup_computations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
@@ -417,8 +417,8 @@ public:
 		size_t nlayers = conductivity.size();
 		T.setconductivitythickness(conductivity, thickness);
 		T.setgeometry(geometry);
-		T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
-		T.lem().derivative_layer = INT_MAX;
+		T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
+		T.lem().derivative_layer = std::numeric_limits<size_t>::max();
 		T.setup_computations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
@@ -453,7 +453,7 @@ public:
 			}
 
 			for (size_t li = 0; li < nlayers; li++) {
-				T.lem().calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
+				T.lem().calculation_type = LEModeller::CalculationType::CONDUCTIVITYDERIVATIVE;
 				T.lem().derivative_layer = li;
 				T.setup_computations();
 				T.setprimaryfields();
@@ -486,7 +486,7 @@ public:
 				}
 				else {
 					T.lem().calculation_type = cTDEmGeometry::derivativetype(UGI[gi]);
-					T.lem().derivative_layer = INT_MAX;
+					T.lem().derivative_layer = std::numeric_limits<size_t>::max();
 					T.setup_computations();
 					T.setprimaryfields();
 					T.setsecondaryfields();

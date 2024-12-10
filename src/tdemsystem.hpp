@@ -23,6 +23,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "rollpitchyaw.hpp"
 
 namespace AEM {
+	using namespace LEM;
 
 	inline static Mat3 YPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
 		const Mat3 Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
@@ -280,28 +281,26 @@ namespace AEM {
 			case 9: return ElementType::rx_yaw;    break;
 			default:
 				glog.errormsg(_SRC_, "Geometry index %zu out of range\n", index);
-				break;
 			}
 			return ElementType::unknown;
 		}
 
-		static cLEM::CalculationType derivativetype(const size_t& index) {
+		static LEModeller::CalculationType derivativetype(const size_t& index) {
 			switch (index) {
-			case 0: return cLEM::CalculationType::HDERIVATIVE; break;
-			case 1: return cLEM::CalculationType::NONE; break;
-			case 2: return cLEM::CalculationType::NONE; break;
-			case 3: return cLEM::CalculationType::NONE; break;
-			case 4: return cLEM::CalculationType::XDERIVATIVE; break;
-			case 5: return cLEM::CalculationType::YDERIVATIVE; break;
-			case 6: return cLEM::CalculationType::ZDERIVATIVE; break;
-			case 7: return cLEM::CalculationType::NONE; break;
-			case 8: return cLEM::CalculationType::NONE; break;
-			case 9: return cLEM::CalculationType::NONE; break;
+			case 0: return LEModeller::CalculationType::HDERIVATIVE; break;
+			case 1: return LEModeller::CalculationType::NONE; break;
+			case 2: return LEModeller::CalculationType::NONE; break;
+			case 3: return LEModeller::CalculationType::NONE; break;
+			case 4: return LEModeller::CalculationType::XDERIVATIVE; break;
+			case 5: return LEModeller::CalculationType::YDERIVATIVE; break;
+			case 6: return LEModeller::CalculationType::ZDERIVATIVE; break;
+			case 7: return LEModeller::CalculationType::NONE; break;
+			case 8: return LEModeller::CalculationType::NONE; break;
+			case 9: return LEModeller::CalculationType::NONE; break;
 			default:
 				glog.errormsg(_SRC_, "Geometry index %zu out of range\n", index);
-				break;
 			}
-			return cLEM::CalculationType::NONE;
+			return LEModeller::CalculationType::NONE;
 		}
 
 		void write(std::string path) const
@@ -396,14 +395,13 @@ namespace AEM {
 		size_t NumSamples = 0;
 		size_t NumFrequencies = 0;
 
-		Waveform::Type Type;
-		std::vector<double> Time;
-		std::vector<double> Value;
-		std::vector<double>  T_Waveform;
-		std::vector<cdouble> F_Waveform;
-		std::vector<cdouble> Transfer;
-		std::vector<cdouble> FFTWork;
-		std::vector<double>  fft_frequency;
+		Waveform::Type Type; // Is the time domain waveform specified as TX current or Rx voltage
+		std::vector<double> Time; // Times in seconds
+		std::vector<double>  TD_Waveform; // Time domain waveform
+		std::vector<cdouble> FD_Waveform; // Pure frequency domain waveform
+		std::vector<cdouble> TransferFunction; // FD_Waveform * RX Filters * (b->db/dt or db/dt->b) conversion
+		std::vector<cdouble> FFT_WorkArray; // Work array for repeated inplace inverse FFTs
+		std::vector<double>  FFT_Frequency; // Pre-computed FFT frequencies
 
 		void initialise(const cBlock& b, const fs::path& systemdescriptorfile) {
 			BaseFrequency = b.getdoublevalue("BaseFrequency");
@@ -417,9 +415,8 @@ namespace AEM {
 					FilePathParts fpp(systemdescriptorfile);
 					std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
 					if (wp.size() > 0) {
-						digitisewaveform(wp, Time, Value);
+						digitisewaveform(wp, Time, TD_Waveform);
 						Type = Waveform::Type::RX;
-						T_Waveform = Value;
 						wavformdefined = true;
 					}
 				}
@@ -431,9 +428,8 @@ namespace AEM {
 					FilePathParts fpp(systemdescriptorfile);
 					std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
 					if (wp.size() > 0) {
-						digitisewaveform(wp, Time, Value);
+						digitisewaveform(wp, Time, TD_Waveform);
 						Type = Waveform::Type::TX;
-						T_Waveform = Value;
 						wavformdefined = true;
 					}
 				}
@@ -442,9 +438,8 @@ namespace AEM {
 			if (wavformdefined == false) {
 				std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformCurrent");
 				if (wp.size() > 0) {
-					digitisewaveform(wp, Time, Value);
+					digitisewaveform(wp, Time, TD_Waveform);
 					Type = Waveform::Type::TX;
-					T_Waveform = Value;
 					wavformdefined = true;
 				}
 			}
@@ -452,9 +447,8 @@ namespace AEM {
 			if (wavformdefined == false) {
 				std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformReceived");
 				if (wp.size() > 0) {
-					digitisewaveform(wp, Time, Value);
+					digitisewaveform(wp, Time, TD_Waveform);
 					Type = Waveform::Type::RX;
-					T_Waveform = Value;
 					wavformdefined = true;
 				}
 			}
@@ -566,8 +560,8 @@ namespace AEM {
 
 		double compute_peak_didt() const {
 			double maxdidt = 0.0;
-			for (size_t i = 1; i < Value.size(); i++) {
-				const double di = Value[i] - Value[i - 1];
+			for (size_t i = 1; i < TD_Waveform.size(); i++) {
+				const double di = TD_Waveform[i] - TD_Waveform[i - 1];
 				const double dt = Time[i] - Time[i - 1];
 				double didt = std::fabs(di / dt);
 				if (didt > maxdidt) maxdidt = didt;
@@ -578,21 +572,21 @@ namespace AEM {
 		void write_timedomainwaveform(const fs::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumSamples; i++) {
-				ofs << strprint("%20le\t%20le\n", Time[i], T_Waveform[i]);
+				ofs << strprint("%20le\t%20le\n", Time[i], TD_Waveform[i]);
 			}
 		}
 
 		void write_frequencydomainwaveform(const fs::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumFrequencies; i++) {
-				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\n", fft_frequency[i], F_Waveform[i].real(), F_Waveform[i].imag(), Transfer[i].real(), Transfer[i].imag());
+				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\n", FFT_Frequency[i], FD_Waveform[i].real(), FD_Waveform[i].imag(), TransferFunction[i].real(), TransferFunction[i].imag());
 			}
 		}
 
 		void write_frequencyseries(const fs::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumFrequencies; i++) {
-				ofs << strprint("%15le\t%15le\t%15le\n", fft_frequency[i], FFTWork[i].real(), FFTWork[i].imag());
+				ofs << strprint("%15le\t%15le\t%15le\n", FFT_Frequency[i], FFT_WorkArray[i].real(), FFT_WorkArray[i].imag());
 			}
 		}
 	};
@@ -817,15 +811,13 @@ namespace AEM {
 			}
 		}
 
-		std::vector<double> computewindow(const double* timeseries)
-		{
-			std::vector<double> W(nWindows, 0.0);
+		void computewindow(const double* timeseries, std::vector<double>& windowed_values) {
+			std::fill(windowed_values.begin(), windowed_values.end(), 0.0); // Reset to zero
 			for (size_t w = 0; w < nWindows; w++) {
 				for (size_t k = 0; k < Windows[w].Sample.size(); k++) {
-					W[w] += timeseries[Windows[w].Sample[k]] * Windows[w].Weight[k];
+					windowed_values[w] += timeseries[Windows[w].Sample[k]] * Windows[w].Weight[k];
 				}
 			}
-			return W;
 		}
 
 		void printwindows(const double& PX, const double& PY, const double& PZ, const std::vector<double>& SX, const std::vector<double>& SY, const std::vector<double>& SZ) const {
@@ -852,15 +844,74 @@ namespace AEM {
 		std::vector<double> IR_discrete_imag;// Imaginary impulse response discrete frequency nodes
 		std::vector<cdouble> IR_splined;// Complex splines impulse response
 
+		double Scale = 0.0;
 		double Primary = 0.0;
+		double RefGeomPrimary = 0.0;;
 		std::vector<double> Secondary;
+		//double Scale = 0.0;
 
 		ComponentWorkStore() {};
-		void resize(const size_t nnodes, const size_t nfftfreq) {
+
+		void resize(const size_t nnodes, const size_t nfftfreq, const size_t nwindows) {
 			IR_discrete_real.resize(nnodes);
 			IR_discrete_imag.resize(nnodes);
 			IR_splined.resize(nfftfreq);
+			Secondary.resize(nwindows);
 		};
+	};
+
+	class FFTWPlanWrapper {
+
+		private:
+			fftw_plan Plan = nullptr;
+
+		public:
+
+			// Default constructor
+			FFTWPlanWrapper() {
+				Plan = nullptr;
+			}
+
+			FFTWPlanWrapper(const fftw_plan plan) {
+				setplan(plan);
+			}
+
+			// Move constructor
+			FFTWPlanWrapper(FFTWPlanWrapper&& other) noexcept
+				: Plan(other.Plan)
+			{
+				other.Plan = nullptr;
+			};
+
+			// Copy assignment operator
+			FFTWPlanWrapper& operator=(FFTWPlanWrapper& other) noexcept {
+				setplan(other.Plan);
+				other.Plan = nullptr;
+				return *this;
+			};
+
+			~FFTWPlanWrapper() {
+				destroy();
+			};
+
+			void setplan(const fftw_plan plan) {
+				Plan = plan;
+			}
+
+			void destroy() const {
+				if (Plan) {
+					fftw_destroy_plan(Plan);
+				}
+			}
+
+			void execute() const {
+				fftw_execute(Plan);
+			}
+
+			void print() const {
+				fftw_print_plan(Plan);
+			}
+
 	};
 
 	class AEMSystem {
@@ -869,7 +920,7 @@ namespace AEM {
 		std::string SystemName;
 		std::string SystemType;
 		cBlock STM;
-		cLEM LEM;
+		LEModeller LEM;
 
 		bool SaveDiagnosticFiles = false;
 
@@ -881,7 +932,7 @@ namespace AEM {
 		inline static const size_t NCOMP = 3;
 
 		const cBlock& system_descriptor_block() const { return STM; };
-		cLEM& lem() { return LEM; };
+		LEModeller& lem() { return LEM; };
 
 	};
 	
@@ -890,10 +941,11 @@ namespace AEM {
 	private:
 		enum class OutputType { BFIELD, DBDT };
 		enum class NormalizationType { NONE, PPM, PPM_PEAKTOPEAK };
-		OutputType OutputType;
-		NormalizationType NormalisationType;
+		OutputType OutputType = OutputType::DBDT;
+		NormalizationType NormalisationType = NormalizationType::NONE;
 
-		fftw_plan inverse_fftplan;
+		FFTWPlanWrapper InverseFFTPlan;
+
 		std::vector<ComponentWorkStore> Comp;
 		FixedPointSpline<double> FrequencySpliner;
 
@@ -912,12 +964,6 @@ namespace AEM {
 
 		cTDEmGeometry Geometry;
 		cTDEmGeometry NormalizationGeometry;
-
-		std::vector<double> Scale;
-		double RefGeomPrimaryX = 0.0;  //Primary X ref field for PPM normalisation
-		double RefGeomPrimaryY = 0.0;  //Primary Y ref field for PPM normalisation
-		double RefGeomPrimaryZ = 0.0;  //Primary Z ref field for PPM normalisation
-		
 		WindowingScheme WindScheme;
 		Waveform WvForm;
 		Transmitter Tx;
@@ -928,19 +974,18 @@ namespace AEM {
 		const Waveform& waveform() const { return WvForm; }
 		const Transmitter& transmitter() const { return Tx; }
 		
-		cTDEmSystem() { initialise(); };
+		cTDEmSystem() { };
 
 		cTDEmSystem(std::string systemdescriptorfile) {
-			initialise();
+			//initialise();
 			read_system_descriptor_file(systemdescriptorfile);
 		};
 
-		~cTDEmSystem()
-		{
-			if (inverse_fftplan) {
-				fftw_destroy_plan(inverse_fftplan);
-			}
-		};
+		//~cTDEmSystem(){
+			//if (InverseFFTPlan) {
+			//	fftw_destroy_plan(InverseFFTPlan);
+			//}
+		//};
 
 		const size_t& nwindows() const {
 			return WindScheme.nwindows();
@@ -969,11 +1014,12 @@ namespace AEM {
 			return Comp[component].Secondary;
 		}
 
-		void initialise() {
-			LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
-			LEM.rzerotype = cLEM::RZeroMethod::PROPOGATIONMATRIX;
-			inverse_fftplan = 0;
-		}
+	private:
+
+		//void initialise() {
+		//	LEM.calculation_type = LEModeller::CalculationType::FORWARDMODEL;
+		//	LEM.rzerotype = LEModeller::RZeroMethod::PROPOGATIONMATRIX;
+		//}
 
 		// Setup
 		void read_system_descriptor_file(const std::string& systemdescriptorfile) {
@@ -1039,7 +1085,7 @@ namespace AEM {
 
 			SaveDiagnosticFiles = STM.getboolvalue("ForwardModelling.SaveDiagnosticFiles");
 
-			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.T_Waveform.size()) {
+			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.TD_Waveform.size()) {
 				glog.errormsg(_SRC_, "The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
 			}
 
@@ -1070,26 +1116,28 @@ namespace AEM {
 
 		void setup_transforms() {
 			WvForm.NumFrequencies = WvForm.NumSamples / 2 + 1;
-			WvForm.fft_frequency.resize(WvForm.NumFrequencies);
-
-			size_t N = WvForm.NumSamples;
-			size_t NC = N;
-			size_t NR = 2 * (N / 2 + 1);
-
-			//Forward transform
-			WvForm.F_Waveform.resize(NC);
-			double* in = (double*)&(WvForm.T_Waveform[0]);
-			fftw_complex* out = (fftw_complex*)&(WvForm.F_Waveform[0]);
-			fftw_plan fftwplan_forward = fftw_plan_dft_r2c_1d((int)N, in, out, FFTW_ESTIMATE);
-			for (size_t k = 0; k < WvForm.NumSamples; k++) {
-				WvForm.T_Waveform[k] /= (double)WvForm.NumSamples;
-			}
-			fftw_execute(fftwplan_forward);
-			fftw_destroy_plan(fftwplan_forward);
-
+			WvForm.FFT_Frequency.resize(WvForm.NumFrequencies);
 			for (size_t k = 0; k < WvForm.NumFrequencies; k++) {
-				WvForm.fft_frequency[k] = WvForm.calculate_fft_frequency(k);
+				WvForm.FFT_Frequency[k] = WvForm.calculate_fft_frequency(k);
 			}
+
+			int N = WvForm.NumSamples;
+			size_t NComplex = N;
+			size_t NReal = 2 * (N / 2 + 1);
+
+			// Forward transform
+			WvForm.FD_Waveform.resize(NComplex);
+			WvForm.FFT_WorkArray.resize(NReal);//Inverse transform work array	
+			WvForm.TransferFunction.resize(WvForm.NumFrequencies);
+
+			FFTWPlanWrapper ForwardFFTPlan(fftw_plan_dft_r2c_1d(N, (double*)WvForm.TD_Waveform.data(), (fftw_complex*)WvForm.FD_Waveform.data(), FFTW_ESTIMATE));
+			ForwardFFTPlan.execute();
+			const double scale = 1.0 / (double)WvForm.NumSamples;
+			WvForm.FD_Waveform *= scale; // Scale the spectrum
+			// Make sure every odd harmonic to exactly zero
+			//for (size_t k = 0; k < WvForm.NumFrequencies; k += 2) {
+			//	WvForm.F_Waveform[k] = 0.0;
+			//}
 
 			bool convert_B_2_dBdT = false;
 			bool convert_dBdT_2_B = false;
@@ -1105,48 +1153,36 @@ namespace AEM {
 				}
 			}
 
-			for (size_t k = 0; k < WvForm.NumFrequencies; k += 2) {
-				WvForm.F_Waveform[k] = 0.0;
-			}
-
-			WvForm.Transfer.resize(WvForm.NumFrequencies);
-			WvForm.Transfer = WvForm.F_Waveform;
-
+			WvForm.TransferFunction = WvForm.FD_Waveform;
 			for (size_t k = 0; k < WvForm.NumFrequencies; k++) {
-				const double& frequency = WvForm.fft_frequency[k];
+				const double& frequency = WvForm.FFT_Frequency[k];
 				if (convert_B_2_dBdT == true) {
-					WvForm.Transfer[k] *= cdouble(0.0, -TWOPI<double> *frequency);
+					WvForm.TransferFunction[k] *= cdouble(0.0, -TWOPI<double> *frequency);
 				}
 				if (convert_dBdT_2_B == true) {
-					WvForm.Transfer[k] *= cdouble(0.0, -1.0 / (TWOPI<double> *frequency));
+					WvForm.TransferFunction[k] *= cdouble(0.0, -1.0 / (TWOPI<double> *frequency));
 				}
 
 				for (size_t fi = 0; fi < Filters.size(); fi++) {
 					const cdouble w = Filters[fi].weight(frequency);
-					WvForm.Transfer[k] *= w;
+					WvForm.TransferFunction[k] *= w;
 				}
 			}
 
-			//Frequencies to be splined
+			// Frequencies to be splined
 			NumberOfSplinedFrequencies = WvForm.NumFrequencies / 2;
 			SplinedFrequencieslog10.resize(NumberOfSplinedFrequencies);
 			for (size_t k = 0; k < NumberOfSplinedFrequencies; k++) {
-				SplinedFrequencieslog10[k] = log10(fabs(WvForm.fft_frequency[k * 2 + 1]));
+				SplinedFrequencieslog10[k] = log10(fabs(WvForm.FFT_Frequency[k * 2 + 1]));
 			}
 
-			//Setup inverse transform work array	
-			WvForm.FFTWork.resize(NR);
-
-#if defined MULTITHREADED
-			//FFTW_MEASURE does not seem to be thread safe
-			unsigned int FLAGS = FFTW_ESTIMATE;
-#else
-			unsigned int FLAGS = FFTW_MEASURE;
-#endif
-
-			fftw_complex* invin = (fftw_complex*)(WvForm.FFTWork.data());
-			double* invout = (double*)(WvForm.FFTWork.data());
-			inverse_fftplan = fftw_plan_dft_c2r_1d((int)N, invin, invout, FLAGS);
+			// FFTW_MEASURE does not seem to be thread safe
+			#if defined MULTITHREADED
+				unsigned int FFTW_FLAGS = FFTW_ESTIMATE;
+			#else
+				unsigned int FFTW_FLAGS = FFTW_MEASURE;
+			#endif
+			InverseFFTPlan.setplan(fftw_plan_dft_c2r_1d(N, (fftw_complex*)WvForm.FFT_WorkArray.data(), (double*)WvForm.FFT_WorkArray.data(), FFTW_FLAGS));
 		}
 
 		void setup_scaling() {
@@ -1156,10 +1192,9 @@ namespace AEM {
 			double yos = STM.getdoublevalue("ForwardModelling.YOutputScaling");
 			double zos = STM.getdoublevalue("ForwardModelling.ZOutputScaling");
 
-			Scale.resize(NCOMP);
-			Scale[XCOMP] = tx_scale * xos;
-			Scale[YCOMP] = tx_scale * yos;
-			Scale[ZCOMP] = tx_scale * zos;
+			Comp[XCOMP].Scale = tx_scale * xos;
+			Comp[YCOMP].Scale = tx_scale * yos;
+			Comp[ZCOMP].Scale = tx_scale * zos;
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				cBlock b = STM.findblock("ReferenceGeometry");
@@ -1178,20 +1213,13 @@ namespace AEM {
 					s *= 1.0e6;
 				}
 
-				RefGeomPrimaryX = PX();
-				RefGeomPrimaryY = PY();
-				RefGeomPrimaryZ = PZ();
-
-				if (RefGeomPrimaryX == 0.0) Scale[XCOMP] = 0.0;
-				else Scale[XCOMP] *= (s / RefGeomPrimaryX);
-
-				if (RefGeomPrimaryY == 0.0) Scale[YCOMP] = 0.0;
-				else Scale[YCOMP] *= (s / RefGeomPrimaryY);
-
-				if (RefGeomPrimaryZ == 0.0) Scale[ZCOMP] = 0.0;
-				else Scale[ZCOMP] *= (s / RefGeomPrimaryZ);
+				for (size_t i = 0; i < NCOMP; i++) {
+					ComponentWorkStore& c = Comp[i];
+					c.RefGeomPrimary = c.Primary;
+					if (c.RefGeomPrimary == 0.0) c.Scale = 0.0;
+					else c.Scale *= (s / c.RefGeomPrimary);
+				}
 			}
-
 		}
 
 		void setup_discrete_frequencies() {
@@ -1220,13 +1248,14 @@ namespace AEM {
 
 		void setup_splines() {
 			Comp.resize(NCOMP);
-			Comp[XCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies);
-			Comp[YCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies);
-			Comp[ZCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies);
+			Comp[XCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
+			Comp[YCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
+			Comp[ZCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
 			FrequencySpliner.initialise(DiscreteFrequenciesLog10, SplinedFrequencieslog10);
 			LEM.init_frequencies(DiscreteFrequencies);
 		}
 
+	public:
 		// Modelling
 		void setearthproperties(const cEarth1D& E) {
 			LEM.setproperties(E);
@@ -1262,7 +1291,7 @@ namespace AEM {
 			LEM.setprimaryfields();
 			Vec3 v(LEM.Fields.t.p.x, LEM.Fields.t.p.y, LEM.Fields.t.p.z);
 
-			if (LEM.calculation_type == cLEM::CalculationType::HDERIVATIVE) {
+			if (LEM.calculation_type == LEModeller::CalculationType::HDERIVATIVE) {
 				//This is because when H changes Z also changes
 				//and DZ = DH
 				//but they should be all zero anyway
@@ -1282,9 +1311,9 @@ namespace AEM {
 			const Mat3 RotMatrix = Geometry.inertial_to_rx_frame_rotation_matrix();
 			v = RotMatrix * v;
 
-			Comp[XCOMP].Primary = v.x() * Scale[XCOMP];
-			Comp[YCOMP].Primary = v.y() * Scale[YCOMP];
-			Comp[ZCOMP].Primary = v.z() * Scale[ZCOMP];
+			Comp[XCOMP].Primary = v.x() * Comp[XCOMP].Scale;
+			Comp[YCOMP].Primary = v.y() * Comp[YCOMP].Scale;
+			Comp[ZCOMP].Primary = v.z() * Comp[ZCOMP].Scale;
 		};
 
 		void setsecondaryfields() {
@@ -1303,7 +1332,7 @@ namespace AEM {
 				vr = RotMatrix * vr;
 				vi = RotMatrix * vi;
 
-				if (LEM.calculation_type == cLEM::CalculationType::HDERIVATIVE) {
+				if (LEM.calculation_type == LEModeller::CalculationType::HDERIVATIVE) {
 					//This is because when H changes Z also changes
 					//and DZ = DH
 					vr *= 2.0;
@@ -1320,12 +1349,8 @@ namespace AEM {
 
 			//Spline discreet frequencies		
 			for (size_t i = 0; i < NCOMP; i++) {
-				if (Scale[i] == 0.0) return;
+				if (Comp[i].Scale == 0.0) return;
 				spline_component(i);
-			}
-
-			for (size_t i = 0; i < NCOMP; i++) {
-				if (Scale[i] == 0.0) return;
 				inverse_fft_window_scale_component(i);
 			}
 
@@ -1362,25 +1387,26 @@ namespace AEM {
 
 			ComponentWorkStore& C = Comp[component];
 			// Reset to the stored transfer function
-			WvForm.FFTWork = WvForm.Transfer;
+			WvForm.FFT_WorkArray = WvForm.TransferFunction;
 			// Apply transfer function
 			size_t n = 0;
 			for (size_t k = 1; k < WvForm.NumFrequencies; k += 2) {
-				WvForm.FFTWork[k] *= C.IR_splined[n];
+				WvForm.FFT_WorkArray[k] *= C.IR_splined[n];
 				n++;
 			}
 
 			// Inverse FFT
-			fftw_execute(inverse_fftplan);
+
+			InverseFFTPlan.execute();
 
 			// Window
-			C.Secondary = WindScheme.computewindow((double*)WvForm.FFTWork.data());
+			WindScheme.computewindow((double*)WvForm.FFT_WorkArray.data(), C.Secondary);
 			if (SaveDiagnosticFiles) {
 				write_timesseries("diag_xtimeseries.txt");
 			}
 
 			// Scale
-			C.Secondary *= Scale[component];
+			C.Secondary *= Comp[component].Scale;
 		}
 
 		void write_discretefrequencies(const fs::path& path) const {
@@ -1413,7 +1439,7 @@ namespace AEM {
 
 		void write_timesseries(const std::string& path) const {
 			std::ofstream ofs = ofstream_ex(path);
-			double* ts = (double*)(WvForm.FFTWork.data());
+			double* ts = (double*)(WvForm.FFT_WorkArray.data());
 			for (size_t i = 0; i < WvForm.NumSamples; i++) {
 				ofs << strprint("%20.10le\t%20.10le\n", WvForm.Time[i], ts[i]);
 			}
@@ -1427,8 +1453,8 @@ namespace AEM {
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= RefGeomPrimaryX;
-				zb *= RefGeomPrimaryZ;
+				xb *= Comp[XCOMP].RefGeomPrimary;
+				zb *= Comp[ZCOMP].RefGeomPrimary;
 			}
 
 			double cosp = cos(D2R<double> *p);
@@ -1442,8 +1468,8 @@ namespace AEM {
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dxbdp /= RefGeomPrimaryX;
-				dzbdp /= RefGeomPrimaryZ;
+				dxbdp /= Comp[XCOMP].RefGeomPrimary;
+				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
 			}
 		}
 
@@ -1455,8 +1481,8 @@ namespace AEM {
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= RefGeomPrimaryX;
-				zb *= RefGeomPrimaryZ;
+				xb *= Comp[XCOMP].RefGeomPrimary;
+				zb *= Comp[ZCOMP].RefGeomPrimary;
 			}
 
 
@@ -1472,8 +1498,8 @@ namespace AEM {
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dxbdp /= RefGeomPrimaryX;
-				dzbdp /= RefGeomPrimaryZ;
+				dxbdp /= Comp[XCOMP].RefGeomPrimary;
+				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
 			}
 		}
 
@@ -1485,8 +1511,8 @@ namespace AEM {
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= RefGeomPrimaryY;
-				zb *= RefGeomPrimaryZ;
+				yb *= Comp[YCOMP].RefGeomPrimary;
+				zb *= Comp[ZCOMP].RefGeomPrimary;
 			}
 
 			double cosr = cos(D2R<double> *r);
@@ -1500,8 +1526,8 @@ namespace AEM {
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dybdr /= RefGeomPrimaryY;
-				dzbdr /= RefGeomPrimaryZ;
+				dybdr /= Comp[YCOMP].RefGeomPrimary;
+				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
 			}
 		}
 
@@ -1513,8 +1539,8 @@ namespace AEM {
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= RefGeomPrimaryY;
-				zb *= RefGeomPrimaryZ;
+				yb *= Comp[YCOMP].RefGeomPrimary;
+				zb *= Comp[ZCOMP].RefGeomPrimary;
 			}
 
 			double cosr = cos(D2R<double> *r);
@@ -1529,8 +1555,8 @@ namespace AEM {
 
 			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dybdr /= RefGeomPrimaryY;
-				dzbdr /= RefGeomPrimaryZ;
+				dybdr /= Comp[YCOMP].RefGeomPrimary;
+				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
 			}
 		}
 
@@ -1543,8 +1569,7 @@ namespace AEM {
 			Response.SZ = ZS();
 		};
 
-		void forwardmodel(const cTDEmGeometry& G, const cEarth1D& E, cTDEmResponse& R)
-		{
+		void forwardmodel(const cTDEmGeometry& G, const cEarth1D& E, cTDEmResponse& R) {
 			setgeometry(G);
 			setearthproperties(E);
 			setup_computations();
@@ -1553,20 +1578,17 @@ namespace AEM {
 			set_response(R);
 		}
 
-		void forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry)
-		{
+		void forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry)	{
 			setconductivitythickness(conductivity, thickness);
 			setgeometry(geometry);
-			LEM.calculation_type = cLEM::CalculationType::FORWARDMODEL;
+			LEM.calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 			LEM.derivative_layer = undefinedvalue<size_t>();
-
 			setup_computations();
 			setprimaryfields();
 			setsecondaryfields();
 		}
 
-		void forwardmodel(const size_t nlayers, const double* conductivity, const double* thickness, const double* g, double& PX, double& PY, double& PZ, double* SX, double* SY, double* SZ)
-		{
+		void forwardmodel(const size_t nlayers, const double* conductivity, const double* thickness, const double* g, double& px, double& py, double& pz, double* sx, double* sy, double* sz) {
 			//Order const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
 			cTDEmGeometry G(g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], g[9]);
 			setgeometry(G);
@@ -1574,20 +1596,18 @@ namespace AEM {
 			setup_computations();
 			setprimaryfields();
 			setsecondaryfields();
-			getfields(PX, PY, PZ, SX, SY, SZ);
+			getfields(px, py, pz, sx, sy, sz);
 		}
 
-		void getfields(double& PX, double& PY, double& PZ, double* SX, double* SY, double* SZ)
-		{
-			PX = PX;
-			PY = PY;
-			PZ = PZ;
+		void getfields(double& px, double& py, double& pz, double* sx, double* sy, double* sz) const {
+			px = PX();
+			py = PY();
+			pz = PZ();
 			const size_t nw = nwindows();
-			for (size_t i = 0; i < nw; i++) SX[i] = XS()[i];
-			for (size_t i = 0; i < nw; i++) SY[i] = YS()[i];
-			for (size_t i = 0; i < nw; i++) SZ[i] = ZS()[i];
+			for (size_t i = 0; i < nw; i++) sx[i] = XS()[i];
+			for (size_t i = 0; i < nw; i++) sy[i] = YS()[i];
+			for (size_t i = 0; i < nw; i++) sz[i] = ZS()[i];
 		}
-
 	};
 };
 

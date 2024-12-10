@@ -1600,7 +1600,7 @@ public:
 				cTDEmSystem& T = S.T;
 				if (S.reconstructPrimary) {
 					T.setgeometry(G[si].tfr);
-					T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+					T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 					T.lem().derivative_layer = undefinedvalue<size_t>();
 					T.setprimaryfields();
 
@@ -1925,7 +1925,7 @@ public:
 				T.setgeometry(g);
 
 				//Forwardmodel
-				T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+				T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 				T.lem().derivative_layer = undefinedvalue<size_t>();
 				T.setup_computations();
 				T.setprimaryfields();
@@ -1979,7 +1979,7 @@ public:
 				T.setgeometry(g);
 
 				//Forwardmodel
-				T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+				T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 				T.lem().derivative_layer = undefinedvalue<size_t>();
 				T.setup_computations();
 				T.setprimaryfields();
@@ -2049,7 +2049,7 @@ public:
 					if (solve_conductivity()) {
 						for (size_t li = 0; li < nLayers; li++) {
 							const int pindex = cindex(si, li);
-							T.lem().calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
+							T.lem().calculation_type = LEModeller::CalculationType::CONDUCTIVITYDERIVATIVE;
 							T.lem().derivative_layer = li;
 							T.setprimaryfields();
 							T.setsecondaryfields();
@@ -2065,7 +2065,7 @@ public:
 					if (solve_thickness()) {
 						for (size_t li = 0; li < nLayers - 1; li++) {
 							const int pindex = tindex(si, li);
-							T.lem().calculation_type = cLEM::CalculationType::THICKNESSDERIVATIVE;
+							T.lem().calculation_type = LEModeller::CalculationType::THICKNESSDERIVATIVE;
 							T.lem().derivative_layer = li;
 							T.setprimaryfields();
 							T.setsecondaryfields();
@@ -2080,7 +2080,7 @@ public:
 					if (FreeGeometry) {
 						if (solve_geometry_element("tx_height")) {
 							const size_t pindex = gindex(si, "tx_height");
-							T.lem().calculation_type = cLEM::CalculationType::HDERIVATIVE;
+							T.lem().calculation_type = LEModeller::CalculationType::HDERIVATIVE;
 							T.lem().derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
@@ -2090,7 +2090,7 @@ public:
 
 						if (solve_geometry_element("txrx_dx")) {
 							const size_t pindex = gindex(si, "txrx_dx");
-							T.lem().calculation_type = cLEM::CalculationType::XDERIVATIVE;
+							T.lem().calculation_type = LEModeller::CalculationType::XDERIVATIVE;
 							T.lem().derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
@@ -2100,7 +2100,7 @@ public:
 
 						if (solve_geometry_element("txrx_dy")) {
 							const size_t pindex = gindex(si, "txrx_dy");
-							T.lem().calculation_type = cLEM::CalculationType::YDERIVATIVE;
+							T.lem().calculation_type = LEModeller::CalculationType::YDERIVATIVE;
 							T.lem().derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();
@@ -2110,7 +2110,7 @@ public:
 
 						if (solve_geometry_element("txrx_dz")) {
 							const size_t pindex = gindex(si, "txrx_dz");
-							T.lem().calculation_type = cLEM::CalculationType::ZDERIVATIVE;
+							T.lem().calculation_type = LEModeller::CalculationType::ZDERIVATIVE;
 							T.lem().derivative_layer = undefinedvalue<size_t>();
 							T.setprimaryfields();
 							T.setsecondaryfields();

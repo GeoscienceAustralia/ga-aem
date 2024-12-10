@@ -20,8 +20,7 @@ using namespace AEM;
 
 void* createhandle(const char* systemfile)
 {
-	cTDEmSystem* T = new cTDEmSystem;
-	T->read_system_descriptor_file(std::string(systemfile));
+	cTDEmSystem* T = new cTDEmSystem(std::string(systemfile));
 	return (void*)T;
 }
 
@@ -43,10 +42,10 @@ void waveform(void* hS, double* time, double* currentwaveform, double* voltagewa
 	for (size_t i = 0; i < T.waveform().NumSamples; i++) {
 		time[i] = T.waveform().Time[i];
 		if (T.waveform().Type == Waveform::Type::TX) {
-			currentwaveform[i] = T.waveform().Value[i];
+			currentwaveform[i] = T.waveform().TD_Waveform[i];
 		}
 		if (T.waveform().Type == Waveform::Type::RX) {
-			voltagewaveform[i] = T.waveform().Value[i];
+			voltagewaveform[i] = T.waveform().TD_Waveform[i];
 		}
 	}
 }
@@ -136,7 +135,7 @@ void forwardmodel(void* hS,
 	cEarth1D E(nlayers, conductivity, thickness);
 	T.lem().setproperties(E);
 	T.setup_computations();
-	T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 	T.lem().derivative_layer = -1;
 	T.setprimaryfields();
 	T.setsecondaryfields();
@@ -181,10 +180,10 @@ void forwardmodel_ip(void* hS,
 	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.setgeometry(G);
 	cEarth1D E(nlayers, conductivity, thickness, chargeability, timeconstant, frequencydependence);
-	T.lem().iptype = (cLEM::IPType)iptype;
+	T.lem().iptype = (LEModeller::IPType)iptype;
 	T.lem().setproperties(E);
 	T.setup_computations();
-	T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 	T.lem().derivative_layer = -1;
 	T.setprimaryfields();
 	T.setsecondaryfields();
@@ -204,7 +203,7 @@ void derivative(void* hS, int dtype, int dlayer,
 	double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	T.lem().calculation_type = (cLEM::CalculationType)dtype;
+	T.lem().calculation_type = (LEModeller::CalculationType)dtype;
 	T.lem().derivative_layer = (size_t)((int)(dlayer - 1));	//subtract one from the layer number for zero based indexing
 	T.setprimaryfields();
 	T.setsecondaryfields();
@@ -230,7 +229,7 @@ void fm_dlogc(void* hS,
 	T.setgeometry(G);
 	T.lem().setconductivitythickness(nlayers, conductivity, thickness);
 	T.setup_computations();
-	T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 	T.lem().derivative_layer = -1;
 	T.setprimaryfields();
 	T.setsecondaryfields();
@@ -246,7 +245,7 @@ void fm_dlogc(void* hS,
 	memcpy(p, T.ZS().data(), sz); p += nw;
 
 	for (size_t k = 0; k < (size_t)nlayers; k++) {
-		T.lem().calculation_type = cLEM::CalculationType::CONDUCTIVITYDERIVATIVE;
+		T.lem().calculation_type = LEModeller::CalculationType::CONDUCTIVITYDERIVATIVE;
 		T.lem().derivative_layer = k;
 		T.setprimaryfields();
 		T.setsecondaryfields();

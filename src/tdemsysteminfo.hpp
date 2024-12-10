@@ -44,7 +44,7 @@ public:
 		fixseparator(stmfile);
 
 		glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
-		T.read_system_descriptor_file(stmfile);
+		T = cTDEmSystem(stmfile);
 		glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
 		glog.log_to_file(T.system_descriptor_block().get_as_string());
 		glog.log_to_file("==========================================================================\n");

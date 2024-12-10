@@ -274,8 +274,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			cTDEmSystem& T = S.T;
 			std::string stmfile = b.getstringvalue("SystemFile");
 			glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
-			T.read_system_descriptor_file(stmfile);
-
+			T = cTDEmSystem(stmfile);
 			glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
 			glog.log_to_file(T.system_descriptor_block().get_as_string());
 			glog.log_to_file("==========================================================================\n");
@@ -590,7 +589,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 			if (S.reconstructPrimary) {
 				T.setgeometry(IG);
-				T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+				T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 				T.lem().derivative_layer = INT_MAX;
 				T.setprimaryfields();
 
@@ -1072,7 +1071,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			T.setconductivitythickness(c, t);
 			T.setgeometry(G);
 			T.setup_computations();
-			T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+			T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
 			T.lem().derivative_layer = INT_MAX;
 			T.setprimaryfields();
 			T.setsecondaryfields();
