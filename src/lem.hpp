@@ -16,13 +16,39 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "general_constants.hpp"
 #include "general_utils.hpp"
 #include "earth1d.hpp"
+#include "calculation_type.hpp"
+#include "eigen_utils.hpp"
 
 //Formulation mainly from the book 
 //Geo-Electromagnetism, Wait James, R. Academic Press 1982
 namespace LEM {
-
 	using cdouble = std::complex<double>;
-	using Vec3 = Eigen::Vector<double, 3>;
+	using cvector = std::vector<std::complex<double>>;
+	using CalculationType = CT::CalculationType;
+	using CMode = CT::CalculationType::Mode;
+
+	static cdouble ip_colecole_conductivity(const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
+		//c = c0 - c0*(N / (1 + (1 - N)*(j*omega*T) ^ K));
+		if (chargeability == 0.0) {
+			return cdouble(conductivity, 0.0);
+		}
+		else {
+			cdouble c = conductivity - conductivity * (chargeability / (1.0 + (1.0 - chargeability) * (std::pow(cdouble(0.0, omega * timeconstant), frequencydependence))));
+			return  c;
+		}
+	}
+
+	inline cdouble ip_pelton_conductivity(const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
+		//p = p0[1 - m*(1 - (1 - 1/(1 + (j*omega*T) ^ K));
+		if (chargeability == 0.0) {
+			return cdouble(conductivity, 0.0);
+		}
+		else {
+			double  rho0 = 1.0 / conductivity;
+			cdouble rho = rho0 * (1.0 - chargeability * (1.0 - (1.0 / (1.0 + std::pow(cdouble(0.0, omega * timeconstant), frequencydependence)))));
+			return  1.0 / rho;
+		}
+	}
 
 	struct HankelTransform {
 		cdouble FM = 0.0;
@@ -146,273 +172,122 @@ namespace LEM {
 	class LEModeller {
 
 	public:
-
-		enum class RZeroMethod {
-			PROPOGATIONMATRIX,
-			RECURSIVE
-		};
-
-		enum class CalculationType {
-			FORWARDMODEL,
-			CONDUCTIVITYDERIVATIVE,
-			THICKNESSDERIVATIVE,
-			HDERIVATIVE,
-			RDERIVATIVE,
-			XDERIVATIVE,
-			YDERIVATIVE,
-			ZDERIVATIVE,
-			NONE
-		};
-
-		enum class IPType {
-			NONE,
-			COLECOLE,
-			PELTON
-		};
+		enum class IPType { NONE, COLECOLE, PELTON };
+		enum class RZeroMethod {PROPOGATIONMATRIX, RECURSIVE};
 
 	private:
-		size_t NumFrequencies;
-	public:
-		std::vector<FrequencyNode> Frequency;
-	private:
-		std::vector<HankelTransforms> Hankel;
-
-		double meanconductivity;
-		double meanlog10conductivity;
-
 		//Geometry Stuff
 		double Xunrotated, Yunrotated, X, Y, Z, H;
 		double R, R2, R3, R4, R5;
 		double BigR, BigR2, BigR3, BigR5, BigR7;
 		double XonR, YonR;
-		Vec3 Source_Orientation;
+		Vec3d Source_Orientation;
 		double xyrotation, cosxyrotation, sinxyrotation;
 
-		//Hankle Stuff  
-		size_t NumIntegrands;
-		double LowerFractionalWidth;
-		double UpperFractionalWidth;
+		//Hankle Stuff
+		inline static constexpr size_t NumIntegrands = 3;
+		double meanconductivity;
+		double meanlog10conductivity;
+
+		size_t NumAbscissa = 17;
+		double LowerFractionalWidth = 4.44;
+		double UpperFractionalWidth = 1.84;
 		size_t number_integrand_calls;
 		cdouble trapezoid_result[3];
 		cdouble integrand_result[3];
+		std::vector<HankelTransforms> Hankel;
+
+		double ModellingLoopRadius = 0.0; //dipole by default	
+		RZeroMethod rzerotype = LEModeller::RZeroMethod::PROPOGATIONMATRIX;
+		IPType iptype;
+		CalculationType calculationtype;
+
+		//size_t nLayers();
+		std::vector<LayerNode>  Layers;
+		std::vector<FrequencyNode> Frequencies;
+		ResponseField Fields;
 
 	public:
-		std::vector<LayerNode>  Layer;
-		double ModellingLoopRadius = 0.0; //dipole by default
-		size_t NumAbscissa;
-		size_t NumLayers;
-		RZeroMethod rzerotype = LEModeller::RZeroMethod::PROPOGATIONMATRIX;
-		CalculationType calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-		size_t derivative_layer;
-		ResponseField Fields;
-		IPType iptype;
+		size_t nFrequencies() const { return Frequencies.size(); };
+		size_t nLayers() const { return Layers.size(); };
 
+		LEModeller() {};
 
-		//LEM.calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-		//LEM.rzerotype = LEModeller::RZeroMethod::PROPOGATIONMATRIX;
-
-		LEModeller() { initialise(); }
-
-		~LEModeller() {};
-
-		void initialise()
-		{
-			NumLayers = 0;
-			NumFrequencies = 0;
-			NumIntegrands = 3;
-			NumAbscissa = 17;
-
-			LowerFractionalWidth = 4.44;
-			UpperFractionalWidth = 1.84;
+		void set_modellingloopradius(const double& radius) {
+			ModellingLoopRadius = radius;
 		};
 
-		void setlog10conductivitylog10thickness(const size_t nlayers, const double* log10conductivity, const double* log10thickness)
-		{
-			NumLayers = nlayers;
-			Layer.resize(NumLayers);
-			for (size_t i = 0; i < NumLayers; i++)Layer[i].Conductivity = pow(10.0, log10conductivity[i]);
-			for (size_t i = 0; i < NumLayers - 1; i++)Layer[i].Thickness = pow(10.0, log10thickness[i]);
-			setmeanconductivity();
-			setmeanlog10conductivity();
+		void set_numabscissa(const size_t& numabscissa) {
+			NumAbscissa = numabscissa;
 		};
 
-		void printearth()
-		{
+		void set_earth(const Earth1D& E) {
+			set_earth_properties(E.conductivity, E.thickness, E.chargeability, E.timeconstant, E.frequencydependence);
+		};
+
+		void set_iptype(const IPType& _iptype) {
+			iptype = _iptype;
+		};
+
+		void set_calculationtype(const CalculationType::Mode _mode, const size_t _layer) {
+			calculationtype = CalculationType(_mode, _layer);
+		};
+
+		void set_calculationtype(const CalculationType::Mode _mode) {
+			calculationtype = CalculationType(_mode);
+		};
+
+		const std::vector<LayerNode>& layers() {
+			return Layers;
+		};
+
+		const CalculationType::Mode& cmode() const {
+			return calculationtype.get_mode();
+		};
+
+		const size_t& derivative_layer() const {
+			return calculationtype.get_layer();
+		};
+
+		void printearth() const {
 			size_t i;
-			for (i = 0; i < NumLayers - 1; i++) {
-				printf("Layer %02zu:\t%10lf mS/m\t%10lf m\n", i, 1000.0 * Layer[i].Conductivity, Layer[i].Thickness);
+			for (i = 0; i < nLayers() - 1; i++) {
+				printf("Layer %02zu:\t%10lf mS/m\t%10lf m\n", i, 1000.0 * Layers[i].Conductivity, Layers[i].Thickness);
 			}
-			printf("Layer %02zu:\t%10lf mS/m\n", i, 1000.0 * Layer[i].Conductivity);
+			printf("Layer %02zu:\t%10lf mS/m\n", i, 1000.0 * Layers[i].Conductivity);
 		}
 
-		std::vector<double> getconductivity()
-		{
+		std::vector<double> getconductivity() {
 			std::vector<double> Conductivity;
-			for (size_t i = 0; i < NumLayers; i++) {
-				Conductivity.push_back(Layer[i].Conductivity);
+			for (size_t i = 0; i < nLayers(); i++) {
+				Conductivity.push_back(Layers[i].Conductivity);
 			}
 			return Conductivity;
 		}
 
-		std::vector<double> getthickness()
-		{
+		std::vector<double> getthickness() {
 			std::vector<double> Thickness;
-			for (size_t i = 0; i < NumLayers - 1; i++) {
-				Thickness.push_back(Layer[i].Thickness);
+			for (size_t i = 0; i < nLayers() - 1; i++) {
+				Thickness.push_back(Layers[i].Thickness);
 			}
 			return Thickness;
 		}
 
-		void setmeanlog10conductivity()
-		{
-			if (NumLayers == 1) {
-				meanlog10conductivity = Layer[0].Conductivity;
-				return;
+		void initialise_frequencies(const std::vector<double>& frequencies) {
+			const size_t nf = frequencies.size();
+			Frequencies.resize(nf);
+			Hankel.resize(nf);
+			for (size_t fi = 0; fi < nf; fi++) {
+				double omega = TWOPI<double> * frequencies[fi];
+				double muzeroomega = MUZERO<double> *omega;
+				Frequencies[fi].Frequency = frequencies[fi];
+				Frequencies[fi].Omega = omega;
+				Frequencies[fi].MuZeroOmega = muzeroomega;
+				Frequencies[fi].iMuZeroOmega = cdouble(0.0, muzeroomega);
 			}
-			//Returns the thickness weighted mean (in linear space) conductivity (but calculated in 10g10 space)
-			double sumc = 0.0;
-			double sumt = 0.0;
-			for (size_t i = 0; i < NumLayers; i++) {
-				if (i < (NumLayers - 1)) {
-					sumc += log10(Layer[i].Conductivity) * Layer[i].Thickness;
-					sumt += Layer[i].Thickness;
-				}
-				else {
-					sumc += log10(Layer[i].Conductivity) * sumt; //make basement layer as thick as sum of all overlying
-					sumt += sumt;
-				}
-			}
-			meanlog10conductivity = pow(10.0, sumc / sumt);
-		}
-
-		void setmeanconductivity()
-		{
-			if (NumLayers == 1) {
-				meanconductivity = Layer[0].Conductivity;
-				return;
-			}
-			//Returns the thickness weighted mean (in linear space) conductivity (but calculated in linear space)
-			double sumc = 0.0;
-			double sumt = 0.0;
-			for (size_t i = 0; i < NumLayers; i++) {
-				if (i < (NumLayers - 1)) {
-					sumc += Layer[i].Conductivity * Layer[i].Thickness;
-					sumt += Layer[i].Thickness;
-				}
-				else {
-					sumc += Layer[i].Conductivity * sumt; //make basement layer as thick as sum of all overlying
-					sumt += sumt;
-				}
-			}
-			meanconductivity = sumc / sumt;
-		}
-
-		void setproperties(
-			const std::vector<double>& conductivity,
-			const std::vector<double>& thickness,
-			const std::vector<double>& chargeability = std::vector<double>(0),
-			const std::vector<double>& timeconstant = std::vector<double>(0),
-			const std::vector<double>& frequencydependence = std::vector<double>(0))
-		{
-			NumLayers = conductivity.size();
-			Layer.resize(NumLayers);
-			for (size_t i = 0; i < NumLayers; i++) {
-				if (i < NumLayers - 1) Layer[i].Thickness = thickness[i];
-				Layer[i].Conductivity = conductivity[i];
-				if (chargeability.size() > 0) {
-					Layer[i].Chargeability = chargeability[i];
-					Layer[i].TimeConstant = timeconstant[i];
-					Layer[i].FrequencyDependence = frequencydependence[i];
-				}
-				else {
-					Layer[i].Chargeability = 0.0;
-					Layer[i].TimeConstant = 0.0;
-					Layer[i].FrequencyDependence = 0.0;
-				}
-			}
-			setmeanconductivity();
-			setmeanlog10conductivity();
 		};
 
-		void setproperties(const cEarth1D& E){
-			setproperties(E.conductivity, E.thickness, E.chargeability, E.timeconstant, E.frequencydependence);
-		}
-
-		void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness) {
-			setproperties(conductivity, thickness);
-		};
-
-		void setconductivitythickness(const size_t nlayers, const double* conductivity, const double* thickness) {
-			std::vector<double> c(conductivity, conductivity + nlayers);
-			std::vector<double> t(thickness, thickness + nlayers - 1);
-			setproperties(c, t);
-		};
-
-		void setxyrotation() {
-			//xyrotation is the anticlockwise angle (in degrees) 
-			//that the horizontal coordinate system has to be rotated
-			//so the horizontal dipole is all Y directed. 
-			if (Source_Orientation.x() == 0.0 && Source_Orientation.y() == 0.0) {
-				xyrotation = 0.0;
-			}
-			else {
-				xyrotation = atan2(Source_Orientation.y(), Source_Orientation.x());
-				xyrotation = xyrotation * R2D<double> -90.0;
-			}
-			cosxyrotation = cos(xyrotation * D2R<double>);
-			sinxyrotation = sin(xyrotation * D2R<double>);
-		}
-
-		void xyrotate(const double& xin, const double& yin, double* xout, double* yout)
-		{
-			*xout = xin * cosxyrotation + yin * sinxyrotation;
-			*yout = -xin * sinxyrotation + yin * cosxyrotation;
-		}
-
-		void unxyrotate(const double& xin, const double& yin, double* xout, double* yout)
-		{
-			*xout = xin * cosxyrotation - yin * sinxyrotation;
-			*yout = xin * sinxyrotation + yin * cosxyrotation;
-		}
-
-		void unxyrotateandscale(RealField& f, double scalefactor)
-		{
-			double x, y;
-			unxyrotate(f.x, f.y, &x, &y);
-			f.x = x * scalefactor;
-			f.y = y * scalefactor;
-			f.z = f.z * scalefactor;
-		}
-
-		void unxyrotateandscale(ComplexField& f, double scalefactor)
-		{
-			RealField r;
-			r.x = f.x.real();
-			r.y = f.y.real();
-			r.z = f.z.real();
-			unxyrotateandscale(r, scalefactor);
-
-			RealField i;
-			i.x = f.x.imag();
-			i.y = f.y.imag();
-			i.z = f.z.imag();
-			unxyrotateandscale(i, scalefactor);
-
-			f.x = cdouble(r.x, i.x);
-			f.y = cdouble(r.y, i.y);
-			f.z = cdouble(r.z, i.z);
-
-		}
-
-		void setR(double r){
-			R = r;
-			R2 = R * R;
-			R3 = R2 * R;
-			R4 = R3 * R;
-			R5 = R4 * R;
-		}
-
-		void setgeometry(const Vec3& source_orientation, double h, double x, double y, double z) {
+		void setgeometry(const Vec3d& source_orientation, double h, double x, double y, double z) {
 			Xunrotated = x;
 			Yunrotated = y;
 			Source_Orientation = source_orientation;
@@ -442,125 +317,251 @@ namespace LEM {
 			}
 		}
 
-		static cdouble ip_colecole_conductivity(
-			const double& conductivity,
-			const double& chargeability,
-			const double& timeconstant,
-			const double& frequencydependence,
-			const double& omega)
-		{
-			//c = c0 - c0*(N / (1 + (1 - N)*(j*omega*T) ^ K));
-			if (chargeability == 0.0) {
-				return cdouble(conductivity, 0.0);
+		void setup_computations() {
+			for (size_t fi = 0; fi < nFrequencies(); fi++) {
+				initialise_frequency_for_computation(fi);
 			}
-			else {
-				cdouble c = conductivity - conductivity * (chargeability / (1.0 + (1.0 - chargeability) * (std::pow(cdouble(0.0, omega * timeconstant), frequencydependence))));
-				return  c;
-			}
-
 		}
 
-		static cdouble ip_pelton_conductivity(
-			const double& conductivity,
-			const double& chargeability,
-			const double& timeconstant,
-			const double& frequencydependence,
-			const double& omega)
-		{
-			//p = p0[1 - m*(1 - (1 - 1/(1 + (j*omega*T) ^ K));
-			if (chargeability == 0.0) {
-				return cdouble(conductivity, 0.0);
-			}
-			else {
-				double  rho0 = 1.0 / conductivity;
-				cdouble rho = rho0 * (1.0 - chargeability * (1.0 - (1.0 / (1.0 + std::pow(cdouble(0.0, omega * timeconstant), frequencydependence)))));
-				return  1.0 / rho;
-			}
-
-		}
-
-		void init_frequencies(const std::vector<double>& frequencies)
-		{
-			NumFrequencies = frequencies.size();
-			if (Frequency.size() != NumFrequencies)Frequency.resize(NumFrequencies);
-			if (Hankel.size() != NumFrequencies)Hankel.resize(NumFrequencies);
-			for (size_t fi = 0; fi < NumFrequencies; fi++) {
-				double omega = TWOPI<double> *frequencies[fi];
-				double muzeroomega = MUZERO<double> *omega;
-				Frequency[fi].Frequency = frequencies[fi];
-				Frequency[fi].Omega = omega;
-				Frequency[fi].MuZeroOmega = muzeroomega;
-				Frequency[fi].iMuZeroOmega = cdouble(0.0, muzeroomega);
-			}
+		
+		Vec3d primaryfield_inertial() const {
+			return Vec3d(Fields.t.p.x, Fields.t.p.y, Fields.t.p.z);
 		};
 
-		void init_frequency(const size_t& fi)
+		Vec3cd secondaryfield_inertial() const {
+			return Vec3cd(Fields.t.s.x, Fields.t.s.y, Fields.t.s.z);
+		};
+		
+		void setprimaryfields() {
+			sethorizontaldipoleprimaryfields();
+			setverticaldipoleprimaryfields();
+			Fields.t.p.x = Fields.v.p.x + Fields.h.p.x;
+			Fields.t.p.y = Fields.v.p.y + Fields.h.p.y;
+			Fields.t.p.z = Fields.v.p.z + Fields.h.p.z;
+		};
+
+		void setsecondaryfields(const size_t& fi) {
+			dointegrals(fi);
+			sethorizontaldipolesecondaryfields(fi);
+			setverticaldipolesecondaryfields(fi);
+			Fields.t.s.x = Fields.v.s.x + Fields.h.s.x;
+			Fields.t.s.y = Fields.v.s.y + Fields.h.s.y;
+			Fields.t.s.z = Fields.v.s.z + Fields.h.s.z;
+		};
+
+	private:
+
+		void setlog10conductivitylog10thickness(const size_t nlayers, const double* log10conductivity, const double* log10thickness) {
+			Layers.resize(nLayers());
+			for (size_t i = 0; i < nLayers(); i++)Layers[i].Conductivity = pow(10.0, log10conductivity[i]);
+			for (size_t i = 0; i < nLayers() - 1; i++)Layers[i].Thickness = pow(10.0, log10thickness[i]);
+			setmeanconductivity();
+			setmeanlog10conductivity();
+		};
+
+		void setmeanlog10conductivity() {
+			if (nLayers() == 1) {
+				meanlog10conductivity = Layers[0].Conductivity;
+				return;
+			}
+			//Returns the thickness weighted mean (in linear space) conductivity (but calculated in 10g10 space)
+			double sumc = 0.0;
+			double sumt = 0.0;
+			for (size_t i = 0; i < nLayers(); i++) {
+				if (i < (nLayers() - 1)) {
+					sumc += log10(Layers[i].Conductivity) * Layers[i].Thickness;
+					sumt += Layers[i].Thickness;
+				}
+				else {
+					sumc += log10(Layers[i].Conductivity) * sumt; //make basement layer as thick as sum of all overlying
+					sumt += sumt;
+				}
+			}
+			meanlog10conductivity = pow(10.0, sumc / sumt);
+		}
+
+		void setmeanconductivity() {
+			if (nLayers() == 1) {
+				meanconductivity = Layers[0].Conductivity;
+				return;
+			}
+			//Returns the thickness weighted mean (in linear space) conductivity (but calculated in linear space)
+			double sumc = 0.0;
+			double sumt = 0.0;
+			for (size_t i = 0; i < nLayers(); i++) {
+				if (i < (nLayers() - 1)) {
+					sumc += Layers[i].Conductivity * Layers[i].Thickness;
+					sumt += Layers[i].Thickness;
+				}
+				else {
+					sumc += Layers[i].Conductivity * sumt; //make basement layer as thick as sum of all overlying
+					sumt += sumt;
+				}
+			}
+			meanconductivity = sumc / sumt;
+		}
+
+		void set_earth_properties(
+			const std::vector<double>& conductivity,
+			const std::vector<double>& thickness,
+			const std::vector<double>& chargeability = std::vector<double>(0),
+			const std::vector<double>& timeconstant = std::vector<double>(0),
+			const std::vector<double>& frequencydependence = std::vector<double>(0))
 		{
-			init_integration_nodes(fi);
+			const size_t nl = conductivity.size();
+			Layers.resize(nl);
+			for (size_t i = 0; i < nl; i++) {
+				if (i < nl - 1) Layers[i].Thickness = thickness[i];
+				Layers[i].Conductivity = conductivity[i];
+				if (chargeability.size() > 0) {
+					Layers[i].Chargeability = chargeability[i];
+					Layers[i].TimeConstant = timeconstant[i];
+					Layers[i].FrequencyDependence = frequencydependence[i];
+				}
+				else {
+					Layers[i].Chargeability = 0.0;
+					Layers[i].TimeConstant = 0.0;
+					Layers[i].FrequencyDependence = 0.0;
+				}
+			}
+			setmeanconductivity();
+			setmeanlog10conductivity();
+		};
+
+		void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness) {
+			set_earth_properties(conductivity, thickness);
+		};
+
+		void setconductivitythickness(const size_t nlayers, const double* conductivity, const double* thickness) {
+			std::vector<double> c(conductivity, conductivity + nlayers);
+			std::vector<double> t(thickness, thickness + nlayers - 1);
+			set_earth_properties(c, t);
+		};
+
+		void setxyrotation() {
+			//xyrotation is the anticlockwise angle (in degrees) 
+			//that the horizontal coordinate system has to be rotated
+			//so the horizontal dipole is all Y directed. 
+			if (Source_Orientation.x() == 0.0 && Source_Orientation.y() == 0.0) {
+				xyrotation = 0.0;
+			}
+			else {
+				xyrotation = atan2(Source_Orientation.y(), Source_Orientation.x());
+				xyrotation = xyrotation * R2D<double> -90.0;
+			}
+			cosxyrotation = cos(xyrotation * D2R<double>);
+			sinxyrotation = sin(xyrotation * D2R<double>);
+		}
+
+		void xyrotate(const double& xin, const double& yin, double* xout, double* yout) const {
+			*xout = xin * cosxyrotation + yin * sinxyrotation;
+			*yout = -xin * sinxyrotation + yin * cosxyrotation;
+		}
+
+		void unxyrotate(const double& xin, const double& yin, double* xout, double* yout) const {
+			*xout = xin * cosxyrotation - yin * sinxyrotation;
+			*yout = xin * sinxyrotation + yin * cosxyrotation;
+		}
+
+		void unxyrotateandscale(RealField& f, double scalefactor) {
+			double x, y;
+			unxyrotate(f.x, f.y, &x, &y);
+			f.x = x * scalefactor;
+			f.y = y * scalefactor;
+			f.z = f.z * scalefactor;
+		}
+
+		void unxyrotateandscale(ComplexField& f, double scalefactor) {
+			RealField r;
+			r.x = f.x.real();
+			r.y = f.y.real();
+			r.z = f.z.real();
+			unxyrotateandscale(r, scalefactor);
+
+			RealField i;
+			i.x = f.x.imag();
+			i.y = f.y.imag();
+			i.z = f.z.imag();
+			unxyrotateandscale(i, scalefactor);
+
+			f.x = cdouble(r.x, i.x);
+			f.y = cdouble(r.y, i.y);
+			f.z = cdouble(r.z, i.z);
+
+		}
+
+		void setR(double r){
+			R = r;
+			R2 = R * R;
+			R3 = R2 * R;
+			R4 = R3 * R;
+			R5 = R4 * R;
+		}
+
+		void initialise_frequency_for_computation(const size_t& fi)	{
+			initialise_integration_nodes(fi);
 			for (size_t ai = 0; ai < NumAbscissa; ai++) {
-				init_abscissa(fi, ai);
+				initialise_abscissa(fi, ai);
 			}
 		};
 
-		void init_abscissa(const size_t& fi, const size_t& ai)
-		{
-			Frequency[fi].Abscissa[ai].Layer.resize(NumLayers);
-			for (size_t li = 0; li < NumLayers; li++) {
+		void initialise_abscissa(const size_t& fi, const size_t& ai) {
+			const size_t nl = nLayers();
+			Frequencies[fi].Abscissa[ai].Layer.resize(nl);
+			for (size_t li = 0; li < nl; li++) {
 				cdouble u;
-				if (Layer[li].Chargeability == 0.0) {
-					double gamma2 = Layer[li].Conductivity * Frequency[fi].MuZeroOmega;
-					u = sqrt(cdouble(Frequency[fi].Abscissa[ai].Lambda2, gamma2));
+				if (Layers[li].Chargeability == 0.0) {
+					double gamma2 = Layers[li].Conductivity * Frequencies[fi].MuZeroOmega;
+					u = sqrt(cdouble(Frequencies[fi].Abscissa[ai].Lambda2, gamma2));
 				}
 				else {
 					cdouble cip;
 					if (iptype == IPType::COLECOLE) {
-						cip = ip_colecole_conductivity(Layer[li].Conductivity, Layer[li].Chargeability, Layer[li].TimeConstant, Layer[li].FrequencyDependence, Frequency[fi].Omega);
+						cip = ip_colecole_conductivity(Layers[li].Conductivity, Layers[li].Chargeability, Layers[li].TimeConstant, Layers[li].FrequencyDependence, Frequencies[fi].Omega);
 					}
 					else {
-						cip = ip_pelton_conductivity(Layer[li].Conductivity, Layer[li].Chargeability, Layer[li].TimeConstant, Layer[li].FrequencyDependence, Frequency[fi].Omega);
+						cip = ip_pelton_conductivity(Layers[li].Conductivity, Layers[li].Chargeability, Layers[li].TimeConstant, Layers[li].FrequencyDependence, Frequencies[fi].Omega);
 					}
-					cdouble gamma2 = cip * cdouble(0.0, Frequency[fi].MuZeroOmega);
-					u = std::sqrt(Frequency[fi].Abscissa[ai].Lambda2 + gamma2);
+					cdouble gamma2 = cip * cdouble(0.0, Frequencies[fi].MuZeroOmega);
+					u = std::sqrt(Frequencies[fi].Abscissa[ai].Lambda2 + gamma2);
 				}
-				Frequency[fi].Abscissa[ai].Layer[li].U = u;
-				if (li < NumLayers - 1)Frequency[fi].Abscissa[ai].Layer[li].Exp2UT = exp(-2.0 * u * Layer[li].Thickness);
+				Frequencies[fi].Abscissa[ai].Layer[li].U = u;
+				if (li < nl-1) Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT = exp(-2.0 * u * Layers[li].Thickness);
 			}
 			init_layer_matrices(fi, ai);
 			init_pmatrix(fi, ai);
 		};
 
-		double approximatehalfspace(const size_t& fi)
-		{
+		double approximatehalfspace(const size_t& fi) {
 			//approximate halfspace for the frequency at index fi
-			if (NumLayers == 1)return Layer[0].Conductivity;
+			if (nLayers() == 1) return Layers[0].Conductivity;
 
 			//peak lambda
-			double  peaklambda = sqrt(Frequency[fi].MuZeroOmega * meanlog10conductivity / 4.0);
+			double  peaklambda = sqrt(Frequencies[fi].MuZeroOmega * meanlog10conductivity / 4.0);
 			cdouble rz = rzero_recursive(fi, peaklambda);
 
 			cdouble  v = (1.0 + rz);
 
-			v = Frequency[fi].iMuZeroOmega * v * v;
+			v = Frequencies[fi].iMuZeroOmega * v * v;
 			return (-4.0 * peaklambda * peaklambda * rz / v).real();
 		}
 
-		inline cdouble rzero_recursive(const size_t& fi, const double& lambda) const
-		{
+		inline cdouble rzero_recursive(const size_t& fi, const double& lambda) const {
 			//Wait's recursive formulation
 			const double lambda2 = lambda * lambda;
-			const double muzeroomega = Frequency[fi].MuZeroOmega;
+			const double muzeroomega = Frequencies[fi].MuZeroOmega;
 			const cdouble imuzeroomega(0.0, muzeroomega);
 
-			double gamma2 = muzeroomega * Layer[NumLayers - 1].Conductivity;
+			double gamma2 = muzeroomega * Layers[nLayers() - 1].Conductivity;
 			cdouble u = std::sqrt(cdouble(lambda2, gamma2));
 			cdouble y = u / imuzeroomega;
 
-			int i = (int)NumLayers - 2;
+			int i = (int)nLayers() - 2;
 			while (i >= 0) {
-				gamma2 = muzeroomega * Layer[i].Conductivity;
+				gamma2 = muzeroomega * Layers[i].Conductivity;
 				u = std::sqrt(cdouble(lambda2, gamma2));
 				const cdouble Nn = u / imuzeroomega;
-				const cdouble v = u * Layer[i].Thickness;
+				const cdouble v = u * Layers[i].Thickness;
 
 				//Expand - unstable    	
 				//tanh(v) = (1.0 - v4)/(1.0 + v4 + 2.0*v2);
@@ -574,19 +575,16 @@ namespace LEM {
 			return (N0 - y) / (N0 + y);
 		};
 
-		inline cdouble rzero_propogationmatrix(const size_t& fi, const size_t& ai)
-		{
+		inline cdouble rzero_propogationmatrix(const size_t& fi, const size_t& ai)	{
 			//Oldenberg's propogation matrix formulation
 			init_layer_matrices(fi, ai);
 			init_pmatrix(fi, ai);
-			return Frequency[fi].Abscissa[ai].P21onP11;
+			return Frequencies[fi].Abscissa[ai].P21onP11;
 		};
 
-		inline void init_layer_matrices(const size_t& fi, const size_t& ai)
-		{
+		inline void init_layer_matrices(const size_t& fi, const size_t& ai)	{
 			cdouble e, eh, e1, e2;
-
-			AbscissaNode& A = Frequency[fi].Abscissa[ai];
+			AbscissaNode& A = Frequencies[fi].Abscissa[ai];
 
 			//M1  
 			e = A.Layer[0].U / A.Lambda;
@@ -599,7 +597,7 @@ namespace LEM {
 			A.Layer[0].LayerMatrix.e21 = e2;
 			A.Layer[0].LayerMatrix.e22 = e1;
 
-			for (size_t li = 1; li < NumLayers; li++) {
+			for (size_t li = 1; li < nLayers(); li++) {
 				//assumes all pearmabilities are muzero
 				e = A.Layer[li].U / A.Layer[li - 1].U;
 				eh = e / 2.0;
@@ -612,18 +610,18 @@ namespace LEM {
 			}
 
 			//Set Prematrices - prematrix for first layer does not apply
-			if (NumLayers > 1) {
+			if (nLayers() > 1) {
 				A.Layer[1].LayerPreMatrix = A.Layer[0].LayerMatrix;
-				for (size_t li = 2; li < NumLayers; li++) {
+				for (size_t li = 2; li < nLayers(); li++) {
 					A.Layer[li].LayerPreMatrix = A.Layer[li - 1].LayerPreMatrix * A.Layer[li - 1].LayerMatrix;
 				}
 			}
 
 			//Set Postmatrices - postmatrix for last layer does not apply  
-			if (NumLayers > 1) {
-				A.Layer[NumLayers - 2].LayerPostMatrix = A.Layer[NumLayers - 1].LayerMatrix;
-				if (NumLayers > 2) {
-					for (size_t li = NumLayers - 2; li-- > 0;) {
+			if (nLayers() > 1) {
+				A.Layer[nLayers() - 2].LayerPostMatrix = A.Layer[nLayers() - 1].LayerMatrix;
+				if (nLayers() > 2) {
+					for (size_t li = nLayers() - 2; li-- > 0;) {
 						A.Layer[li].LayerPostMatrix = A.Layer[li + 1].LayerMatrix * A.Layer[li + 1].LayerPostMatrix;
 					}
 				}
@@ -632,13 +630,13 @@ namespace LEM {
 
 		inline void init_pmatrix(const size_t& fi, const size_t& ai)
 		{
-			AbscissaNode& A = Frequency[fi].Abscissa[ai];
+			AbscissaNode& A = Frequencies[fi].Abscissa[ai];
 			//Set Full matrix
-			if (NumLayers == 1) {
+			if (nLayers() == 1) {
 				A.P_Full = A.Layer[0].LayerMatrix;
 			}
 			else {
-				A.P_Full = Frequency[fi].Abscissa[ai].Layer[NumLayers - 1].LayerPreMatrix * Frequency[fi].Abscissa[ai].Layer[NumLayers - 1].LayerMatrix;
+				A.P_Full = Frequencies[fi].Abscissa[ai].Layer[nLayers() - 1].LayerPreMatrix * Frequencies[fi].Abscissa[ai].Layer[nLayers() - 1].LayerMatrix;
 			}
 			A.P21onP11 = A.P_Full.e21 / A.P_Full.e11;
 		}
@@ -648,7 +646,7 @@ namespace LEM {
 			PropogationMatrix m;
 
 			if (li == 0) {
-				cdouble a = Frequency[fi].iMuZeroOmega / (4.0 * Frequency[fi].Abscissa[ai].Lambda * Frequency[fi].Abscissa[ai].Layer[li].U);
+				cdouble a = Frequencies[fi].iMuZeroOmega / (4.0 * Frequencies[fi].Abscissa[ai].Lambda * Frequencies[fi].Abscissa[ai].Layer[li].U);
 				m.e11 = a;
 				m.e12 = -a;
 				m.e21 = -a;
@@ -656,8 +654,8 @@ namespace LEM {
 				return m;
 			}
 			else {
-				cdouble a = Frequency[fi].iMuZeroOmega / (4.0 * Frequency[fi].Abscissa[ai].Layer[li - 1].U * Frequency[fi].Abscissa[ai].Layer[li].U);
-				cdouble ae = a * Frequency[fi].Abscissa[ai].Layer[li - 1].Exp2UT;
+				cdouble a = Frequencies[fi].iMuZeroOmega / (4.0 * Frequencies[fi].Abscissa[ai].Layer[li - 1].U * Frequencies[fi].Abscissa[ai].Layer[li].U);
+				cdouble ae = a * Frequencies[fi].Abscissa[ai].Layer[li - 1].Exp2UT;
 				m.e11 = a;
 				m.e12 = -a;
 				m.e21 = -ae;
@@ -669,14 +667,14 @@ namespace LEM {
 
 		inline PropogationMatrix dMjplus1dCj(const size_t& fi, const size_t& ai, const size_t& li)
 		{
-			cdouble duds = Frequency[fi].iMuZeroOmega / (2.0 * Frequency[fi].Abscissa[ai].Layer[li].U);
-			cdouble y = Frequency[fi].Abscissa[ai].Layer[li + 1].U / Frequency[fi].Abscissa[ai].Layer[li].U;
+			cdouble duds = Frequencies[fi].iMuZeroOmega / (2.0 * Frequencies[fi].Abscissa[ai].Layer[li].U);
+			cdouble y = Frequencies[fi].Abscissa[ai].Layer[li + 1].U / Frequencies[fi].Abscissa[ai].Layer[li].U;
 
-			cdouble dydu = -y / Frequency[fi].Abscissa[ai].Layer[li].U;
+			cdouble dydu = -y / Frequencies[fi].Abscissa[ai].Layer[li].U;
 			cdouble dyds = dydu * duds;
 
-			cdouble v = Frequency[fi].Abscissa[ai].Layer[li].Exp2UT;
-			cdouble dvdu = -2.0 * Layer[li].Thickness * Frequency[fi].Abscissa[ai].Layer[li].Exp2UT;
+			cdouble v = Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT;
+			cdouble dvdu = -2.0 * Layers[li].Thickness * Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT;
 
 			cdouble dvds = dvdu * duds;
 
@@ -696,24 +694,24 @@ namespace LEM {
 
 		inline PropogationMatrix dPdCj(const size_t& fi, const size_t& ai, const size_t& li)
 		{
-			AbscissaNode& A = Frequency[fi].Abscissa[ai];
+			AbscissaNode& A = Frequencies[fi].Abscissa[ai];
 
 			PropogationMatrix tmp;
 			//One layer case
-			if (NumLayers == 1)return tmp = dMjdCj(fi, ai, li);
+			if (nLayers() == 1)return tmp = dMjdCj(fi, ai, li);
 
 			//Not last layer
-			if (li < NumLayers - 1) {
+			if (li < nLayers() - 1) {
 				PropogationMatrix M =
 					(dMjdCj(fi, ai, li) * A.Layer[li + 1].LayerMatrix)
 					+ (A.Layer[li].LayerMatrix * dMjplus1dCj(fi, ai, li));
 
 				//First layer case
 				if (li == 0) {
-					if (NumLayers == 2) return M;
+					if (nLayers() == 2) return M;
 					return M * A.Layer[li + 1].LayerPostMatrix;
 				}
-				else if (li == NumLayers - 2) {
+				else if (li == nLayers() - 2) {
 					return A.Layer[li].LayerPreMatrix * M;
 				}
 				else {
@@ -730,13 +728,13 @@ namespace LEM {
 		inline cdouble dP21onP11dCj(const size_t& fi, const size_t& ai, const size_t& li)
 		{
 			PropogationMatrix m = dPdCj(fi, ai, li);
-			return m.e21 / Frequency[fi].Abscissa[ai].P_Full.e11 - m.e11 * Frequency[fi].Abscissa[ai].P21onP11 / Frequency[fi].Abscissa[ai].P_Full.e11;
+			return m.e21 / Frequencies[fi].Abscissa[ai].P_Full.e11 - m.e11 * Frequencies[fi].Abscissa[ai].P21onP11 / Frequencies[fi].Abscissa[ai].P_Full.e11;
 		}
 
 		inline PropogationMatrix dMjplus1dTj(const size_t& fi, const size_t& ai, const size_t& li)
 		{
-			cdouble y = Frequency[fi].Abscissa[ai].Layer[li + 1].U / Frequency[fi].Abscissa[ai].Layer[li].U;
-			cdouble dvdt = -2.0 * Frequency[fi].Abscissa[ai].Layer[li].U * Frequency[fi].Abscissa[ai].Layer[li].Exp2UT;
+			cdouble y = Frequencies[fi].Abscissa[ai].Layer[li + 1].U / Frequencies[fi].Abscissa[ai].Layer[li].U;
+			cdouble dvdt = -2.0 * Frequencies[fi].Abscissa[ai].Layer[li].U * Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT;
 
 			PropogationMatrix m;
 			m.e11 = 0.0;
@@ -749,23 +747,23 @@ namespace LEM {
 
 		inline PropogationMatrix dPdTj(const size_t& fi, const size_t& ai, const size_t& li)
 		{
-			AbscissaNode& A = Frequency[fi].Abscissa[ai];
+			AbscissaNode& A = Frequencies[fi].Abscissa[ai];
 
 			PropogationMatrix tmp;
 			tmp.e11 = tmp.e12 = tmp.e21 = tmp.e22 = 0;
 
 			//One layer case
-			if (NumLayers == 1) return tmp;
+			if (nLayers() == 1) return tmp;
 
 			PropogationMatrix M = A.Layer[li].LayerMatrix * dMjplus1dTj(fi, ai, li);
 
 			//First layer case
 			if (li == 0) {
-				if (NumLayers == 2)return M;
+				if (nLayers() == 2)return M;
 				return M * A.Layer[li + 1].LayerPostMatrix;
 			}
-			else if (li > 0 && li < NumLayers - 1) {
-				if (li == NumLayers - 2) return A.Layer[li].LayerPreMatrix * M;
+			else if (li > 0 && li < nLayers() - 1) {
+				if (li == nLayers() - 2) return A.Layer[li].LayerPreMatrix * M;
 				return A.Layer[li].LayerPreMatrix * M * A.Layer[li + 1].LayerPostMatrix;
 			}
 			//Last layer case
@@ -779,12 +777,12 @@ namespace LEM {
 		inline cdouble dP21onP11dTj(const size_t& fi, const size_t& ai, const size_t& li)
 		{
 			PropogationMatrix m = dPdTj(fi, ai, li);
-			return m.e21 / Frequency[fi].Abscissa[ai].P_Full.e11 - m.e11 * Frequency[fi].Abscissa[ai].P21onP11 / Frequency[fi].Abscissa[ai].P_Full.e11;
+			return m.e21 / Frequencies[fi].Abscissa[ai].P_Full.e11 - m.e11 * Frequencies[fi].Abscissa[ai].P21onP11 / Frequencies[fi].Abscissa[ai].P_Full.e11;
 		}
 
-		void init_integration_nodes(const size_t& fi)
+		void initialise_integration_nodes(const size_t& fi)
 		{
-			FrequencyNode& F = Frequency[fi];;
+			FrequencyNode& F = Frequencies[fi];;
 			double peak_exp2 = 2.0 / (Z + H);
 			double peak_exp3 = 3.0 / (Z + H);
 
@@ -815,8 +813,7 @@ namespace LEM {
 			}
 		}
 
-		void dointegrals(const size_t& fi)
-		{
+		void dointegrals(const size_t& fi) {
 			dointegrals_trapezoid(fi);
 		}
 
@@ -828,41 +825,41 @@ namespace LEM {
 
 			trapezoid(fi);//the results go into the variable trapezoid_result
 
-			if (calculation_type == CalculationType::FORWARDMODEL) {
+			if (cmode() == CMode::FM) {
 				H.I0.FM = trapezoid_result[0];
 				H.I1.FM = trapezoid_result[1];
 				H.I2.FM = trapezoid_result[2];
 			}
-			else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE) {
+			else if (cmode() == CMode::DC) {
 				H.I0.dC = trapezoid_result[0];
 				H.I1.dC = trapezoid_result[1];
 				H.I2.dC = trapezoid_result[2];
 			}
-			else if (calculation_type == CalculationType::THICKNESSDERIVATIVE) {
+			else if (cmode() == CMode::DT) {
 				H.I0.dT = trapezoid_result[0];
 				H.I1.dT = trapezoid_result[1];
 				H.I2.dT = trapezoid_result[2];
 			}
-			else if (calculation_type == CalculationType::ZDERIVATIVE) {
+			else if (cmode() == CMode::DZ) {
 				H.I0.dZ = trapezoid_result[0];
 				H.I1.dZ = trapezoid_result[1];
 				H.I2.dZ = trapezoid_result[2];
 			}
-			else if (calculation_type == CalculationType::HDERIVATIVE) {
+			else if (cmode() == CMode::DH) {
 				H.I0.dH = trapezoid_result[0];
 				H.I1.dH = trapezoid_result[1];
 				H.I2.dH = trapezoid_result[2];
 			}
-			else if (calculation_type == CalculationType::RDERIVATIVE || calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE) {
+			else if (cmode() == CMode::DR || cmode() == CMode::DX || cmode() == CMode::DY) {
 				H.I0.dR = trapezoid_result[0];
 				H.I1.dR = trapezoid_result[1];
 				H.I2.dR = trapezoid_result[2];
 			}
-			else
-			{
-				glog.errormsg(_SRC_, "LE::dointegrals_trapezoid Calculation type %lu not yet implemented\n", calculation_type);
+			else {
+				glog.errormsg(_SRC_, "LE::dointegrals_trapezoid Calculation type %s not yet implemented\n", calculationtype.string().c_str());
 			}
 		}
+		
 		inline void trapezoid(const size_t& fi)
 		{
 			std::vector<cdouble> integrand1(3);
@@ -897,12 +894,12 @@ namespace LEM {
 			}
 
 			for (size_t ii = 0; ii < NumIntegrands; ii++) {
-				trapezoid_result[ii] *= Frequency[fi].AbscissaSpacing;
+				trapezoid_result[ii] *= Frequencies[fi].AbscissaSpacing;
 			}
 		}
-		inline void integrand(const size_t& fi, const size_t& ai)
-		{
-			AbscissaNode& A = Frequency[fi].Abscissa[ai];
+		
+		inline void integrand(const size_t& fi, const size_t& ai) {
+			AbscissaNode& A = Frequencies[fi].Abscissa[ai];
 			number_integrand_calls++;
 
 			double loopfactor = 1.0;
@@ -920,40 +917,40 @@ namespace LEM {
 			const double l4e = A.Lambda4 * e;
 
 			cdouble k;
-			switch (calculation_type) {
-			case CalculationType::FORWARDMODEL:
+			switch (cmode()) {
+			case CMode::FM:
 				k = loopfactor * A.P21onP11;
 				integrand_result[0] = k * l3e * j0;
 				integrand_result[1] = k * l3e * j1;
 				integrand_result[2] = k * l2e * j1;
 				break;
-			case CalculationType::CONDUCTIVITYDERIVATIVE:
-				k = loopfactor * dP21onP11dCj(fi, ai, derivative_layer);
+			case CMode::DC:
+				k = loopfactor * dP21onP11dCj(fi, ai, derivative_layer());
 				integrand_result[0] = k * l3e * j0;
 				integrand_result[1] = k * l3e * j1;
 				integrand_result[2] = k * l2e * j1;
 				break;
-			case CalculationType::THICKNESSDERIVATIVE:
-				k = loopfactor * dP21onP11dTj(fi, ai, derivative_layer);
+			case CMode::DT:
+				k = loopfactor * dP21onP11dTj(fi, ai, derivative_layer());
 				integrand_result[0] = k * l3e * j0;
 				integrand_result[1] = k * l3e * j1;
 				integrand_result[2] = k * l2e * j1;
 				break;
-			case CalculationType::ZDERIVATIVE:
+			case CMode::DZ:
 				k = loopfactor * A.P21onP11;
 				integrand_result[0] = k * -l4e * j0;
 				integrand_result[1] = k * -l4e * j1;
 				integrand_result[2] = k * -l3e * j1;
 				break;
-			case CalculationType::HDERIVATIVE:
+			case CMode::DH:
 				k = loopfactor * A.P21onP11;;
 				integrand_result[0] = k * -l4e * j0;
 				integrand_result[1] = k * -l4e * j1;
 				integrand_result[2] = k * -l3e * j1;
 				break;
-			case CalculationType::RDERIVATIVE:
-			case CalculationType::XDERIVATIVE:
-			case CalculationType::YDERIVATIVE:
+			case CMode::DR:
+			case CMode::DX:
+			case CMode::DY:
 				k = loopfactor * A.P21onP11;
 				if (R != 0.0) {
 					integrand_result[0] = k * (-l4e * j1);
@@ -967,7 +964,7 @@ namespace LEM {
 				}
 				break;
 			default:
-				glog.errormsg(_SRC_, "LE::integrands Calculation type %lu not yet implemented", calculation_type);
+				glog.errormsg(_SRC_, "LE::integrands Calculation type %s not yet implemented", calculationtype.string().c_str());
 				break;
 			}
 		}
@@ -983,27 +980,27 @@ namespace LEM {
 			if (BigR == 0)return;
 			if (Source_Orientation.z() == 0.0)return;//ie no vertical dipole contribution
 
-			if (calculation_type == CalculationType::FORWARDMODEL) {
+			if (cmode() == CMode::FM) {
 				Fields.v.p.x = THREEONFOURPI<double>*X * (Z - H) / BigR5;
 				Fields.v.p.y = THREEONFOURPI<double>*Y * (Z - H) / BigR5;
 				Fields.v.p.z = THREEONFOURPI<double>*(Z - H) * (Z - H) / BigR5 - ONEONFOURPI<double> / BigR3;
 			}
-			else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE || calculation_type == CalculationType::THICKNESSDERIVATIVE) {
+			else if (cmode() == CMode::DC || cmode() == CMode::DT) {
 				Fields.v.p.x = 0.0;
 				Fields.v.p.y = 0.0;
 				Fields.v.p.z = 0.0;
 			}
-			else if (calculation_type == CalculationType::HDERIVATIVE) {
+			else if (cmode() == CMode::DH) {
 				Fields.v.p.x = 0.0;
 				Fields.v.p.y = 0.0;
 				Fields.v.p.z = 0.0;
 			}
-			else if (calculation_type == CalculationType::ZDERIVATIVE) {
+			else if (cmode() == CMode::DZ) {
 				Fields.v.p.x = THREEONFOURPI<double>*X * (1.0 / BigR5 - 5.0 * (Z - H) * (Z - H) / BigR7);
 				Fields.v.p.y = THREEONFOURPI<double>*Y * (1.0 / BigR5 - 5.0 * (Z - H) * (Z - H) / BigR7);
 				Fields.v.p.z = THREEONFOURPI<double>*(3.0 * (Z - H) / BigR5 - 5.0 * (Z - H) * (Z - H) * (Z - H) / BigR7);
 			}
-			else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE) {
+			else if (cmode() == CMode::DX || cmode() == CMode::DY || cmode() == CMode::DR) {
 				double dxdX = THREEONFOURPI<double>*(Z - H) * (1.0 / BigR5 - 5.0 * X * X / BigR7);
 				double dydX = THREEONFOURPI<double>*Y * (Z - H) * -5.0 * X / BigR7;
 				double dzdX = THREEONFOURPI<double>*(Z - H) * (Z - H) * -5.0 * X / BigR7 - ONEONFOURPI<double>*-3.0 * X / BigR5;
@@ -1012,28 +1009,28 @@ namespace LEM {
 				double dydY = THREEONFOURPI<double>*(Z - H) * (1.0 / BigR5 - 5.0 * Y * Y / BigR7);
 				double dzdY = THREEONFOURPI<double>*(Z - H) * (Z - H) * -5.0 * Y / BigR7 - ONEONFOURPI<double>*-3.0 * Y / BigR5;
 
-				if (calculation_type == CalculationType::XDERIVATIVE) {
+				if (cmode() == CMode::DX) {
 					double dXdXo = cosxyrotation;
 					double dYdXo = -sinxyrotation;
 					Fields.v.p.x = dxdX * dXdXo + dxdY * dYdXo;
 					Fields.v.p.y = dydX * dXdXo + dydY * dYdXo;
 					Fields.v.p.z = dzdX * dXdXo + dzdY * dYdXo;
 				}
-				else if (calculation_type == CalculationType::YDERIVATIVE) {
+				else if (cmode() == CMode::DY) {
 					double dXdYo = sinxyrotation;
 					double dYdYo = cosxyrotation;
 					Fields.v.p.x = dxdX * dXdYo + dxdY * dYdYo;
 					Fields.v.p.y = dydX * dXdYo + dydY * dYdYo;
 					Fields.v.p.z = dzdX * dXdYo + dzdY * dYdYo;
 				}
-				else if (calculation_type == CalculationType::RDERIVATIVE) {
+				else if (cmode() == CMode::DR) {
 					Fields.v.p.x = dxdX * XonR + dxdY * YonR;
 					Fields.v.p.y = dydX * XonR + dydY * YonR;
 					Fields.v.p.z = dzdX * XonR + dzdY * YonR;
 				}
 			}
 			else {
-				glog.errormsg(_SRC_, "LE::setverticaldipoleprimaryfields Calculation type %lu not yet implemented", calculation_type);
+				glog.errormsg(_SRC_, "LE::setverticaldipoleprimaryfields Calculation type %s not yet implemented", calculationtype.string().c_str());
 			}
 			unxyrotateandscale(Fields.v.p, Source_Orientation.z());
 		}
@@ -1044,33 +1041,33 @@ namespace LEM {
 
 			if (Source_Orientation.z() == 0.0)return;//ie no vertical dipole contribution
 
-			if (calculation_type == CalculationType::FORWARDMODEL) {
+			if (cmode() == CMode::FM) {
 				Fields.v.s.x = -ONEONFOURPI<double> *XonR * Hankel[fi].I1.FM;
 				Fields.v.s.y = -ONEONFOURPI<double> *YonR * Hankel[fi].I1.FM;
 				Fields.v.s.z = -ONEONFOURPI<double> *Hankel[fi].I0.FM;
 			}
-			else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE) {
+			else if (cmode() == CMode::DC) {
 				Fields.v.s.x = -ONEONFOURPI<double> *XonR * Hankel[fi].I1.dC;
 				Fields.v.s.y = -ONEONFOURPI<double> *YonR * Hankel[fi].I1.dC;
 				Fields.v.s.z = -ONEONFOURPI<double> *Hankel[fi].I0.dC;
 			}
-			else if (calculation_type == CalculationType::THICKNESSDERIVATIVE) {
+			else if (cmode() == CMode::DT) {
 				Fields.v.s.x = -ONEONFOURPI<double> *XonR * Hankel[fi].I1.dT;
 				Fields.v.s.y = -ONEONFOURPI<double> *YonR * Hankel[fi].I1.dT;
 				Fields.v.s.z = -ONEONFOURPI<double> *Hankel[fi].I0.dT;
 			}
-			else if (calculation_type == CalculationType::HDERIVATIVE) {
+			else if (cmode() == CMode::DH) {
 				//these are negative of d/dz derivatives
 				Fields.v.s.x = -ONEONFOURPI<double> *XonR * Hankel[fi].I1.dH;
 				Fields.v.s.y = -ONEONFOURPI<double> *YonR * Hankel[fi].I1.dH;
 				Fields.v.s.z = -ONEONFOURPI<double> *Hankel[fi].I0.dH;
 			}
-			else if (calculation_type == CalculationType::ZDERIVATIVE) {
+			else if (cmode() == CMode::DZ) {
 				Fields.v.s.x = -ONEONFOURPI<double> *XonR * Hankel[fi].I1.dZ;
 				Fields.v.s.y = -ONEONFOURPI<double> *YonR * Hankel[fi].I1.dZ;
 				Fields.v.s.z = -ONEONFOURPI<double> *Hankel[fi].I0.dZ;
 			}
-			else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE) {
+			else if (cmode() == CMode::DX || cmode() == CMode::DY || cmode() == CMode::DR) {
 
 				cdouble dxdX = 0.0; cdouble dydX = 0.0; cdouble dzdX = 0.0;
 				cdouble dxdY = 0.0; cdouble dydY = 0.0; cdouble dzdY = 0.0;
@@ -1085,37 +1082,39 @@ namespace LEM {
 					dzdY = -ONEONFOURPI<double> *Hankel[fi].I0.dR * YonR;
 				}
 
-				if (calculation_type == CalculationType::XDERIVATIVE) {
+				if (cmode() == CMode::DX) {
 					double dXdXo = cosxyrotation;
 					double dYdXo = -sinxyrotation;
 					Fields.v.s.x = dxdX * dXdXo + dxdY * dYdXo;
 					Fields.v.s.y = dydX * dXdXo + dydY * dYdXo;
 					Fields.v.s.z = dzdX * dXdXo + dzdY * dYdXo;
 				}
-				else if (calculation_type == CalculationType::YDERIVATIVE) {
+				else if (cmode() == CMode::DY) {
 					double dXdYo = sinxyrotation;
 					double dYdYo = cosxyrotation;
 					Fields.v.s.x = dxdX * dXdYo + dxdY * dYdYo;
 					Fields.v.s.y = dydX * dXdYo + dydY * dYdYo;
 					Fields.v.s.z = dzdX * dXdYo + dzdY * dYdYo;
 				}
-				else if (calculation_type == CalculationType::RDERIVATIVE) {
+				else if (cmode() == CMode::DR) {
 					Fields.v.s.x = dxdX * XonR + dxdY * YonR;
 					Fields.v.s.y = dydX * XonR + dydY * YonR;
 					Fields.v.s.z = dzdX * XonR + dzdY * YonR;
 				}
 			}
 			else {
-				glog.errormsg(_SRC_, "LE::setverticaldipolesecondaryfields Calculation type %lu not yet implemented", calculation_type);
+				glog.errormsg(_SRC_, "LE::setverticaldipolesecondaryfields Calculation type %s not yet implemented", calculationtype.string().c_str());
 			}
 
 			unxyrotateandscale(Fields.v.s, Source_Orientation.z());
 
 		}
+		
 		void sethorizontaldipolefields(const size_t& fi) {
 			sethorizontaldipoleprimaryfields();
 			sethorizontaldipolesecondaryfields(fi);
 		}
+		
 		void sethorizontaldipoleprimaryfields() {
 
 			Fields.h.p.x = 0.0; Fields.h.p.y = 0.0; Fields.h.p.z = 0.0;
@@ -1123,27 +1122,27 @@ namespace LEM {
 			if (BigR == 0)return;
 			if (Source_Orientation.x() == 0.0 && Source_Orientation.y() == 0.0)return;//ie. not horizontal dipole contribution
 
-			if (calculation_type == CalculationType::FORWARDMODEL) {
+			if (cmode() == CMode::FM) {
 				Fields.h.p.x = THREEONFOURPI<double>*X * Y / BigR5;
 				Fields.h.p.y = THREEONFOURPI<double>*Y * Y / BigR5 - ONEONFOURPI<double> / BigR3;
 				Fields.h.p.z = THREEONFOURPI<double>*Y * (Z - H) / BigR5;
 			}
-			else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE || calculation_type == CalculationType::THICKNESSDERIVATIVE) {
+			else if (cmode() == CMode::DC || cmode() == CMode::DT) {
 				Fields.h.p.x = 0.0;
 				Fields.h.p.y = 0.0;
 				Fields.h.p.z = 0.0;
 			}
-			else if (calculation_type == CalculationType::HDERIVATIVE) {
+			else if (cmode() == CMode::DH) {
 				Fields.h.p.x = 0.0;
 				Fields.h.p.y = 0.0;
 				Fields.h.p.z = 0.0;
 			}
-			else if (calculation_type == CalculationType::ZDERIVATIVE) {
+			else if (cmode() == CMode::DZ) {
 				Fields.h.p.x = THREEONFOURPI<double>*X * Y * (-5.0 * (Z - H) / BigR7);
 				Fields.h.p.y = THREEONFOURPI<double>*Y * Y * (-5.0 * (Z - H) / BigR7) - ONEONFOURPI<double>*(-3.0 * (Z - H) / BigR5);
 				Fields.h.p.z = THREEONFOURPI<double>*Y * (1.0 / BigR5 - 5.0 * (Z - H) * (Z - H) / BigR7);
 			}
-			else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE) {
+			else if (cmode() == CMode::DX || cmode() == CMode::DY || cmode() == CMode::DR) {
 				double dxdX = THREEONFOURPI<double>*Y * (1.0 / BigR5 - 5.0 * X * X / BigR7);
 				double dydX = THREEONFOURPI<double>*Y * Y * -5.0 * X / BigR7 + ONEONFOURPI<double>*3.0 * X / BigR5;
 				double dzdX = THREEONFOURPI<double>*Y * (Z - H) * -5.0 * X / BigR7;
@@ -1152,33 +1151,34 @@ namespace LEM {
 				double dydY = THREEONFOURPI<double>*(3.0 * Y / BigR5 - 5.0 * Y * Y * Y / BigR7);
 				double dzdY = THREEONFOURPI<double>*(Z - H) * (1.0 / BigR5 - 5.0 * Y * Y / BigR7);
 
-				if (calculation_type == CalculationType::XDERIVATIVE) {
+				if (cmode() == CMode::DX) {
 					double dXdXo = cosxyrotation;
 					double dYdXo = -sinxyrotation;
 					Fields.h.p.x = dxdX * dXdXo + dxdY * dYdXo;
 					Fields.h.p.y = dydX * dXdXo + dydY * dYdXo;
 					Fields.h.p.z = dzdX * dXdXo + dzdY * dYdXo;
 				}
-				else if (calculation_type == CalculationType::YDERIVATIVE) {
+				else if (cmode() == CMode::DY) {
 					double dXdYo = sinxyrotation;
 					double dYdYo = cosxyrotation;
 					Fields.h.p.x = dxdX * dXdYo + dxdY * dYdYo;
 					Fields.h.p.y = dydX * dXdYo + dydY * dYdYo;
 					Fields.h.p.z = dzdX * dXdYo + dzdY * dYdYo;
 				}
-				else if (calculation_type == CalculationType::RDERIVATIVE) {
+				else if (cmode() == CMode::DR) {
 					Fields.h.p.x = dxdX * XonR + dxdY * YonR;
 					Fields.h.p.y = dydX * XonR + dydY * YonR;
 					Fields.h.p.z = dzdX * XonR + dzdY * YonR;
 				}
 			}
-			else glog.errormsg(_SRC_, "LE::sethorizontaldipoleprimaryfields Calculation type %lu not yet implemented", calculation_type);
+			else glog.errormsg(_SRC_, "LE::sethorizontaldipoleprimaryfields Calculation type %s not yet implemented", calculationtype.string().c_str());
 
 
 			double scalefactor = std::hypot(Source_Orientation.x(), Source_Orientation.y());
 			unxyrotateandscale(Fields.h.p, scalefactor);
 
 		}
+		
 		void sethorizontaldipolesecondaryfields(const size_t& fi) {
 
 			Fields.h.s.x = cdouble(0.0, 0.0); Fields.h.s.y = cdouble(0.0, 0.0); Fields.h.s.z = cdouble(0.0, 0.0);
@@ -1186,32 +1186,32 @@ namespace LEM {
 			if (R == 0)return;
 			if (Source_Orientation.x() == 0.0 && Source_Orientation.y() == 0.0)return;//ie. not horizontal dipole contribution
 
-			if (calculation_type == CalculationType::FORWARDMODEL) {
+			if (cmode() == CMode::FM) {
 				Fields.h.s.x = ONEONFOURPI<double> *(X * Y) / (R2) * (2.0 * Hankel[fi].I2.FM / R - Hankel[fi].I0.FM);
 				Fields.h.s.y = ONEONFOURPI<double> *((Y * Y - X * X) * Hankel[fi].I2.FM / R3 - Y * Y * Hankel[fi].I0.FM / R2);
 				Fields.h.s.z = ONEONFOURPI<double> *Y / R * Hankel[fi].I1.FM;
 			}
-			else if (calculation_type == CalculationType::CONDUCTIVITYDERIVATIVE) {
+			else if (cmode() == CMode::DC) {
 				Fields.h.s.x = ONEONFOURPI<double> *(X * Y) / (R2) * (2.0 * Hankel[fi].I2.dC / R - Hankel[fi].I0.dC);
 				Fields.h.s.y = ONEONFOURPI<double> *((Y * Y - X * X) * Hankel[fi].I2.dC / R3 - Y * Y * Hankel[fi].I0.dC / R2);
 				Fields.h.s.z = ONEONFOURPI<double> *Y / R * Hankel[fi].I1.dC;
 			}
-			else if (calculation_type == CalculationType::THICKNESSDERIVATIVE) {
+			else if (cmode() == CMode::DT) {
 				Fields.h.s.x = ONEONFOURPI<double> *(X * Y) / (R2) * (2.0 * Hankel[fi].I2.dT / R - Hankel[fi].I0.dT);
 				Fields.h.s.y = ONEONFOURPI<double> *((Y * Y - X * X) * Hankel[fi].I2.dT / R3 - Y * Y * Hankel[fi].I0.dT / R2);
 				Fields.h.s.z = ONEONFOURPI<double> *Y / R * Hankel[fi].I1.dT;
 			}
-			else if (calculation_type == CalculationType::HDERIVATIVE) {
+			else if (cmode() == CMode::DH) {
 				Fields.h.s.x = ONEONFOURPI<double> *(X * Y) / (R2) * (2.0 * Hankel[fi].I2.dH / R - Hankel[fi].I0.dH);
 				Fields.h.s.y = ONEONFOURPI<double> *((Y * Y - X * X) * Hankel[fi].I2.dH / R3 - Y * Y * Hankel[fi].I0.dH / R2);
 				Fields.h.s.z = ONEONFOURPI<double> *Y / R * Hankel[fi].I1.dH;
 			}
-			else if (calculation_type == CalculationType::ZDERIVATIVE) {
+			else if (cmode() == CMode::DZ) {
 				Fields.h.s.x = ONEONFOURPI<double> *(X * Y) / (R2) * (2.0 * Hankel[fi].I2.dZ / R - Hankel[fi].I0.dZ);
 				Fields.h.s.y = ONEONFOURPI<double> *((Y * Y - X * X) * Hankel[fi].I2.dZ / R3 - Y * Y * Hankel[fi].I0.dZ / R2);
 				Fields.h.s.z = ONEONFOURPI<double> *Y / R * Hankel[fi].I1.dZ;
 			}
-			else if (calculation_type == CalculationType::XDERIVATIVE || calculation_type == CalculationType::YDERIVATIVE || calculation_type == CalculationType::RDERIVATIVE) {
+			else if (cmode() == CMode::DX || cmode() == CMode::DY || cmode() == CMode::DR) {
 				cdouble a, c, d, e, f, h;
 				cdouble dadx, dcdx, dddx, dedx, dfdx, dhdx;
 				cdouble dady, dcdy, dddy, dedy, dfdy, dhdy;
@@ -1263,47 +1263,30 @@ namespace LEM {
 				cdouble dzdX = ONEONFOURPI<double>*(Hankel[fi].I1.FM * dhdx + h * Hankel[fi].I1.dR * XonR);
 				cdouble dzdY = ONEONFOURPI<double>*(Hankel[fi].I1.FM * dhdy + h * Hankel[fi].I1.dR * YonR);
 
-				if (calculation_type == CalculationType::XDERIVATIVE) {
+				if (cmode() == CMode::DX) {
 					double dXdXo = cosxyrotation;
 					double dYdXo = -sinxyrotation;
 					Fields.h.s.x = dxdX * dXdXo + dxdY * dYdXo;
 					Fields.h.s.y = dydX * dXdXo + dydY * dYdXo;
 					Fields.h.s.z = dzdX * dXdXo + dzdY * dYdXo;
 				}
-				else if (calculation_type == CalculationType::YDERIVATIVE) {
+				else if (cmode() == CMode::DY) {
 					double dXdYo = sinxyrotation;
 					double dYdYo = cosxyrotation;
 					Fields.h.s.x = dxdX * dXdYo + dxdY * dYdYo;
 					Fields.h.s.y = dydX * dXdYo + dydY * dYdYo;
 					Fields.h.s.z = dzdX * dXdYo + dzdY * dYdYo;
 				}
-				else if (calculation_type == CalculationType::RDERIVATIVE) {
+				else if (cmode() == CMode::DR) {
 					Fields.h.s.x = dxdX * XonR + dxdY * YonR;
 					Fields.h.s.y = dydX * XonR + dydY * YonR;
 					Fields.h.s.z = dzdX * XonR + dzdY * YonR;
 				}
 			}
-			else glog.errormsg(_SRC_, "LE::sethorizontaldipolesecondaryfields Calculation type %lu not yet implemented", calculation_type);
+			else glog.errormsg(_SRC_, "LE::sethorizontaldipolesecondaryfields Calculation type %lu not yet implemented", calculationtype.string().c_str());
 
 			double scalefactor = std::hypot(Source_Orientation.x(), Source_Orientation.y());
 			unxyrotateandscale(Fields.h.s, scalefactor);
-		}
-
-		void setprimaryfields()
-		{
-			sethorizontaldipoleprimaryfields();
-			setverticaldipoleprimaryfields();
-			Fields.t.p.x = Fields.v.p.x + Fields.h.p.x;
-			Fields.t.p.y = Fields.v.p.y + Fields.h.p.y;
-			Fields.t.p.z = Fields.v.p.z + Fields.h.p.z;
-		}
-		void setsecondaryfields(const size_t& fi)
-		{
-			sethorizontaldipolesecondaryfields(fi);
-			setverticaldipolesecondaryfields(fi);
-			Fields.t.s.x = Fields.v.s.x + Fields.h.s.x;
-			Fields.t.s.y = Fields.v.s.y + Fields.h.s.y;
-			Fields.t.s.z = Fields.v.s.z + Fields.h.s.z;
 		}
 
 		//Horizontal coplanar

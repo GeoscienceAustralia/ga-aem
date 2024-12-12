@@ -46,11 +46,11 @@ public:
 class cEarthStruct {
 
 public:
-	cEarth1D ref;
-	cEarth1D std;
-	cEarth1D min;
-	cEarth1D max;
-	cEarth1D invmodel;
+	Earth1D ref;
+	Earth1D std;
+	Earth1D min;
+	Earth1D max;
+	Earth1D invmodel;
 
 	void sanity_check() {
 
@@ -338,6 +338,7 @@ class cSBSInverter : public cInverter {
 
 	double ErrorAddition = 0.0;
 	using cIFDMap = cKeyVec<std::string, cInvertibleFieldDefinition, caseinsensetiveequal<std::string>>;
+	inline static const size_t NCOMP = 3;
 	inline static const size_t XCOMP = 0;
 	inline static const size_t YCOMP = 1;
 	inline static const size_t ZCOMP = 2;
@@ -1600,8 +1601,7 @@ public:
 				cTDEmSystem& T = S.T;
 				if (S.reconstructPrimary) {
 					T.setgeometry(G[si].tfr);
-					T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-					T.lem().derivative_layer = undefinedvalue<size_t>();
+					T.lem().set_calculationtype(CMode::FM);
 					T.setprimaryfields();
 
 					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PX();
@@ -1856,9 +1856,9 @@ public:
 		return dm;
 	}
 
-	std::vector<cEarth1D> get_earth(const Vector& parameters)
+	std::vector<Earth1D> get_earth(const Vector& parameters)
 	{
-		std::vector<cEarth1D> ev(nSoundings);;
+		std::vector<Earth1D> ev(nSoundings);;
 		for (size_t si = 0; si < nSoundings; si++) {
 			ev[si] = E[si].ref;
 			if (solve_conductivity()) {
@@ -1910,7 +1910,7 @@ public:
 
 	void set_predicted(const Vector& parameters)
 	{
-		std::vector<cEarth1D> ev = get_earth(parameters);
+		std::vector<Earth1D> ev = get_earth(parameters);
 		std::vector<cTDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
 			cTDEmSystemInfo& S = SV[sysi];
@@ -1919,14 +1919,14 @@ public:
 			cTDEmSystem& T = S.T;
 			const size_t& nw = T.nwindows();
 			for (size_t si = 0; si < nSoundings; si++) {
-				const cEarth1D& e = ev[si];
+				const Earth1D& e = ev[si];
 				const cTDEmGeometry& g = gv[si];
-				T.setconductivitythickness(e.conductivity, e.thickness);
+				//T.setconductivitythickness(e.conductivity, e.thickness);
+				T.set_earth(e);
 				T.setgeometry(g);
 
 				//Forwardmodel
-				T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-				T.lem().derivative_layer = undefinedvalue<size_t>();
+				T.lem().set_calculationtype(CMode::FM);
 				T.setup_computations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
@@ -1963,7 +1963,7 @@ public:
 			J_all.setZero();
 		}
 
-		std::vector<cEarth1D> ev = get_earth(parameters);
+		std::vector<Earth1D> ev = get_earth(parameters);
 		std::vector<cTDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
 			cTDEmSystemInfo& S = SV[sysi];
@@ -1973,14 +1973,14 @@ public:
 
 			const size_t& nw = T.nwindows();
 			for (size_t si = 0; si < nSoundings; si++) {
-				const cEarth1D& e = ev[si];
+				const Earth1D& e = ev[si];
 				const cTDEmGeometry& g = gv[si];
-				T.setconductivitythickness(e.conductivity, e.thickness);
+				//T.setconductivitythickness(e.conductivity, e.thickness);
+				T.set_earth(e);
 				T.setgeometry(g);
 
 				//Forwardmodel
-				T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-				T.lem().derivative_layer = undefinedvalue<size_t>();
+				T.lem().set_calculationtype(CMode::FM);
 				T.setup_computations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
@@ -2026,7 +2026,7 @@ public:
 					std::vector<double> zdrv(nw);
 
 					//bookmark
-					for (size_t ci = 0; ci < 3; ci++) {
+					for (size_t ci = 0; ci < NCOMP; ci++) {
 						if (S.CompInfo[ci].Use) {
 							const int pindex = sfindex(sysi, ci);
 							if (pindex >= 0) {
@@ -2049,8 +2049,7 @@ public:
 					if (solve_conductivity()) {
 						for (size_t li = 0; li < nLayers; li++) {
 							const int pindex = cindex(si, li);
-							T.lem().calculation_type = LEModeller::CalculationType::CONDUCTIVITYDERIVATIVE;
-							T.lem().derivative_layer = li;
+							T.lem().set_calculationtype(CMode::DC, li);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 
@@ -2065,8 +2064,7 @@ public:
 					if (solve_thickness()) {
 						for (size_t li = 0; li < nLayers - 1; li++) {
 							const int pindex = tindex(si, li);
-							T.lem().calculation_type = LEModeller::CalculationType::THICKNESSDERIVATIVE;
-							T.lem().derivative_layer = li;
+							T.lem().set_calculationtype(CMode::DT, li);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2080,8 +2078,7 @@ public:
 					if (FreeGeometry) {
 						if (solve_geometry_element("tx_height")) {
 							const size_t pindex = gindex(si, "tx_height");
-							T.lem().calculation_type = LEModeller::CalculationType::HDERIVATIVE;
-							T.lem().derivative_layer = undefinedvalue<size_t>();
+							T.lem().set_calculationtype(CMode::DH);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2090,8 +2087,7 @@ public:
 
 						if (solve_geometry_element("txrx_dx")) {
 							const size_t pindex = gindex(si, "txrx_dx");
-							T.lem().calculation_type = LEModeller::CalculationType::XDERIVATIVE;
-							T.lem().derivative_layer = undefinedvalue<size_t>();
+							T.lem().set_calculationtype(CMode::DX);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2100,8 +2096,7 @@ public:
 
 						if (solve_geometry_element("txrx_dy")) {
 							const size_t pindex = gindex(si, "txrx_dy");
-							T.lem().calculation_type = LEModeller::CalculationType::YDERIVATIVE;
-							T.lem().derivative_layer = undefinedvalue<size_t>();
+							T.lem().set_calculationtype(CMode::DY);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2110,8 +2105,7 @@ public:
 
 						if (solve_geometry_element("txrx_dz")) {
 							const size_t pindex = gindex(si, "txrx_dz");
-							T.lem().calculation_type = LEModeller::CalculationType::ZDERIVATIVE;
-							T.lem().derivative_layer = undefinedvalue<size_t>();
+							T.lem().set_calculationtype(CMode::DZ);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2429,7 +2423,7 @@ public:
 		writetofile(Err, dp + "e.dat");
 		writetofile(state.param, dp + "m.dat");
 		writetofile(state.pred, dp + "g.dat");
-		std::vector<cEarth1D> e = get_earth(state.param);
+		std::vector<Earth1D> e = get_earth(state.param);
 		std::vector <cTDEmGeometry> g = get_geometry(state.param);
 		e[Bunch.master_index()].write(dumppath() + "earth_inv.dat");
 		g[Bunch.master_index()].write(dumppath() + "geometry_inv.dat");
@@ -2438,7 +2432,7 @@ public:
 		save_iteration_file(state);
 	}
 
-	void dump_earth_all(const std::vector <cEarth1D> e, const std::string& path) {
+	void dump_earth_all(const std::vector <Earth1D> e, const std::string& path) {
 		std::ofstream of(path);
 		for (size_t si = 0; si < e.size(); si++) {
 			const std::vector<double>& c = e[si].conductivity;
@@ -2550,7 +2544,7 @@ public:
 			}
 		}
 
-		std::vector<cEarth1D> ev = get_earth(CIS.param);
+		std::vector<Earth1D> ev = get_earth(CIS.param);
 		std::vector<cTDEmGeometry> gv = get_geometry(CIS.param);
 		for (size_t si = 0; si < nSoundings; si++) {
 			E[si].invmodel = ev[si];
@@ -2753,7 +2747,7 @@ public:
 		}
 
 		//Earth	
-		const cEarth1D& e = E[si].invmodel;
+		const Earth1D& e = E[si].invmodel;
 		OM->writefield(pi,
 			nLayers, "nlayers", "Number of layers ", UNITLESS,
 			1, ST_UINT, DN_NONE, 'I', 4, 0);

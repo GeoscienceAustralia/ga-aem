@@ -46,6 +46,17 @@ int finaliseandexit() {
 }
 
 int main(int argc, char** argv) {
+
+	//try {
+	//	//CMode m = CalculationType::lookup_mode(11);
+	//	CalculationType c(CMode::DC, -1);
+	//}
+	//catch (std::exception &e){
+	//	std::cout << e.what();
+	//}
+	//return 0;
+
+
 	std::string commandline = commandlinestring(argc, argv);
 	int mpisize = 1;
 	int mpirank = 0;

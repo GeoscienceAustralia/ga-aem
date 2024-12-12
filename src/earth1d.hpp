@@ -16,7 +16,7 @@ const std::string DN_NONE;
 const std::string UNITLESS;
 
 
-class cEarth1D{
+class Earth1D{
 
 public:
 
@@ -26,22 +26,22 @@ public:
 	std::vector<double> timeconstant;
 	std::vector<double> frequencydependence;
 	
-	cEarth1D(){};
+	Earth1D(){};
 
-	cEarth1D(const size_t nlayers){
+	Earth1D(const size_t nlayers){
+		thickness.resize(nlayers - 1);
 		conductivity.resize(nlayers);
 		chargeability.resize(nlayers);
 		timeconstant.resize(nlayers);
 		frequencydependence.resize(nlayers);
-		thickness.resize(nlayers - 1);
 	}
 
-	cEarth1D(const std::vector<double>& _conductivity, const std::vector<double>& _thickness){
+	Earth1D(const std::vector<double>& _conductivity, const std::vector<double>& _thickness){
 		conductivity = _conductivity;
 		thickness    = _thickness;
 	}
 
-	cEarth1D(
+	Earth1D(
 		const std::vector<double>& _conductivity,
 		const std::vector<double>& _thickness,
 		const std::vector<double>& _chargeability,
@@ -55,14 +55,12 @@ public:
 		frequencydependence = _frequencydependence;		
 	}
 
-	cEarth1D(const size_t nlayers, const double* _conductivity, const double* _thickness)
-	{
+	Earth1D(const size_t nlayers, const double* _conductivity, const double* _thickness) {
 		conductivity = std::vector<double>(_conductivity, _conductivity + nlayers);
 		thickness = std::vector<double>(_thickness, _thickness + nlayers - 1);
 	}
 
-	cEarth1D(const size_t nlayers, const double* _conductivity, const double* _thickness, const double* _chargeability, const double* _timeconstant, const double* _frequencydependence)
-	{
+	Earth1D(const size_t nlayers, const double* _conductivity, const double* _thickness, const double* _chargeability, const double* _timeconstant, const double* _frequencydependence)	{
 		conductivity  = std::vector<double>(_conductivity, _conductivity+nlayers);
 		thickness     = std::vector<double>(_thickness, _thickness + nlayers-1);
 		chargeability = std::vector<double>(_chargeability, _chargeability + nlayers);
@@ -70,8 +68,7 @@ public:
 		frequencydependence = std::vector<double>(_frequencydependence, _frequencydependence + nlayers);		
 	}
 
-	std::vector<double> layer_top_depth() const
-	{
+	std::vector<double> layer_top_depth() const {
 		const size_t n = thickness.size();
 		std::vector<double> dtop(n+1);
 		dtop[0] = 0.0;
@@ -81,8 +78,7 @@ public:
 		return dtop;
 	}
 
-	std::vector<double> layer_bottom_depth() const 
-	{
+	std::vector<double> layer_bottom_depth() const {
 		const size_t n = thickness.size();
 		std::vector<double> dbot(n+1);		
 		dbot[0] = thickness[0];
@@ -93,31 +89,21 @@ public:
 		return dbot;
 	}
 	
-	size_t nlayers() const
-	{ 
+	size_t nlayers() const { 
 		return conductivity.size();
 	}
 
-	void print() const	
-	{
-		for (size_t i = 0; i<nlayers() - 1; i++){
-			printf("%d\t%8.6lf\t%6.2lf\n", (int)i, conductivity[i], thickness[i]);
+	friend std::ostream& operator<<(std::ostream& os, const Earth1D& e) {
+		for (size_t i = 0; i < e.nlayers(); i++){
+			if(i < (e.nlayers()-1)) os << ixd(4) << i << fxd(10, 6) << e.conductivity[i] << fxd(8, 2) << e.thickness[i]	<< std::endl;
+			else                    os << ixd(4) << i << fxd(10, 6) << e.conductivity[i] << "     inf" << std::endl;
 		}
-		printf("%d\t%8.6lf\n\n", (int)nlayers(), conductivity[nlayers() - 1]);
+		return os;
 	}
 
-	void write(const std::string& filepath) const 
-	{
+	void write(const fs::path& filepath) const {
 		std::ofstream ofs = ofstream_ex(filepath);
-		size_t nl = conductivity.size();
-		for (size_t i = 0; i < nl; i++) {
-			if (i < thickness.size()) {
-				ofs << strprint("%e\t%e\n", conductivity[i], thickness[i]);
-			}
-			else {
-				ofs << strprint("%e\tInf\n", conductivity[i]);
-			}
-		}
+		ofs << this;
 	}
 
 	std::vector<double> dummy_thickness() const {

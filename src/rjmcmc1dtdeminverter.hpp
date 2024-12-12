@@ -589,8 +589,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 			if (S.reconstructPrimary) {
 				T.setgeometry(IG);
-				T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-				T.lem().derivative_layer = INT_MAX;
+				T.lem().set_calculationtype(CMode::FM);
 				T.setprimaryfields();
 
 				S.oPX = T.PX();
@@ -1061,6 +1060,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		}
 
 		std::vector<double> t = m.getthicknesses();
+		Earth1D E(c, t);
 		cTDEmGeometry  G = getgeometry(m);
 		std::vector<double> pred(ndata);
 
@@ -1068,11 +1068,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		for (size_t i = 0; i < nsystems; i++) {
 			cTDEmSystemInfo& S = SV[i];
 			cTDEmSystem& T = S.T;
-			T.setconductivitythickness(c, t);
+			T.set_earth(E);
 			T.setgeometry(G);
 			T.setup_computations();
-			T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-			T.lem().derivative_layer = INT_MAX;
+			T.lem().set_calculationtype(CMode::FM);
 			T.setprimaryfields();
 			T.setsecondaryfields();
 			std::vector<double> v = collect(S, T);

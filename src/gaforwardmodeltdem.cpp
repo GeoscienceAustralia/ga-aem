@@ -20,7 +20,7 @@ class cLogger glog; //The global instance of the log file manager
 
 using namespace AEM;
 
-static int parseinputrecord(const char* record, cTDEmGeometry& G, cEarth1D& E)
+static int parseinputrecord(const char* record, cTDEmGeometry& G, Earth1D& E)
 {
 	std::vector<double> v = getdoublevector(record, " ,\t\r\n");
 
@@ -180,7 +180,7 @@ static int process(std::string controlfilename)
 	std::string sysfile = C.getstringvalue("Control.SystemFile");
 	glog.logmsg("Opening AEM system file %s\n", sysfile.c_str());
 	cTDEmSystem T(sysfile.c_str());
-	T.lem().iptype = (LEModeller::IPType)iptype;
+	T.lem().set_iptype((LEModeller::IPType)iptype);
 
 	glog.logmsg("Opening input file %s\n", inputfile.c_str());
 	std::ifstream ofsin = ifstream_ex(inputfile);
@@ -202,7 +202,7 @@ static int process(std::string controlfilename)
 		}
 		glog.logmsg("Processing record %zu: ", recnum);
 		cTDEmGeometry G;
-		cEarth1D E;
+		Earth1D E;
 		parseinputrecord(CurrentRecord.c_str(), G, E);
 		glog.logmsg("%s\n", CurrentRecord.c_str());
 		T.forwardmodel(G, E, R);

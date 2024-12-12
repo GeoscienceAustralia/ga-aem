@@ -100,5 +100,8 @@
     <ClInclude Include="..\..\submodules\cpp-utils\include\rollpitchyaw.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\layeredearthmodeller.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -38,7 +38,7 @@ int skytem_example_ip()
 	G.rx_roll = 0;       G.rx_pitch = 0; G.rx_yaw  = 0;
 
 	//Create the  earth structure	
-	cEarth1D E(3);
+	Earth1D E(3);
 	E.conductivity[0] = 0.010;
 	E.conductivity[1] = 0.100;
 	E.conductivity[2] = 0.001;
@@ -87,7 +87,7 @@ int skytem_example()
 
 	//Create the earth structure
 	//This changes every fiducial/station
-	cEarth1D E(3);
+	Earth1D E(3);
 	E.conductivity[0] = 0.010;
 	E.conductivity[1] = 0.100;
 	E.conductivity[2] = 0.001;
@@ -138,7 +138,7 @@ int skytem_computation_time()
 
 	//Create the earth structure
 	//This changes every fiducial/station
-	cEarth1D E(1);
+	Earth1D E(1);
 	
 	//Create a response object for each moment (they have different numbers of windwos)	
 	cTDEmResponse LMR;
@@ -146,7 +146,7 @@ int skytem_computation_time()
 	double sum = 0.0;
 	for (size_t j = 1; j <= 50; j++) {
 		size_t nlayers = j;
-		E = cEarth1D(nlayers);
+		E = Earth1D(nlayers);
 		double t1 = gettime();
 		size_t nloops = 1000;
 		for (size_t i = 0; i < nloops; i++) {

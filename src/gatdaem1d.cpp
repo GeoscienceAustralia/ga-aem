@@ -83,7 +83,7 @@ double basefrequency(void* hS)
 int nlayers(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (int)T.lem().NumLayers;
+	return (int)T.lem().nLayers();
 }
 
 void windowtimes(void* hS, double* low, double* high)
@@ -105,7 +105,8 @@ void setgeometry(void* hS, const double tx_height, const double tx_roll, const d
 void setearth(void* hS, int nlayers, double* conductivity, double* thickness)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	T.lem().setconductivitythickness(nlayers, conductivity, thickness);
+	Earth1D E(nlayers, conductivity, thickness);
+	T.lem().set_earth(E);
 }
 
 void forwardmodel(void* hS,
@@ -132,11 +133,10 @@ void forwardmodel(void* hS,
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.setgeometry(G);
-	cEarth1D E(nlayers, conductivity, thickness);
-	T.lem().setproperties(E);
+	Earth1D E(nlayers, conductivity, thickness);
+	T.lem().set_earth(E);
 	T.setup_computations();
-	T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-	T.lem().derivative_layer = -1;
+	T.lem().set_calculationtype(CMode::FM);
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
@@ -179,12 +179,11 @@ void forwardmodel_ip(void* hS,
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.setgeometry(G);
-	cEarth1D E(nlayers, conductivity, thickness, chargeability, timeconstant, frequencydependence);
-	T.lem().iptype = (LEModeller::IPType)iptype;
-	T.lem().setproperties(E);
+	Earth1D E(nlayers, conductivity, thickness, chargeability, timeconstant, frequencydependence);
+	T.lem().set_iptype((LEModeller::IPType)iptype);
+	T.lem().set_earth(E);
 	T.setup_computations();
-	T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-	T.lem().derivative_layer = -1;
+	T.lem().set_calculationtype(CMode::FM);
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
@@ -199,12 +198,10 @@ void forwardmodel_ip(void* hS,
 	memcpy(SZ, T.ZS().data(), sz);
 }
 
-void derivative(void* hS, int dtype, int dlayer,
-	double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ)
-{
+void derivative(void* hS, int dtype, int dlayer, double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ) {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	T.lem().calculation_type = (LEModeller::CalculationType)dtype;
-	T.lem().derivative_layer = (size_t)((int)(dlayer - 1));	//subtract one from the layer number for zero based indexing
+	CMode mode = CalculationType::lookup_mode((size_t)dtype);
+	T.lem().set_calculationtype(mode,dlayer-1);//subtract one from the layer number for zero based indexing
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
@@ -227,10 +224,10 @@ void fm_dlogc(void* hS,
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.setgeometry(G);
-	T.lem().setconductivitythickness(nlayers, conductivity, thickness);
+	Earth1D E(nlayers, conductivity, thickness);
+	T.lem().set_earth(E);
 	T.setup_computations();
-	T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-	T.lem().derivative_layer = -1;
+	T.lem().set_calculationtype(CMode::FM);
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
@@ -245,12 +242,11 @@ void fm_dlogc(void* hS,
 	memcpy(p, T.ZS().data(), sz); p += nw;
 
 	for (size_t k = 0; k < (size_t)nlayers; k++) {
-		T.lem().calculation_type = LEModeller::CalculationType::CONDUCTIVITYDERIVATIVE;
-		T.lem().derivative_layer = k;
+		T.lem().set_calculationtype(CMode::DC,k);
 		T.setprimaryfields();
 		T.setsecondaryfields();
 
-		double c = T.lem().Layer[k].Conductivity;
+		const double& c = T.lem().layers()[k].Conductivity;
 		*p = T.PX() * c; p++;
 		for (size_t w = 0; w < nw; w++) {
 			*p = T.XS()[w] * c;
@@ -275,7 +271,7 @@ void fm_dlogc(void* hS,
 void derivative_rx_pitch(void* hS, int n, double rx_pitch, double* xb, double* zb, double* dxbdp, double* dzbdp)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	//T.lem().calculation_type = cLEM::CalculationType::FORWARDMODEL;
+	//T.lem().calculation_type = cLEM::CalculationType::FM;
 	//T.lem().derivative_layer = -1;
 	//T.setprimaryfields();
 	//T.setsecondaryfields();

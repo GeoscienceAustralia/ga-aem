@@ -402,23 +402,21 @@ public:
 		return v;
 	}
 
-	bool forward_model(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry) {
-		T.setconductivitythickness(conductivity, thickness);
+	bool forward_model(const Earth1D& E, const cTDEmGeometry & geometry) {
+		T.set_earth(E);
 		T.setgeometry(geometry);
-		T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-		T.lem().derivative_layer = std::numeric_limits<size_t>::max();
+		T.lem().set_calculationtype(CMode::FM);
 		T.setup_computations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
 		return true;
 	}
 
-	bool forward_model_and_derivatives(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry, std::vector<double>& predicted, std::vector<std::vector<double>>& derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
-		size_t nlayers = conductivity.size();
-		T.setconductivitythickness(conductivity, thickness);
+	bool forward_model_and_derivatives(const Earth1D& E, const cTDEmGeometry& geometry, std::vector<double>&predicted, std::vector<std::vector<double>>&derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
+		const size_t nlayers = E.nlayers();
+		T.set_earth(E);
 		T.setgeometry(geometry);
-		T.lem().calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-		T.lem().derivative_layer = std::numeric_limits<size_t>::max();
+		T.lem().set_calculationtype(CMode::FM);
 		T.setup_computations();
 		T.setprimaryfields();
 		T.setsecondaryfields();
@@ -453,8 +451,7 @@ public:
 			}
 
 			for (size_t li = 0; li < nlayers; li++) {
-				T.lem().calculation_type = LEModeller::CalculationType::CONDUCTIVITYDERIVATIVE;
-				T.lem().derivative_layer = li;
+				T.lem().set_calculationtype(CMode::DC, li);
 				T.setup_computations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
@@ -485,8 +482,7 @@ public:
 					}
 				}
 				else {
-					T.lem().calculation_type = cTDEmGeometry::derivativetype(UGI[gi]);
-					T.lem().derivative_layer = std::numeric_limits<size_t>::max();
+					T.lem().set_calculationtype(cTDEmGeometry::derivativetype(UGI[gi]));
 					T.setup_computations();
 					T.setprimaryfields();
 					T.setsecondaryfields();
@@ -503,7 +499,7 @@ public:
 			}
 		}
 		return true;
-	}
+	};
 };
 
 class cEarthInfo {
@@ -1780,15 +1776,17 @@ public:
 			//size_t gpi = gpindex_c(si, 0);
 			//size_t lpi = mdist.localind(gpi);
 
-			std::vector<double> conductivity = get_conductivity_model(lsi, mlocal);
-			std::vector<double> thickness = get_thicknesses_ref(lsi);
+			const std::vector<double> conductivity = get_conductivity_model(lsi, mlocal);
+			const std::vector<double> thickness = get_thicknesses_ref(lsi);
+			Earth1D E(conductivity, thickness);
 			cTDEmGeometry       geometry = get_geometry_model(lsi, mlocal);
 
 			size_t gdi = dindex(si, 0);
 			size_t ldi = gdist.localind((PetscInt)gdi);
 			for (size_t ti = 0; ti < T.size(); ti++) {
 
-				T[ti].forward_model_and_derivatives(conductivity, thickness, geometry, predicted, derivatives, computejacobian, UGI);
+				T[ti].forward_model_and_derivatives(E, geometry, predicted, derivatives, computejacobian, UGI);
+				//T[ti].forward_model_and_derivatives(conductivity, thickness, geometry, predicted, derivatives, computejacobian, UGI);
 
 				for (size_t k = 0; k < predicted.size(); k++) {
 					glocal[ldi + k] = predicted[k];
@@ -2114,6 +2112,8 @@ public:
 			std::vector<double> conductivity = get_conductivity_model(lsi, mlocal);
 			std::vector<double> thickness = get_thicknesses_ref(lsi);
 			thickness.push_back(thickness.back());
+			Earth1D E(conductivity, thickness);
+
 			cTDEmGeometry gref = get_geometry_ref(lsi);
 			cTDEmGeometry ginv = get_geometry_model(lsi, mlocal);
 
@@ -2253,7 +2253,7 @@ public:
 				size_t ldi = gdist.localind((PetscInt)dindex(gsi, 0));
 				for (size_t si = 0; si < T.size(); si++) {
 					cSystemInfo& S = T[si];
-					S.forward_model(conductivity, thickness, ginv);
+					S.forward_model(E, ginv);
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++) {
 						cTDEmComponentInfo& C = S.Comp[ci];

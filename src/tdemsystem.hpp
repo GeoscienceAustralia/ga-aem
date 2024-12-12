@@ -19,22 +19,23 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "blocklanguage.hpp"
 #include "earth1d.hpp"
 #include "lem.hpp"
+#include "layeredearthmodeller.hpp"
 #include "fixed_point_spline.hpp"
 #include "rollpitchyaw.hpp"
 
 namespace AEM {
 	using namespace LEM;
+	using CalculationType = CT::CalculationType;
+	using CMode = CT::CalculationType::Mode;
 
-	inline static Mat3 YPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
-		const Mat3 Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
+	inline static Mat3d YPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
+		const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
 		return Rot;
 	};
 
-	inline static Mat3 invYPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
-		const Mat3 Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
-		//std::cout << Rot << std::endl;
-		Mat3 RotT = Rot.transpose();
-		//std::cout << RotT << std::endl;
+	inline static Mat3d invYPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
+		const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
+		Mat3d RotT = Rot.transpose();
 		return RotT;
 	};
 
@@ -285,22 +286,22 @@ namespace AEM {
 			return ElementType::unknown;
 		}
 
-		static LEModeller::CalculationType derivativetype(const size_t& index) {
+		static CMode derivativetype(const size_t& index) {
 			switch (index) {
-			case 0: return LEModeller::CalculationType::HDERIVATIVE; break;
-			case 1: return LEModeller::CalculationType::NONE; break;
-			case 2: return LEModeller::CalculationType::NONE; break;
-			case 3: return LEModeller::CalculationType::NONE; break;
-			case 4: return LEModeller::CalculationType::XDERIVATIVE; break;
-			case 5: return LEModeller::CalculationType::YDERIVATIVE; break;
-			case 6: return LEModeller::CalculationType::ZDERIVATIVE; break;
-			case 7: return LEModeller::CalculationType::NONE; break;
-			case 8: return LEModeller::CalculationType::NONE; break;
-			case 9: return LEModeller::CalculationType::NONE; break;
+			case 0: return CMode::DH; break;
+			case 1: return CMode::NONE; break;
+			case 2: return CMode::NONE; break;
+			case 3: return CMode::NONE; break;
+			case 4: return CMode::DX; break;
+			case 5: return CMode::DY; break;
+			case 6: return CMode::DZ; break;
+			case 7: return CMode::NONE; break;
+			case 8: return CMode::NONE; break;
+			case 9: return CMode::NONE; break;
 			default:
 				glog.errormsg(_SRC_, "Geometry index %zu out of range\n", index);
 			}
-			return LEModeller::CalculationType::NONE;
+			return CMode::NONE;
 		}
 
 		void write(std::string path) const
@@ -323,31 +324,18 @@ namespace AEM {
 			return std::sqrt(txrx_dx * txrx_dx + txrx_dy * txrx_dy + txrx_dz * txrx_dz);
 		};
 
-		Vec3 tx_orientation(const Vec3& tx_reference_orientation) const {
-			//Vec3 v(1, 2, 3);
-			//Mat3 Rot = YPR(tx_roll, tx_pitch, tx_yaw);
-			//Mat3 invRot = invYPR(tx_roll, tx_pitch, tx_yaw);
-			//Vec3 v1 = Rot * v;
-			//Vec3 v2 = invRot * v1;
-			//std::cout << v << std::endl << std::endl;
-			//std::cout << v1 << std::endl << std::endl;
-			//std::cout << v2 << std::endl << std::endl;
-
-			//Vec3 v = tx_reference_orientation;
-			//v.rotate_inplace(tx_yaw, Geometry3D::zaxis);
-			//v.rotate_inplace(tx_pitch, Geometry3D::yaxis);
-			//v.rotate_inplace(tx_roll, Geometry3D::xaxis);
-			Mat3 Rot = YPR(tx_roll, tx_pitch, tx_yaw);
+		Vec3d tx_orientation(const Vec3d& tx_reference_orientation) const {
+			Mat3d Rot = YPR(tx_roll, tx_pitch, tx_yaw);
 			return Rot * tx_reference_orientation;
 		}
 
-		Vec3 txrx_separation() const {
-			Vec3 v = Vec3(txrx_dx, txrx_dy, txrx_dz);
+		Vec3d txrx_separation() const {
+			Vec3d v = Vec3d(txrx_dx, txrx_dy, txrx_dz);
 			return v;
 		}
 
-		inline Mat3 inertial_to_rx_frame_rotation_matrix() const {
-			// Mat3 inertial_to_rx_frame_rotation_matrix() const {
+		inline Mat3d inertial_to_rx_frame_rotation_matrix() const {
+			// Mat3d inertial_to_rx_frame_rotation_matrix() const {
 			return invYPR(rx_roll, rx_pitch, rx_yaw);
 		};
 
@@ -380,7 +368,7 @@ namespace AEM {
 		double NumberOfTurns = 0.0;
 		double PeakCurrent = 0.0;
 		double PeakdIdT = 0.0;
-		Vec3 Reference_Orientation = Vec3::UnitZ();
+		Vec3d Reference_Orientation = Vec3d::UnitZ();
 	};
 
 	class Waveform {
@@ -615,7 +603,7 @@ namespace AEM {
 
 	public:
 
-		enum class WeightingMethod { BoxCar, AreaUnderCurve, LinearTaper};
+		enum class WeightingMethod { BoxCar, AreaUnderCurve, LinearTaper };
 
 		size_t nWindows = 0;
 		double TimeShift = 0.0;
@@ -636,7 +624,7 @@ namespace AEM {
 			}
 
 			Windows.resize(nWindows);
-			
+
 			//Read window times
 			std::vector<std::vector<double>> wt;
 			if (!b.getvalue("WindowTimes", wt)) {
@@ -862,55 +850,55 @@ namespace AEM {
 
 	class FFTWPlanWrapper {
 
-		private:
-			fftw_plan Plan = nullptr;
+	private:
+		fftw_plan Plan = nullptr;
 
-		public:
+	public:
 
-			// Default constructor
-			FFTWPlanWrapper() {
-				Plan = nullptr;
+		// Default constructor
+		FFTWPlanWrapper() {
+			Plan = nullptr;
+		}
+
+		FFTWPlanWrapper(const fftw_plan plan) {
+			setplan(plan);
+		}
+
+		// Move constructor
+		FFTWPlanWrapper(FFTWPlanWrapper&& other) noexcept
+			: Plan(other.Plan)
+		{
+			other.Plan = nullptr;
+		};
+
+		// Copy assignment operator
+		FFTWPlanWrapper& operator=(FFTWPlanWrapper& other) noexcept {
+			setplan(other.Plan);
+			other.Plan = nullptr;
+			return *this;
+		};
+
+		~FFTWPlanWrapper() {
+			destroy();
+		};
+
+		void setplan(const fftw_plan plan) {
+			Plan = plan;
+		}
+
+		void destroy() const {
+			if (Plan) {
+				fftw_destroy_plan(Plan);
 			}
+		}
 
-			FFTWPlanWrapper(const fftw_plan plan) {
-				setplan(plan);
-			}
+		void execute() const {
+			fftw_execute(Plan);
+		}
 
-			// Move constructor
-			FFTWPlanWrapper(FFTWPlanWrapper&& other) noexcept
-				: Plan(other.Plan)
-			{
-				other.Plan = nullptr;
-			};
-
-			// Copy assignment operator
-			FFTWPlanWrapper& operator=(FFTWPlanWrapper& other) noexcept {
-				setplan(other.Plan);
-				other.Plan = nullptr;
-				return *this;
-			};
-
-			~FFTWPlanWrapper() {
-				destroy();
-			};
-
-			void setplan(const fftw_plan plan) {
-				Plan = plan;
-			}
-
-			void destroy() const {
-				if (Plan) {
-					fftw_destroy_plan(Plan);
-				}
-			}
-
-			void execute() const {
-				fftw_execute(Plan);
-			}
-
-			void print() const {
-				fftw_print_plan(Plan);
-			}
+		void print() const {
+			fftw_print_plan(Plan);
+		}
 
 	};
 
@@ -935,7 +923,7 @@ namespace AEM {
 		LEModeller& lem() { return LEM; };
 
 	};
-	
+
 	class cTDEmSystem : public AEMSystem {
 
 	private:
@@ -956,36 +944,32 @@ namespace AEM {
 		size_t NumberOfDiscreteFrequencies = 0;
 		std::vector<double> DiscreteFrequencies;
 		std::vector<double> DiscreteFrequenciesLog10;
-		
+
 		size_t NumberOfSplinedFrequencies = 0;
 		std::vector<double> SplinedFrequencieslog10;
-		
+
 		std::vector<LowPassFilter> Filters;
 
-		cTDEmGeometry Geometry;
-		cTDEmGeometry NormalizationGeometry;
 		WindowingScheme WindScheme;
 		Waveform WvForm;
 		Transmitter Tx;
 
+		cTDEmGeometry Geometry;
+		cTDEmGeometry NormalizationGeometry;
+		Mat3d RotMatrixToRxFrame;
+
 	public:
-		
+
 		const WindowSpecification& window(const size_t w) const { return WindScheme.Windows[w]; }
 		const Waveform& waveform() const { return WvForm; }
 		const Transmitter& transmitter() const { return Tx; }
-		
-		cTDEmSystem() { };
+
+		cTDEmSystem() {};
 
 		cTDEmSystem(std::string systemdescriptorfile) {
 			//initialise();
 			read_system_descriptor_file(systemdescriptorfile);
-		};
-
-		//~cTDEmSystem(){
-			//if (InverseFFTPlan) {
-			//	fftw_destroy_plan(InverseFFTPlan);
-			//}
-		//};
+		};	
 
 		const size_t& nwindows() const {
 			return WindScheme.nwindows();
@@ -994,7 +978,7 @@ namespace AEM {
 		const double& PX() const { return Comp[XCOMP].Primary; };
 		const double& PY() const { return Comp[YCOMP].Primary; };
 		const double& PZ() const { return Comp[ZCOMP].Primary; };
-		
+
 		const std::vector<double>& XS() const { return Comp[XCOMP].Secondary; }
 		const std::vector<double>& YS() const { return Comp[YCOMP].Secondary; }
 		const std::vector<double>& ZS() const { return Comp[ZCOMP].Secondary; }
@@ -1014,12 +998,241 @@ namespace AEM {
 			return Comp[component].Secondary;
 		}
 
-	private:
+	public:
+		// Modelling
+		void set_earth(const Earth1D& E) {
+			lem().set_earth(E);
+		};
 
-		//void initialise() {
-		//	LEM.calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-		//	LEM.rzerotype = LEModeller::RZeroMethod::PROPOGATIONMATRIX;
-		//}
+		void setgeometry(const cTDEmGeometry& G) {
+			Geometry = G;
+
+			// Set geometry inside the LE Modeller
+			Vec3d tx_reference_orientation = Vec3d::UnitZ();
+			const Vec3d sep = Geometry.txrx_separation();
+			const double& h = Geometry.tx_height;
+			const double& x = sep.x();
+			const double& y = sep.y();
+			const double& z = h + sep.z();
+			const Vec3d tx_orientation = Geometry.tx_orientation(Tx.Reference_Orientation);
+			lem().setgeometry(tx_orientation, h, x, y, z);
+
+			// Set the rotation matrix for rotating vector fields to Rx frame of reference
+			RotMatrixToRxFrame = Geometry.inertial_to_rx_frame_rotation_matrix();
+		};
+
+		void set_response(cTDEmResponse& Response) const {
+			Response.PX = PX();
+			Response.PY = PY();
+			Response.PZ = PZ();
+			Response.SX = XS();
+			Response.SY = YS();
+			Response.SZ = ZS();
+		};
+
+		void forwardmodel(const cTDEmGeometry& G, const Earth1D& E, cTDEmResponse& R) {
+			setgeometry(G);
+			set_earth(E);
+			setup_computations();
+			setprimaryfields();
+			setsecondaryfields();
+			set_response(R);
+		}
+
+		void getfields(double& px, double& py, double& pz, double* sx, double* sy, double* sz) const {
+			px = PX();
+			py = PY();
+			pz = PZ();
+			const size_t nw = nwindows();
+			for (size_t i = 0; i < nw; i++) sx[i] = XS()[i];
+			for (size_t i = 0; i < nw; i++) sy[i] = YS()[i];
+			for (size_t i = 0; i < nw; i++) sz[i] = ZS()[i];
+		}
+
+		void setup_computations() {
+			lem().setup_computations();
+		}
+
+		void setprimaryfields() {
+			lem().setprimaryfields();
+			Vec3d v = lem().primaryfield_inertial();
+			
+			// Rotate field to Rx frame
+			v = RotMatrixToRxFrame * v;
+
+			if (lem().cmode() == CMode::DH) {
+				//This is because when H changes Z also changes and DZ == DH ... //but they should be all zero anyway
+				v *= 2.0;
+			}
+
+			if (NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				v *= 2.0;
+			}
+
+			if (OutputType == OutputType::DBDT) {
+				//Must convert to dB/dt. This happens implicitly for the secondary via the waveform.
+				v *= Tx.PeakdIdT;
+			}
+
+			Comp[XCOMP].Primary = v.x() * Comp[XCOMP].Scale;
+			Comp[YCOMP].Primary = v.y() * Comp[YCOMP].Scale;
+			Comp[ZCOMP].Primary = v.z() * Comp[ZCOMP].Scale;
+		};
+
+		void setsecondaryfields() {
+			//Computation for discrete frequencies 	
+			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
+				lem().setsecondaryfields(fi);
+				Vec3cd v = lem().secondaryfield_inertial();
+				
+				// Rotate field to Rx frame
+				v = RotMatrixToRxFrame * v;
+
+				if (lem().cmode() == CMode::DH) {
+					//This is because when H changes Z also changes and DZ == DH
+					v *= 2.0;
+				}
+
+				for(size_t ci = 0; ci < NCOMP; ci++){
+					Comp[ci].IR_discrete_real[fi] = v[ci].real();
+					Comp[ci].IR_discrete_imag[fi] = v[ci].imag();
+				}
+			};
+
+			//Spline discreet frequencies		
+			for (size_t i = 0; i < NCOMP; i++) {
+				if (Comp[i].Scale == 0.0) return;
+				spline_component(i);
+				inverse_fft_window_scale_component(i);
+			}
+
+			if (SaveDiagnosticFiles) {
+				write_discretefrequencies("diag_discretefrequencies.txt");
+				write_splinedfrequencies("diag_splinedfrequencies.txt");
+				WvForm.write_frequencydomainwaveform("diag_frequencydomainwaveform.txt");
+			}
+
+			if (SaveDiagnosticFiles) {
+				WindScheme.write_windows("diag_windows.txt", XS(), YS(), ZS());
+			}
+		}
+
+		void drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp) {
+			//xi = (  xb*cosp  + zb*sinp);Inertial
+			//zi = ( -xb*sinp  + zb*cosp);
+			//xb = (  xi*cosp  - zi*sinp);As bird sees it
+			//zb = (  xi*sinp  + zi*cosp);						
+
+			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				//Must work with true field vector directions, not the PPM scaled versinn
+				xb *= Comp[XCOMP].RefGeomPrimary;
+				zb *= Comp[ZCOMP].RefGeomPrimary;
+			}
+
+			double cosp = cos(D2R<double> *p);
+			double sinp = sin(D2R<double> *p);
+
+			double xi = (xb * cosp + zb * sinp);//convert back to real coordinate system
+			double zi = (-xb * sinp + zb * cosp);
+
+			dxbdp = D2R<double> *(-xi * sinp - zi * cosp);
+			dzbdp = D2R<double> *(+xi * cosp - zi * sinp);
+
+			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				//Convert back to PPMS
+				dxbdp /= Comp[XCOMP].RefGeomPrimary;
+				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
+			}
+		}
+
+		void drx_pitch(std::vector<double> xb, std::vector<double> zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp) {
+			//xi = (  xb*cosp  + zb*sinp);Inertial
+			//zi = ( -xb*sinp  + zb*cosp);
+			//xb = (  xi*cosp  - zi*sinp);As bird sees it
+			//zb = (  xi*sinp  + zi*cosp);						
+
+			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				//Must work with true field vector directions, not the PPM scaled versinn
+				xb *= Comp[XCOMP].RefGeomPrimary;
+				zb *= Comp[ZCOMP].RefGeomPrimary;
+			}
+
+
+			double cosp = cos(D2R<double> *p);
+			double sinp = sin(D2R<double> *p);
+
+			//convert back to real coordinate system
+			std::vector<double> xi = (xb * cosp + zb * sinp);
+			std::vector<double> zi = (xb * -sinp + zb * cosp);
+
+			dxbdp = (xi * -sinp - zi * cosp) * D2R<double>;
+			dzbdp = (xi * cosp - zi * sinp) * D2R<double>;
+
+			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				//Convert back to PPMS
+				dxbdp /= Comp[XCOMP].RefGeomPrimary;
+				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
+			}
+		}
+
+		void drx_roll(double yb, double zb, double r, double& dybdr, double& dzbdr) {
+			//yi = (  yb*cosr  - zb*sinr);Inertial
+			//zi = (  yb*sinr  + zb*cosr);
+			//yb = (  yi*cosr  + zi*sinr);As bird sees it
+			//zb = ( -yi*sinr  + zi*cosr);						
+
+			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				//Must work with true field vector directions, not the PPM scaled versinn
+				yb *= Comp[YCOMP].RefGeomPrimary;
+				zb *= Comp[ZCOMP].RefGeomPrimary;
+			}
+
+			double cosr = cos(D2R<double> *r);
+			double sinr = sin(D2R<double> *r);
+
+			double yi = (yb * cosr - zb * sinr);//convert back to real coordinate system
+			double zi = (yb * sinr + zb * cosr);
+
+			dybdr = D2R<double> *(-yi * sinr + zi * cosr);
+			dzbdr = D2R<double> *(-yi * cosr - zi * sinr);
+
+			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				//Convert back to PPMS
+				dybdr /= Comp[YCOMP].RefGeomPrimary;
+				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
+			}
+		}
+
+		void  drx_roll(std::vector<double> yb, std::vector<double> zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr) {
+			//yi = (  yb*cosr  - zb*sinr);Inertial
+			//zi = (  yb*sinr  + zb*cosr);
+			//yb = (  yi*cosr  + zi*sinr);As bird sees it
+			//zb = ( -yi*sinr  + zi*cosr);						
+
+			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				//Must work with true field vector directions, not the PPM scaled versinn
+				yb *= Comp[YCOMP].RefGeomPrimary;
+				zb *= Comp[ZCOMP].RefGeomPrimary;
+			}
+
+			double cosr = cos(D2R<double> *r);
+			double sinr = sin(D2R<double> *r);
+
+			//convert back to real coordinate system
+			std::vector<double> yi = (yb * cosr - zb * sinr);
+			std::vector<double> zi = (yb * sinr + zb * cosr);
+
+			dybdr = (yi * -sinr + zi * cosr) * D2R<double>;
+			dzbdr = (yi * -cosr - zi * sinr) * D2R<double>;
+
+			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				//Convert back to PPMS
+				dybdr /= Comp[YCOMP].RefGeomPrimary;
+				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
+			}
+		}
+
+	private:
 
 		// Setup
 		void read_system_descriptor_file(const std::string& systemdescriptorfile) {
@@ -1046,10 +1259,11 @@ namespace AEM {
 			cBlock rxblock = STM.findblock("Receiver");
 			WindScheme = WindowingScheme(rxblock, WvForm);
 
-			LEM.ModellingLoopRadius = STM.getdoublevalue("ForwardModelling.ModellingLoopRadius");
-			if (!isdefined(LEM.ModellingLoopRadius)) {
-				LEM.ModellingLoopRadius = 0.0;
+			double radius = STM.getdoublevalue("ForwardModelling.ModellingLoopRadius");
+			if (!isdefined(radius)) {
+				radius = 0.0;
 			}
+			lem().set_modellingloopradius(radius);
 
 			std::string ot = STM.getstringvalue("ForwardModelling.OutputType");
 			if (strcasecmp(ot, "B") == 0) {
@@ -1067,7 +1281,12 @@ namespace AEM {
 				glog.warningmsg(_SRC_, "It is wise to use at least 5 frequencies per decade\n");
 			}
 
-			LEM.NumAbscissa = (size_t)STM.getintvalue("ForwardModelling.NumberOfAbsiccaInHankelTransformEvaluation");
+
+			size_t na = STM.getsizetvalue("ForwardModelling.NumberOfAbsiccaInHankelTransformEvaluation");
+			if (na < 17) {
+				glog.warningmsg(_SRC_, "It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
+			}
+			lem().set_numabscissa(na);
 
 			std::string n = STM.getstringvalue("ForwardModelling.SecondaryFieldNormalisation");
 			if (strcasecmp(n, "None") == 0) {
@@ -1088,11 +1307,6 @@ namespace AEM {
 			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.TD_Waveform.size()) {
 				glog.errormsg(_SRC_, "The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
 			}
-
-			if (LEM.NumAbscissa < 17) {
-				glog.warningmsg(_SRC_, "It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
-			}
-
 
 			//Load low pass filters
 			auto v1 = STM.getdoublevector("Receiver.LowPassFilter.Order");
@@ -1182,6 +1396,7 @@ namespace AEM {
 			#else
 				unsigned int FFTW_FLAGS = FFTW_MEASURE;
 			#endif
+
 			InverseFFTPlan.setplan(fftw_plan_dft_c2r_1d(N, (fftw_complex*)WvForm.FFT_WorkArray.data(), (double*)WvForm.FFT_WorkArray.data(), FFTW_FLAGS));
 		}
 
@@ -1252,119 +1467,9 @@ namespace AEM {
 			Comp[YCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
 			Comp[ZCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
 			FrequencySpliner.initialise(DiscreteFrequenciesLog10, SplinedFrequencieslog10);
-			LEM.init_frequencies(DiscreteFrequencies);
+			lem().initialise_frequencies(DiscreteFrequencies);
 		}
-
-	public:
-		// Modelling
-		void setearthproperties(const cEarth1D& E) {
-			LEM.setproperties(E);
-		}
-
-		void setconductivitythickness(const size_t nlayers, const double* conductivity, const double* thickness){
-			LEM.setconductivitythickness(nlayers, conductivity, thickness);
-		}
-
-		void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness){
-			LEM.setconductivitythickness(conductivity, thickness);
-		}
-
-		void setgeometry(const cTDEmGeometry& G) {
-			Geometry = G;
-			Vec3 tx_reference_orientation = Vec3::UnitZ();
-			const Vec3 sep = Geometry.txrx_separation();
-			const double& h = Geometry.tx_height;
-			const double& x = sep.x();
-			const double& y = sep.y();
-			const double& z = h + sep.z();
-			const Vec3 tx_orientation = Geometry.tx_orientation(Tx.Reference_Orientation);
-			LEM.setgeometry(tx_orientation, h, x, y, z);
-		};
-
-		void setup_computations() {
-			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
-				LEM.init_frequency(fi);
-			}
-		}
-
-		void setprimaryfields() {
-			LEM.setprimaryfields();
-			Vec3 v(LEM.Fields.t.p.x, LEM.Fields.t.p.y, LEM.Fields.t.p.z);
-
-			if (LEM.calculation_type == LEModeller::CalculationType::HDERIVATIVE) {
-				//This is because when H changes Z also changes
-				//and DZ = DH
-				//but they should be all zero anyway
-				v *= 2.0;
-			}
-
-			if (NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				v *= 2.0;
-			}
-
-			if (OutputType == OutputType::DBDT) {
-				//Must convert to dB/dt. This happens implicitly for the secondary via the waveform.
-				v *= Tx.PeakdIdT;
-			}
-
-			// Rotate field to Rx frame
-			const Mat3 RotMatrix = Geometry.inertial_to_rx_frame_rotation_matrix();
-			v = RotMatrix * v;
-
-			Comp[XCOMP].Primary = v.x() * Comp[XCOMP].Scale;
-			Comp[YCOMP].Primary = v.y() * Comp[YCOMP].Scale;
-			Comp[ZCOMP].Primary = v.z() * Comp[ZCOMP].Scale;
-		};
-
-		void setsecondaryfields() {
-			//Computation for discrete frequencies 	
-			const Mat3 RotMatrix = Geometry.inertial_to_rx_frame_rotation_matrix();
-			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
-				LEM.dointegrals(fi);
-				LEM.setsecondaryfields(fi);
-				const cdouble& x = LEM.Fields.t.s.x;
-				const cdouble& y = LEM.Fields.t.s.y;
-				const cdouble& z = LEM.Fields.t.s.z;
-				Vec3 vr = Vec3(x.real(), y.real(), z.real());
-				Vec3 vi = Vec3(x.imag(), y.imag(), z.imag());
-
-				// Rotate field to Rx frame
-				vr = RotMatrix * vr;
-				vi = RotMatrix * vi;
-
-				if (LEM.calculation_type == LEModeller::CalculationType::HDERIVATIVE) {
-					//This is because when H changes Z also changes
-					//and DZ = DH
-					vr *= 2.0;
-					vi *= 2.0;
-				}
-
-				Comp[XCOMP].IR_discrete_real[fi] = vr.x();
-				Comp[XCOMP].IR_discrete_imag[fi] = vi.x();
-				Comp[YCOMP].IR_discrete_real[fi] = vr.y();
-				Comp[YCOMP].IR_discrete_imag[fi] = vi.y();
-				Comp[ZCOMP].IR_discrete_real[fi] = vr.z();
-				Comp[ZCOMP].IR_discrete_imag[fi] = vi.z();
-			};
-
-			//Spline discreet frequencies		
-			for (size_t i = 0; i < NCOMP; i++) {
-				if (Comp[i].Scale == 0.0) return;
-				spline_component(i);
-				inverse_fft_window_scale_component(i);
-			}
-
-			if (SaveDiagnosticFiles) {
-				write_discretefrequencies("diag_discretefrequencies.txt");
-				write_splinedfrequencies("diag_splinedfrequencies.txt");
-				WvForm.write_frequencydomainwaveform("diag_frequencydomainwaveform.txt");
-			}
-
-			if (SaveDiagnosticFiles) {
-				WindScheme.write_windows("diag_windows.txt", XS(), YS(), ZS());
-			}
-		}
-
+		
 		void spline_component(const size_t& component) {
 			ComponentWorkStore& C = Comp[component];
 			const std::vector<double>& v = FrequencySpliner.interpolated_values();
@@ -1412,7 +1517,7 @@ namespace AEM {
 		void write_discretefrequencies(const fs::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumberOfDiscreteFrequencies; i++) {
-				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\t%15le\t%15le\n", DiscreteFrequencies[i], 
+				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\t%15le\t%15le\n", DiscreteFrequencies[i],
 					Comp[XCOMP].IR_discrete_real[i],
 					Comp[XCOMP].IR_discrete_imag[i],
 					Comp[YCOMP].IR_discrete_real[i],
@@ -1443,170 +1548,6 @@ namespace AEM {
 			for (size_t i = 0; i < WvForm.NumSamples; i++) {
 				ofs << strprint("%20.10le\t%20.10le\n", WvForm.Time[i], ts[i]);
 			}
-		}
-
-		void drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp) {
-			//xi = (  xb*cosp  + zb*sinp);Inertial
-			//zi = ( -xb*sinp  + zb*cosp);
-			//xb = (  xi*cosp  - zi*sinp);As bird sees it
-			//zb = (  xi*sinp  + zi*cosp);						
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= Comp[XCOMP].RefGeomPrimary;
-				zb *= Comp[ZCOMP].RefGeomPrimary;
-			}
-
-			double cosp = cos(D2R<double> *p);
-			double sinp = sin(D2R<double> *p);
-
-			double xi = (xb * cosp + zb * sinp);//convert back to real coordinate system
-			double zi = (-xb * sinp + zb * cosp);
-
-			dxbdp = D2R<double> *(-xi * sinp - zi * cosp);
-			dzbdp = D2R<double> *(+xi * cosp - zi * sinp);
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				//Convert back to PPMS
-				dxbdp /= Comp[XCOMP].RefGeomPrimary;
-				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
-			}
-		}
-
-		void drx_pitch(std::vector<double> xb, std::vector<double> zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp) {
-			//xi = (  xb*cosp  + zb*sinp);Inertial
-			//zi = ( -xb*sinp  + zb*cosp);
-			//xb = (  xi*cosp  - zi*sinp);As bird sees it
-			//zb = (  xi*sinp  + zi*cosp);						
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= Comp[XCOMP].RefGeomPrimary;
-				zb *= Comp[ZCOMP].RefGeomPrimary;
-			}
-
-
-			double cosp = cos(D2R<double> *p);
-			double sinp = sin(D2R<double> *p);
-
-			//convert back to real coordinate system
-			std::vector<double> xi = (xb * cosp + zb * sinp);
-			std::vector<double> zi = (xb * -sinp + zb * cosp);
-
-			dxbdp = (xi * -sinp - zi * cosp) * D2R<double>;
-			dzbdp = (xi * cosp - zi * sinp) * D2R<double>;
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				//Convert back to PPMS
-				dxbdp /= Comp[XCOMP].RefGeomPrimary;
-				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
-			}
-		}
-
-		void drx_roll(double yb, double zb, double r, double& dybdr, double& dzbdr)		{
-			//yi = (  yb*cosr  - zb*sinr);Inertial
-			//zi = (  yb*sinr  + zb*cosr);
-			//yb = (  yi*cosr  + zi*sinr);As bird sees it
-			//zb = ( -yi*sinr  + zi*cosr);						
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= Comp[YCOMP].RefGeomPrimary;
-				zb *= Comp[ZCOMP].RefGeomPrimary;
-			}
-
-			double cosr = cos(D2R<double> *r);
-			double sinr = sin(D2R<double> *r);
-
-			double yi = (yb * cosr - zb * sinr);//convert back to real coordinate system
-			double zi = (yb * sinr + zb * cosr);
-
-			dybdr = D2R<double> *(-yi * sinr + zi * cosr);
-			dzbdr = D2R<double> *(-yi * cosr - zi * sinr);
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				//Convert back to PPMS
-				dybdr /= Comp[YCOMP].RefGeomPrimary;
-				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
-			}
-		}
-
-		void  drx_roll(std::vector<double> yb, std::vector<double> zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr) {
-			//yi = (  yb*cosr  - zb*sinr);Inertial
-			//zi = (  yb*sinr  + zb*cosr);
-			//yb = (  yi*cosr  + zi*sinr);As bird sees it
-			//zb = ( -yi*sinr  + zi*cosr);						
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= Comp[YCOMP].RefGeomPrimary;
-				zb *= Comp[ZCOMP].RefGeomPrimary;
-			}
-
-			double cosr = cos(D2R<double> *r);
-			double sinr = sin(D2R<double> *r);
-
-			//convert back to real coordinate system
-			std::vector<double> yi = (yb * cosr - zb * sinr);
-			std::vector<double> zi = (yb * sinr + zb * cosr);
-
-			dybdr = (yi * -sinr + zi * cosr) * D2R<double>;
-			dzbdr = (yi * -cosr - zi * sinr) * D2R<double>;
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
-				//Convert back to PPMS
-				dybdr /= Comp[YCOMP].RefGeomPrimary;
-				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
-			}
-		}
-
-		void set_response(cTDEmResponse& Response) const {
-			Response.PX = PX();
-			Response.PY = PY();
-			Response.PZ = PZ();
-			Response.SX = XS();
-			Response.SY = YS();
-			Response.SZ = ZS();
-		};
-
-		void forwardmodel(const cTDEmGeometry& G, const cEarth1D& E, cTDEmResponse& R) {
-			setgeometry(G);
-			setearthproperties(E);
-			setup_computations();
-			setprimaryfields();
-			setsecondaryfields();
-			set_response(R);
-		}
-
-		void forwardmodel(const std::vector<double>& conductivity, const std::vector<double>& thickness, const cTDEmGeometry& geometry)	{
-			setconductivitythickness(conductivity, thickness);
-			setgeometry(geometry);
-			LEM.calculation_type = LEModeller::CalculationType::FORWARDMODEL;
-			LEM.derivative_layer = undefinedvalue<size_t>();
-			setup_computations();
-			setprimaryfields();
-			setsecondaryfields();
-		}
-
-		void forwardmodel(const size_t nlayers, const double* conductivity, const double* thickness, const double* g, double& px, double& py, double& pz, double* sx, double* sy, double* sz) {
-			//Order const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
-			cTDEmGeometry G(g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], g[9]);
-			setgeometry(G);
-			setconductivitythickness(nlayers, conductivity, thickness);
-			setup_computations();
-			setprimaryfields();
-			setsecondaryfields();
-			getfields(px, py, pz, sx, sy, sz);
-		}
-
-		void getfields(double& px, double& py, double& pz, double* sx, double* sy, double* sz) const {
-			px = PX();
-			py = PY();
-			pz = PZ();
-			const size_t nw = nwindows();
-			for (size_t i = 0; i < nw; i++) sx[i] = XS()[i];
-			for (size_t i = 0; i < nw; i++) sy[i] = YS()[i];
-			for (size_t i = 0; i < nw; i++) sz[i] = ZS()[i];
 		}
 	};
 };

@@ -117,6 +117,7 @@
     <ClInclude Include="..\..\src\gaaem_version.hpp" />
     <ClInclude Include="..\..\src\inputmanager.hpp" />
     <ClInclude Include="..\..\src\inversion_line_searcher.hpp" />
+    <ClInclude Include="..\..\src\layeredearthmodeller.hpp" />
     <ClInclude Include="..\..\src\lem.hpp" />
     <ClInclude Include="..\..\src\outputmanager.hpp" />
     <ClInclude Include="..\..\src\tdemcomponentinfo.hpp" />
