@@ -180,7 +180,7 @@ void forwardmodel_ip(void* hS,
 	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.setgeometry(G);
 	Earth1D E(nlayers, conductivity, thickness, chargeability, timeconstant, frequencydependence);
-	T.lem().set_iptype((LEModeller::IPType)iptype);
+	T.lem().set_iptype((AEM::IPType)iptype);
 	T.lem().set_earth(E);
 	T.setup_computations();
 	T.lem().set_calculationtype(CMode::FM);
@@ -217,8 +217,13 @@ void derivative(void* hS, int dtype, int dlayer, double* PX, double* PY, double*
 }
 
 void fm_dlogc(void* hS,
-	const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw,
-	const int nlayers, const double* conductivity, const double* thickness,
+	const double tx_height, 
+	const double tx_roll, const double tx_pitch, const double tx_yaw,
+	const double txrx_dx, const double txrx_dy, const double txrx_dz, 
+	const double rx_roll, const double rx_pitch, const double rx_yaw,
+	const int nlayers, 
+	const double* conductivity, 
+	const double* thickness,
 	double* R)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
@@ -246,7 +251,8 @@ void fm_dlogc(void* hS,
 		T.setprimaryfields();
 		T.setsecondaryfields();
 
-		const double& c = T.lem().layers()[k].Conductivity;
+		//const double& c = T.lem().layers()[k].Conductivity;
+		const double& c = conductivity[k];
 		*p = T.PX() * c; p++;
 		for (size_t w = 0; w < nw; w++) {
 			*p = T.XS()[w] * c;

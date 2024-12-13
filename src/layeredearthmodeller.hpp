@@ -1067,7 +1067,7 @@ namespace LEM1 {
 			//Todo
 		};
 
-		void set_earth(const Earth1D& E) {
+		void set_earth(const AEM::Earth1D& E) {
 			//Todo 
 			// lem().set_earth_properties(E);
 		};

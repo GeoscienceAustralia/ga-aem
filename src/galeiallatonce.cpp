@@ -221,7 +221,7 @@ public:
 	bool Use = false;
 	bool InvertTotalField = false;
 	bool EstimateNoiseFromModel = false;
-	size_t nw;
+	size_t nw=0;
 	size_t basedindex = 0;//sample data index for window 0
 	cField fdp;
 	cField fds;
@@ -231,8 +231,7 @@ public:
 
 	cTDEmComponentInfo() {};
 
-	cTDEmComponentInfo(const cBlock& b, size_t nwindows, bool inverttotalfield)
-	{
+	cTDEmComponentInfo(const cBlock& b, size_t nwindows, bool inverttotalfield) {
 		InvertTotalField = inverttotalfield;
 		nw = nwindows;
 		if (b.Entries.size() == 0) {
@@ -323,18 +322,14 @@ public:
 class cSystemInfo {
 
 private:
-	size_t nw;
+	size_t nw=0;
 
 public:
-	inline static const size_t XCOMP = AEMSystem::XCOMP;
-	inline static const size_t YCOMP = AEMSystem::YCOMP;
-	inline static const size_t ZCOMP = AEMSystem::ZCOMP;
-	inline static const size_t NCOMP = AEMSystem::NCOMP;
-
 	cTDEmSystem T;
-	bool InvertTotalField;
+	bool InvertTotalField=false;
+
 	std::vector<cTDEmComponentInfo> Comp;
-	cSystemInfo() { 	};
+	cSystemInfo() {};
 	bool initialise(const cBlock& b) {
 		std::string stm = b.getstringvalue("SystemFile");
 		T = cTDEmSystem(stm);

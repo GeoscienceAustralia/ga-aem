@@ -21,13 +21,15 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 //Formulation mainly from the book 
 //Geo-Electromagnetism, Wait James, R. Academic Press 1982
+namespace AEM {
 namespace LEM {
 	using cdouble = std::complex<double>;
 	using cvector = std::vector<std::complex<double>>;
 	using CalculationType = CT::CalculationType;
 	using CMode = CT::CalculationType::Mode;
+	enum class RZeroMethod { PROPOGATIONMATRIX, RECURSIVE };
 
-	static cdouble ip_colecole_conductivity(const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
+	inline cdouble ip_colecole_conductivity(const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
 		//c = c0 - c0*(N / (1 + (1 - N)*(j*omega*T) ^ K));
 		if (chargeability == 0.0) {
 			return cdouble(conductivity, 0.0);
@@ -36,7 +38,7 @@ namespace LEM {
 			cdouble c = conductivity - conductivity * (chargeability / (1.0 + (1.0 - chargeability) * (std::pow(cdouble(0.0, omega * timeconstant), frequencydependence))));
 			return  c;
 		}
-	}
+	};
 
 	inline cdouble ip_pelton_conductivity(const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
 		//p = p0[1 - m*(1 - (1 - 1/(1 + (j*omega*T) ^ K));
@@ -48,7 +50,15 @@ namespace LEM {
 			cdouble rho = rho0 * (1.0 - chargeability * (1.0 - (1.0 / (1.0 + std::pow(cdouble(0.0, omega * timeconstant), frequencydependence)))));
 			return  1.0 / rho;
 		}
-	}
+	};
+
+	inline cdouble ip_complex_conductivity(const IPType& iptype, const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
+		cdouble complex_conductivity;
+		if (iptype == IPType::NONE) complex_conductivity = conductivity;
+		else if (iptype == IPType::COLECOLE) complex_conductivity = ip_colecole_conductivity(conductivity, chargeability, timeconstant, frequencydependence, omega);
+		else complex_conductivity = ip_pelton_conductivity(conductivity, chargeability, timeconstant, frequencydependence, omega);
+		return complex_conductivity;
+	};
 
 	struct HankelTransform {
 		cdouble FM = 0.0;
@@ -161,55 +171,41 @@ namespace LEM {
 		std::vector<AbscissaNode> Abscissa;
 	};
 
-	struct LayerNode {
-		double Thickness = 0.0;  // m
-		double Conductivity = 0.0; // S/m
-		double Chargeability = 0.0; // 
-		double TimeConstant = 0.0; // s
-		double FrequencyDependence = 0.0;	//unit less
-	};
-
 	class LEModeller {
-
-	public:
-		enum class IPType { NONE, COLECOLE, PELTON };
-		enum class RZeroMethod {PROPOGATIONMATRIX, RECURSIVE};
 
 	private:
 		//Geometry Stuff
+		Vec3d Source_Orientation;
 		double Xunrotated, Yunrotated, X, Y, Z, H;
 		double R, R2, R3, R4, R5;
-		double BigR, BigR2, BigR3, BigR5, BigR7;
 		double XonR, YonR;
-		Vec3d Source_Orientation;
+		double BigR, BigR2, BigR3, BigR5, BigR7;
 		double xyrotation, cosxyrotation, sinxyrotation;
 
 		//Hankle Stuff
 		inline static constexpr size_t NumIntegrands = 3;
-		double meanconductivity;
-		double meanlog10conductivity;
+		cdouble trapezoid_result[NumIntegrands];
+		cdouble integrand_result[NumIntegrands];
+		double mean_conductivity;
+		double mean_log10conductivity;
 
 		size_t NumAbscissa = 17;
 		double LowerFractionalWidth = 4.44;
 		double UpperFractionalWidth = 1.84;
 		size_t number_integrand_calls;
-		cdouble trapezoid_result[3];
-		cdouble integrand_result[3];
 		std::vector<HankelTransforms> Hankel;
 
 		double ModellingLoopRadius = 0.0; //dipole by default	
-		RZeroMethod rzerotype = LEModeller::RZeroMethod::PROPOGATIONMATRIX;
-		IPType iptype;
+		RZeroMethod rzerotype = RZeroMethod::PROPOGATIONMATRIX;
 		CalculationType calculationtype;
 
-		//size_t nLayers();
-		std::vector<LayerNode>  Layers;
+		Earth1D Earth;
 		std::vector<FrequencyNode> Frequencies;
 		ResponseField Fields;
 
 	public:
 		size_t nFrequencies() const { return Frequencies.size(); };
-		size_t nLayers() const { return Layers.size(); };
+		size_t nLayers() const { return Earth.nlayers(); };
 
 		LEModeller() {};
 
@@ -222,11 +218,14 @@ namespace LEM {
 		};
 
 		void set_earth(const Earth1D& E) {
-			set_earth_properties(E.conductivity, E.thickness, E.chargeability, E.timeconstant, E.frequencydependence);
+			Earth = E;
+			//set_earth_properties(E.conductivity, E.thickness, E.chargeability, E.timeconstant, E.frequencydependence);
+			mean_conductivity = Earth.mean_weighted_conductivity();
+			mean_log10conductivity = Earth.mean_weighted_conductivity_log10_calculation();
 		};
 
 		void set_iptype(const IPType& _iptype) {
-			iptype = _iptype;
+			Earth.set_iptype(_iptype);
 		};
 
 		void set_calculationtype(const CalculationType::Mode _mode, const size_t _layer) {
@@ -237,10 +236,6 @@ namespace LEM {
 			calculationtype = CalculationType(_mode);
 		};
 
-		const std::vector<LayerNode>& layers() {
-			return Layers;
-		};
-
 		const CalculationType::Mode& cmode() const {
 			return calculationtype.get_mode();
 		};
@@ -248,29 +243,13 @@ namespace LEM {
 		const size_t& derivative_layer() const {
 			return calculationtype.get_layer();
 		};
-
-		void printearth() const {
-			size_t i;
-			for (i = 0; i < nLayers() - 1; i++) {
-				printf("Layer %02zu:\t%10lf mS/m\t%10lf m\n", i, 1000.0 * Layers[i].Conductivity, Layers[i].Thickness);
-			}
-			printf("Layer %02zu:\t%10lf mS/m\n", i, 1000.0 * Layers[i].Conductivity);
+		
+		const std::vector<double>& getconductivity() {
+			return Earth.conductivity;
 		}
 
-		std::vector<double> getconductivity() {
-			std::vector<double> Conductivity;
-			for (size_t i = 0; i < nLayers(); i++) {
-				Conductivity.push_back(Layers[i].Conductivity);
-			}
-			return Conductivity;
-		}
-
-		std::vector<double> getthickness() {
-			std::vector<double> Thickness;
-			for (size_t i = 0; i < nLayers() - 1; i++) {
-				Thickness.push_back(Layers[i].Thickness);
-			}
-			return Thickness;
+		std::vector<double>& getthickness() {
+			return Earth.thickness;
 		}
 
 		void initialise_frequencies(const std::vector<double>& frequencies) {
@@ -350,94 +329,7 @@ namespace LEM {
 		};
 
 	private:
-
-		void setlog10conductivitylog10thickness(const size_t nlayers, const double* log10conductivity, const double* log10thickness) {
-			Layers.resize(nLayers());
-			for (size_t i = 0; i < nLayers(); i++)Layers[i].Conductivity = pow(10.0, log10conductivity[i]);
-			for (size_t i = 0; i < nLayers() - 1; i++)Layers[i].Thickness = pow(10.0, log10thickness[i]);
-			setmeanconductivity();
-			setmeanlog10conductivity();
-		};
-
-		void setmeanlog10conductivity() {
-			if (nLayers() == 1) {
-				meanlog10conductivity = Layers[0].Conductivity;
-				return;
-			}
-			//Returns the thickness weighted mean (in linear space) conductivity (but calculated in 10g10 space)
-			double sumc = 0.0;
-			double sumt = 0.0;
-			for (size_t i = 0; i < nLayers(); i++) {
-				if (i < (nLayers() - 1)) {
-					sumc += log10(Layers[i].Conductivity) * Layers[i].Thickness;
-					sumt += Layers[i].Thickness;
-				}
-				else {
-					sumc += log10(Layers[i].Conductivity) * sumt; //make basement layer as thick as sum of all overlying
-					sumt += sumt;
-				}
-			}
-			meanlog10conductivity = pow(10.0, sumc / sumt);
-		}
-
-		void setmeanconductivity() {
-			if (nLayers() == 1) {
-				meanconductivity = Layers[0].Conductivity;
-				return;
-			}
-			//Returns the thickness weighted mean (in linear space) conductivity (but calculated in linear space)
-			double sumc = 0.0;
-			double sumt = 0.0;
-			for (size_t i = 0; i < nLayers(); i++) {
-				if (i < (nLayers() - 1)) {
-					sumc += Layers[i].Conductivity * Layers[i].Thickness;
-					sumt += Layers[i].Thickness;
-				}
-				else {
-					sumc += Layers[i].Conductivity * sumt; //make basement layer as thick as sum of all overlying
-					sumt += sumt;
-				}
-			}
-			meanconductivity = sumc / sumt;
-		}
-
-		void set_earth_properties(
-			const std::vector<double>& conductivity,
-			const std::vector<double>& thickness,
-			const std::vector<double>& chargeability = std::vector<double>(0),
-			const std::vector<double>& timeconstant = std::vector<double>(0),
-			const std::vector<double>& frequencydependence = std::vector<double>(0))
-		{
-			const size_t nl = conductivity.size();
-			Layers.resize(nl);
-			for (size_t i = 0; i < nl; i++) {
-				if (i < nl - 1) Layers[i].Thickness = thickness[i];
-				Layers[i].Conductivity = conductivity[i];
-				if (chargeability.size() > 0) {
-					Layers[i].Chargeability = chargeability[i];
-					Layers[i].TimeConstant = timeconstant[i];
-					Layers[i].FrequencyDependence = frequencydependence[i];
-				}
-				else {
-					Layers[i].Chargeability = 0.0;
-					Layers[i].TimeConstant = 0.0;
-					Layers[i].FrequencyDependence = 0.0;
-				}
-			}
-			setmeanconductivity();
-			setmeanlog10conductivity();
-		};
-
-		void setconductivitythickness(const std::vector<double>& conductivity, const std::vector<double>& thickness) {
-			set_earth_properties(conductivity, thickness);
-		};
-
-		void setconductivitythickness(const size_t nlayers, const double* conductivity, const double* thickness) {
-			std::vector<double> c(conductivity, conductivity + nlayers);
-			std::vector<double> t(thickness, thickness + nlayers - 1);
-			set_earth_properties(c, t);
-		};
-
+		
 		void setxyrotation() {
 			//xyrotation is the anticlockwise angle (in degrees) 
 			//that the horizontal coordinate system has to be rotated
@@ -509,24 +401,15 @@ namespace LEM {
 			const size_t nl = nLayers();
 			Frequencies[fi].Abscissa[ai].Layer.resize(nl);
 			for (size_t li = 0; li < nl; li++) {
-				cdouble u;
-				if (Layers[li].Chargeability == 0.0) {
-					double gamma2 = Layers[li].Conductivity * Frequencies[fi].MuZeroOmega;
-					u = sqrt(cdouble(Frequencies[fi].Abscissa[ai].Lambda2, gamma2));
-				}
-				else {
-					cdouble cip;
-					if (iptype == IPType::COLECOLE) {
-						cip = ip_colecole_conductivity(Layers[li].Conductivity, Layers[li].Chargeability, Layers[li].TimeConstant, Layers[li].FrequencyDependence, Frequencies[fi].Omega);
-					}
-					else {
-						cip = ip_pelton_conductivity(Layers[li].Conductivity, Layers[li].Chargeability, Layers[li].TimeConstant, Layers[li].FrequencyDependence, Frequencies[fi].Omega);
-					}
-					cdouble gamma2 = cip * cdouble(0.0, Frequencies[fi].MuZeroOmega);
-					u = std::sqrt(Frequencies[fi].Abscissa[ai].Lambda2 + gamma2);
-				}
+				cdouble c = Earth.conductivity[li];
+				if (Earth.chargeability.size() > 0) {
+					c = ip_complex_conductivity(Earth.get_iptype(), Earth.conductivity[li], Earth.chargeability[li], Earth.timeconstant[li], Earth.frequencydependence[li], Frequencies[fi].Omega);
+				};
+				const cdouble gamma2 = c * cdouble(0.0, Frequencies[fi].MuZeroOmega);
+				const cdouble u = std::sqrt(Frequencies[fi].Abscissa[ai].Lambda2 + gamma2);
 				Frequencies[fi].Abscissa[ai].Layer[li].U = u;
-				if (li < nl-1) Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT = exp(-2.0 * u * Layers[li].Thickness);
+
+				if (li < nl-1) Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT = exp(-2.0 * u * Earth.thickness[li]);
 			}
 			init_layer_matrices(fi, ai);
 			init_pmatrix(fi, ai);
@@ -534,10 +417,10 @@ namespace LEM {
 
 		double approximatehalfspace(const size_t& fi) {
 			//approximate halfspace for the frequency at index fi
-			if (nLayers() == 1) return Layers[0].Conductivity;
+			if (nLayers() == 1) return Earth.conductivity[0];
 
 			//peak lambda
-			double  peaklambda = sqrt(Frequencies[fi].MuZeroOmega * meanlog10conductivity / 4.0);
+			double  peaklambda = sqrt(Frequencies[fi].MuZeroOmega * mean_log10conductivity / 4.0);
 			cdouble rz = rzero_recursive(fi, peaklambda);
 
 			cdouble  v = (1.0 + rz);
@@ -548,20 +431,21 @@ namespace LEM {
 
 		inline cdouble rzero_recursive(const size_t& fi, const double& lambda) const {
 			//Wait's recursive formulation
+			const size_t nl = Earth.nlayers();
 			const double lambda2 = lambda * lambda;
 			const double muzeroomega = Frequencies[fi].MuZeroOmega;
 			const cdouble imuzeroomega(0.0, muzeroomega);
 
-			double gamma2 = muzeroomega * Layers[nLayers() - 1].Conductivity;
+			double gamma2 = muzeroomega * Earth.conductivity[nl - 1];
 			cdouble u = std::sqrt(cdouble(lambda2, gamma2));
 			cdouble y = u / imuzeroomega;
 
-			int i = (int)nLayers() - 2;
+			int i = nl - 2;
 			while (i >= 0) {
-				gamma2 = muzeroomega * Layers[i].Conductivity;
+				gamma2 = muzeroomega * Earth.conductivity[i];
 				u = std::sqrt(cdouble(lambda2, gamma2));
 				const cdouble Nn = u / imuzeroomega;
-				const cdouble v = u * Layers[i].Thickness;
+				const cdouble v = u * Earth.thickness[i];
 
 				//Expand - unstable    	
 				//tanh(v) = (1.0 - v4)/(1.0 + v4 + 2.0*v2);
@@ -665,8 +549,7 @@ namespace LEM {
 
 		}
 
-		inline PropogationMatrix dMjplus1dCj(const size_t& fi, const size_t& ai, const size_t& li)
-		{
+		inline PropogationMatrix dMjplus1dCj(const size_t& fi, const size_t& ai, const size_t& li) {
 			cdouble duds = Frequencies[fi].iMuZeroOmega / (2.0 * Frequencies[fi].Abscissa[ai].Layer[li].U);
 			cdouble y = Frequencies[fi].Abscissa[ai].Layer[li + 1].U / Frequencies[fi].Abscissa[ai].Layer[li].U;
 
@@ -674,7 +557,7 @@ namespace LEM {
 			cdouble dyds = dydu * duds;
 
 			cdouble v = Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT;
-			cdouble dvdu = -2.0 * Layers[li].Thickness * Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT;
+			cdouble dvdu = -2.0 * Earth.thickness[li] * Frequencies[fi].Abscissa[ai].Layer[li].Exp2UT;
 
 			cdouble dvds = dvdu * duds;
 
@@ -1370,4 +1253,4 @@ namespace LEM {
 		}
 	};
 };
-
+};

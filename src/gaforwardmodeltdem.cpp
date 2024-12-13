@@ -160,18 +160,18 @@ static int process(std::string controlfilename)
 	}
 
 	std::string ipmodel = C.getstringvalue("Control.IPModel");
-	LEModeller::IPType iptype = LEModeller::IPType::NONE;
+	AEM::IPType iptype = AEM::IPType::NONE;
 	if (strcasecmp(ipmodel, undefinedvalue<std::string>()) == 0) {
-		iptype = LEModeller::IPType::NONE;
+		iptype = AEM::IPType::NONE;
 	}
 	else if (strcasecmp(ipmodel, "none") == 0) {
-		iptype = LEModeller::IPType::NONE;
+		iptype = AEM::IPType::NONE;
 	}
 	else if (strcasecmp(ipmodel, "colecole") == 0) {
-		iptype = LEModeller::IPType::COLECOLE;
+		iptype = AEM::IPType::COLECOLE;
 	}
 	else if (strcasecmp(ipmodel, "pelton") == 0) {
-		iptype = LEModeller::IPType::PELTON;
+		iptype = AEM::IPType::PELTON;
 	}
 	else {
 		glog.errormsg(_SRC_,"Unknown IPModel %s: use none, colecole, or peltion\n", ipmodel.c_str());
@@ -180,7 +180,7 @@ static int process(std::string controlfilename)
 	std::string sysfile = C.getstringvalue("Control.SystemFile");
 	glog.logmsg("Opening AEM system file %s\n", sysfile.c_str());
 	cTDEmSystem T(sysfile.c_str());
-	T.lem().set_iptype((LEModeller::IPType)iptype);
+	T.lem().set_iptype((AEM::IPType)iptype);
 
 	glog.logmsg("Opening input file %s\n", inputfile.c_str());
 	std::ifstream ofsin = ifstream_ex(inputfile);

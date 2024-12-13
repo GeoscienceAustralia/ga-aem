@@ -27,6 +27,11 @@ namespace AEM {
 	using namespace LEM;
 	using CalculationType = CT::CalculationType;
 	using CMode = CT::CalculationType::Mode;
+	
+	inline constexpr size_t XCOMP = 0;
+	inline constexpr size_t YCOMP = 1;
+	inline constexpr size_t ZCOMP = 2;
+	inline constexpr size_t NCOMP = 3;
 
 	inline static Mat3d YPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
 		const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
@@ -58,7 +63,7 @@ namespace AEM {
 	class cTDEmData {
 
 	private:
-		cTDEmComponent data[3];
+		cTDEmComponent data[NCOMP];
 
 	public:
 
@@ -914,10 +919,10 @@ namespace AEM {
 
 	public:
 
-		inline static const size_t XCOMP = 0;
-		inline static const size_t YCOMP = 1;
-		inline static const size_t ZCOMP = 2;
-		inline static const size_t NCOMP = 3;
+		//inline static const size_t XCOMP = 0;
+		//inline static const size_t YCOMP = 1;
+		//inline static const size_t ZCOMP = 2;
+		//inline static const size_t NCOMP = 3;
 
 		const cBlock& system_descriptor_block() const { return STM; };
 		LEModeller& lem() { return LEM; };
