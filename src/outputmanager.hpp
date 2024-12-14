@@ -24,13 +24,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 using namespace GeophysicsNetCDF;
 #endif
 
-template<class T>
-std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values)
-{
-	std::copy(begin(values), end(values), std::ostream_iterator<T>(stream, ""));
-	//c++20 std::ranges::copy(values, std::ostream_iterator<T>(stream, ""));	
-	return stream;
-}
+//template<class T>
+//std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values) {
+//	std::copy(begin(values), end(values), std::ostream_iterator<T>(stream, ""));
+//	//c++20 std::ranges::copy(values, std::ostream_iterator<T>(stream, ""));	
+//	return stream;
+//}
 
 class cASCIIOutputManager;
 

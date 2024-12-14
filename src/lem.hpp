@@ -22,7 +22,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 //Formulation mainly from the book 
 //Geo-Electromagnetism, Wait James, R. Academic Press 1982
 namespace AEM {
-namespace LEM {
+namespace LEM1 {
 	using cdouble = std::complex<double>;
 	using cvector = std::vector<std::complex<double>>;
 	using CalculationType = CT::CalculationType;
@@ -228,13 +228,13 @@ namespace LEM {
 			Earth.set_iptype(_iptype);
 		};
 
-		void set_calculationtype(const CalculationType::Mode _mode, const size_t _layer) {
-			calculationtype = CalculationType(_mode, _layer);
+		void set_calculationtype(const CalculationType& _calculationtype) {
+			calculationtype = _calculationtype;
 		};
 
-		void set_calculationtype(const CalculationType::Mode _mode) {
-			calculationtype = CalculationType(_mode);
-		};
+		//void set_calculationtype(const CalculationType::Mode _mode) {
+		//	calculationtype = CalculationType(_mode);
+		//};
 
 		const CalculationType::Mode& cmode() const {
 			return calculationtype.get_mode();
@@ -244,6 +244,7 @@ namespace LEM {
 			return calculationtype.get_layer();
 		};
 		
+		/*
 		const std::vector<double>& getconductivity() {
 			return Earth.conductivity;
 		}
@@ -251,6 +252,7 @@ namespace LEM {
 		std::vector<double>& getthickness() {
 			return Earth.thickness;
 		}
+		*/
 
 		void initialise_frequencies(const std::vector<double>& frequencies) {
 			const size_t nf = frequencies.size();
@@ -266,7 +268,7 @@ namespace LEM {
 			}
 		};
 
-		void setgeometry(const Vec3d& source_orientation, double h, double x, double y, double z) {
+		void set_geometry(const Vec3d& source_orientation, double h, double x, double y, double z) {
 			Xunrotated = x;
 			Yunrotated = y;
 			Source_Orientation = source_orientation;
@@ -302,16 +304,18 @@ namespace LEM {
 			}
 		}
 
-		
-		Vec3d primaryfield_inertial() const {
+		Vec3d primaryfield_inertial() {
+			set_primaryfields();
 			return Vec3d(Fields.t.p.x, Fields.t.p.y, Fields.t.p.z);
 		};
 
-		Vec3cd secondaryfield_inertial() const {
+		Vec3cd secondaryfield_inertial(const size_t fi) {
+			set_secondaryfields(fi);
 			return Vec3cd(Fields.t.s.x, Fields.t.s.y, Fields.t.s.z);
 		};
-		
-		void setprimaryfields() {
+
+	private:
+		void set_primaryfields() {
 			sethorizontaldipoleprimaryfields();
 			setverticaldipoleprimaryfields();
 			Fields.t.p.x = Fields.v.p.x + Fields.h.p.x;
@@ -319,7 +323,7 @@ namespace LEM {
 			Fields.t.p.z = Fields.v.p.z + Fields.h.p.z;
 		};
 
-		void setsecondaryfields(const size_t& fi) {
+		void set_secondaryfields(const size_t& fi) {
 			dointegrals(fi);
 			sethorizontaldipolesecondaryfields(fi);
 			setverticaldipolesecondaryfields(fi);
@@ -327,8 +331,6 @@ namespace LEM {
 			Fields.t.s.y = Fields.v.s.y + Fields.h.s.y;
 			Fields.t.s.z = Fields.v.s.z + Fields.h.s.z;
 		};
-
-	private:
 		
 		void setxyrotation() {
 			//xyrotation is the anticlockwise angle (in degrees) 
@@ -925,9 +927,9 @@ namespace LEM {
 			if (Source_Orientation.z() == 0.0)return;//ie no vertical dipole contribution
 
 			if (cmode() == CMode::FM) {
-				Fields.v.s.x = -ONEONFOURPI<double> *XonR * Hankel[fi].I1.FM;
-				Fields.v.s.y = -ONEONFOURPI<double> *YonR * Hankel[fi].I1.FM;
-				Fields.v.s.z = -ONEONFOURPI<double> *Hankel[fi].I0.FM;
+				Fields.v.s.x = -ONEONFOURPI<double> * XonR * Hankel[fi].I1.FM;
+				Fields.v.s.y = -ONEONFOURPI<double> * YonR * Hankel[fi].I1.FM;
+				Fields.v.s.z = -ONEONFOURPI<double> * Hankel[fi].I0.FM;
 			}
 			else if (cmode() == CMode::DC) {
 				Fields.v.s.x = -ONEONFOURPI<double> *XonR * Hankel[fi].I1.dC;

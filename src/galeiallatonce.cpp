@@ -446,7 +446,7 @@ public:
 			}
 
 			for (size_t li = 0; li < nlayers; li++) {
-				T.lem().set_calculationtype(CMode::DC, li);
+				T.lem().set_calculationtype(CalculationType(CMode::DC, li));
 				T.setup_computations();
 				T.setprimaryfields();
 				T.setsecondaryfields();

@@ -24,7 +24,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "rollpitchyaw.hpp"
 
 namespace AEM {
-	using namespace LEM;
+	//using namespace LEM1;
+	using namespace LEM2;
 	using CalculationType = CT::CalculationType;
 	using CMode = CT::CalculationType::Mode;
 	
@@ -1020,7 +1021,7 @@ namespace AEM {
 			const double& y = sep.y();
 			const double& z = h + sep.z();
 			const Vec3d tx_orientation = Geometry.tx_orientation(Tx.Reference_Orientation);
-			lem().setgeometry(tx_orientation, h, x, y, z);
+			lem().set_geometry(tx_orientation, h, x, y, z);
 
 			// Set the rotation matrix for rotating vector fields to Rx frame of reference
 			RotMatrixToRxFrame = Geometry.inertial_to_rx_frame_rotation_matrix();
@@ -1059,7 +1060,6 @@ namespace AEM {
 		}
 
 		void setprimaryfields() {
-			lem().setprimaryfields();
 			Vec3d v = lem().primaryfield_inertial();
 			
 			// Rotate field to Rx frame
@@ -1087,11 +1087,12 @@ namespace AEM {
 		void setsecondaryfields() {
 			//Computation for discrete frequencies 	
 			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
-				lem().setsecondaryfields(fi);
-				Vec3cd v = lem().secondaryfield_inertial();
-				
+				Vec3cd v = lem().secondaryfield_inertial(fi);
+				//std::cout << v << std::endl;
+
 				// Rotate field to Rx frame
 				v = RotMatrixToRxFrame * v;
+				//std::cout << RotMatrixToRxFrame << std::endl;
 
 				if (lem().cmode() == CMode::DH) {
 					//This is because when H changes Z also changes and DZ == DH
@@ -1388,7 +1389,7 @@ namespace AEM {
 				}
 			}
 
-			// Frequencies to be splined
+			// FM to be splined
 			NumberOfSplinedFrequencies = WvForm.NumFrequencies / 2;
 			SplinedFrequencieslog10.resize(NumberOfSplinedFrequencies);
 			for (size_t k = 0; k < NumberOfSplinedFrequencies; k++) {

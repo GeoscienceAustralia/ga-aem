@@ -1988,6 +1988,9 @@ public:
 				std::vector<double> xfm = T.XS() * scalefactors[XCOMP];
 				std::vector<double> yfm = T.YS() * scalefactors[YCOMP];
 				std::vector<double> zfm = T.ZS() * scalefactors[ZCOMP];
+
+				//std::cout << tostring(zfm," ") << std::endl;
+
 				std::vector<double> xzfm;
 				if (S.invertPrimaryPlusSecondary) {
 					xfm += T.PX() * scalefactors[XCOMP];
@@ -2049,7 +2052,7 @@ public:
 					if (solve_conductivity()) {
 						for (size_t li = 0; li < nLayers; li++) {
 							const int pindex = cindex(si, li);
-							T.lem().set_calculationtype(CMode::DC, li);
+							T.lem().set_calculationtype(CalculationType(CMode::DC, li));
 							T.setprimaryfields();
 							T.setsecondaryfields();
 
@@ -2064,7 +2067,7 @@ public:
 					if (solve_thickness()) {
 						for (size_t li = 0; li < nLayers - 1; li++) {
 							const int pindex = tindex(si, li);
-							T.lem().set_calculationtype(CMode::DT, li);
+							T.lem().set_calculationtype(CalculationType(CMode::DT, li));
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2506,9 +2509,7 @@ public:
 				TerminationReason = "Small % improvement";
 			}
 			else {
-				if (Verbose) {
-					std::cerr << CIS.info_string();
-				}
+				if (Verbose) std::cerr << CIS.info_string();
 				if (CIS.iteration + 1 >= BeginGeometrySolveIteration) FreeGeometry = true;
 				else FreeGeometry = false;
 

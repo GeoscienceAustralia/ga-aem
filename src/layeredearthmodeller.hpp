@@ -17,13 +17,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "general_constants.hpp"
 #include "eigen_utils.hpp"
 #include "calculation_type.hpp"
+#include "earth1d.hpp"
 
 //Formulation mainly from the book 
 //Geo-Electromagnetism, Wait James, R. Academic Press 1982.
 
-
-
-namespace LEM1 {
+namespace AEM {
+namespace LEM2 {
 	using cdouble = std::complex<double>;
 	using cvector = std::vector<std::complex<double>>;
 	using CalculationType = CT::CalculationType;
@@ -77,12 +77,7 @@ namespace LEM1 {
 		double Thickness;
 	};
 
-	class LEFrequency {
-
-	public:
-
-		//enum class CalculationType { FM, DX, DY, DZ, DH, DC, DT, DB, NONE };
-		double ModellingLoopRadius = 0.0; //dipole by default
+	class LESingleFrequencyModeller {
 
 	private:
 
@@ -114,6 +109,7 @@ namespace LEM1 {
 
 	public:
 
+		double ModellingLoopRadius = 0.0; //dipole by default
 		double Frequency;
 		double Omega;
 		double MuZeroOmega;
@@ -124,7 +120,7 @@ namespace LEM1 {
 		double UpperBound;
 		double AbscissaSpacing;
 
-		LEFrequency() { initialise(); };
+		LESingleFrequencyModeller() { initialise(); };
 
 		size_t na() const { return Abscissa.size(); }
 		size_t nl() const { return Conductivity.size(); }
@@ -136,8 +132,7 @@ namespace LEM1 {
 			return Thickness;
 		};
 
-		void initialise()
-		{
+		void initialise() {
 			LowerFractionalWidth = 4.44;
 			UpperFractionalWidth = 1.84;
 			//Ground EM 31 and 38
@@ -153,6 +148,9 @@ namespace LEM1 {
 				setfrequencyabscissalayers();
 				earthchanged = false;
 				geometrychanged = false;
+			}
+			else{
+				int dummy = 0;
 			}
 		}
 
@@ -274,11 +272,12 @@ namespace LEM1 {
 		void setfrequency(const double& frequency)
 		{
 			Frequency = frequency;
-			Omega = TWOPI<double> *frequency;
-			MuZeroOmega = MUZERO<double> *Omega;
+			Omega = TWOPI<double> * frequency;
+			MuZeroOmega = MUZERO<double> * Omega;
 			iMuZeroOmega = cdouble(0.0, MuZeroOmega);
 		};
 
+	private:
 		void setfrequencyabscissalayers()
 		{
 			setintegrationnodes();
@@ -308,8 +307,7 @@ namespace LEM1 {
 			return a.real();
 		}
 
-		cdouble rzero_recursive(const double lambda)
-		{
+		cdouble rzero_recursive(const double lambda) const {
 			//Wait's recursive formulation
 
 			double lambda2 = lambda * lambda;
@@ -345,8 +343,7 @@ namespace LEM1 {
 
 		};
 
-		inline cdouble rzero_propogationmatrix(const size_t ai)
-		{
+		inline cdouble rzero_propogationmatrix(const size_t ai) {
 			//Oldenberg's propogation matrix formulation
 			setlayermatrices(ai);
 			setpmatrix(ai);
@@ -514,8 +511,7 @@ namespace LEM1 {
 
 		}
 
-		sPropogationMatrix dPdTj(const size_t ai, const size_t li)
-		{
+		sPropogationMatrix dPdTj(const size_t ai, const size_t li) {
 			AbscissaNode& A = Abscissa[ai];
 
 			//One layer case
@@ -547,8 +543,7 @@ namespace LEM1 {
 			return m(1, 0) / Abscissa[ai].P_Full(0, 0) - m(0, 0) * Abscissa[ai].P21onP11 / Abscissa[ai].P_Full(0, 0);
 		}
 
-		void setintegrationnodes()
-		{
+		void setintegrationnodes() {
 			double peak_exp2 = 2.0 / (Z + H);
 			double peak_exp3 = 3.0 / (Z + H);
 
@@ -579,9 +574,8 @@ namespace LEM1 {
 			}
 		}
 
-		void dointegrals(const CalculationType& calculationtype, const size_t& derivativelayer)
-		{
-			trapezoid(calculationtype, derivativelayer);//the results go into the variable trapezoid_result			
+		void dointegrals(const CalculationType& calculationtype)	{
+			trapezoid(calculationtype);//the results go into the variable trapezoid_result			
 
 			switch (calculationtype.get_mode()){
 			case CMode::FM:
@@ -624,19 +618,18 @@ namespace LEM1 {
 			}
 		}
 
-		void trapezoid(const CalculationType& calculationtype, const size_t& derivativelayer)
-		{
+		void trapezoid(const CalculationType& calculationtype) {
 			trapezoid_result[0] = cdouble(0.0, 0.0);
 			trapezoid_result[1] = cdouble(0.0, 0.0);
 			trapezoid_result[2] = cdouble(0.0, 0.0);
 
 			//First and last abscissa
-			compute_integrand(0, calculationtype, derivativelayer);
+			compute_integrand(0, calculationtype);
 			trapezoid_result[0] += integrand_result[0];
 			trapezoid_result[1] += integrand_result[1];
 			trapezoid_result[2] += integrand_result[2];
 
-			compute_integrand(na() - 1, calculationtype, derivativelayer);
+			compute_integrand(na() - 1, calculationtype);
 			trapezoid_result[0] += integrand_result[0];
 			trapezoid_result[1] += integrand_result[1];
 			trapezoid_result[2] += integrand_result[2];
@@ -648,7 +641,7 @@ namespace LEM1 {
 
 			//Cenral Abscissas
 			for (size_t ai = 1; ai < na() - 1; ai++) {
-				compute_integrand(ai, calculationtype, derivativelayer);
+				compute_integrand(ai, calculationtype);
 				trapezoid_result[0] += integrand_result[0];
 				trapezoid_result[1] += integrand_result[1];
 				trapezoid_result[2] += integrand_result[2];
@@ -659,8 +652,7 @@ namespace LEM1 {
 			trapezoid_result[2] *= AbscissaSpacing;
 		}
 
-		void compute_integrand(const size_t& ai, const CalculationType& calculationtype, const size_t& derivativelayer)
-		{
+		void compute_integrand(const size_t& ai, const CalculationType& calculationtype) {
 			AbscissaNode& A = Abscissa[ai];
 
 			double lambdar = A.Lambda_r;
@@ -675,6 +667,7 @@ namespace LEM1 {
 			k0 = k1 = k2 = std::numeric_limits<double>::max();
 			cdouble earthkernel;
 
+			const size_t& derivativelayer = calculationtype.get_layer();
 			switch (calculationtype.get_mode()){
 			case CMode::FM:
 				earthkernel = -A.P21onP11;
@@ -719,8 +712,7 @@ namespace LEM1 {
 				k2 = l2e * j1;
 				break;
 			default:
-				glog.logmsg("Error: compute_integrand() unknown calculation type %c\n", calculationtype);
-				exit(1);
+				glog.errormsg(_SRC_,"Error: compute_integrand() unknown calculation type %c\n", calculationtype);
 			}
 
 			const double loopfactor = A.LoopFactor(ModellingLoopRadius);
@@ -729,8 +721,8 @@ namespace LEM1 {
 			integrand_result[2] = earthkernel * (k2 * loopfactor);
 		}
 
-		Mat3d PTFM()
-		{
+		// Tensors
+		Mat3d PTFM() const {
 			Mat3d T;
 			T(0, 0) = (3.0 * X2 - R2) / R5;
 			T(0, 1) = 3.0 * X * Y / R5;
@@ -744,11 +736,10 @@ namespace LEM1 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = (3.0 * ZH2 - R2) / R5;
-			return T;
-		}
+			return -ONEONFOURPI<double> * T;
+		};
 
-		Mat3d dPTdX()
-		{
+		Mat3d dPTdX() const {
 			Mat3d T;
 			T(0, 0) = -3.0 * X * (2.0 * X2 - 3.0 * Y2 - 3.0 * ZH2) / R7;
 			T(0, 1) = -3.0 * Y * (4.0 * X2 - Y2 - ZH2) / R7;
@@ -759,11 +750,10 @@ namespace LEM1 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = 3.0 * X * (X2 + Y2 - 4.0 * ZH2) / R7;
-			return T;
-		}
+			return -ONEONFOURPI<double> * T;
+		};
 
-		Mat3d dPTdY()
-		{
+		Mat3d dPTdY() const {
 			Mat3d T;
 			T(0, 0) = -3.0 * Y * (4.0 * X2 - Y2 - ZH2) / R7;
 			T(0, 1) = 3.0 * X * (X2 - 4.0 * Y2 + ZH2) / R7;
@@ -774,11 +764,10 @@ namespace LEM1 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = 3.0 * Y * (X2 + Y2 - 4.0 * ZH2) / R7;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3d dPTdZ()
-		{
+		Mat3d dPTdZ() const {
 			Mat3d T;
 			T(0, 0) = -3.0 * ZH * (4.0 * X2 - Y2 - ZH2) / R7;
 			T(0, 1) = -15.0 * X * Y / R7 * ZH;
@@ -789,11 +778,10 @@ namespace LEM1 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = 3.0 * ZH * (3.0 * X2 + 3.0 * Y2 - 2.0 * ZH2) / R7;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3d dPTdH()
-		{
+		Mat3d dPTdH() const {
 			Mat3d T;
 			//of course this is just minus d/dZ		
 			T(0, 0) = 3.0 * ZH * (4.0 * X2 - Y2 - ZH2) / R7;
@@ -805,11 +793,10 @@ namespace LEM1 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = -3.0 * ZH * (3.0 * X2 + 3.0 * Y2 - 2.0 * ZH2) / R7;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3cd STFM()
-		{
+		Mat3cd STFM() const {
 			Mat3cd T;
 			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.FM / r - I0.FM * X2 / r2);
 			T(0, 1) = (X * Y / r2) * (2.0 * I2.FM / r - I0.FM);
@@ -823,11 +810,10 @@ namespace LEM1 {
 			T(2, 0) = -T(0, 2);
 			T(2, 1) = -T(1, 2);
 			T(2, 2) = -I0.FM;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3cd dSTdC()
-		{
+		Mat3cd dSTdC() const {
 			Mat3cd T;
 			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.dC / r - I0.dC * X2 / r2);
 			T(0, 1) = (X * Y / r2) * (2.0 * I2.dC / r - I0.dC);
@@ -840,11 +826,10 @@ namespace LEM1 {
 			T(2, 0) = -T(0, 2);
 			T(2, 1) = -T(1, 2);
 			T(2, 2) = -I0.dC;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3cd dSTdT()
-		{
+		Mat3cd dSTdT() const {
 			Mat3cd T;
 			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.dT / r - I0.dT * X2 / r2);
 			T(0, 1) = (X * Y / r2) * (2.0 * I2.dT / r - I0.dT);
@@ -857,11 +842,10 @@ namespace LEM1 {
 			T(2, 0) = -T(0, 2);
 			T(2, 1) = -T(1, 2);
 			T(2, 2) = -I0.dT;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3cd dSTdX()
-		{
+		Mat3cd dSTdX() const {
 			Mat3cd T;
 			T(0, 0) = (X4 * I2.dX - I0.dX * X4 * r - I2.FM * X2 * X - I0.dX * X2 * r * Y2 - 2.0 * I0.FM * X * r * Y2 + 5.0 * X * Y2 * I2.FM - Y4 * I2.dX) / r5;
 			T(0, 1) = 2.0 * Y / r3 * I2.FM - Y / r2 * I0.FM - 6.0 * X2 * Y / r5 * I2.FM + 2.0 * X2 * Y / r4 * I0.FM + 2.0 * X * Y / r3 * I2.dX - X * Y / r2 * I0.dX;
@@ -874,11 +858,10 @@ namespace LEM1 {
 			T(2, 0) = -T(0, 2);
 			T(2, 1) = -T(1, 2);
 			T(2, 2) = -I0.dX;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3cd dSTdY()
-		{
+		Mat3cd dSTdY() const {
 			Mat3cd T;
 			T(0, 0) = (X4 * I2.dY - I0.dY * X4 * r + 2.0 * I0.FM * X2 * Y * r - I0.dY * X2 * r * Y2 - 5.0 * X2 * Y * I2.FM + Y2 * Y * I2.FM - Y4 * I2.dY) / r5;
 			T(0, 1) = 2.0 * X / r3 * I2.FM - X / r2 * I0.FM - 6.0 * X * Y2 / r5 * I2.FM + 2.0 * X * Y2 / r4 * I0.FM + 2.0 * X * Y / r3 * I2.dY - X * Y / r2 * I0.dY;
@@ -891,11 +874,10 @@ namespace LEM1 {
 			T(2, 0) = -T(0, 2);
 			T(2, 1) = -T(1, 2);
 			T(2, 2) = -I0.dY;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3cd dSTdZ()
-		{
+		Mat3cd dSTdZ() const {
 			Mat3cd T;
 			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.dZ / r - I0.dZ * X2 / r2);
 			T(0, 1) = X * Y / r2 * (2.0 * I2.dZ / r - I0.dZ);
@@ -908,11 +890,10 @@ namespace LEM1 {
 			T(2, 0) = -T(0, 2);
 			T(2, 1) = -T(1, 2);
 			T(2, 2) = -I0.dZ;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3cd dSTdH()
-		{
+		Mat3cd dSTdH() const {
 			Mat3cd T;
 			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.dH / r - I0.dH * X2 / r2);
 			T(0, 1) = X * Y / r2 * (2.0 * I2.dH / r - I0.dH);
@@ -925,12 +906,11 @@ namespace LEM1 {
 			T(2, 0) = -T(0, 2);
 			T(2, 1) = -T(1, 2);
 			T(2, 2) = -I0.dH;
-			return T;
-		}
+			return -ONEONFOURPI<double> *T;
+		};
 
-		Mat3d PrimaryTensor(const CalculationType& calculationtype)
-		{
-			switch (calculationtype.get_mode()){
+		Mat3d PrimaryTensor(const CalculationType& calculationtype) {
+			switch (calculationtype.get_mode()) {
 			case CMode::FM: return PTFM();
 			case CMode::DX: return dPTdX();
 			case CMode::DY: return dPTdY();
@@ -940,13 +920,11 @@ namespace LEM1 {
 			case CMode::DT: return Mat3d::Zero();
 			default:
 				glog.errormsg(_SRC_, "Unknown calculation type %c\n", calculationtype);
-				return Mat3d::Zero();//Never reached anyway, just to placate GNU
 			}
-		}
+		};
 
-		Mat3cd SecondaryTensor(const CalculationType& calculationtype, const size_t& derivativelayer)
-		{
-			dointegrals(calculationtype, derivativelayer);
+		Mat3cd SecondaryTensor(const CalculationType& calculationtype) {
+			dointegrals(calculationtype);
 
 			switch (calculationtype.get_mode()) {
 			case CMode::FM: return STFM();
@@ -958,18 +936,19 @@ namespace LEM1 {
 			case CMode::DT: return dSTdT();
 			default:
 				glog.errormsg(_SRC_, "Unknown calculation type %c\n", calculationtype);
-				return Mat3cd::Zero();//Never reached anyway, just to placate GNU
 			}
-		}
+		};
 
-		Vec3d primary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir)
-		{
+	public:
+
+		Vec3d primary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir) {
 			return PrimaryTensor(calculationtype) * txdir;
 		}
 
-		Vec3cd secondary_inertial_frame(const CalculationType& calculationtype, const size_t& derivativelayer, const Vec3d& txdir)
-		{
-			return SecondaryTensor(calculationtype, derivativelayer) * txdir;
+		Vec3cd secondary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir) {
+			//std::cout << txdir << std::endl;
+			//std::cout << SecondaryTensor(calculationtype) << std::endl;
+			return SecondaryTensor(calculationtype) * txdir;
 		}
 
 		double primary(const Vec3d& txdir, const Vec3d& rxdir)
@@ -978,9 +957,8 @@ namespace LEM1 {
 			return v.dot(rxdir);
 		}
 
-		cdouble secondary(const Vec3d& txdir, const Vec3d& rxdir)
-		{
-			Vec3cd v = secondary_inertial_frame(CMode::FM, 0, txdir);
+		cdouble secondary(const Vec3d& txdir, const Vec3d& rxdir) {
+			Vec3cd v = secondary_inertial_frame(CMode::FM, txdir);
 			return v.dot(rxdir);
 		}
 
@@ -990,45 +968,47 @@ namespace LEM1 {
 			return v.dot(rxdir);
 		}
 
-		cdouble ds(const CalculationType& calculationtype, const size_t& derivativelayer, const Vec3d& txdir, const Vec3d& rxdir)
+		cdouble ds(const CalculationType& calculationtype, const Vec3d& txdir, const Vec3d& rxdir)
 		{
-			Vec3cd v = secondary_inertial_frame(calculationtype, derivativelayer, txdir);
+			Vec3cd v = secondary_inertial_frame(calculationtype, txdir);
 			return v.dot(rxdir);
 		}
 
 		cdouble dsdx(const Vec3d& txdir, const Vec3d& rxdir)
 		{
-			Vec3cd sf = secondary_inertial_frame(CMode::DX, 0, txdir);
+			Vec3cd sf = secondary_inertial_frame(CMode::DX, txdir);
 			return sf.dot(rxdir);
 		}
 
 		cdouble dsdy(const Vec3d& txdir, const Vec3d& rxdir)
 		{
-			Vec3cd sf = secondary_inertial_frame(CMode::DY, 0, txdir);
+			Vec3cd sf = secondary_inertial_frame(CMode::DY, txdir);
 			return sf.dot(rxdir);
 		}
 
 		cdouble dsdz(const Vec3d& txdir, const Vec3d& rxdir)
 		{
-			Vec3cd sf = secondary_inertial_frame(CMode::DZ, 0, txdir);
+			Vec3cd sf = secondary_inertial_frame(CMode::DZ, txdir);
 			return sf.dot(rxdir);
 		}
 
 		cdouble dsdh(const Vec3d& txdir, const Vec3d& rxdir)
 		{
-			Vec3cd sf = secondary_inertial_frame(CMode::DH, 0, txdir);
+			Vec3cd sf = secondary_inertial_frame(CMode::DH, txdir);
 			return sf.dot(rxdir);
 		}
 
 		cdouble dsdc(const size_t dlayer, const Vec3d& txdir, const Vec3d& rxdir)
 		{
-			Vec3cd sf = secondary_inertial_frame(CMode::DC, dlayer, txdir);
+			const CalculationType calct(CMode::DC, dlayer);
+			Vec3cd sf = secondary_inertial_frame(calct, txdir);
 			return sf.dot(rxdir);
 		}
 
 		cdouble dsdt(const size_t dlayer, const Vec3d& txdir, const Vec3d& rxdir)
 		{
-			Vec3cd sf = secondary_inertial_frame(CMode::DT, dlayer, txdir);
+			const CalculationType calct(CMode::DT, dlayer);
+			Vec3cd sf = secondary_inertial_frame(calct, txdir);
 			return sf.dot(rxdir);
 		}
 
@@ -1044,7 +1024,7 @@ namespace LEM1 {
 		cdouble dppm(const CalculationType& calculationtype, const size_t& derivativelayer, const Vec3d& txdir, const Vec3d& rxdir)
 		{
 			double  pf = primary(txdir, rxdir);
-			cdouble dsf = ds(calculationtype, derivativelayer, txdir, rxdir);
+			cdouble dsf = ds(calculationtype, txdir, rxdir);
 			dsf = std::complex<double>(dsf.real(), -dsf.imag());
 			return 1.0e6 * (dsf / pf);
 		}
@@ -1053,25 +1033,92 @@ namespace LEM1 {
 
 	class LEModeller {
 
+	private:
+		double ModellingLoopRadius=0;
+		Vec3d Source_Orientation;
+		CalculationType calculationtype;
+
 	public:
-		std::vector<LEFrequency> F;
+		std::vector<LESingleFrequencyModeller> FM;
+
+		LEModeller() {};
+
+		size_t nFrequencies() const { return FM.size(); };
+		size_t nLayers() const { 
+			// Todo
+			return FM[0].nl(); 
+		};
+
 		void set_numabscissa(const size_t& na) {
 			//Todo
 		};
 
 		void set_modellingloopradius(const double& radius) {
-			//Todo
+			ModellingLoopRadius = radius;
 		};
 
-		void initialise_frequencies(std::vector<double> discrete_frequencies) {
-			//Todo
+		void initialise_frequencies(
+			const std::vector<double> discrete_frequencies
+		){
+			const size_t nf = discrete_frequencies.size();
+			FM.resize(nf);
+			for (size_t i = 0; i < nf; i++) {
+				FM[i].initialise();
+				FM[i].setfrequency(discrete_frequencies[i]);
+				FM[i].ModellingLoopRadius = ModellingLoopRadius;
+			}
 		};
 
 		void set_earth(const AEM::Earth1D& E) {
-			//Todo 
-			// lem().set_earth_properties(E);
+			const size_t nf = nFrequencies();
+			for (size_t i = 0; i < nf; i++) {
+				FM[i].setconductivitythickness(E.conductivity, E.thickness);
+			}
 		};
 		
+		void set_geometry(const Vec3d& source_orientation, double h, double x, double y, double z) {
+			Source_Orientation = source_orientation;
+			const size_t nf = nFrequencies();
+			for (size_t i = 0; i < nf; i++) {
+				FM[i].setxyzh(x, y, z, h);
+			}
+		};
+
+		void setup_computations() {
+			const size_t nf = nFrequencies();
+			for (size_t i = 0; i < nf; i++) {
+				FM[i].setupcomputations();
+			}
+		};
+
+		void set_calculationtype(const CalculationType& _calculationtype) {
+			calculationtype = _calculationtype;
+		};
+
+		const CalculationType::Mode& cmode() const {
+			return calculationtype.get_mode();
+		};
+
+		Vec3d primaryfield_inertial() {
+			Vec3d pf = FM[0].primary_inertial_frame(calculationtype, Source_Orientation);
+			//std::cout << pf << std::endl;
+			return pf;
+		};
+
+		Vec3cd secondaryfield_inertial(const size_t fi) {
+			//std::cout << Source_Orientation;
+			Vec3cd sf = FM[fi].secondary_inertial_frame(calculationtype, Source_Orientation);
+			//std::cout << sf << std::endl;
+			return sf;
+		};
+
+		void set_iptype(const IPType& _iptype) {
+			//Todo
+			//Earth.set_iptype(_iptype);
+		};
+
+	private:
 
 	};
+};
 };

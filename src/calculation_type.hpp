@@ -16,7 +16,10 @@ namespace CT {
 
 		CalculationType(Mode _mode, size_t _layer) : mode(_mode), layer(_layer) {
 			if (layer > 2000) {//Sanity check on layer number 
-				glog.errormsg(_SRC_, "Sorry but %zu is a ridiculos derivative layer number.\n", layer);
+				glog.errormsg(_SRC_, "Sorry but %zu is a ridiculous derivative layer number.\n", layer);
+			}
+			if (mode == Mode::DC || mode == Mode::DT) {
+				int dummy = 0;
 			}
 		};
 

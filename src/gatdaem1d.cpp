@@ -201,7 +201,8 @@ void forwardmodel_ip(void* hS,
 void derivative(void* hS, int dtype, int dlayer, double* PX, double* PY, double* PZ, double* SX, double* SY, double* SZ) {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	CMode mode = CalculationType::lookup_mode((size_t)dtype);
-	T.lem().set_calculationtype(mode,dlayer-1);//subtract one from the layer number for zero based indexing
+	CalculationType calc(mode, dlayer - 1);
+	T.lem().set_calculationtype(calc);//subtract one from the layer number for zero based indexing
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
@@ -247,7 +248,7 @@ void fm_dlogc(void* hS,
 	memcpy(p, T.ZS().data(), sz); p += nw;
 
 	for (size_t k = 0; k < (size_t)nlayers; k++) {
-		T.lem().set_calculationtype(CMode::DC,k);
+		T.lem().set_calculationtype(CalculationType(CMode::DC, k));
 		T.setprimaryfields();
 		T.setsecondaryfields();
 
@@ -279,8 +280,8 @@ void derivative_rx_pitch(void* hS, int n, double rx_pitch, double* xb, double* z
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
 	//T.lem().calculation_type = cLEM::CalculationType::FM;
 	//T.lem().derivative_layer = -1;
-	//T.setprimaryfields();
-	//T.setsecondaryfields();
+	//T.set_primaryfields();
+	//T.set_secondaryfields();
 
 	size_t sz = sizeof(double) * n;
 
