@@ -184,8 +184,8 @@ namespace LEM1 {
 
 		//Hankle Stuff
 		inline static constexpr size_t NumIntegrands = 3;
-		cdouble trapezoid_result[NumIntegrands];
-		cdouble integrand_result[NumIntegrands];
+		Vec3cd trapezoid_result;
+		Vec3cd integrand_result;
 		double mean_conductivity;
 		double mean_log10conductivity;
 
@@ -702,8 +702,7 @@ namespace LEM1 {
 			dointegrals_trapezoid(fi);
 		}
 
-		inline void dointegrals_trapezoid(const size_t& fi)
-		{
+		inline void dointegrals_trapezoid(const size_t& fi) {
 			HankelTransforms& H = Hankel[fi];
 
 			number_integrand_calls = 0;
@@ -745,8 +744,7 @@ namespace LEM1 {
 			}
 		}
 		
-		inline void trapezoid(const size_t& fi)
-		{
+		inline void trapezoid(const size_t& fi) {
 			std::vector<cdouble> integrand1(3);
 			std::vector<cdouble> integrand2(3);
 			std::vector<cdouble> integrand3(3);
@@ -1103,9 +1101,6 @@ namespace LEM1 {
 
 				cdouble b, dbdx, dbdy, dbdr;
 				cdouble g, dgdx, dgdy;
-
-				//x = a*b;
-				//y = (d-c)*Hankel[fi].I2 - f*Hankel[fi].I0 = e*Hankel[fi].I2 - f*Hankel[fi].I0 = g;
 
 				a = X * Y / R2;
 				dadx = (R2 * Y - X * Y * 2.0 * X) / R4;

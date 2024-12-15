@@ -31,13 +31,13 @@ namespace LEM2 {
 	using sPropogationMatrix = Eigen::Matrix2cd;
 
 	struct sHankelTransform {
-		cdouble FM;
-		cdouble dC;
-		cdouble dT;
-		cdouble dX;
-		cdouble dY;
-		cdouble dZ;
-		cdouble dH;
+		Vec3cd FM;
+		Vec3cd dC;
+		Vec3cd dT;
+		Vec3cd dX;
+		Vec3cd dY;
+		Vec3cd dZ;
+		Vec3cd dH;
 	};
 
 	struct sAbscissaLayerNode {
@@ -93,13 +93,16 @@ namespace LEM2 {
 		std::vector<double> Thickness;
 
 
-		//Hankle Stuff    
-		sHankelTransform I0;
-		sHankelTransform I1;
-		sHankelTransform I2;
+		//Hankle Stuff
+		sHankelTransform HT;
+		//sHankelTransform T0;
+		//sHankelTransform T1;
+		//sHankelTransform T2;
 
-		cdouble trapezoid_result[3];
-		cdouble integrand_result[3];
+		//Vec3cd trapezoid_result;
+		//Vec3cd integrand_result;
+		//cdouble trapezoid_result[3];
+		//cdouble integrand_result[3];
 
 		double meanconductivity;
 		double meanlog10conductivity;
@@ -574,94 +577,62 @@ namespace LEM2 {
 			}
 		}
 
-		void dointegrals(const CalculationType& calculationtype)	{
-			trapezoid(calculationtype);//the results go into the variable trapezoid_result			
+		void dointegrals(const CalculationType& calculationtype) {
+			Vec3cd integral = integrate_trapezoidal(calculationtype);
 
 			switch (calculationtype.get_mode()){
 			case CMode::FM:
-				I0.FM = trapezoid_result[0];
-				I1.FM = trapezoid_result[1];
-				I2.FM = trapezoid_result[2];
+				HT.FM = integral;
 				break;
 			case CMode::DC:
-				I0.dC = trapezoid_result[0];
-				I1.dC = trapezoid_result[1];
-				I2.dC = trapezoid_result[2];
+				HT.dC = integral;
 				break;
 			case CMode::DT:
-				I0.dT = trapezoid_result[0];
-				I1.dT = trapezoid_result[1];
-				I2.dT = trapezoid_result[2];
+				HT.dT = integral;
 				break;
 			case CMode::DZ:
-				I0.dZ = trapezoid_result[0];
-				I1.dZ = trapezoid_result[1];
-				I2.dZ = trapezoid_result[2];
+				HT.dZ = integral;
 				break;
 			case CMode::DH:
-				I0.dH = trapezoid_result[0];
-				I1.dH = trapezoid_result[1];
-				I2.dH = trapezoid_result[2];
+				HT.dH = integral;
 				break;
 			case CMode::DX:
-				I0.dX = trapezoid_result[0];
-				I1.dX = trapezoid_result[1];
-				I2.dX = trapezoid_result[2];
+				HT.dX = integral;
 				break;
 			case CMode::DY:
-				I0.dY = trapezoid_result[0];
-				I1.dY = trapezoid_result[1];
-				I2.dY = trapezoid_result[2];
+				HT.dY = integral;
 				break;
 			default:
-				glog.logmsg("Error: dointegrals() unknown calculation type %c\n", calculationtype);
+				glog.errormsg(_SRC_,"Unknown calculation type %s\n", calculationtype.string().c_str());
 			}
 		}
 
-		void trapezoid(const CalculationType& calculationtype) {
-			trapezoid_result[0] = cdouble(0.0, 0.0);
-			trapezoid_result[1] = cdouble(0.0, 0.0);
-			trapezoid_result[2] = cdouble(0.0, 0.0);
-
-			//First and last abscissa
-			compute_integrand(0, calculationtype);
-			trapezoid_result[0] += integrand_result[0];
-			trapezoid_result[1] += integrand_result[1];
-			trapezoid_result[2] += integrand_result[2];
-
-			compute_integrand(na() - 1, calculationtype);
-			trapezoid_result[0] += integrand_result[0];
-			trapezoid_result[1] += integrand_result[1];
-			trapezoid_result[2] += integrand_result[2];
-
-			trapezoid_result[0] *= 0.5;
-			trapezoid_result[1] *= 0.5;
-			trapezoid_result[2] *= 0.5;
-
-
-			//Cenral Abscissas
+		Vec3cd integrate_trapezoidal(const CalculationType& calculationtype) {
+			Vec3cd sum = Vec3cd::Zero();
+			// First abscissa
+			sum = 0.5 * compute_integrand(0, calculationtype);
+			// Cenral abscissas
 			for (size_t ai = 1; ai < na() - 1; ai++) {
-				compute_integrand(ai, calculationtype);
-				trapezoid_result[0] += integrand_result[0];
-				trapezoid_result[1] += integrand_result[1];
-				trapezoid_result[2] += integrand_result[2];
+				sum += compute_integrand(ai, calculationtype);
 			}
+			// Last Abscissa
+			sum += 0.5 * compute_integrand(na() - 1, calculationtype);
 
-			trapezoid_result[0] *= AbscissaSpacing;
-			trapezoid_result[1] *= AbscissaSpacing;
-			trapezoid_result[2] *= AbscissaSpacing;
+			// Scale for abscissa spacing
+			sum *= AbscissaSpacing;
+			return sum;
 		}
 
-		void compute_integrand(const size_t& ai, const CalculationType& calculationtype) {
+		Vec3cd compute_integrand(const size_t& ai, const CalculationType& calculationtype) {
 			AbscissaNode& A = Abscissa[ai];
 
-			double lambdar = A.Lambda_r;
-			double j0 = A.j0Lambda_r;
-			double j1 = A.j1Lambda_r;
-			double e = exp(-(Z + H) * A.Lambda);
-			double l2e = A.Lambda2 * e;
-			double l3e = A.Lambda3 * e;
-			double l4e = A.Lambda4 * e;
+			const double& lambdar = A.Lambda_r;
+			const double& j0 = A.j0Lambda_r;
+			const double& j1 = A.j1Lambda_r;
+			const double& e = exp(-(Z + H) * A.Lambda);
+			const double& l2e = A.Lambda2 * e;
+			const double& l3e = A.Lambda3 * e;
+			const double& l4e = A.Lambda4 * e;
 
 			double k0, k1, k2;
 			k0 = k1 = k2 = std::numeric_limits<double>::max();
@@ -716,9 +687,12 @@ namespace LEM2 {
 			}
 
 			const double loopfactor = A.LoopFactor(ModellingLoopRadius);
-			integrand_result[0] = earthkernel * (k0 * loopfactor);
-			integrand_result[1] = earthkernel * (k1 * loopfactor);
-			integrand_result[2] = earthkernel * (k2 * loopfactor);
+
+			Vec3cd integrand;
+			integrand[0] = earthkernel * (k0 * loopfactor);
+			integrand[1] = earthkernel * (k1 * loopfactor);
+			integrand[2] = earthkernel * (k2 * loopfactor);
+			return integrand;
 		}
 
 		// Tensors
@@ -782,131 +756,165 @@ namespace LEM2 {
 		};
 
 		Mat3d dPTdH() const {
-			Mat3d T;
+			Mat3d m;
 			//of course this is just minus d/dZ		
-			T(0, 0) = 3.0 * ZH * (4.0 * X2 - Y2 - ZH2) / R7;
-			T(0, 1) = 15.0 * X * Y / R7 * ZH;
-			T(0, 2) = -3.0 * X * (X2 + Y2 - 4.0 * ZH2) / R7;
-			T(1, 0) = T(0, 1);
-			T(1, 1) = -3.0 * ZH * (X2 - 4.0 * Y2 + ZH2) / R7;
-			T(1, 2) = -3.0 * Y * (X2 + Y2 - 4.0 * ZH2) / R7;
-			T(2, 0) = T(0, 2);
-			T(2, 1) = T(1, 2);
-			T(2, 2) = -3.0 * ZH * (3.0 * X2 + 3.0 * Y2 - 2.0 * ZH2) / R7;
-			return -ONEONFOURPI<double> *T;
+			m(0, 0) = 3.0 * ZH * (4.0 * X2 - Y2 - ZH2) / R7;
+			m(0, 1) = 15.0 * X * Y / R7 * ZH;
+			m(0, 2) = -3.0 * X * (X2 + Y2 - 4.0 * ZH2) / R7;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = -3.0 * ZH * (X2 - 4.0 * Y2 + ZH2) / R7;
+			m(1, 2) = -3.0 * Y * (X2 + Y2 - 4.0 * ZH2) / R7;
+			m(2, 0) = m(0, 2);
+			m(2, 1) = m(1, 2);
+			m(2, 2) = -3.0 * ZH * (3.0 * X2 + 3.0 * Y2 - 2.0 * ZH2) / R7;
+			return -ONEONFOURPI<double> *m;
 		};
 
 		Mat3cd STFM() const {
-			Mat3cd T;
-			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.FM / r - I0.FM * X2 / r2);
-			T(0, 1) = (X * Y / r2) * (2.0 * I2.FM / r - I0.FM);
-			T(0, 2) = (-X / r) * I1.FM;
+			const cdouble& T0 = HT.FM[0];
+			const cdouble& T1 = HT.FM[1];
+			const cdouble& T2 = HT.FM[2];
+			
+			Mat3cd m;
+			m(0, 0) = ((X2 / r2 - Y2 / r2) * T2 / r - T0 * X2 / r2);
+			m(0, 1) = (X * Y / r2) * (2.0 * T2 / r - T0);
+			m(0, 2) = (-X / r) * T1;
 
 			//Note error in Fitterman and Yin paper should not be minus sign at element 2,1
-			T(1, 0) = T(0, 1);
-			T(1, 1) = ((Y2 / r2 - X2 / r2) * I2.FM / r - I0.FM * Y2 / r2);
-			T(1, 2) = (-Y / r) * I1.FM;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = ((Y2 / r2 - X2 / r2) * T2 / r - T0 * Y2 / r2);
+			m(1, 2) = (-Y / r) * T1;
 
-			T(2, 0) = -T(0, 2);
-			T(2, 1) = -T(1, 2);
-			T(2, 2) = -I0.FM;
-			return -ONEONFOURPI<double> *T;
+			m(2, 0) = -m(0, 2);
+			m(2, 1) = -m(1, 2);
+			m(2, 2) = -T0;
+			return -ONEONFOURPI<double> *m;
 		};
 
 		Mat3cd dSTdC() const {
-			Mat3cd T;
-			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.dC / r - I0.dC * X2 / r2);
-			T(0, 1) = (X * Y / r2) * (2.0 * I2.dC / r - I0.dC);
-			T(0, 2) = (-X / r) * I1.dC;
+			const cdouble& T0 = HT.dC[0];
+			const cdouble& T1 = HT.dC[1];
+			const cdouble& T2 = HT.dC[2];
 
-			T(1, 0) = T(0, 1);
-			T(1, 1) = ((Y2 / r2 - X2 / r2) * I2.dC / r - I0.dC * Y2 / r2);
-			T(1, 2) = (-Y / r) * I1.dC;
+			Mat3cd m;
+			m(0, 0) = ((X2 / r2 - Y2 / r2) * T2 / r - T0 * X2 / r2);
+			m(0, 1) = (X * Y / r2) * (2.0 * T2 / r - T0);
+			m(0, 2) = (-X / r) * T1;
 
-			T(2, 0) = -T(0, 2);
-			T(2, 1) = -T(1, 2);
-			T(2, 2) = -I0.dC;
-			return -ONEONFOURPI<double> *T;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = ((Y2 / r2 - X2 / r2) * T2 / r - T0 * Y2 / r2);
+			m(1, 2) = (-Y / r) * T1;
+
+			m(2, 0) = -m(0, 2);
+			m(2, 1) = -m(1, 2);
+			m(2, 2) = -T0;
+			return -ONEONFOURPI<double> *m;
 		};
 
 		Mat3cd dSTdT() const {
-			Mat3cd T;
-			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.dT / r - I0.dT * X2 / r2);
-			T(0, 1) = (X * Y / r2) * (2.0 * I2.dT / r - I0.dT);
-			T(0, 2) = (-X / r) * I1.dT;
+			const cdouble& T0 = HT.dT[0];
+			const cdouble& T1 = HT.dT[1];
+			const cdouble& T2 = HT.dT[2];
+			
+			Mat3cd m;
+			m(0, 0) = ((X2 / r2 - Y2 / r2) * T2 / r - T0 * X2 / r2);
+			m(0, 1) = (X * Y / r2) * (2.0 * T2 / r - T0);
+			m(0, 2) = (-X / r) * T1;
 
-			T(1, 0) = T(0, 1);
-			T(1, 1) = ((Y2 / r2 - X2 / r2) * I2.dT / r - I0.dT * Y2 / r2);
-			T(1, 2) = (-Y / r) * I1.dT;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = ((Y2 / r2 - X2 / r2) * T2 / r - T0 * Y2 / r2);
+			m(1, 2) = (-Y / r) * T1;
 
-			T(2, 0) = -T(0, 2);
-			T(2, 1) = -T(1, 2);
-			T(2, 2) = -I0.dT;
-			return -ONEONFOURPI<double> *T;
+			m(2, 0) = -m(0, 2);
+			m(2, 1) = -m(1, 2);
+			m(2, 2) = -T0;
+			return -ONEONFOURPI<double> *m;
 		};
 
 		Mat3cd dSTdX() const {
-			Mat3cd T;
-			T(0, 0) = (X4 * I2.dX - I0.dX * X4 * r - I2.FM * X2 * X - I0.dX * X2 * r * Y2 - 2.0 * I0.FM * X * r * Y2 + 5.0 * X * Y2 * I2.FM - Y4 * I2.dX) / r5;
-			T(0, 1) = 2.0 * Y / r3 * I2.FM - Y / r2 * I0.FM - 6.0 * X2 * Y / r5 * I2.FM + 2.0 * X2 * Y / r4 * I0.FM + 2.0 * X * Y / r3 * I2.dX - X * Y / r2 * I0.dX;
-			T(0, 2) = -(I1.FM * Y2 + X2 * X * I1.dX + X * I1.dX * Y2) / r3;
+			const cdouble& T0 = HT.dX[0];
+			const cdouble& T1 = HT.dX[1];
+			const cdouble& T2 = HT.dX[2];
+			const cdouble& T0FM = HT.FM[0];
+			const cdouble& T1FM = HT.FM[1];
+			const cdouble& T2FM = HT.FM[2];
 
-			T(1, 0) = T(0, 1);
-			T(1, 1) = -(I2.dX * X4 - I2.FM * X2 * X + I0.dX * Y2 * r * X2 - 2.0 * I0.FM * Y2 * X * r + 5.0 * X * Y2 * I2.FM + I0.dX * Y4 * r - Y4 * I2.dX) / r5;
-			T(1, 2) = Y / r3 * I1.FM * X - Y / r * I1.dX;
+			Mat3cd m;
+			m(0, 0) = (X4 * T2 - T0 * X4 * r - T2FM * X2 * X - T0 * X2 * r * Y2 - 2.0 * T0FM * X * r * Y2 + 5.0 * X * Y2 * T2FM - Y4 * T2) / r5;
+			m(0, 1) = 2.0 * Y / r3 * T2FM - Y / r2 * T0FM - 6.0 * X2 * Y / r5 * T2FM + 2.0 * X2 * Y / r4 * T0FM + 2.0 * X * Y / r3 * T2 - X * Y / r2 * T0;
+			m(0, 2) = -(T1FM * Y2 + X2 * X * T1 + X * T1 * Y2) / r3;
 
-			T(2, 0) = -T(0, 2);
-			T(2, 1) = -T(1, 2);
-			T(2, 2) = -I0.dX;
-			return -ONEONFOURPI<double> *T;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = -(T2 * X4 - T2FM * X2 * X + T0 * Y2 * r * X2 - 2.0 * T0FM * Y2 * X * r + 5.0 * X * Y2 * T2FM + T0 * Y4 * r - Y4 * T2) / r5;
+			m(1, 2) = Y / r3 * T1FM * X - Y / r * T1;
+
+			m(2, 0) = -m(0, 2);
+			m(2, 1) = -m(1, 2);
+			m(2, 2) = -T0;
+			return -ONEONFOURPI<double> * m;
 		};
 
 		Mat3cd dSTdY() const {
-			Mat3cd T;
-			T(0, 0) = (X4 * I2.dY - I0.dY * X4 * r + 2.0 * I0.FM * X2 * Y * r - I0.dY * X2 * r * Y2 - 5.0 * X2 * Y * I2.FM + Y2 * Y * I2.FM - Y4 * I2.dY) / r5;
-			T(0, 1) = 2.0 * X / r3 * I2.FM - X / r2 * I0.FM - 6.0 * X * Y2 / r5 * I2.FM + 2.0 * X * Y2 / r4 * I0.FM + 2.0 * X * Y / r3 * I2.dY - X * Y / r2 * I0.dY;
-			T(0, 2) = X / r3 * I1.FM * Y - X / r * I1.dY;
+			const cdouble& T0 = HT.dY[0];
+			const cdouble& T1 = HT.dY[1];
+			const cdouble& T2 = HT.dY[2];
+			const cdouble& T0FM = HT.FM[0];
+			const cdouble& T1FM = HT.FM[1];
+			const cdouble& T2FM = HT.FM[2];
 
-			T(1, 0) = T(0, 1);
-			T(1, 1) = -(I2.dY * X4 + I0.dY * Y2 * r * X2 + 2.0 * I0.FM * Y * r * X2 - 5.0 * X2 * Y * I2.FM + I0.dY * Y4 * r + Y2 * Y * I2.FM - Y4 * I2.dY) / r5;
-			T(1, 2) = -(I1.FM * X2 + Y * I1.dY * X2 + Y2 * Y * I1.dY) / r3;
+			Mat3cd m;
+			m(0, 0) = (X4 * T2 - T0 * X4 * r + 2.0 * T0FM * X2 * Y * r - T0 * X2 * r * Y2 - 5.0 * X2 * Y * T2FM + Y2 * Y * T2FM - Y4 * T2) / r5;
+			m(0, 1) = 2.0 * X / r3 * T2FM - X / r2 * T0FM - 6.0 * X * Y2 / r5 * T2FM + 2.0 * X * Y2 / r4 * T0FM + 2.0 * X * Y / r3 * T2 - X * Y / r2 * T0;
+			m(0, 2) = X / r3 * T1FM * Y - X / r * T1;
 
-			T(2, 0) = -T(0, 2);
-			T(2, 1) = -T(1, 2);
-			T(2, 2) = -I0.dY;
-			return -ONEONFOURPI<double> *T;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = -(T2 * X4 + T0 * Y2 * r * X2 + 2.0 * T0 * Y * r * X2 - 5.0 * X2 * Y * T2FM + T0 * Y4 * r + Y2 * Y * T2 - Y4 * T2) / r5;
+			m(1, 2) = -(T1 * X2 + Y * T1 * X2 + Y2 * Y * T1) / r3;
+
+			m(2, 0) = -m(0, 2);
+			m(2, 1) = -m(1, 2);
+			m(2, 2) = -T0;
+			return -ONEONFOURPI<double> * m;
 		};
 
 		Mat3cd dSTdZ() const {
-			Mat3cd T;
-			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.dZ / r - I0.dZ * X2 / r2);
-			T(0, 1) = X * Y / r2 * (2.0 * I2.dZ / r - I0.dZ);
-			T(0, 2) = -X / r * I1.dZ;
+			const cdouble& T0 = HT.dZ[0];
+			const cdouble& T1 = HT.dZ[1];
+			const cdouble& T2 = HT.dZ[2];
 
-			T(1, 0) = T(0, 1);
-			T(1, 1) = ((Y2 / r2 - X2 / r2) * I2.dZ / r - I0.dZ * Y2 / r2);
-			T(1, 2) = -Y / r * I1.dZ;
+			Mat3cd m;
+			m(0, 0) = ((X2 / r2 - Y2 / r2) * T2 / r - T0 * X2 / r2);
+			m(0, 1) = X * Y / r2 * (2.0 * T2 / r - T0);
+			m(0, 2) = -X / r * T1;
 
-			T(2, 0) = -T(0, 2);
-			T(2, 1) = -T(1, 2);
-			T(2, 2) = -I0.dZ;
-			return -ONEONFOURPI<double> *T;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = ((Y2 / r2 - X2 / r2) * T2 / r - T0 * Y2 / r2);
+			m(1, 2) = -Y / r * T1;
+
+			m(2, 0) = -m(0, 2);
+			m(2, 1) = -m(1, 2);
+			m(2, 2) = -T0;
+			return -ONEONFOURPI<double> *m;
 		};
 
 		Mat3cd dSTdH() const {
-			Mat3cd T;
-			T(0, 0) = ((X2 / r2 - Y2 / r2) * I2.dH / r - I0.dH * X2 / r2);
-			T(0, 1) = X * Y / r2 * (2.0 * I2.dH / r - I0.dH);
-			T(0, 2) = -X / r * I1.dH;
+			const cdouble& T0 = HT.dH[0];
+			const cdouble& T1 = HT.dH[1];
+			const cdouble& T2 = HT.dH[2];
 
-			T(1, 0) = T(0, 1);
-			T(1, 1) = ((Y2 / r2 - X2 / r2) * I2.dH / r - I0.dH * Y2 / r2);
-			T(1, 2) = -Y / r * I1.dH;
+			Mat3cd m;
+			m(0, 0) = ((X2 / r2 - Y2 / r2) * T2 / r - T0 * X2 / r2);
+			m(0, 1) = X * Y / r2 * (2.0 * T2 / r - T0);
+			m(0, 2) = -X / r * T1;
 
-			T(2, 0) = -T(0, 2);
-			T(2, 1) = -T(1, 2);
-			T(2, 2) = -I0.dH;
-			return -ONEONFOURPI<double> *T;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = ((Y2 / r2 - X2 / r2) * T2 / r - T0 * Y2 / r2);
+			m(1, 2) = -Y / r * T1;
+
+			m(2, 0) = -m(0, 2);
+			m(2, 1) = -m(1, 2);
+			m(2, 2) = -T0;
+			return -ONEONFOURPI<double> * m;
 		};
 
 		Mat3d PrimaryTensor(const CalculationType& calculationtype) {

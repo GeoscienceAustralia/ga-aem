@@ -24,7 +24,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "rollpitchyaw.hpp"
 
 namespace AEM {
-	//using namespace LEM1;
 	using namespace LEM2;
 	using CalculationType = CT::CalculationType;
 	using CMode = CT::CalculationType::Mode;
