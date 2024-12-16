@@ -399,7 +399,7 @@ public:
 
 	bool forward_model(const Earth1D& E, const cTDEmGeometry & geometry) {
 		T.set_earth(E);
-		T.setgeometry(geometry);
+		T.set_geometry(geometry);
 		T.lem().set_calculationtype(CMode::FM);
 		T.setup_computations();
 		T.setprimaryfields();
@@ -410,7 +410,7 @@ public:
 	bool forward_model_and_derivatives(const Earth1D& E, const cTDEmGeometry& geometry, std::vector<double>&predicted, std::vector<std::vector<double>>&derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
 		const size_t nlayers = E.nlayers();
 		T.set_earth(E);
-		T.setgeometry(geometry);
+		T.set_geometry(geometry);
 		T.lem().set_calculationtype(CMode::FM);
 		T.setup_computations();
 		T.setprimaryfields();

@@ -1600,8 +1600,8 @@ public:
 				cTDEmSystemInfo& S = SV[sysi];
 				cTDEmSystem& T = S.T;
 				if (S.reconstructPrimary) {
-					T.setgeometry(G[si].tfr);
-					T.lem().set_calculationtype(CMode::FM);
+					T.set_geometry(G[si].tfr);
+					T.set_calculationtype(CMode::FM);
 					T.setprimaryfields();
 
 					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PX();
@@ -1923,10 +1923,10 @@ public:
 				const cTDEmGeometry& g = gv[si];
 				//T.setconductivitythickness(e.conductivity, e.thickness);
 				T.set_earth(e);
-				T.setgeometry(g);
+				T.set_geometry(g);
 
 				//Forwardmodel
-				T.lem().set_calculationtype(CMode::FM);
+				T.set_calculationtype(CMode::FM);
 				T.setup_computations();
 				T.setprimaryfields();
 				T.setsecondaryfields();
@@ -1975,13 +1975,12 @@ public:
 			for (size_t si = 0; si < nSoundings; si++) {
 				const Earth1D& e = ev[si];
 				const cTDEmGeometry& g = gv[si];
-				//T.setconductivitythickness(e.conductivity, e.thickness);
 				T.set_earth(e);
-				T.setgeometry(g);
+				T.set_geometry(g);
+				T.setup_computations();
 
 				//Forwardmodel
-				T.lem().set_calculationtype(CMode::FM);
-				T.setup_computations();
+				T.set_calculationtype(CMode::FM);
 				T.setprimaryfields();
 				T.setsecondaryfields();
 
@@ -2052,7 +2051,7 @@ public:
 					if (solve_conductivity()) {
 						for (size_t li = 0; li < nLayers; li++) {
 							const int pindex = cindex(si, li);
-							T.lem().set_calculationtype(CalculationType(CMode::DC, li));
+							T.set_calculationtype(CalculationType(CMode::DC, li));
 							T.setprimaryfields();
 							T.setsecondaryfields();
 
@@ -2067,7 +2066,7 @@ public:
 					if (solve_thickness()) {
 						for (size_t li = 0; li < nLayers - 1; li++) {
 							const int pindex = tindex(si, li);
-							T.lem().set_calculationtype(CalculationType(CMode::DT, li));
+							T.set_calculationtype(CalculationType(CMode::DT, li));
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2081,7 +2080,7 @@ public:
 					if (FreeGeometry) {
 						if (solve_geometry_element("tx_height")) {
 							const size_t pindex = gindex(si, "tx_height");
-							T.lem().set_calculationtype(CMode::DH);
+							T.set_calculationtype(CMode::DH);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2090,7 +2089,7 @@ public:
 
 						if (solve_geometry_element("txrx_dx")) {
 							const size_t pindex = gindex(si, "txrx_dx");
-							T.lem().set_calculationtype(CMode::DX);
+							T.set_calculationtype(CMode::DX);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2099,7 +2098,7 @@ public:
 
 						if (solve_geometry_element("txrx_dy")) {
 							const size_t pindex = gindex(si, "txrx_dy");
-							T.lem().set_calculationtype(CMode::DY);
+							T.set_calculationtype(CMode::DY);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2108,7 +2107,7 @@ public:
 
 						if (solve_geometry_element("txrx_dz")) {
 							const size_t pindex = gindex(si, "txrx_dz");
-							T.lem().set_calculationtype(CMode::DZ);
+							T.set_calculationtype(CMode::DZ);
 							T.setprimaryfields();
 							T.setsecondaryfields();
 							fillDerivativeVectors(S, xdrv, ydrv, zdrv);

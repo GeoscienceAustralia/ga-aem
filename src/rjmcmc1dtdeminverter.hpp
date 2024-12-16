@@ -588,7 +588,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			cTDEmSystem& T = S.T;
 
 			if (S.reconstructPrimary) {
-				T.setgeometry(IG);
+				T.set_geometry(IG);
 				T.lem().set_calculationtype(CMode::FM);
 				T.setprimaryfields();
 
@@ -1069,7 +1069,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			cTDEmSystemInfo& S = SV[i];
 			cTDEmSystem& T = S.T;
 			T.set_earth(E);
-			T.setgeometry(G);
+			T.set_geometry(G);
 			T.setup_computations();
 			T.lem().set_calculationtype(CMode::FM);
 			T.setprimaryfields();

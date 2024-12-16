@@ -907,6 +907,81 @@ namespace AEM {
 
 	};
 
+	class ModellingOptions {
+
+	public:
+		enum class OutputType { BFIELD, DBDT };
+		enum class NormalizationType { NONE, PPM, PPM_PEAKTOPEAK };
+
+		size_t FrequenciesPerDecade = 6;
+		size_t NumAbscissa = 17;
+		OutputType OutputType = OutputType::DBDT;
+		NormalizationType NormalisationType = NormalizationType::NONE;
+		double XOutputScaling = 1.0;
+		double YOutputScaling = 1.0;
+		double ZOutputScaling = 1.0;
+		double ModellingLoopRadius = 0.0;
+
+		bool SaveDiagnosticFiles = false;
+
+		ModellingOptions() {};
+
+		ModellingOptions(const cBlock& b) {
+			read_modelling_options(b);
+		};
+
+		void read_modelling_options(const cBlock& b) {
+			ModellingLoopRadius = b.getdoublevalue("ModellingLoopRadius");
+			if (!isdefined(ModellingLoopRadius)) {
+				ModellingLoopRadius = 0.0;
+			}
+
+			std::string ot = b.getstringvalue("OutputType");
+			if (strcasecmp(ot, "B") == 0) {
+				OutputType = OutputType::BFIELD;
+			}
+			else if (strcasecmp(ot, "dB/dt") == 0) {
+				OutputType = OutputType::DBDT;
+			}
+			else {
+				glog.errormsg(_SRC_, "OutputType %s unknown (must be one of \"B\" or \"dB/dt\")\n", ot.c_str());
+			}
+
+			FrequenciesPerDecade = b.getsizetvalue("FrequenciesPerDecade");
+			if (FrequenciesPerDecade < 5) {
+				glog.warningmsg(_SRC_, "It is wise to use at least 5 frequencies per decade\n");
+			}
+
+			NumAbscissa = b.getsizetvalue("NumberOfAbsiccaInHankelTransformEvaluation");
+			if (NumAbscissa < 17) {
+				glog.warningmsg(_SRC_, "It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
+			}
+
+			std::string n = b.getstringvalue("SecondaryFieldNormalisation");
+			if (strcasecmp(n, "None") == 0) {
+				NormalisationType = NormalizationType::NONE;
+			}
+			else if (strcasecmp(n, "PPM") == 0) {
+				NormalisationType = NormalizationType::PPM;
+			}
+			else if (strcasecmp(n, "PPMPEAKTOPEAK") == 0) {
+				NormalisationType = NormalizationType::PPM_PEAKTOPEAK;
+			}
+			else {
+				glog.errormsg(_SRC_, "Normalisation %s unknown (must be one of \"None,PPM,PPMPEAKTOPEAK\")\n", n.c_str());
+			}
+
+			XOutputScaling = b.getdoublevalue("XOutputScaling");
+			YOutputScaling = b.getdoublevalue("YOutputScaling");
+			ZOutputScaling = b.getdoublevalue("ZOutputScaling");
+
+
+			SaveDiagnosticFiles = b.getboolvalue("SaveDiagnosticFiles");
+
+		}
+
+	};
+
 	class AEMSystem {
 
 	protected:
@@ -915,14 +990,7 @@ namespace AEM {
 		cBlock STM;
 		LEModeller LEM;
 
-		bool SaveDiagnosticFiles = false;
-
 	public:
-
-		//inline static const size_t XCOMP = 0;
-		//inline static const size_t YCOMP = 1;
-		//inline static const size_t ZCOMP = 2;
-		//inline static const size_t NCOMP = 3;
 
 		const cBlock& system_descriptor_block() const { return STM; };
 		LEModeller& lem() { return LEM; };
@@ -932,17 +1000,13 @@ namespace AEM {
 	class cTDEmSystem : public AEMSystem {
 
 	private:
-		enum class OutputType { BFIELD, DBDT };
-		enum class NormalizationType { NONE, PPM, PPM_PEAKTOPEAK };
-		OutputType OutputType = OutputType::DBDT;
-		NormalizationType NormalisationType = NormalizationType::NONE;
+		
 
 		FFTWPlanWrapper InverseFFTPlan;
 
 		std::vector<ComponentWorkStore> Comp;
 		FixedPointSpline<double> FrequencySpliner;
-
-		size_t FrequenciesPerDecade = 0;
+				
 		double FrequencyLog10Spacing = 0.0;
 		double DiscreteFrequencyLow = 0.0;
 		double DiscreteFrequencyHigh = 0.0;
@@ -968,6 +1032,8 @@ namespace AEM {
 		const WindowSpecification& window(const size_t w) const { return WindScheme.Windows[w]; }
 		const Waveform& waveform() const { return WvForm; }
 		const Transmitter& transmitter() const { return Tx; }
+
+		ModellingOptions MO;
 
 		cTDEmSystem() {};
 
@@ -1005,11 +1071,11 @@ namespace AEM {
 
 	public:
 		// Modelling
-		void set_earth(const Earth1D& E) {
-			lem().set_earth(E);
+		void set_earth(const Earth1D& earth) {
+			lem().set_earth(earth);
 		};
 
-		void setgeometry(const cTDEmGeometry& G) {
+		void set_geometry(const cTDEmGeometry& G) {
 			Geometry = G;
 
 			// Set geometry inside the LE Modeller
@@ -1026,6 +1092,10 @@ namespace AEM {
 			RotMatrixToRxFrame = Geometry.inertial_to_rx_frame_rotation_matrix();
 		};
 
+		void set_calculationtype(const CalculationType& _calculationtype) {
+			LEM.set_calculationtype(_calculationtype);
+		};
+
 		void set_response(cTDEmResponse& Response) const {
 			Response.PX = PX();
 			Response.PY = PY();
@@ -1036,7 +1106,7 @@ namespace AEM {
 		};
 
 		void forwardmodel(const cTDEmGeometry& G, const Earth1D& E, cTDEmResponse& R) {
-			setgeometry(G);
+			set_geometry(G);
 			set_earth(E);
 			setup_computations();
 			setprimaryfields();
@@ -1060,7 +1130,8 @@ namespace AEM {
 
 		void setprimaryfields() {
 			Vec3d v = lem().primaryfield_inertial();
-			
+			//std::cout << v << std::endl;
+
 			// Rotate field to Rx frame
 			v = RotMatrixToRxFrame * v;
 
@@ -1069,11 +1140,11 @@ namespace AEM {
 				v *= 2.0;
 			}
 
-			if (NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				v *= 2.0;
 			}
 
-			if (OutputType == OutputType::DBDT) {
+			if (MO.OutputType == ModellingOptions::OutputType::DBDT) {
 				//Must convert to dB/dt. This happens implicitly for the secondary via the waveform.
 				v *= Tx.PeakdIdT;
 			}
@@ -1111,13 +1182,13 @@ namespace AEM {
 				inverse_fft_window_scale_component(i);
 			}
 
-			if (SaveDiagnosticFiles) {
+			if (MO.SaveDiagnosticFiles) {
 				write_discretefrequencies("diag_discretefrequencies.txt");
 				write_splinedfrequencies("diag_splinedfrequencies.txt");
 				WvForm.write_frequencydomainwaveform("diag_frequencydomainwaveform.txt");
 			}
 
-			if (SaveDiagnosticFiles) {
+			if (MO.SaveDiagnosticFiles) {
 				WindScheme.write_windows("diag_windows.txt", XS(), YS(), ZS());
 			}
 		}
@@ -1128,7 +1199,8 @@ namespace AEM {
 			//xb = (  xi*cosp  - zi*sinp);As bird sees it
 			//zb = (  xi*sinp  + zi*cosp);						
 
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || 
+				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
 				xb *= Comp[XCOMP].RefGeomPrimary;
 				zb *= Comp[ZCOMP].RefGeomPrimary;
@@ -1143,7 +1215,8 @@ namespace AEM {
 			dxbdp = D2R<double> *(-xi * sinp - zi * cosp);
 			dzbdp = D2R<double> *(+xi * cosp - zi * sinp);
 
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || 
+				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
 				dxbdp /= Comp[XCOMP].RefGeomPrimary;
 				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
@@ -1156,7 +1229,8 @@ namespace AEM {
 			//xb = (  xi*cosp  - zi*sinp);As bird sees it
 			//zb = (  xi*sinp  + zi*cosp);						
 
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
+				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
 				xb *= Comp[XCOMP].RefGeomPrimary;
 				zb *= Comp[ZCOMP].RefGeomPrimary;
@@ -1173,7 +1247,8 @@ namespace AEM {
 			dxbdp = (xi * -sinp - zi * cosp) * D2R<double>;
 			dzbdp = (xi * cosp - zi * sinp) * D2R<double>;
 
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
+				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
 				dxbdp /= Comp[XCOMP].RefGeomPrimary;
 				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
@@ -1186,7 +1261,8 @@ namespace AEM {
 			//yb = (  yi*cosr  + zi*sinr);As bird sees it
 			//zb = ( -yi*sinr  + zi*cosr);						
 
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
+				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
 				yb *= Comp[YCOMP].RefGeomPrimary;
 				zb *= Comp[ZCOMP].RefGeomPrimary;
@@ -1201,7 +1277,8 @@ namespace AEM {
 			dybdr = D2R<double> *(-yi * sinr + zi * cosr);
 			dzbdr = D2R<double> *(-yi * cosr - zi * sinr);
 
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
+				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
 				dybdr /= Comp[YCOMP].RefGeomPrimary;
 				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
@@ -1214,7 +1291,8 @@ namespace AEM {
 			//yb = (  yi*cosr  + zi*sinr);As bird sees it
 			//zb = ( -yi*sinr  + zi*cosr);						
 
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
+				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
 				yb *= Comp[YCOMP].RefGeomPrimary;
 				zb *= Comp[ZCOMP].RefGeomPrimary;
@@ -1230,7 +1308,8 @@ namespace AEM {
 			dybdr = (yi * -sinr + zi * cosr) * D2R<double>;
 			dzbdr = (yi * -cosr - zi * sinr) * D2R<double>;
 
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
+				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
 				dybdr /= Comp[YCOMP].RefGeomPrimary;
 				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
@@ -1239,7 +1318,6 @@ namespace AEM {
 
 	private:
 
-		// Setup
 		void read_system_descriptor_file(const std::string& systemdescriptorfile) {
 			if (!fs::exists(systemdescriptorfile)) {
 				std::string msg = strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.c_str());
@@ -1264,51 +1342,7 @@ namespace AEM {
 			cBlock rxblock = STM.findblock("Receiver");
 			WindScheme = WindowingScheme(rxblock, WvForm);
 
-			double radius = STM.getdoublevalue("ForwardModelling.ModellingLoopRadius");
-			if (!isdefined(radius)) {
-				radius = 0.0;
-			}
-			lem().set_modellingloopradius(radius);
-
-			std::string ot = STM.getstringvalue("ForwardModelling.OutputType");
-			if (strcasecmp(ot, "B") == 0) {
-				OutputType = OutputType::BFIELD;
-			}
-			else if (strcasecmp(ot, "dB/dt") == 0) {
-				OutputType = OutputType::DBDT;
-			}
-			else {
-				glog.errormsg(_SRC_, "OutputType %s unknown (must be one of \"B\" or \"dB/dt\")\n", ot.c_str());
-			}
-
-			FrequenciesPerDecade = (size_t)STM.getintvalue("ForwardModelling.FrequenciesPerDecade");
-			if (FrequenciesPerDecade < 5) {
-				glog.warningmsg(_SRC_, "It is wise to use at least 5 frequencies per decade\n");
-			}
-
-
-			size_t na = STM.getsizetvalue("ForwardModelling.NumberOfAbsiccaInHankelTransformEvaluation");
-			if (na < 17) {
-				glog.warningmsg(_SRC_, "It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
-			}
-			lem().set_numabscissa(na);
-
-			std::string n = STM.getstringvalue("ForwardModelling.SecondaryFieldNormalisation");
-			if (strcasecmp(n, "None") == 0) {
-				NormalisationType = NormalizationType::NONE;
-			}
-			else if (strcasecmp(n, "PPM") == 0) {
-				NormalisationType = NormalizationType::PPM;
-			}
-			else if (strcasecmp(n, "PPMPEAKTOPEAK") == 0) {
-				NormalisationType = NormalizationType::PPM_PEAKTOPEAK;
-			}
-			else {
-				glog.errormsg(_SRC_, "Normalisation %s unknown (must be one of \"None,PPM,PPMPEAKTOPEAK\")\n", n.c_str());
-			}
-
-			SaveDiagnosticFiles = STM.getboolvalue("ForwardModelling.SaveDiagnosticFiles");
-
+			
 			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.TD_Waveform.size()) {
 				glog.errormsg(_SRC_, "The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
 			}
@@ -1323,15 +1357,14 @@ namespace AEM {
 				Filters.push_back(LowPassFilter(v1[i], v2[i]));
 			}
 
-			system_setup();
-		};
+			b = STM.findblock("ForwardModelling");
+			MO = ModellingOptions(b);
 
-		void system_setup() {
 			setup_discrete_frequencies();
 			setup_transforms();
 			setup_splines();
 			setup_scaling();
-		}
+		};
 
 		void setup_transforms() {
 			WvForm.NumFrequencies = WvForm.NumSamples / 2 + 1;
@@ -1361,13 +1394,13 @@ namespace AEM {
 			bool convert_B_2_dBdT = false;
 			bool convert_dBdT_2_B = false;
 			if (WvForm.Type == Waveform::Type::TX) {
-				if (OutputType == OutputType::DBDT) {
+				if (MO.OutputType == ModellingOptions::OutputType::DBDT) {
 					convert_B_2_dBdT = true;
 				}
 			}
 
 			if (WvForm.Type == Waveform::Type::RX) {
-				if (OutputType == OutputType::BFIELD) {
+				if (MO.OutputType == ModellingOptions::OutputType::BFIELD) {
 					convert_dBdT_2_B = true;
 				}
 			}
@@ -1407,29 +1440,27 @@ namespace AEM {
 
 		void setup_scaling() {
 			Tx.PeakdIdT = WvForm.compute_peak_didt();
-			double tx_scale = MUZERO<double> *Tx.LoopArea * Tx.NumberOfTurns * Tx.PeakCurrent;
-			double xos = STM.getdoublevalue("ForwardModelling.XOutputScaling");
-			double yos = STM.getdoublevalue("ForwardModelling.YOutputScaling");
-			double zos = STM.getdoublevalue("ForwardModelling.ZOutputScaling");
+			double tx_scale = MUZERO<double> * Tx.LoopArea * Tx.NumberOfTurns * Tx.PeakCurrent;
+			
+			//ModellingOptions
+			Comp[XCOMP].Scale = tx_scale * MO.XOutputScaling;
+			Comp[YCOMP].Scale = tx_scale * MO.YOutputScaling;
+			Comp[ZCOMP].Scale = tx_scale * MO.ZOutputScaling;
 
-			Comp[XCOMP].Scale = tx_scale * xos;
-			Comp[YCOMP].Scale = tx_scale * yos;
-			Comp[ZCOMP].Scale = tx_scale * zos;
-
-			if (NormalisationType == NormalizationType::PPM || NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				cBlock b = STM.findblock("ReferenceGeometry");
 				if (b.Entries.size() == 0) {
 					glog.errormsg(_SRC_, "Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
 				}
 				NormalizationGeometry = cTDEmGeometry(b);
-				setgeometry(NormalizationGeometry);
+				set_geometry(NormalizationGeometry);
 				setprimaryfields();
 
 				double s = 1.0;
-				if (NormalisationType == NormalizationType::PPM) {
+				if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM) {
 					s *= 1.0e6;
 				}
-				else if (NormalisationType == NormalizationType::PPM_PEAKTOPEAK) {
+				else if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 					s *= 1.0e6;
 				}
 
@@ -1445,18 +1476,18 @@ namespace AEM {
 		void setup_discrete_frequencies() {
 			double lf1 = log10(WvForm.BaseFrequency);
 			double lf2 = log10(WvForm.SampleFrequency / 2);
-			double dlf = 1.0 / FrequenciesPerDecade;
+			double dlf = 1.0 / MO.FrequenciesPerDecade;
 
 			lf1 = lf1 - 2.0 * dlf;
 			lf2 = lf2 + 2.0 * dlf;
 
-			size_t nf = (size_t)ceil((lf2 - lf1) * FrequenciesPerDecade);
+			size_t nf = (size_t)ceil((lf2 - lf1) * MO.FrequenciesPerDecade);
 			dlf = (lf2 - lf1) / double(nf - 1);
 
 			NumberOfDiscreteFrequencies = nf;
 			FrequencyLog10Spacing = dlf;
-			DiscreteFrequencyLow = pow(10.0, lf1);
-			DiscreteFrequencyHigh = pow(10.0, lf2);
+			DiscreteFrequencyLow = std::pow(10.0, lf1);
+			DiscreteFrequencyHigh = std::pow(10.0, lf2);
 
 			DiscreteFrequenciesLog10 = std::vector<double>(NumberOfDiscreteFrequencies);
 			DiscreteFrequencies = std::vector<double>(NumberOfDiscreteFrequencies);
@@ -1464,6 +1495,7 @@ namespace AEM {
 				DiscreteFrequenciesLog10[fi] = log10(DiscreteFrequencyLow) + FrequencyLog10Spacing * (double)fi;
 				DiscreteFrequencies[fi] = pow(10.0, DiscreteFrequenciesLog10[fi]);
 			}
+			lem().initialise(DiscreteFrequencies, MO.NumAbscissa, MO.ModellingLoopRadius);
 		}
 
 		void setup_splines() {
@@ -1472,8 +1504,8 @@ namespace AEM {
 			Comp[YCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
 			Comp[ZCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
 			FrequencySpliner.initialise(DiscreteFrequenciesLog10, SplinedFrequencieslog10);
-			lem().initialise_frequencies(DiscreteFrequencies);
-		}
+			//lem().initialise_frequencies(DiscreteFrequencies);
+		};
 		
 		void spline_component(const size_t& component) {
 			ComponentWorkStore& C = Comp[component];
@@ -1511,7 +1543,7 @@ namespace AEM {
 
 			// Window
 			WindScheme.computewindow((double*)WvForm.FFT_WorkArray.data(), C.Secondary);
-			if (SaveDiagnosticFiles) {
+			if (MO.SaveDiagnosticFiles) {
 				write_timesseries("diag_xtimeseries.txt");
 			}
 

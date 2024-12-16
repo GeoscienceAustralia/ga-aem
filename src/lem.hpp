@@ -209,6 +209,20 @@ namespace LEM1 {
 
 		LEModeller() {};
 
+		void initialise(const std::vector<double>& discrete_frequencies, const size_t& numabscissa, const double& modelling_loop_radius) {
+			//const size_t nf = discrete_frequencies.size();
+			//FM.resize(nf);
+			//for (size_t fi = 0; fi < nf; fi++) {
+			//	FM[fi].initialise(discrete_frequencies[fi], numabscissa, modelling_loop_radius);
+			//}
+			initialise_frequencies(discrete_frequencies);
+			set_modellingloopradius(modelling_loop_radius);
+			set_numabscissa(numabscissa);
+
+
+		}
+
+
 		void set_modellingloopradius(const double& radius) {
 			ModellingLoopRadius = radius;
 		};
@@ -232,10 +246,6 @@ namespace LEM1 {
 			calculationtype = _calculationtype;
 		};
 
-		//void set_calculationtype(const CalculationType::Mode _mode) {
-		//	calculationtype = CalculationType(_mode);
-		//};
-
 		const CalculationType::Mode& cmode() const {
 			return calculationtype.get_mode();
 		};
@@ -244,16 +254,6 @@ namespace LEM1 {
 			return calculationtype.get_layer();
 		};
 		
-		/*
-		const std::vector<double>& getconductivity() {
-			return Earth.conductivity;
-		}
-
-		std::vector<double>& getthickness() {
-			return Earth.thickness;
-		}
-		*/
-
 		void initialise_frequencies(const std::vector<double>& frequencies) {
 			const size_t nf = frequencies.size();
 			Frequencies.resize(nf);
