@@ -64,80 +64,16 @@ namespace LEM2 {
 		}
 	};
 
-	class LESingleFrequencyModeller {
-
-	private:
-
-		double x = 0.0, y = 0.0, z = 0.0, h = 0.0;
-		double x2 = 0, y2 = 0, x4 = 0, y4 = 0;
-		double zh = 0, zh2 = 0;
-		double r = 0, r2 = 0, r3 = 0, r5 = 0, r4 = 0;
-		double R = 0, R2 = 0, R5 = 0, R7 = 0;
-
-		bool geometrychanged;
-		std::vector<AbscissaNode> Abscissa;
-		std::shared_ptr<Earth1D> EarthPtr;
-		bool earthchanged;
-
-		Vec3cd ForwardModel;
-
-		//Hankle Stuff
-		double meanlog10conductivity;
-		double LowerFractionalWidth = LEM2::DefaultLowerFractionalWidth;
-		double UpperFractionalWidth = LEM2::DefaultUpperFractionalWidth;
+	class LEGeometryStore {
 
 	public:
-		double ModellingLoopRadius = 0.0; //dipole by default
-		double Frequency;
-		double Omega;
-		double MuZeroOmega;
-		cdouble iMuZeroOmega;
-		double ApproximateHalfspace;
-		double PeakLambda;
-		double LowerBound;
-		double UpperBound;
-		double AbscissaSpacing;
+		double x = 0, y = 0, z = 0, h = 0;
+		double x2 = 0, y2 = 0, x4 = 0, y4 = 0;
+		double zh = 0, zh2 = 0;
+		double r = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0;
+		double R = 0, R2 = 0, R5 = 0, R7 = 0;
 
-		LESingleFrequencyModeller() { };
-		
-		size_t nAbscissa1() const { return Abscissa.size(); }
-		
-		size_t nLayers() const { return EarthPtr->nlayers(); }
-		
-		void initialise(const double& frequency, const size_t& numabscissa, const double& modelling_loop_radius, const double _LowerFractionalWidth = LEM2::DefaultLowerFractionalWidth, const double _UpperFractionalWidth = LEM2::DefaultUpperFractionalWidth) {
-			set_frequency(frequency);
-			Abscissa.resize(numabscissa);
-			ModellingLoopRadius = modelling_loop_radius;
-			LowerFractionalWidth = _LowerFractionalWidth;
-			UpperFractionalWidth = _UpperFractionalWidth;
-		};
-
-		void setupcomputations() {
-			if (earthchanged || geometrychanged) {
-				ForwardModel[0] = std::numeric_limits<double>::max();
-				ForwardModel[1] = std::numeric_limits<double>::max();
-				ForwardModel[2] = std::numeric_limits<double>::max();
-				setfrequencyabscissalayers();
-				earthchanged = false;
-				geometrychanged = false;
-			}
-			else{
-				glog.warningmsg(_SRC_, "Redoing setupcomputations without earth or geometry change.");
-			}
-		}
-
-		void set_earth_ptr(const std::shared_ptr<Earth1D>& earthptr, const double _meanlog10conductivity) {
-			EarthPtr = earthptr;
-			meanlog10conductivity = _meanlog10conductivity;
-			earthchanged = true;
-			const size_t na = nAbscissa1();
-			for (size_t ai = 0; ai < na; ai++) {
-				Abscissa[ai].Layer.resize(EarthPtr->nlayers());
-			}
-		}
-
-		void setxyzh(const double& _x, const double& _y, const double& _z, const double& _h)
-		{
+		bool update(const double& _x, const double& _y, const double& _z, const double& _h) {
 			bool update_r = false;
 			if (x != _x) {
 				x = _x;
@@ -146,7 +82,7 @@ namespace LEM2 {
 				update_r = true;
 			}
 
-			if (_y != y) {
+			if (y != _y) {
 				y = _y;
 				y2 = y * y;
 				y4 = y2 * y2;
@@ -177,6 +113,7 @@ namespace LEM2 {
 				zh2 = zh * zh;
 			}
 
+			bool geometrychanged = false;
 			if (update_r || update_zh) {
 				R2 = (x2 + y2 + zh2);
 				R = std::sqrt(R2);
@@ -184,9 +121,114 @@ namespace LEM2 {
 				R7 = R5 * R2;
 				geometrychanged = true;
 			}
-			else {
+			return geometrychanged;
+		};
+	};
+
+	class LESingleFrequencyModeller {
+
+	public:
+
+		std::shared_ptr<LEGeometryStore> GSPtr;
+		// These are just aliases of an external LEGeometryStore members
+		const double& x() const { return GSPtr->x; }
+		const double& y() const { return GSPtr->y; }
+		const double& z() const { return GSPtr->z; }
+		const double& h() const { return GSPtr->h; }
+		const double& x2() const { return GSPtr->x2; }
+		const double& y2() const { return GSPtr->y2; }
+		const double& x4() const { return GSPtr->x4; }
+		const double& y4() const { return GSPtr->y4; }
+		const double& zh() const { return GSPtr->zh; }
+		const double& zh2() const { return GSPtr->zh2; }
+		const double& r() const { return GSPtr->r; }
+		const double& r2() const { return GSPtr->r2; }
+		const double& r3() const { return GSPtr->r3; }
+		const double& r4() const { return GSPtr->r4; }
+		const double& r5() const { return GSPtr->r5; }
+		const double& R() const { return GSPtr->R; }
+		const double& R2() const { return GSPtr->R2; }
+		const double& R5() const { return GSPtr->R5; }
+		const double& R7() const { return GSPtr->R7; }
+
+	private:
+		bool geometrychanged;
+		std::vector<AbscissaNode> Abscissa;
+		std::shared_ptr<Earth1D> EarthPtr;
+		bool earthchanged;
+
+		Vec3cd ForwardModel;
+
+		//Hankle Stuff
+		double ModellingLoopRadius = 0.0; //dipole by default
+		double LowerFractionalWidth = LEM2::DefaultLowerFractionalWidth;
+		double UpperFractionalWidth = LEM2::DefaultUpperFractionalWidth;
+
+		double Frequency;
+		double Omega;
+		double MuZeroOmega;
+		cdouble iMuZeroOmega;
+
+		double meanlog10conductivity;
+		double ApproximateHalfspace;
+		double PeakLambda;
+		double LowerBound;
+		double UpperBound;
+		double AbscissaSpacing;
+
+	public:
+
+		LESingleFrequencyModeller(const std::shared_ptr<LEGeometryStore> _GSPtr) 
+			: GSPtr(_GSPtr)
+		{
+		//	// The x(), y() ,z() ... references are initialised to the external LEGeometry store upon construction
+		//	// That external LEGeometryStore may be the same or different for each frequency depending on the system to be modelled
+		};
+
+		
+		size_t nAbscissa() const { return Abscissa.size(); }
+		
+		size_t nLayers() const { return EarthPtr->nlayers(); }
+		
+		void initialise(const double& frequency, 
+			const size_t& numabscissa, 
+			const double& modelling_loop_radius, 
+			const double& _LowerFractionalWidth = LEM2::DefaultLowerFractionalWidth, 
+			const double& _UpperFractionalWidth = LEM2::DefaultUpperFractionalWidth) 
+		{
+			set_frequency(frequency);
+			Abscissa.resize(numabscissa);
+			ModellingLoopRadius = modelling_loop_radius;
+			LowerFractionalWidth = _LowerFractionalWidth;
+			UpperFractionalWidth = _UpperFractionalWidth;
+		};
+
+		void setup_computations() {
+			if (earthchanged || geometrychanged) {
+				ForwardModel[0] = std::numeric_limits<double>::max();
+				ForwardModel[1] = std::numeric_limits<double>::max();
+				ForwardModel[2] = std::numeric_limits<double>::max();
+				set_abscissa();
+				earthchanged = false;
 				geometrychanged = false;
 			}
+			else{
+				glog.warningmsg(_SRC_, "Redoing setupcomputations without earth or geometry change.");
+			}
+		}
+
+		void set_earth_ptr(const std::shared_ptr<Earth1D>& earthptr, const double _meanlog10conductivity) {
+			EarthPtr = earthptr;
+			meanlog10conductivity = _meanlog10conductivity;
+			earthchanged = true;
+			const size_t na = nAbscissa();
+			for (size_t ai = 0; ai < na; ai++) {
+				Abscissa[ai].Layer.resize(EarthPtr->nlayers());
+			}
+		}
+
+		void set_geometrychanged_status(bool status) {
+			geometrychanged = status;
 		}
 
 	private:
@@ -198,10 +240,10 @@ namespace LEM2 {
 			iMuZeroOmega = cdouble(0.0, MuZeroOmega);
 		};
 
-		void setfrequencyabscissalayers() {
+		void set_abscissa() {
+			set_abscissa_locations();
 			const size_t nl = nLayers();
-			const size_t na = nAbscissa1();
-			setintegrationnodes();
+			const size_t na = nAbscissa();
 			for (size_t ai = 0; ai < na; ai++) {
 				for (size_t li = 0; li < nl; li++) {
 					double gamma2 = EarthPtr->conductivity[li] * MuZeroOmega;
@@ -213,6 +255,38 @@ namespace LEM2 {
 				setpmatrix(ai);
 			}
 		};
+
+		void set_abscissa_locations() {
+			const size_t na = nAbscissa();
+			double peak_exp2 = 2.0 / (z() + h());
+			double peak_exp3 = 3.0 / (z() + h());
+
+			ApproximateHalfspace = approximatehalfspace();
+			PeakLambda = std::sqrt(MuZeroOmega * ApproximateHalfspace / 4.0);
+
+			double lp = std::log(std::min(PeakLambda, peak_exp2));
+			double up = std::log(std::max(PeakLambda, peak_exp3));
+
+			LowerBound = lp - LowerFractionalWidth;
+			UpperBound = up + UpperFractionalWidth;
+
+			AbscissaSpacing = (UpperBound - LowerBound) / (double)(na - 1);
+
+			double lambda;
+			double loglambda = LowerBound;
+			for (size_t ai = 0; ai < na; ai++) {
+				AbscissaNode& A = Abscissa[ai];
+				lambda = std::exp(loglambda);
+				A.Lambda = lambda;
+				A.Lambda2 = A.Lambda * lambda;
+				A.Lambda3 = A.Lambda2 * lambda;
+				A.Lambda4 = A.Lambda3 * lambda;
+				A.Lambda_r = A.Lambda * r();
+				A.j0Lambda_r = std::cyl_bessel_j(0, A.Lambda_r);
+				A.j1Lambda_r = std::cyl_bessel_j(1, A.Lambda_r);
+				loglambda += AbscissaSpacing;
+			}
+		}
 
 		double approximatehalfspace() const {
 			if (nLayers() == 1) return EarthPtr->conductivity[0];
@@ -453,45 +527,13 @@ namespace LEM2 {
 			return m(1, 0) / Abscissa[ai].P_Full(0, 0) - m(0, 0) * Abscissa[ai].P21onP11 / Abscissa[ai].P_Full(0, 0);
 		}
 
-		void setintegrationnodes() {
-			const size_t na = nAbscissa1();
-			double peak_exp2 = 2.0 / (z + h);
-			double peak_exp3 = 3.0 / (z + h);
-
-			ApproximateHalfspace = approximatehalfspace();
-			PeakLambda = std::sqrt(MuZeroOmega * ApproximateHalfspace / 4.0);
-
-			double lp = std::log(std::min(PeakLambda, peak_exp2));
-			double up = std::log(std::max(PeakLambda, peak_exp3));
-
-			LowerBound = lp - LowerFractionalWidth;
-			UpperBound = up + UpperFractionalWidth;
-
-			AbscissaSpacing = (UpperBound - LowerBound) / (double)(na - 1);
-
-			double lambda;
-			double loglambda = LowerBound;
-			for (size_t ai = 0; ai < na; ai++) {
-				AbscissaNode& A = Abscissa[ai];
-				lambda = std::exp(loglambda);
-				A.Lambda = lambda;
-				A.Lambda2 = A.Lambda * lambda;
-				A.Lambda3 = A.Lambda2 * lambda;
-				A.Lambda4 = A.Lambda3 * lambda;
-				A.Lambda_r = A.Lambda * r;
-				A.j0Lambda_r = std::cyl_bessel_j(0, A.Lambda_r);
-				A.j1Lambda_r = std::cyl_bessel_j(1, A.Lambda_r);
-				loglambda += AbscissaSpacing;
-			}
-		}
-
 		Vec3cd compute_integrand(const size_t& ai, const CalculationType& calculationtype) const {
 			const AbscissaNode& A = Abscissa[ai];
 
 			const double& lambdar = A.Lambda_r;
 			const double& j0 = A.j0Lambda_r;
 			const double& j1 = A.j1Lambda_r;
-			const double& e = std::exp(-(z + h) * A.Lambda);
+			const double& e = std::exp(-(z() + h()) * A.Lambda);
 			const double& l2e = A.Lambda2 * e;
 			const double& l3e = A.Lambda3 * e;
 			const double& l4e = A.Lambda4 * e;
@@ -510,15 +552,15 @@ namespace LEM2 {
 				break;
 			case CMode::DX:
 				earthkernel = -A.P21onP11;
-				k0 = -l4e * j1 * x / r;
-				k1 = l4e * (j0 - j1 / lambdar) * x / r;
-				k2 = l3e * (j0 - j1 / lambdar) * x / r;
+				k0 = -l4e * j1 * x() / r();
+				k1 = l4e * (j0 - j1 / lambdar) * x() / r();
+				k2 = l3e * (j0 - j1 / lambdar) * x() / r();
 				break;
 			case CMode::DY:
 				earthkernel = -A.P21onP11;
-				k0 = -l4e * j1 * y / r;
-				k1 = l4e * (j0 - j1 / lambdar) * y / r;
-				k2 = l3e * (j0 - j1 / lambdar) * y / r;
+				k0 = -l4e * j1 * y() / r();
+				k1 = l4e * (j0 - j1 / lambdar) * y() / r();
+				k2 = l3e * (j0 - j1 / lambdar) * y() / r();
 				break;
 			case CMode::DZ:
 				earthkernel = -A.P21onP11;
@@ -558,7 +600,7 @@ namespace LEM2 {
 		};
 
 		Vec3cd integrate_trapezoidal(const CalculationType& calculationtype) const {
-			const size_t na = nAbscissa1();
+			const size_t na = nAbscissa();
 			Vec3cd sum = Vec3cd::Zero();
 			// First abscissa
 			sum = 0.5 * compute_integrand(0, calculationtype);
@@ -577,75 +619,75 @@ namespace LEM2 {
 		// Tensors
 		Mat3d PTFM() const {
 			Mat3d T;
-			T(0, 0) = (3.0 * x2 - R2) / R5;
-			T(0, 1) = 3.0 * x * y / R5;
-			T(0, 2) = 3.0 * x * zh / R5;
+			T(0, 0) = (3.0 * x2() - R2()) / R5();
+			T(0, 1) = 3.0 * x() * y() / R5();
+			T(0, 2) = 3.0 * x() * zh() / R5();
 
 			//Note error in Fitterman and Yin paper should no be minus sign at element 2,1
 			T(1, 0) = T(0, 1);
-			T(1, 1) = (3.0 * y2 - R2) / R5;
-			T(1, 2) = 3.0 * y * zh / R5;
+			T(1, 1) = (3.0 * y2() - R2()) / R5();
+			T(1, 2) = 3.0 * y() * zh() / R5();
 
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
-			T(2, 2) = (3.0 * zh2 - R2) / R5;
+			T(2, 2) = (3.0 * zh2() - R2()) / R5();
 			return -ONEONFOURPI<double> * T;
 		};
 
 		Mat3d dPTdX() const {
 			Mat3d T;
-			T(0, 0) = -3.0 * x * (2.0 * x2 - 3.0 * y2 - 3.0 * zh2) / R7;
-			T(0, 1) = -3.0 * y * (4.0 * x2 - y2 - zh2) / R7;
-			T(0, 2) = -3.0 * zh * (4.0 * x2 - y2 - zh2) / R7;
+			T(0, 0) = -3.0 * x() * (2.0 * x2() - 3.0 * y2() - 3.0 * zh2()) / R7();
+			T(0, 1) = -3.0 * y() * (4.0 * x2() - y2() - zh2()) / R7();
+			T(0, 2) = -3.0 * zh() * (4.0 * x2() - y2() - zh2()) / R7();
 			T(1, 0) = T(0, 1);
-			T(1, 1) = 3.0 * x * (x2 - 4.0 * y2 + zh2) / R7;
-			T(1, 2) = -15.0 * y * zh / R7 * x;
+			T(1, 1) = 3.0 * x() * (x2() - 4.0 * y2() + zh2()) / R7();
+			T(1, 2) = -15.0 * y() * zh() / R7() * x();
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
-			T(2, 2) = 3.0 * x * (x2 + y2 - 4.0 * zh2) / R7;
+			T(2, 2) = 3.0 * x() * (x2() + y2() - 4.0 * zh2()) / R7();
 			return -ONEONFOURPI<double> * T;
 		};
 
 		Mat3d dPTdY() const {
 			Mat3d T;
-			T(0, 0) = -3.0 * y * (4.0 * x2 - y2 - zh2) / R7;
-			T(0, 1) = 3.0 * x * (x2 - 4.0 * y2 + zh2) / R7;
-			T(0, 2) = -15.0 * x * zh / R7 * y;
+			T(0, 0) = -3.0 * y() * (4.0 * x2() - y2() - zh2()) / R7();
+			T(0, 1) = 3.0 * x() * (x2() - 4.0 * y2() + zh2()) / R7();
+			T(0, 2) = -15.0 * x() * zh() / R7() * y();
 			T(1, 0) = T(0, 1);
-			T(1, 1) = 3.0 * y * (3.0 * x2 - 2.0 * y2 + 3.0 * zh2) / R7;
-			T(1, 2) = 3.0 * zh * (x2 - 4.0 * y2 + zh2) / R7;
+			T(1, 1) = 3.0 * y() * (3.0 * x2() - 2.0 * y2() + 3.0 * zh2()) / R7();
+			T(1, 2) = 3.0 * zh() * (x2() - 4.0 * y2() + zh2()) / R7();
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
-			T(2, 2) = 3.0 * y * (x2 + y2 - 4.0 * zh2) / R7;
+			T(2, 2) = 3.0 * y() * (x2() + y2() - 4.0 * zh2()) / R7();
 			return -ONEONFOURPI<double> *T;
 		};
 
 		Mat3d dPTdZ() const {
 			Mat3d T;
-			T(0, 0) = -3.0 * zh * (4.0 * x2 - y2 - zh2) / R7;
-			T(0, 1) = -15.0 * x * y / R7 * zh;
-			T(0, 2) = 3.0 * x * (x2 + y2 - 4.0 * zh2) / R7;
+			T(0, 0) = -3.0 * zh() * (4.0 * x2() - y2() - zh2()) / R7();
+			T(0, 1) = -15.0 * x() * y() / R7() * zh();
+			T(0, 2) = 3.0 * x() * (x2() + y2() - 4.0 * zh2()) / R7();
 			T(1, 0) = T(0, 1);
-			T(1, 1) = 3.0 * zh * (x2 - 4.0 * y2 + zh2) / R7;
-			T(1, 2) = 3.0 * y * (x2 + y2 - 4.0 * zh2) / R7;
+			T(1, 1) = 3.0 * zh() * (x2() - 4.0 * y2() + zh2()) / R7();
+			T(1, 2) = 3.0 * y() * (x2() + y2() - 4.0 * zh2()) / R7();
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
-			T(2, 2) = 3.0 * zh * (3.0 * x2 + 3.0 * y2 - 2.0 * zh2) / R7;
+			T(2, 2) = 3.0 * zh() * (3.0 * x2() + 3.0 * y2() - 2.0 * zh2()) / R7();
 			return -ONEONFOURPI<double> *T;
 		};
 
 		Mat3d dPTdH() const {
 			Mat3d m;
 			//of course this is just minus d/dZ		
-			m(0, 0) = 3.0 * zh * (4.0 * x2 - y2 - zh2) / R7;
-			m(0, 1) = 15.0 * x * y / R7 * zh;
-			m(0, 2) = -3.0 * x * (x2 + y2 - 4.0 * zh2) / R7;
+			m(0, 0) = 3.0 * zh() * (4.0 * x2() - y2() - zh2()) / R7();
+			m(0, 1) = 15.0 * x() * y() / R7() * zh();
+			m(0, 2) = -3.0 * x() * (x2() + y2() - 4.0 * zh2()) / R7();
 			m(1, 0) = m(0, 1);
-			m(1, 1) = -3.0 * zh * (x2 - 4.0 * y2 + zh2) / R7;
-			m(1, 2) = -3.0 * y * (x2 + y2 - 4.0 * zh2) / R7;
+			m(1, 1) = -3.0 * zh() * (x2() - 4.0 * y2() + zh2()) / R7();
+			m(1, 2) = -3.0 * y() * (x2() + y2() - 4.0 * zh2()) / R7();
 			m(2, 0) = m(0, 2);
 			m(2, 1) = m(1, 2);
-			m(2, 2) = -3.0 * zh * (3.0 * x2 + 3.0 * y2 - 2.0 * zh2) / R7;
+			m(2, 2) = -3.0 * zh() * (3.0 * x2() + 3.0 * y2() - 2.0 * zh2()) / R7();
 			return -ONEONFOURPI<double> *m;
 		};
 
@@ -655,14 +697,14 @@ namespace LEM2 {
 			const cdouble& T2 = FM[2];
 			
 			Mat3cd m;
-			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
-			m(0, 1) = (x * y / r2) * (2.0 * T2 / r - T0);
-			m(0, 2) = (-x / r) * T1;
+			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
+			m(0, 1) = (x() * y() / r2()) * (2.0 * T2 / r() - T0);
+			m(0, 2) = (-x() / r()) * T1;
 
 			//Note error in Fitterman and Yin paper should not be minus sign at element 2,1
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
-			m(1, 2) = (-y / r) * T1;
+			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
+			m(1, 2) = (-y() / r()) * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -676,13 +718,13 @@ namespace LEM2 {
 			const cdouble& T2 = dC[2];
 
 			Mat3cd m;
-			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
-			m(0, 1) = (x * y / r2) * (2.0 * T2 / r - T0);
-			m(0, 2) = (-x / r) * T1;
+			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
+			m(0, 1) = (x() * y() / r2()) * (2.0 * T2 / r() - T0);
+			m(0, 2) = (-x() / r()) * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
-			m(1, 2) = (-y / r) * T1;
+			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
+			m(1, 2) = (-y() / r()) * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -696,13 +738,13 @@ namespace LEM2 {
 			const cdouble& T2 = dT[2];
 			
 			Mat3cd m;
-			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
-			m(0, 1) = (x * y / r2) * (2.0 * T2 / r - T0);
-			m(0, 2) = (-x / r) * T1;
+			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
+			m(0, 1) = (x() * y() / r2()) * (2.0 * T2 / r() - T0);
+			m(0, 2) = (-x() / r()) * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
-			m(1, 2) = (-y / r) * T1;
+			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
+			m(1, 2) = (-y() / r()) * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -719,13 +761,13 @@ namespace LEM2 {
 			const cdouble& T2FM = ForwardModel[2];
 
 			Mat3cd m;
-			m(0, 0) = (x4 * T2 - T0 * x4 * r - T2FM * x2 * x - T0 * x2 * r * y2 - 2.0 * T0FM * x * r * y2 + 5.0 * x * y2 * T2FM - y4 * T2) / r5;
-			m(0, 1) = 2.0 * y / r3 * T2FM - y / r2 * T0FM - 6.0 * x2 * y / r5 * T2FM + 2.0 * x2 * y / r4 * T0FM + 2.0 * x * y / r3 * T2 - x * y / r2 * T0;
-			m(0, 2) = -(T1FM * y2 + x2 * x * T1 + x * T1 * y2) / r3;
+			m(0, 0) = (x4() * T2 - T0 * x4() * r() - T2FM * x2() * x() - T0 * x2() * r() * y2() - 2.0 * T0FM * x() * r() * y2() + 5.0 * x() * y2() * T2FM - y4() * T2) / r5();
+			m(0, 1) = 2.0 * y() / r3() * T2FM - y() / r2() * T0FM - 6.0 * x2() * y() / r5() * T2FM + 2.0 * x2() * y() / r4() * T0FM + 2.0 * x() * y() / r3() * T2 - x() * y() / r2() * T0;
+			m(0, 2) = -(T1FM * y2() + x2() * x() * T1 + x() * T1 * y2()) / r3();
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = -(T2 * x4 - T2FM * x2 * x + T0 * y2 * r * x2 - 2.0 * T0FM * y2 * x * r + 5.0 * x * y2 * T2FM + T0 * y4 * r - y4 * T2) / r5;
-			m(1, 2) = y / r3 * T1FM * x - y / r * T1;
+			m(1, 1) = -(T2 * x4() - T2FM * x2() * x() + T0 * y2() * r() * x2() - 2.0 * T0FM * y2() * x() * r() + 5.0 * x() * y2() * T2FM + T0 * y4() * r() - y4() * T2) / r5();
+			m(1, 2) = y() / r3() * T1FM * x() - y() / r() * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -742,13 +784,13 @@ namespace LEM2 {
 			const cdouble& T2FM = ForwardModel[2];
 
 			Mat3cd m;
-			m(0, 0) = (x4 * T2 - T0 * x4 * r + 2.0 * T0FM * x2 * y * r - T0 * x2 * r * y2 - 5.0 * x2 * y * T2FM + y2 * y * T2FM - y4 * T2) / r5;
-			m(0, 1) = 2.0 * x / r3 * T2FM - x / r2 * T0FM - 6.0 * x * y2 / r5 * T2FM + 2.0 * x * y2 / r4 * T0FM + 2.0 * x * y / r3 * T2 - x * y / r2 * T0;
-			m(0, 2) = x / r3 * T1FM * y - x / r * T1;
+			m(0, 0) = (x4() * T2 - T0 * x4() * r() + 2.0 * T0FM * x2() * y() * r() - T0 * x2() * r() * y2() - 5.0 * x2() * y() * T2FM + y2() * y() * T2FM - y4() * T2) / r5();
+			m(0, 1) = 2.0 * x() / r3() * T2FM - x() / r2() * T0FM - 6.0 * x() * y2() / r5() * T2FM + 2.0 * x() * y2() / r4() * T0FM + 2.0 * x() * y() / r3() * T2 - x() * y() / r2() * T0;
+			m(0, 2) = x() / r3() * T1FM * y() - x() / r() * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = -(T2 * x4 + T0 * y2 * r * x2 + 2.0 * T0 * y * r * x2 - 5.0 * x2 * y * T2FM + T0 * y4 * r + y2 * y * T2 - y4 * T2) / r5;
-			m(1, 2) = -(T1 * x2 + y * T1 * x2 + y2 * y * T1) / r3;
+			m(1, 1) = -(T2 * x4() + T0 * y2() * r() * x2() + 2.0 * T0 * y() * r() * x2() - 5.0 * x2() * y() * T2FM + T0 * y4() * r() + y2() * y() * T2 - y4() * T2) / r5();
+			m(1, 2) = -(T1 * x2() + y() * T1 * x2() + y2() * y() * T1) / r3();
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -762,13 +804,13 @@ namespace LEM2 {
 			const cdouble& T2 = dZ[2];
 
 			Mat3cd m;
-			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
-			m(0, 1) = x * y / r2 * (2.0 * T2 / r - T0);
-			m(0, 2) = -x / r * T1;
+			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
+			m(0, 1) = x() * y() / r2() * (2.0 * T2 / r() - T0);
+			m(0, 2) = -x() / r() * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
-			m(1, 2) = -y / r * T1;
+			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
+			m(1, 2) = -y() / r() * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -782,13 +824,13 @@ namespace LEM2 {
 			const cdouble& T2 = dH[2];
 
 			Mat3cd m;
-			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
-			m(0, 1) = x * y / r2 * (2.0 * T2 / r - T0);
-			m(0, 2) = -x / r * T1;
+			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
+			m(0, 1) = x() * y() / r2() * (2.0 * T2 / r() - T0);
+			m(0, 2) = -x() / r() * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
-			m(1, 2) = -y / r * T1;
+			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
+			m(1, 2) = -y() / r() * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -925,15 +967,16 @@ namespace LEM2 {
 	class LEModeller {
 
 	private:
-		double ModellingLoopRadius=0;
+		std::shared_ptr<LEGeometryStore> GeometryStore = std::make_shared<LEGeometryStore>();
 		Vec3d Source_Orientation;
 		CalculationType calculationtype;
 		std::shared_ptr<Earth1D> EarthPtr;
 
 	public:
+
 		std::vector<LESingleFrequencyModeller> FM;
 
-		LEModeller() {};
+		LEModeller() { };
 
 		size_t nFrequencies() const { return FM.size(); };
 		
@@ -944,10 +987,21 @@ namespace LEM2 {
 
 		void initialise(const std::vector<double>& discrete_frequencies, const size_t& numabscissa, const double& modelling_loop_radius) {
 			const size_t nf = discrete_frequencies.size();
-			FM.resize(nf);
+			GeometryStore->x = 100;
+			GeometryStore->y = 101;
+			GeometryStore->z = 102;
+
+			// Insert the frequencies
+			for (size_t fi = 0; fi < nf; fi++) {
+				FM.emplace_back(LESingleFrequencyModeller(GeometryStore));
+			};
+			double b = FM[1].z();
+
+			// Now initialise them
 			for (size_t fi = 0; fi < nf; fi++) {
 				FM[fi].initialise(discrete_frequencies[fi], numabscissa, modelling_loop_radius);
 			}
+			double c = FM[1].z();
 		}
 
 		void set_earth(const Earth1D& earth) {
@@ -962,15 +1016,16 @@ namespace LEM2 {
 		void set_geometry(const Vec3d& source_orientation, double h, double x, double y, double z) {
 			Source_Orientation = source_orientation;
 			const size_t nf = nFrequencies();
+			bool geometrychanged = GeometryStore->update(x, y, z, h);
 			for (size_t i = 0; i < nf; i++) {
-				FM[i].setxyzh(x, y, z, h);
+				FM[i].set_geometrychanged_status(geometrychanged);
 			}
 		};
 
 		void setup_computations() {
 			const size_t nf = nFrequencies();
 			for (size_t i = 0; i < nf; i++) {
-				FM[i].setupcomputations();
+				FM[i].setup_computations();
 			}
 		};
 
@@ -1001,6 +1056,7 @@ namespace LEM2 {
 		};
 
 	private:
+
 
 	};
 };

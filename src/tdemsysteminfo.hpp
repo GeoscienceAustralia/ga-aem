@@ -34,21 +34,23 @@ public:
 	bool invertPrimaryPlusSecondary = false;
 	bool reconstructPrimary = false;
 	
+	cTDEmSystemInfo(cBlock& b, const size_t nsoundings) :
+		T(cTDEmSystem(b.getstringvalue("SystemFile")))
+	{
+		initialise(b, nsoundings);
+	};
+
 	void initialise(const cBlock& b, const size_t nsoundings) {
-		std::string dummy;
-		if (b.getvalue("InvertTotalField", dummy)) {
-			glog.errormsg(_SRC_, "InvertTotalField is no longer an option, use InvertPrimaryPlusSecondary instead\n");
-		};
-
 		std::string stmfile = b.getstringvalue("SystemFile");
-		fixseparator(stmfile);
-
-		glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
-		T = cTDEmSystem(stmfile);
 		glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
 		glog.log_to_file(T.system_descriptor_block().get_as_string());
 		glog.log_to_file("==========================================================================\n");
 		nwindows = T.nwindows();
+
+		std::string dummy;
+		if (b.getvalue("InvertTotalField", dummy)) {
+			glog.errormsg(_SRC_, "InvertTotalField is no longer an option, use InvertPrimaryPlusSecondary instead\n");
+		};
 
 		invertXPlusZ = b.getboolvalue("InvertXPlusZ");
 		invertPrimaryPlusSecondary = b.getboolvalue("InvertPrimaryPlusSecondary");

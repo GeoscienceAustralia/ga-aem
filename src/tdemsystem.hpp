@@ -1035,12 +1035,13 @@ namespace AEM {
 
 		ModellingOptions MO;
 
-		cTDEmSystem() {};
+		cTDEmSystem(const fs::path& descriptorpath) {
+			read_system_descriptor_file(descriptorpath);
+		};
 
-		cTDEmSystem(std::string systemdescriptorfile) {
-			//initialise();
-			read_system_descriptor_file(systemdescriptorfile);
-		};	
+		cTDEmSystem() {};
+		//cTDEmSystem(const cTDEmSystem& other) = delete;
+		//cTDEmSystem& operator=(const cTDEmSystem& other) = delete;
 
 		const size_t& nwindows() const {
 			return WindScheme.nwindows();
@@ -1070,6 +1071,55 @@ namespace AEM {
 		}
 
 	public:
+
+		void read_system_descriptor_file(const fs::path& systemdescriptorfile) {
+			if (!fs::exists(systemdescriptorfile)) {
+				std::string msg = strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.string().c_str());
+				glog.errormsg(_SRC_, msg);
+			}
+
+			STM = cBlock(systemdescriptorfile);
+			SystemName = STM.getstringvalue("Name");
+			SystemType = STM.getstringvalue("Type");
+
+			if (strcasecmp(SystemType, "Time Domain") != 0) {
+				glog.errormsg(_SRC_, "System Type is not Time Domain\n");
+			}
+
+			cBlock b = STM.findblock("Transmitter");
+			Tx.NumberOfTurns = b.getdoublevalue("NumberOfTurns");
+			Tx.PeakCurrent = b.getdoublevalue("PeakCurrent");
+			Tx.LoopArea = b.getdoublevalue("LoopArea");
+
+			WvForm.initialise(b, systemdescriptorfile);
+
+			cBlock rxblock = STM.findblock("Receiver");
+			WindScheme = WindowingScheme(rxblock, WvForm);
+
+
+			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.TD_Waveform.size()) {
+				glog.errormsg(_SRC_, "The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
+			}
+
+			//Load low pass filters
+			auto v1 = STM.getdoublevector("Receiver.LowPassFilter.Order");
+			auto v2 = STM.getdoublevector("Receiver.LowPassFilter.CutOffFrequency");
+			if (v1.size() != v2.size()) {
+				glog.errormsg(_SRC_, "Filter CutOffFrequency and Order sizes must be equal.");
+			}
+			for (size_t i = 0; i < v1.size(); i++) {
+				Filters.push_back(LowPassFilter(v1[i], v2[i]));
+			}
+
+			b = STM.findblock("ForwardModelling");
+			MO = ModellingOptions(b);
+
+			setup_discrete_frequencies();
+			setup_transforms();
+			setup_splines();
+			setup_scaling();
+		};
+
 		// Modelling
 		void set_earth(const Earth1D& earth) {
 			lem().set_earth(earth);
@@ -1087,7 +1137,6 @@ namespace AEM {
 			const double& z = h + sep.z();
 			const Vec3d tx_orientation = Geometry.tx_orientation(Tx.Reference_Orientation);
 			lem().set_geometry(tx_orientation, h, x, y, z);
-
 			// Set the rotation matrix for rotating vector fields to Rx frame of reference
 			RotMatrixToRxFrame = Geometry.inertial_to_rx_frame_rotation_matrix();
 		};
@@ -1317,54 +1366,6 @@ namespace AEM {
 		}
 
 	private:
-
-		void read_system_descriptor_file(const std::string& systemdescriptorfile) {
-			if (!fs::exists(systemdescriptorfile)) {
-				std::string msg = strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.c_str());
-				glog.errormsg(_SRC_, msg);
-			}
-
-			STM = cBlock(systemdescriptorfile);
-			SystemName = STM.getstringvalue("Name");
-			SystemType = STM.getstringvalue("Type");
-
-			if (strcasecmp(SystemType, "Time Domain") != 0) {
-				glog.errormsg(_SRC_, "System Type is not Time Domain\n");
-			}
-
-			cBlock b = STM.findblock("Transmitter");
-			Tx.NumberOfTurns = b.getdoublevalue("NumberOfTurns");
-			Tx.PeakCurrent = b.getdoublevalue("PeakCurrent");
-			Tx.LoopArea = b.getdoublevalue("LoopArea");
-
-			WvForm.initialise(b, systemdescriptorfile);
-
-			cBlock rxblock = STM.findblock("Receiver");
-			WindScheme = WindowingScheme(rxblock, WvForm);
-
-			
-			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.TD_Waveform.size()) {
-				glog.errormsg(_SRC_, "The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
-			}
-
-			//Load low pass filters
-			auto v1 = STM.getdoublevector("Receiver.LowPassFilter.Order");
-			auto v2 = STM.getdoublevector("Receiver.LowPassFilter.CutOffFrequency");
-			if (v1.size() != v2.size()) {
-				glog.errormsg(_SRC_, "Filter CutOffFrequency and Order sizes must be equal.");
-			}
-			for (size_t i = 0; i < v1.size(); i++) {
-				Filters.push_back(LowPassFilter(v1[i], v2[i]));
-			}
-
-			b = STM.findblock("ForwardModelling");
-			MO = ModellingOptions(b);
-
-			setup_discrete_frequencies();
-			setup_transforms();
-			setup_splines();
-			setup_scaling();
-		};
 
 		void setup_transforms() {
 			WvForm.NumFrequencies = WvForm.NumSamples / 2 + 1;

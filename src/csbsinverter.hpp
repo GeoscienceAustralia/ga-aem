@@ -503,6 +503,8 @@ public:
 		IM->set_subsample_rate(Subsample);
 
 		initialise_systems();
+		//double dummy0 = SV[0].T.lem().get_z0();
+		//double dummy1 = SV[0].T.lem().get_z1();
 
 		//Setup OutputManager
 		if (cOutputManager::isnetcdf(ob)) {
@@ -1525,17 +1527,20 @@ public:
 		return _dindex_[si][sysi][ci][wi];
 	};
 
-	void initialise_systems()
-	{
+	void initialise_systems() {
 		set_fftw_lock();
 		std::vector<cBlock> B = Control.findblocks("EMSystem");
 		nSystems = B.size();
-		SV.resize(nSystems);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			SV[sysi].initialise(B[sysi], nSoundings);
+			cBlock& b = B[sysi];
+			std::string stmfile = b.getstringvalue("SystemFile");
+			glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
+			SV.emplace_back(cTDEmSystemInfo(b, nSoundings));
 			SV[sysi].set_units(IM.get());
 		}
 		unset_fftw_lock();
+		//double dummy1 = SV[0].T.lem().get_z0();
+		//double dummy2 = SV[0].T.lem().get_z1();
 	}
 
 	void setup_data()
