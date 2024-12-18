@@ -50,18 +50,11 @@ namespace LEM2 {
 		double Lambda_r = 0.0;
 		double j0Lambda_r = 0.0;
 		double j1Lambda_r = 0.0;
+		double exp_minus_lambdazplush = 0.0;
+		double loopfactor = 0.0;
 		std::vector<AbscissaLayerNode> Layer;
 		PropogationMatrix P_Full;
 		cdouble P21onP11;
-
-		double LoopFactor(const double& ModellingLoopRadius) const {
-			double factor = 1.0;
-			if (ModellingLoopRadius > 0.0) {
-				const double lambda_a = Lambda * ModellingLoopRadius;
-				factor = 2.0 * std::cyl_bessel_j(1, lambda_a) / lambda_a;
-			}
-			return factor;
-		}
 	};
 
 	class LEGeometryStore {
@@ -71,7 +64,7 @@ namespace LEM2 {
 		double x2 = 0, y2 = 0, x4 = 0, y4 = 0;
 		double zh = 0, zh2 = 0;
 		double r = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0;
-		double R = 0, R2 = 0, R5 = 0, R7 = 0;
+		double R2 = 0, R5 = 0, R7 = 0;
 
 		bool update(const double& _x, const double& _y, const double& _z, const double& _h) {
 			bool update_r = false;
@@ -116,7 +109,7 @@ namespace LEM2 {
 			bool geometrychanged = false;
 			if (update_r || update_zh) {
 				R2 = (x2 + y2 + zh2);
-				R = std::sqrt(R2);
+				const double R = std::sqrt(R2);
 				R5 = R2 * R2 * R;
 				R7 = R5 * R2;
 				geometrychanged = true;
@@ -127,42 +120,24 @@ namespace LEM2 {
 
 	class LESingleFrequencyModeller {
 
-	public:
-
-		std::shared_ptr<LEGeometryStore> GSPtr;
-		// These are just aliases of an external LEGeometryStore members
-		const double& x() const { return GSPtr->x; }
-		const double& y() const { return GSPtr->y; }
-		const double& z() const { return GSPtr->z; }
-		const double& h() const { return GSPtr->h; }
-		const double& x2() const { return GSPtr->x2; }
-		const double& y2() const { return GSPtr->y2; }
-		const double& x4() const { return GSPtr->x4; }
-		const double& y4() const { return GSPtr->y4; }
-		const double& zh() const { return GSPtr->zh; }
-		const double& zh2() const { return GSPtr->zh2; }
-		const double& r() const { return GSPtr->r; }
-		const double& r2() const { return GSPtr->r2; }
-		const double& r3() const { return GSPtr->r3; }
-		const double& r4() const { return GSPtr->r4; }
-		const double& r5() const { return GSPtr->r5; }
-		const double& R() const { return GSPtr->R; }
-		const double& R2() const { return GSPtr->R2; }
-		const double& R5() const { return GSPtr->R5; }
-		const double& R7() const { return GSPtr->R7; }
-
 	private:
-		bool geometrychanged;
+		double x = 0, y = 0, z = 0, h = 0;
+		double x2 = 0, y2 = 0, x4 = 0, y4 = 0;
+		double zh = 0, zh2 = 0;
+		double r = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0;
+		double R2 = 0, R5 = 0, R7 = 0;
+		bool geometrychanged  = true;
+
 		std::vector<AbscissaNode> Abscissa;
 		std::shared_ptr<Earth1D> EarthPtr;
 		bool earthchanged;
 
-		Vec3cd ForwardModel;
-
+		Vec3cd ForwardModelIntegrals;// This needs to be saved for some derivative calculations
+		std::vector<Vec3cd> WorkIntegrands;// Work vector for repeated storage of integrands
 		//Hankle Stuff
 		double ModellingLoopRadius = 0.0; //dipole by default
-		double LowerFractionalWidth = LEM2::DefaultLowerFractionalWidth;
-		double UpperFractionalWidth = LEM2::DefaultUpperFractionalWidth;
+		double LowerFractionalWidth = DefaultLowerFractionalWidth;
+		double UpperFractionalWidth = DefaultUpperFractionalWidth;
 
 		double Frequency;
 		double Omega;
@@ -178,14 +153,8 @@ namespace LEM2 {
 
 	public:
 
-		LESingleFrequencyModeller(const std::shared_ptr<LEGeometryStore> _GSPtr) 
-			: GSPtr(_GSPtr)
-		{
-		//	// The x(), y() ,z() ... references are initialised to the external LEGeometry store upon construction
-		//	// That external LEGeometryStore may be the same or different for each frequency depending on the system to be modelled
-		};
+		LESingleFrequencyModeller() {};
 
-		
 		size_t nAbscissa() const { return Abscissa.size(); }
 		
 		size_t nLayers() const { return EarthPtr->nlayers(); }
@@ -198,6 +167,7 @@ namespace LEM2 {
 		{
 			set_frequency(frequency);
 			Abscissa.resize(numabscissa);
+			WorkIntegrands.resize(numabscissa);
 			ModellingLoopRadius = modelling_loop_radius;
 			LowerFractionalWidth = _LowerFractionalWidth;
 			UpperFractionalWidth = _UpperFractionalWidth;
@@ -205,9 +175,9 @@ namespace LEM2 {
 
 		void setup_computations() {
 			if (earthchanged || geometrychanged) {
-				ForwardModel[0] = std::numeric_limits<double>::max();
-				ForwardModel[1] = std::numeric_limits<double>::max();
-				ForwardModel[2] = std::numeric_limits<double>::max();
+				ForwardModelIntegrals[0] = std::numeric_limits<double>::max();
+				ForwardModelIntegrals[1] = std::numeric_limits<double>::max();
+				ForwardModelIntegrals[2] = std::numeric_limits<double>::max();
 				set_abscissa();
 				earthchanged = false;
 				geometrychanged = false;
@@ -229,6 +199,28 @@ namespace LEM2 {
 
 		void set_geometrychanged_status(bool status) {
 			geometrychanged = status;
+		}
+
+		void set_xyzh(const LEGeometryStore& GS) {
+			x = GS.x;
+			y = GS.y;
+			z = GS.z;
+			h = GS.h;
+			x2 = GS.x2;
+			y2 = GS.y2;
+			x4 = GS.x4;
+			y4 = GS.y4;
+			zh = GS.zh;
+			zh2 = GS.zh2;
+			r = GS.r;
+			r2 = GS.r2;
+			r3 = GS.r3;
+			r4 = GS.r4;
+			r5 = GS.r5;
+			R2 = GS.R2;
+			R5 = GS.R5;
+			R7 = GS.R7;
+			geometrychanged = true;
 		}
 
 	private:
@@ -256,10 +248,19 @@ namespace LEM2 {
 			}
 		};
 
+		static double compute_loop_factor(const double& lambda, const double& ModellingLoopRadius) {
+			double factor = 1.0;
+			if (ModellingLoopRadius > 0.0) {
+				const double lambda_a = lambda * ModellingLoopRadius;
+				factor = 2.0 * std::cyl_bessel_j(1, lambda_a) / lambda_a;
+			}
+			return factor;
+		};
+
 		void set_abscissa_locations() {
 			const size_t na = nAbscissa();
-			double peak_exp2 = 2.0 / (z() + h());
-			double peak_exp3 = 3.0 / (z() + h());
+			double peak_exp2 = 2.0 / (z + h);
+			double peak_exp3 = 3.0 / (z + h);
 
 			ApproximateHalfspace = approximatehalfspace();
 			PeakLambda = std::sqrt(MuZeroOmega * ApproximateHalfspace / 4.0);
@@ -281,9 +282,11 @@ namespace LEM2 {
 				A.Lambda2 = A.Lambda * lambda;
 				A.Lambda3 = A.Lambda2 * lambda;
 				A.Lambda4 = A.Lambda3 * lambda;
-				A.Lambda_r = A.Lambda * r();
+				A.Lambda_r = A.Lambda * r;
 				A.j0Lambda_r = std::cyl_bessel_j(0, A.Lambda_r);
 				A.j1Lambda_r = std::cyl_bessel_j(1, A.Lambda_r);
+				A.exp_minus_lambdazplush = std::exp(-lambda*(z + h));
+				A.loopfactor = compute_loop_factor(lambda, ModellingLoopRadius);
 				loglambda += AbscissaSpacing;
 			}
 		}
@@ -492,7 +495,6 @@ namespace LEM2 {
 			m(1, 0) = 0.5 * (1.0 - y) * dvdt;
 			m(1, 1) = 0.5 * (1.0 + y) * dvdt;
 			return m;
-
 		}
 
 		PropogationMatrix dPdTj(const size_t ai, const size_t li) const {
@@ -527,21 +529,121 @@ namespace LEM2 {
 			return m(1, 0) / Abscissa[ai].P_Full(0, 0) - m(0, 0) * Abscissa[ai].P21onP11 / Abscissa[ai].P_Full(0, 0);
 		}
 
+		// Secondary field integrals
+		inline Vec3cd integrate_integrands() const {
+			const size_t na = nAbscissa();
+			Vec3cd sum = Vec3cd::Zero();
+			sum = 0.5 * WorkIntegrands[0]; // First abscissa
+			for (size_t ai = 1; ai < na - 1; ai++) sum += WorkIntegrands[ai]; // Central abscissas
+			sum += 0.5 * WorkIntegrands[na - 1]; // Last Abscissa
+			sum *= AbscissaSpacing; // Scale for abscissa spacing
+			return sum;
+		};
+
+		inline Vec3cd FM_integrals() {
+			const size_t na = nAbscissa();
+			for (int ai = 0; ai < na; ai++) {
+				const AbscissaNode& A = Abscissa[ai];
+				const double& lambdar = A.Lambda_r;
+				const double& j0 = A.j0Lambda_r;
+				const double& j1 = A.j1Lambda_r;
+				const double& e = A.exp_minus_lambdazplush;
+				const double& l2e = A.Lambda2 * e;
+				const double& l3e = A.Lambda3 * e;
+				const double& l4e = A.Lambda4 * e;
+				
+				const cdouble& earthkernel = -A.P21onP11 * A.loopfactor;
+				const double k0 = l3e * j0;
+				const double k1 = l3e * j1;
+				const double k2 = l2e * j1;
+				
+				WorkIntegrands[ai][0] = earthkernel * k0;
+				WorkIntegrands[ai][1] = earthkernel * k1;
+				WorkIntegrands[ai][2] = earthkernel * k2;
+			}
+			// Save the forward model integrals later use in the dX and dY derivative tensor calculations
+			ForwardModelIntegrals = integrate_integrands();
+			return ForwardModelIntegrals;
+		};
+
+		inline Vec3cd DC_integrals(const size_t& derivativelayer) {
+			const size_t na = nAbscissa();
+			for (int ai = 0; ai < na; ai++) {
+				const AbscissaNode& A = Abscissa[ai]; const double& lambdar = A.Lambda_r; const double& j0 = A.j0Lambda_r; const double& j1 = A.j1Lambda_r; const double& e = A.exp_minus_lambdazplush; const double& l2e = A.Lambda2 * e; const double& l3e = A.Lambda3 * e; const double& l4e = A.Lambda4 * e;				
+				const cdouble earthkernel = -dP21onP11dCj(ai, derivativelayer) * A.loopfactor;
+				const double k0 = l3e * j0;
+				const double k1 = l3e * j1;
+				const double k2 = l2e * j1;
+				WorkIntegrands[ai][0] = earthkernel * k0; WorkIntegrands[ai][1] = earthkernel * k1; WorkIntegrands[ai][2] = earthkernel * k2;
+			}
+			return integrate_integrands();
+		};
+
+		inline Vec3cd DT_integrals(const size_t& derivativelayer) {
+			const size_t na = nAbscissa();
+			for (int ai = 0; ai < na; ai++) {
+				const AbscissaNode& A = Abscissa[ai]; const double& lambdar = A.Lambda_r; const double& j0 = A.j0Lambda_r; const double& j1 = A.j1Lambda_r; const double& e = A.exp_minus_lambdazplush; const double& l2e = A.Lambda2 * e; const double& l3e = A.Lambda3 * e; const double& l4e = A.Lambda4 * e;
+				const cdouble earthkernel = -dP21onP11dTj(ai, derivativelayer) * A.loopfactor;
+				const double k0 = l3e * j0;
+				const double k1 = l3e * j1;
+				const double k2 = l2e * j1;
+				WorkIntegrands[ai][0] = earthkernel * k0; WorkIntegrands[ai][1] = earthkernel * k1; WorkIntegrands[ai][2] = earthkernel * k2;
+			}
+			return integrate_integrands();
+		};
+
+		inline Vec3cd DR_integrals() {
+			const size_t na = nAbscissa();
+			for (int ai = 0; ai < na; ai++) {
+				const AbscissaNode& A = Abscissa[ai]; const double& lambdar = A.Lambda_r; const double& j0 = A.j0Lambda_r; const double& j1 = A.j1Lambda_r; const double& e = A.exp_minus_lambdazplush; const double& l2e = A.Lambda2 * e; const double& l3e = A.Lambda3 * e; const double& l4e = A.Lambda4 * e;
+				const cdouble earthkernel = -A.P21onP11 * A.loopfactor;
+				const double k0 = -l4e * j1;
+				const double k1 = l4e * (j0 - j1 / lambdar);
+				const double k2 = l3e * (j0 - j1 / lambdar);
+				WorkIntegrands[ai][0] = earthkernel * k0; WorkIntegrands[ai][1] = earthkernel * k1; WorkIntegrands[ai][2] = earthkernel * k2;
+			}
+			return integrate_integrands();
+		};
+
+		inline Vec3cd DX_integrals() {
+			return (x / r) * DR_integrals();
+		};
+
+		inline Vec3cd DY_integrals() {
+			return (y / r) * DR_integrals();
+		};
+
+		inline Vec3cd DZ_integrals() {
+			const size_t na = nAbscissa();
+			for (int ai = 0; ai < na; ai++) {
+				const AbscissaNode& A = Abscissa[ai]; const double& lambdar = A.Lambda_r; const double& j0 = A.j0Lambda_r; const double& j1 = A.j1Lambda_r; const double& e = A.exp_minus_lambdazplush; const double& l2e = A.Lambda2 * e; const double& l3e = A.Lambda3 * e; const double& l4e = A.Lambda4 * e;
+				const cdouble earthkernel = -A.P21onP11 * A.loopfactor;
+				const double k0 = -l4e * j0;
+				const double k1 = -l4e * j1;
+				const double k2 = -l3e * j1;
+				WorkIntegrands[ai][0] = earthkernel * k0; WorkIntegrands[ai][1] = earthkernel * k1; WorkIntegrands[ai][2] = earthkernel * k2;
+			}
+			return integrate_integrands();
+		};
+
+		inline Vec3cd DH_integrals() {
+			return DZ_integrals(); // Identical to DZ integrals
+		};
+
+		// Older
 		Vec3cd compute_integrand(const size_t& ai, const CalculationType& calculationtype) const {
 			const AbscissaNode& A = Abscissa[ai];
 
 			const double& lambdar = A.Lambda_r;
 			const double& j0 = A.j0Lambda_r;
 			const double& j1 = A.j1Lambda_r;
-			const double& e = std::exp(-(z() + h()) * A.Lambda);
+			const double& e = std::exp(-(z + h) * A.Lambda);
 			const double& l2e = A.Lambda2 * e;
 			const double& l3e = A.Lambda3 * e;
 			const double& l4e = A.Lambda4 * e;
 
 			double k0, k1, k2;
-			k0 = k1 = k2 = std::numeric_limits<double>::max();
 			cdouble earthkernel;
-
 			const size_t& derivativelayer = calculationtype.get_layer();
 			switch (calculationtype.get_mode()) {
 			case CMode::FM:
@@ -552,15 +654,15 @@ namespace LEM2 {
 				break;
 			case CMode::DX:
 				earthkernel = -A.P21onP11;
-				k0 = -l4e * j1 * x() / r();
-				k1 = l4e * (j0 - j1 / lambdar) * x() / r();
-				k2 = l3e * (j0 - j1 / lambdar) * x() / r();
+				k0 = -l4e * j1 * x / r;
+				k1 = l4e * (j0 - j1 / lambdar) * x / r;
+				k2 = l3e * (j0 - j1 / lambdar) * x / r;
 				break;
 			case CMode::DY:
 				earthkernel = -A.P21onP11;
-				k0 = -l4e * j1 * y() / r();
-				k1 = l4e * (j0 - j1 / lambdar) * y() / r();
-				k2 = l3e * (j0 - j1 / lambdar) * y() / r();
+				k0 = -l4e * j1 * y / r;
+				k1 = l4e * (j0 - j1 / lambdar) * y / r;
+				k2 = l3e * (j0 - j1 / lambdar) * y / r;
 				break;
 			case CMode::DZ:
 				earthkernel = -A.P21onP11;
@@ -590,7 +692,7 @@ namespace LEM2 {
 				glog.errormsg(_SRC_, "Error: compute_integrand() unknown calculation type %c\n", calculationtype);
 			}
 
-			const double loopfactor = A.LoopFactor(ModellingLoopRadius);
+			const double loopfactor = A.loopfactor;
 
 			Vec3cd integrand;
 			integrand[0] = earthkernel * (k0 * loopfactor);
@@ -598,6 +700,8 @@ namespace LEM2 {
 			integrand[2] = earthkernel * (k2 * loopfactor);
 			return integrand;
 		};
+
+		
 
 		Vec3cd integrate_trapezoidal(const CalculationType& calculationtype) const {
 			const size_t na = nAbscissa();
@@ -617,94 +721,102 @@ namespace LEM2 {
 		}
 
 		// Tensors
-		Mat3d PTFM() const {
+		inline Mat3d PTFM() const {
 			Mat3d T;
-			T(0, 0) = (3.0 * x2() - R2()) / R5();
-			T(0, 1) = 3.0 * x() * y() / R5();
-			T(0, 2) = 3.0 * x() * zh() / R5();
+			T(0, 0) = (3.0 * x2 - R2) / R5;
+			T(0, 1) = 3.0 * x * y / R5;
+			T(0, 2) = 3.0 * x * zh / R5;
 
 			//Note error in Fitterman and Yin paper should no be minus sign at element 2,1
 			T(1, 0) = T(0, 1);
-			T(1, 1) = (3.0 * y2() - R2()) / R5();
-			T(1, 2) = 3.0 * y() * zh() / R5();
+			T(1, 1) = (3.0 * y2 - R2) / R5;
+			T(1, 2) = 3.0 * y * zh / R5;
 
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
-			T(2, 2) = (3.0 * zh2() - R2()) / R5();
+			T(2, 2) = (3.0 * zh2 - R2) / R5;
 			return -ONEONFOURPI<double> * T;
 		};
 
-		Mat3d dPTdX() const {
+		inline Mat3d dPTdR() const {
+			// Todo check this 
+			const Mat3d dptdx = dPTdX();
+			const Mat3d dptdy = dPTdY();
+			return (x / r) * dptdx + (y / r) * dptdy;
+		}
+
+		inline Mat3d dPTdX() const {
 			Mat3d T;
-			T(0, 0) = -3.0 * x() * (2.0 * x2() - 3.0 * y2() - 3.0 * zh2()) / R7();
-			T(0, 1) = -3.0 * y() * (4.0 * x2() - y2() - zh2()) / R7();
-			T(0, 2) = -3.0 * zh() * (4.0 * x2() - y2() - zh2()) / R7();
+			T(0, 0) = -3.0 * x * (2.0 * x2 - 3.0 * y2 - 3.0 * zh2) / R7;
+			T(0, 1) = -3.0 * y * (4.0 * x2 - y2 - zh2) / R7;
+			T(0, 2) = -3.0 * zh * (4.0 * x2 - y2 - zh2) / R7;
 			T(1, 0) = T(0, 1);
-			T(1, 1) = 3.0 * x() * (x2() - 4.0 * y2() + zh2()) / R7();
-			T(1, 2) = -15.0 * y() * zh() / R7() * x();
+			T(1, 1) = 3.0 * x * (x2 - 4.0 * y2 + zh2) / R7;
+			T(1, 2) = -15.0 * y * zh / R7 * x;
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
-			T(2, 2) = 3.0 * x() * (x2() + y2() - 4.0 * zh2()) / R7();
+			T(2, 2) = 3.0 * x * (x2 + y2 - 4.0 * zh2) / R7;
 			return -ONEONFOURPI<double> * T;
 		};
 
-		Mat3d dPTdY() const {
+		inline Mat3d dPTdY() const {
 			Mat3d T;
-			T(0, 0) = -3.0 * y() * (4.0 * x2() - y2() - zh2()) / R7();
-			T(0, 1) = 3.0 * x() * (x2() - 4.0 * y2() + zh2()) / R7();
-			T(0, 2) = -15.0 * x() * zh() / R7() * y();
+			T(0, 0) = -3.0 * y * (4.0 * x2 - y2 - zh2) / R7;
+			T(0, 1) = 3.0 * x * (x2 - 4.0 * y2 + zh2) / R7;
+			T(0, 2) = -15.0 * x * zh / R7 * y;
 			T(1, 0) = T(0, 1);
-			T(1, 1) = 3.0 * y() * (3.0 * x2() - 2.0 * y2() + 3.0 * zh2()) / R7();
-			T(1, 2) = 3.0 * zh() * (x2() - 4.0 * y2() + zh2()) / R7();
+			T(1, 1) = 3.0 * y * (3.0 * x2 - 2.0 * y2 + 3.0 * zh2) / R7;
+			T(1, 2) = 3.0 * zh * (x2 - 4.0 * y2 + zh2) / R7;
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
-			T(2, 2) = 3.0 * y() * (x2() + y2() - 4.0 * zh2()) / R7();
+			T(2, 2) = 3.0 * y * (x2 + y2 - 4.0 * zh2) / R7;
 			return -ONEONFOURPI<double> *T;
 		};
 
-		Mat3d dPTdZ() const {
+		inline Mat3d dPTdZ() const {
 			Mat3d T;
-			T(0, 0) = -3.0 * zh() * (4.0 * x2() - y2() - zh2()) / R7();
-			T(0, 1) = -15.0 * x() * y() / R7() * zh();
-			T(0, 2) = 3.0 * x() * (x2() + y2() - 4.0 * zh2()) / R7();
+			T(0, 0) = -3.0 * zh * (4.0 * x2 - y2 - zh2) / R7;
+			T(0, 1) = -15.0 * x * y / R7 * zh;
+			T(0, 2) = 3.0 * x * (x2 + y2 - 4.0 * zh2) / R7;
 			T(1, 0) = T(0, 1);
-			T(1, 1) = 3.0 * zh() * (x2() - 4.0 * y2() + zh2()) / R7();
-			T(1, 2) = 3.0 * y() * (x2() + y2() - 4.0 * zh2()) / R7();
+			T(1, 1) = 3.0 * zh * (x2 - 4.0 * y2 + zh2) / R7;
+			T(1, 2) = 3.0 * y * (x2 + y2 - 4.0 * zh2) / R7;
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
-			T(2, 2) = 3.0 * zh() * (3.0 * x2() + 3.0 * y2() - 2.0 * zh2()) / R7();
+			T(2, 2) = 3.0 * zh * (3.0 * x2 + 3.0 * y2 - 2.0 * zh2) / R7;
 			return -ONEONFOURPI<double> *T;
 		};
 
-		Mat3d dPTdH() const {
+		inline Mat3d dPTdH() const {
 			Mat3d m;
 			//of course this is just minus d/dZ		
-			m(0, 0) = 3.0 * zh() * (4.0 * x2() - y2() - zh2()) / R7();
-			m(0, 1) = 15.0 * x() * y() / R7() * zh();
-			m(0, 2) = -3.0 * x() * (x2() + y2() - 4.0 * zh2()) / R7();
+			m(0, 0) = 3.0 * zh * (4.0 * x2 - y2 - zh2) / R7;
+			m(0, 1) = 15.0 * x * y / R7 * zh;
+			m(0, 2) = -3.0 * x * (x2 + y2 - 4.0 * zh2) / R7;
 			m(1, 0) = m(0, 1);
-			m(1, 1) = -3.0 * zh() * (x2() - 4.0 * y2() + zh2()) / R7();
-			m(1, 2) = -3.0 * y() * (x2() + y2() - 4.0 * zh2()) / R7();
+			m(1, 1) = -3.0 * zh * (x2 - 4.0 * y2 + zh2) / R7;
+			m(1, 2) = -3.0 * y * (x2 + y2 - 4.0 * zh2) / R7;
 			m(2, 0) = m(0, 2);
 			m(2, 1) = m(1, 2);
-			m(2, 2) = -3.0 * zh() * (3.0 * x2() + 3.0 * y2() - 2.0 * zh2()) / R7();
+			m(2, 2) = -3.0 * zh * (3.0 * x2 + 3.0 * y2 - 2.0 * zh2) / R7;
 			return -ONEONFOURPI<double> *m;
 		};
 
-		Mat3cd STFM(const Vec3cd& FM) const {
-			const cdouble& T0 = FM[0];
-			const cdouble& T1 = FM[1];
-			const cdouble& T2 = FM[2];
+		inline Mat3cd STFM() {
+			Vec3cd integrals = FM_integrals();
+			const cdouble& T0 = integrals[0];
+			const cdouble& T1 = integrals[1];
+			const cdouble& T2 = integrals[2];
 			
 			Mat3cd m;
-			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
-			m(0, 1) = (x() * y() / r2()) * (2.0 * T2 / r() - T0);
-			m(0, 2) = (-x() / r()) * T1;
+			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
+			m(0, 1) = (x * y / r2) * (2.0 * T2 / r - T0);
+			m(0, 2) = (-x / r) * T1;
 
 			//Note error in Fitterman and Yin paper should not be minus sign at element 2,1
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
-			m(1, 2) = (-y() / r()) * T1;
+			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
+			m(1, 2) = (-y / r) * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -712,39 +824,41 @@ namespace LEM2 {
 			return -ONEONFOURPI<double> *m;
 		};
 
-		Mat3cd dSTdC(const Vec3cd& dC) const {
-			const cdouble& T0 = dC[0];
-			const cdouble& T1 = dC[1];
-			const cdouble& T2 = dC[2];
+		inline Mat3cd dSTdC(const size_t& derivativelayer) {
+			const Vec3cd integrals = DC_integrals(derivativelayer);
+			const cdouble& T0 = integrals[0];
+			const cdouble& T1 = integrals[1];
+			const cdouble& T2 = integrals[2];
 
 			Mat3cd m;
-			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
-			m(0, 1) = (x() * y() / r2()) * (2.0 * T2 / r() - T0);
-			m(0, 2) = (-x() / r()) * T1;
+			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
+			m(0, 1) = (x * y / r2) * (2.0 * T2 / r - T0);
+			m(0, 2) = (-x / r) * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
-			m(1, 2) = (-y() / r()) * T1;
+			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
+			m(1, 2) = (-y / r) * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return -ONEONFOURPI<double> *m;
+			return -ONEONFOURPI<double>*m;
 		};
 
-		Mat3cd dSTdT(const Vec3cd& dT) const {
-			const cdouble& T0 = dT[0];
-			const cdouble& T1 = dT[1];
-			const cdouble& T2 = dT[2];
+		inline Mat3cd dSTdT(const size_t& derivativelayer) {
+			const Vec3cd integrals = DT_integrals(derivativelayer);
+			const cdouble& T0 = integrals[0];
+			const cdouble& T1 = integrals[1];
+			const cdouble& T2 = integrals[2];
 			
 			Mat3cd m;
-			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
-			m(0, 1) = (x() * y() / r2()) * (2.0 * T2 / r() - T0);
-			m(0, 2) = (-x() / r()) * T1;
+			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
+			m(0, 1) = (x * y / r2) * (2.0 * T2 / r - T0);
+			m(0, 2) = (-x / r) * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
-			m(1, 2) = (-y() / r()) * T1;
+			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
+			m(1, 2) = (-y / r) * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -752,22 +866,30 @@ namespace LEM2 {
 			return -ONEONFOURPI<double> *m;
 		};
 
-		Mat3cd dSTdX(const Vec3cd& dX) const {
-			const cdouble& T0 = dX[0];
-			const cdouble& T1 = dX[1];
-			const cdouble& T2 = dX[2];
-			const cdouble& T0FM = ForwardModel[0];
-			const cdouble& T1FM = ForwardModel[1];
-			const cdouble& T2FM = ForwardModel[2];
+		inline Mat3cd dSTdR() {
+			// Todo check this
+			const Mat3cd dstdx = dSTdX();
+			const Mat3cd dstdy = dSTdY();
+			return (x / r) * dstdx + (y / r) * dstdy;
+		}
+
+		inline Mat3cd dSTdX() {
+			const Vec3cd integrals = DX_integrals();
+			const cdouble& T0 = integrals[0];
+			const cdouble& T1 = integrals[1];
+			const cdouble& T2 = integrals[2];
+			const cdouble& T0FM = ForwardModelIntegrals[0];
+			const cdouble& T1FM = ForwardModelIntegrals[1];
+			const cdouble& T2FM = ForwardModelIntegrals[2];
 
 			Mat3cd m;
-			m(0, 0) = (x4() * T2 - T0 * x4() * r() - T2FM * x2() * x() - T0 * x2() * r() * y2() - 2.0 * T0FM * x() * r() * y2() + 5.0 * x() * y2() * T2FM - y4() * T2) / r5();
-			m(0, 1) = 2.0 * y() / r3() * T2FM - y() / r2() * T0FM - 6.0 * x2() * y() / r5() * T2FM + 2.0 * x2() * y() / r4() * T0FM + 2.0 * x() * y() / r3() * T2 - x() * y() / r2() * T0;
-			m(0, 2) = -(T1FM * y2() + x2() * x() * T1 + x() * T1 * y2()) / r3();
+			m(0, 0) = (x4 * T2 - T0 * x4 * r - T2FM * x2 * x - T0 * x2 * r * y2 - 2.0 * T0FM * x * r * y2 + 5.0 * x * y2 * T2FM - y4 * T2) / r5;
+			m(0, 1) = 2.0 * y / r3 * T2FM - y / r2 * T0FM - 6.0 * x2 * y / r5 * T2FM + 2.0 * x2 * y / r4 * T0FM + 2.0 * x * y / r3 * T2 - x * y / r2 * T0;
+			m(0, 2) = -(T1FM * y2 + x2 * x * T1 + x * T1 * y2) / r3;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = -(T2 * x4() - T2FM * x2() * x() + T0 * y2() * r() * x2() - 2.0 * T0FM * y2() * x() * r() + 5.0 * x() * y2() * T2FM + T0 * y4() * r() - y4() * T2) / r5();
-			m(1, 2) = y() / r3() * T1FM * x() - y() / r() * T1;
+			m(1, 1) = -(T2 * x4 - T2FM * x2 * x + T0 * y2 * r * x2 - 2.0 * T0FM * y2 * x * r + 5.0 * x * y2 * T2FM + T0 * y4 * r - y4 * T2) / r5;
+			m(1, 2) = y / r3 * T1FM * x - y / r * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -775,22 +897,23 @@ namespace LEM2 {
 			return -ONEONFOURPI<double> * m;
 		};
 
-		Mat3cd dSTdY(const Vec3cd& dY) const {
-			const cdouble& T0 = dY[0];
-			const cdouble& T1 = dY[1];
-			const cdouble& T2 = dY[2];
-			const cdouble& T0FM = ForwardModel[0];
-			const cdouble& T1FM = ForwardModel[1];
-			const cdouble& T2FM = ForwardModel[2];
+		inline Mat3cd dSTdY() {
+			const Vec3cd integrals = DY_integrals();
+			const cdouble& T0 = integrals[0];
+			const cdouble& T1 = integrals[1];
+			const cdouble& T2 = integrals[2];
+			const cdouble& T0FM = ForwardModelIntegrals[0];
+			const cdouble& T1FM = ForwardModelIntegrals[1];
+			const cdouble& T2FM = ForwardModelIntegrals[2];
 
 			Mat3cd m;
-			m(0, 0) = (x4() * T2 - T0 * x4() * r() + 2.0 * T0FM * x2() * y() * r() - T0 * x2() * r() * y2() - 5.0 * x2() * y() * T2FM + y2() * y() * T2FM - y4() * T2) / r5();
-			m(0, 1) = 2.0 * x() / r3() * T2FM - x() / r2() * T0FM - 6.0 * x() * y2() / r5() * T2FM + 2.0 * x() * y2() / r4() * T0FM + 2.0 * x() * y() / r3() * T2 - x() * y() / r2() * T0;
-			m(0, 2) = x() / r3() * T1FM * y() - x() / r() * T1;
+			m(0, 0) = (x4 * T2 - T0 * x4 * r + 2.0 * T0FM * x2 * y * r - T0 * x2 * r * y2 - 5.0 * x2 * y * T2FM + y2 * y * T2FM - y4 * T2) / r5;
+			m(0, 1) = 2.0 * x / r3 * T2FM - x / r2 * T0FM - 6.0 * x * y2 / r5 * T2FM + 2.0 * x * y2 / r4 * T0FM + 2.0 * x * y / r3 * T2 - x * y / r2 * T0;
+			m(0, 2) = x / r3 * T1FM * y - x / r * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = -(T2 * x4() + T0 * y2() * r() * x2() + 2.0 * T0 * y() * r() * x2() - 5.0 * x2() * y() * T2FM + T0 * y4() * r() + y2() * y() * T2 - y4() * T2) / r5();
-			m(1, 2) = -(T1 * x2() + y() * T1 * x2() + y2() * y() * T1) / r3();
+			m(1, 1) = -(T2 * x4 + T0 * y2 * r * x2 + 2.0 * T0 * y * r * x2 - 5.0 * x2 * y * T2FM + T0 * y4 * r + y2 * y * T2 - y4 * T2) / r5;
+			m(1, 2) = -(T1 * x2 + y * T1 * x2 + y2 * y * T1) / r3;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -798,19 +921,20 @@ namespace LEM2 {
 			return -ONEONFOURPI<double> * m;
 		};
 
-		Mat3cd dSTdZ(const Vec3cd& dZ) const {
-			const cdouble& T0 = dZ[0];
-			const cdouble& T1 = dZ[1];
-			const cdouble& T2 = dZ[2];
+		inline Mat3cd dSTdZ() {
+			const Vec3cd integrals = DZ_integrals();
+			const cdouble& T0 = integrals[0];
+			const cdouble& T1 = integrals[1];
+			const cdouble& T2 = integrals[2];
 
 			Mat3cd m;
-			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
-			m(0, 1) = x() * y() / r2() * (2.0 * T2 / r() - T0);
-			m(0, 2) = -x() / r() * T1;
+			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
+			m(0, 1) = x * y / r2 * (2.0 * T2 / r - T0);
+			m(0, 2) = -x / r * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
-			m(1, 2) = -y() / r() * T1;
+			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
+			m(1, 2) = -y / r * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -818,19 +942,20 @@ namespace LEM2 {
 			return -ONEONFOURPI<double> *m;
 		};
 
-		Mat3cd dSTdH(const Vec3cd& dH) const {
-			const cdouble& T0 = dH[0];
-			const cdouble& T1 = dH[1];
-			const cdouble& T2 = dH[2];
+		inline Mat3cd dSTdH() {
+			const Vec3cd integrals = DH_integrals();
+			const cdouble& T0 = integrals[0];
+			const cdouble& T1 = integrals[1];
+			const cdouble& T2 = integrals[2];
 
 			Mat3cd m;
-			m(0, 0) = ((x2() / r2() - y2() / r2()) * T2 / r() - T0 * x2() / r2());
-			m(0, 1) = x() * y() / r2() * (2.0 * T2 / r() - T0);
-			m(0, 2) = -x() / r() * T1;
+			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
+			m(0, 1) = x * y / r2 * (2.0 * T2 / r - T0);
+			m(0, 2) = -x / r * T1;
 
 			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2() / r2() - x2() / r2()) * T2 / r() - T0 * y2() / r2());
-			m(1, 2) = -y() / r() * T1;
+			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
+			m(1, 2) = -y / r * T1;
 
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
@@ -841,32 +966,28 @@ namespace LEM2 {
 		Mat3d PrimaryTensor(const CalculationType& calculationtype) const {
 			switch (calculationtype.get_mode()) {
 			case CMode::FM: return PTFM();
+			case CMode::DC: return Mat3d::Zero();
+			case CMode::DT: return Mat3d::Zero();
+			case CMode::DR: return dPTdR();
 			case CMode::DX: return dPTdX();
 			case CMode::DY: return dPTdY();
 			case CMode::DZ: return dPTdZ();
 			case CMode::DH: return dPTdH();
-			case CMode::DC: return Mat3d::Zero();
-			case CMode::DT: return Mat3d::Zero();
 			default:
 				glog.errormsg(_SRC_, "Unknown calculation type %c\n", calculationtype);
 			}
 		};
 
 		Mat3cd SecondaryTensor(const CalculationType& calculationtype) {
-			const Vec3cd integral = integrate_trapezoidal(calculationtype);
-
 			switch (calculationtype.get_mode()) {
-			case CMode::FM: {
-							// Save the forward result for the dX and dY derivative calculations
-							ForwardModel = integral;
-							return STFM(integral);
-							};
-			case CMode::DC: return dSTdC(integral);
-			case CMode::DT: return dSTdT(integral);
-			case CMode::DX: return dSTdX(integral);
-			case CMode::DY: return dSTdY(integral);
-			case CMode::DZ: return dSTdZ(integral);
-			case CMode::DH: return dSTdH(integral);
+			case CMode::FM: return STFM();
+			case CMode::DC: return dSTdC(calculationtype.get_layer());
+			case CMode::DT: return dSTdT(calculationtype.get_layer());
+			case CMode::DR: return dSTdR();
+			case CMode::DX: return dSTdX();
+			case CMode::DY: return dSTdY();
+			case CMode::DZ: return dSTdZ();
+			case CMode::DH: return dSTdH();
 			default:
 				glog.errormsg(_SRC_, "Unknown calculation type %s\n", calculationtype.string().c_str());
 			}
@@ -874,13 +995,11 @@ namespace LEM2 {
 
 	public:
 
-		Vec3d primary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir) const {
+		inline Vec3d primary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir) const {
 			return PrimaryTensor(calculationtype) * txdir;
 		}
 
-		Vec3cd secondary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir) {
-			//std::cout << txdir << std::endl;
-			//std::cout << SecondaryTensor(calculationtype) << std::endl;
+		inline Vec3cd secondary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir) {
 			return SecondaryTensor(calculationtype) * txdir;
 		}
 
@@ -967,7 +1086,7 @@ namespace LEM2 {
 	class LEModeller {
 
 	private:
-		std::shared_ptr<LEGeometryStore> GeometryStore = std::make_shared<LEGeometryStore>();
+		LEGeometryStore GeometryStore;
 		Vec3d Source_Orientation;
 		CalculationType calculationtype;
 		std::shared_ptr<Earth1D> EarthPtr;
@@ -987,21 +1106,19 @@ namespace LEM2 {
 
 		void initialise(const std::vector<double>& discrete_frequencies, const size_t& numabscissa, const double& modelling_loop_radius) {
 			const size_t nf = discrete_frequencies.size();
-			GeometryStore->x = 100;
-			GeometryStore->y = 101;
-			GeometryStore->z = 102;
+			GeometryStore.x = 100;
+			GeometryStore.y = 101;
+			GeometryStore.z = 102;
 
 			// Insert the frequencies
 			for (size_t fi = 0; fi < nf; fi++) {
-				FM.emplace_back(LESingleFrequencyModeller(GeometryStore));
+				FM.emplace_back(LESingleFrequencyModeller());
 			};
-			double b = FM[1].z();
-
+			
 			// Now initialise them
 			for (size_t fi = 0; fi < nf; fi++) {
 				FM[fi].initialise(discrete_frequencies[fi], numabscissa, modelling_loop_radius);
 			}
-			double c = FM[1].z();
 		}
 
 		void set_earth(const Earth1D& earth) {
@@ -1016,9 +1133,11 @@ namespace LEM2 {
 		void set_geometry(const Vec3d& source_orientation, double h, double x, double y, double z) {
 			Source_Orientation = source_orientation;
 			const size_t nf = nFrequencies();
-			bool geometrychanged = GeometryStore->update(x, y, z, h);
-			for (size_t i = 0; i < nf; i++) {
-				FM[i].set_geometrychanged_status(geometrychanged);
+			bool geometrychanged = GeometryStore.update(x, y, z, h);
+			if (geometrychanged) {
+				for (size_t i = 0; i < nf; i++) {
+					FM[i].set_xyzh(GeometryStore);
+				}
 			}
 		};
 

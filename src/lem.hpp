@@ -28,6 +28,8 @@ namespace LEM1 {
 	using CalculationType = CT::CalculationType;
 	using CMode = CT::CalculationType::Mode;
 	enum class RZeroMethod { PROPOGATIONMATRIX, RECURSIVE };
+	constexpr double DefaultLowerFractionalWidth = 4.44;
+	constexpr double DefaultUpperFractionalWidth = 1.84;
 
 	inline cdouble ip_colecole_conductivity(const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
 		//c = c0 - c0*(N / (1 + (1 - N)*(j*omega*T) ^ K));
@@ -190,8 +192,8 @@ namespace LEM1 {
 		double mean_log10conductivity;
 
 		size_t NumAbscissa = 17;
-		double LowerFractionalWidth = 4.44;
-		double UpperFractionalWidth = 1.84;
+		double LowerFractionalWidth = DefaultLowerFractionalWidth;
+		double UpperFractionalWidth = DefaultUpperFractionalWidth;
 		size_t number_integrand_calls;
 		std::vector<HankelTransforms> Hankel;
 
