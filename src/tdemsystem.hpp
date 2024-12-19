@@ -344,6 +344,38 @@ namespace AEM {
 			return invYPR(rx_roll, rx_pitch, rx_yaw);
 		};
 
+		inline Mat3d rx_roll_derivative_matrix() const {
+			const Mat3d R = roll_matrix_degrees(rx_roll);
+			const Mat3d P = pitch_matrix_degrees(rx_pitch);
+			const Mat3d Y = yaw_matrix_degrees(rx_yaw);
+			const Mat3d dR = roll_matrix_derivative_degrees(rx_roll);
+			const Mat3d m = (dR * P * Y).transpose() * R * P * Y;
+			return m;
+		};
+
+		inline Mat3d rx_pitch_derivative_matrix() const {
+			// f(p) = [R(r) P(p) Y(y)]' * I     // fp is field vector in Rx reference frame
+			// I    = [R(r) P(p) Y(y)]  * f(p)  //  I is field vector in the inertial reference frame
+			// df(p)/dp = d([R(r) P(p) Y(y)]')/dp * I + [R(r) P(p) Y(y)]' * d(I)/dp
+			// df(p)/dp = d([R(r) P(p) Y(y)]')/dp * I         since d(I)/dp = 0
+			//          = d([R(r)    P(p)  Y(y)]')/dp * [R(r) P(p) Y(y)] * f(p)
+			//          =   [R(r) dP(p)/dp Y(y)]'   * [R(r) P(p) Y(y)] * f(p)
+			const Mat3d R = roll_matrix_degrees(rx_roll);
+			const Mat3d P = pitch_matrix_degrees(rx_pitch);
+			const Mat3d Y = yaw_matrix_degrees(rx_yaw);
+			const Mat3d dP = pitch_matrix_derivative_degrees(rx_pitch);
+			const Mat3d m = (R * dP * Y).transpose() * R * P * Y;
+			return m;
+		};
+
+		inline Mat3d rx_yaw_derivative_matrix() const {
+			const Mat3d R = roll_matrix_degrees(rx_roll);
+			const Mat3d P = pitch_matrix_degrees(rx_pitch);
+			const Mat3d Y = yaw_matrix_degrees(rx_yaw);
+			const Mat3d dY = yaw_matrix_derivative_degrees(rx_yaw);
+			const Mat3d m = (R * P * dY).transpose() * R * P * Y;
+			return m;
+		};
 	};
 
 	class LowPassFilter {
@@ -1211,6 +1243,7 @@ namespace AEM {
 
 				// Rotate field to Rx frame
 				v = RotMatrixToRxFrame * v;
+
 				//std::cout << RotMatrixToRxFrame << std::endl;
 
 				if (lem().cmode() == CMode::DH) {
@@ -1365,7 +1398,45 @@ namespace AEM {
 			}
 		}
 
+		void drx_roll_new(const cTDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
+			Mat3d dM = g.rx_roll_derivative_matrix();
+			apply_rx_derivative_matrix(dM, fields, derivatives);
+		};
+
+		void drx_pitch_new(const cTDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
+			Mat3d dM = g.rx_pitch_derivative_matrix();
+			apply_rx_derivative_matrix(dM, fields, derivatives);
+		};
+
+		void drx_yaw_new(const cTDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
+			Mat3d dM = g.rx_yaw_derivative_matrix();
+			apply_rx_derivative_matrix(dM, fields, derivatives);
+		};
+
 	private:
+
+		void apply_rx_derivative_matrix(const Mat3d& dM, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
+			const size_t n = fields.size();
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
+				for (size_t i = 0; i < n; i++) {
+					Vec3d ftrue = fields[i];
+					//Must work with true field vector directions (not the PPM scaled versinn)
+					ftrue[XCOMP] *= Comp[XCOMP].RefGeomPrimary;
+					ftrue[YCOMP] *= Comp[YCOMP].RefGeomPrimary;
+					ftrue[ZCOMP] *= Comp[ZCOMP].RefGeomPrimary;
+					derivatives[i] = dM * ftrue;
+					//Convert back to PPMS
+					derivatives[i][XCOMP] /= Comp[XCOMP].RefGeomPrimary;
+					derivatives[i][YCOMP] /= Comp[YCOMP].RefGeomPrimary;
+					derivatives[i][ZCOMP] /= Comp[ZCOMP].RefGeomPrimary;
+				}
+			}
+			else {
+				for (size_t i = 0; i < n; i++) {
+					derivatives[i] = dM * fields[i];
+				}
+			}
+		}
 
 		void setup_transforms() {
 			WvForm.NumFrequencies = WvForm.NumSamples / 2 + 1;

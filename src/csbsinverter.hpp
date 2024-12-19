@@ -1881,8 +1881,7 @@ public:
 		return ev;
 	}
 
-	std::vector<cTDEmGeometry> get_geometry(const Vector& parameters)
-	{
+	std::vector<cTDEmGeometry> get_geometry(const Vector& parameters) {
 		std::vector<cTDEmGeometry> gv(nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
 			gv[si] = G[si].input;
@@ -1897,9 +1896,7 @@ public:
 		return gv;
 	}
 
-
-	std::vector<double> get_scalefactors(const size_t sysi, const Vector& parameters)
-	{
+	std::vector<double> get_scalefactors(const size_t sysi, const Vector& parameters) {
 		std::vector<double> sf(3);
 		const cTDEmSystemInfo& S = SV[sysi];
 		//bookmark
@@ -1913,8 +1910,7 @@ public:
 		return sf;
 	}
 
-	void set_predicted(const Vector& parameters)
-	{
+	void set_predicted(const Vector& parameters) {
 		std::vector<Earth1D> ev = get_earth(parameters);
 		std::vector<cTDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
@@ -1926,7 +1922,6 @@ public:
 			for (size_t si = 0; si < nSoundings; si++) {
 				const Earth1D& e = ev[si];
 				const cTDEmGeometry& g = gv[si];
-				//T.setconductivitythickness(e.conductivity, e.thickness);
 				T.set_earth(e);
 				T.set_geometry(g);
 
@@ -1947,6 +1942,7 @@ public:
 		}
 	}
 
+	// Forward models and derivatives
 	void forwardmodel(const Vector& parameters, Vector& predicted) {
 		Matrix dummy;
 		nForwards++;
@@ -1959,8 +1955,7 @@ public:
 		forwardmodel_impl(parameters, predicted, jacobian, true);
 	}
 
-	void forwardmodel_impl(const Vector& parameters, Vector& predicted, Matrix& jacobian, bool computederivatives)
-	{
+	void forwardmodel_impl(const Vector& parameters, Vector& predicted, Matrix& jacobian, bool computederivatives) {
 		Vector pred_all(nAllData);
 		Matrix J_all;
 		if (computederivatives) {
@@ -1989,27 +1984,42 @@ public:
 				T.setprimaryfields();
 				T.setsecondaryfields();
 
+				const size_t& nw = T.nwindows();
 				std::vector<double> xfm = T.XS() * scalefactors[XCOMP];
 				std::vector<double> yfm = T.YS() * scalefactors[YCOMP];
 				std::vector<double> zfm = T.ZS() * scalefactors[ZCOMP];
+				std::vector<double> xzfm;
+
+				//std::vector<Vec3d> fm(nw);
+				//for (size_t i = 0; i < nw; i++){
+				//	fm[i][0] = T.XS()[0] * scalefactors[XCOMP];
+				//	fm[i][1] = T.YS()[1] * scalefactors[YCOMP];
+				//	fm[i][2] = T.ZS()[2] * scalefactors[ZCOMP];
+				//}
+				
 
 				//std::cout << tostring(zfm," ") << std::endl;
 
-				std::vector<double> xzfm;
+
 				if (S.invertPrimaryPlusSecondary) {
+					//for (size_t i = 0; i < nw; i++) {
+					//	fm[i][0] += T.PX() * scalefactors[XCOMP];
+					//	fm[i][1] += T.PY() * scalefactors[YCOMP];
+					//	fm[i][2] += T.PZ() * scalefactors[ZCOMP];
+					//}
 					xfm += T.PX() * scalefactors[XCOMP];
 					yfm += T.PY() * scalefactors[YCOMP];
 					zfm += T.PZ() * scalefactors[ZCOMP];
 				}
 
 				if (S.invertXPlusZ) {
-					const size_t& nw = T.nwindows();
 					xzfm.resize(nw);
 					for (size_t wi = 0; wi < nw; wi++) {
 						xzfm[wi] = std::hypot(xfm[wi], zfm[wi]);
 					}
 				}
 
+				// Predicted
 				if (S.invertXPlusZ) {
 					for (size_t wi = 0; wi < nw; wi++) {
 						const int& di = dindex(si, sysi, XZAMP, wi);
@@ -2027,6 +2037,7 @@ public:
 					}
 				}
 
+				// Jacobian
 				if (computederivatives) {
 					std::vector<double> xdrv(nw);
 					std::vector<double> ydrv(nw);
@@ -2039,15 +2050,9 @@ public:
 							if (pindex >= 0) {
 								//Here filling with the forward itself as no new computations
 								fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-								if (ci != XCOMP) {
-									xdrv *= 0.0;
-								}
-								if (ci != YCOMP) {
-									ydrv *= 0.0;
-								}
-								if (ci != ZCOMP) {
-									zdrv *= 0.0;
-								}
+								if (ci != XCOMP) xdrv *= 0.0;
+								if (ci != YCOMP) ydrv *= 0.0;
+								if (ci != ZCOMP) zdrv *= 0.0;
 								fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
 							}
 						}
@@ -2188,7 +2193,8 @@ public:
 		}
 	}
 
-	void save_iteration_file(const cIterationState& S) {
+	// Etc
+	void save_iteration_file(const cIterationState& S) const {
 		std::ofstream ofs(dumppath() + "iteration.dat");
 		ofs << S.info_string();
 	};

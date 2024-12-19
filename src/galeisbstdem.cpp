@@ -47,6 +47,8 @@ int finaliseandexit() {
 
 int main(int argc, char** argv) {
 
+	//test_rpy();
+	//return 0;
 	//try {
 	//	//CMode m = CalculationType::lookup_mode(11);
 	//	CalculationType c(CMode::DC, -1);
