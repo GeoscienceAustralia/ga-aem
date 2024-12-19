@@ -8,8 +8,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <iostream>
 
-#include "tdemsystem.hpp"
-
 #include "string_print.hpp"
 #include "logger.hpp"
 #include "file_utils.hpp"
@@ -17,10 +15,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "streamredirecter.hpp"
 
 #include "gaaem_version.hpp"
-#include "tdemsystem.hpp"
-#include "cinverter.hpp"
+#include "aem_coredefs.hpp"
 #include "csbsinverter.hpp"
-#include "rollpitchyaw.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 
@@ -46,19 +42,6 @@ int finaliseandexit() {
 }
 
 int main(int argc, char** argv) {
-
-	//test_rpy();
-	//return 0;
-	//try {
-	//	//CMode m = CalculationType::lookup_mode(11);
-	//	CalculationType c(CMode::DC, -1);
-	//}
-	//catch (std::exception &e){
-	//	std::cout << e.what();
-	//}
-	//return 0;
-
-
 	std::string commandline = commandlinestring(argc, argv);
 	int mpisize = 1;
 	int mpirank = 0;
