@@ -34,13 +34,13 @@ using namespace AEM;
 class cGeomStruct {
 
 public:
-	cTDEmGeometry input;
-	cTDEmGeometry ref;
-	cTDEmGeometry std;
-	cTDEmGeometry min;
-	cTDEmGeometry max;
-	cTDEmGeometry tfr;
-	cTDEmGeometry invmodel;
+	TDEmGeometry input;
+	TDEmGeometry ref;
+	TDEmGeometry std;
+	TDEmGeometry min;
+	TDEmGeometry max;
+	TDEmGeometry tfr;
+	TDEmGeometry invmodel;
 };
 
 class cEarthStruct {
@@ -542,7 +542,7 @@ public:
 	};
 
 	bool solve_geometry_index(const size_t index) const {
-		return fdG.cref(cTDEmGeometry::element_name(index)).solve;
+		return fdG.cref(TDEmGeometry::element_name(index)).solve;
 	}
 
 	bool solve_geometry() const {
@@ -820,8 +820,8 @@ public:
 	cIFDMap set_field_definitions_geometry(const cBlock& parent)
 	{
 		cIFDMap g;
-		for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
-			std::string key = cTDEmGeometry::element_name(i);
+		for (size_t i = 0; i < TDEmGeometry::size(); i++) {
+			std::string key = TDEmGeometry::element_name(i);
 			cInvertibleFieldDefinition f(parent, key);
 			bool a = g.add(key, f);
 			if (a == false) {
@@ -855,8 +855,8 @@ public:
 		}
 
 		//Geometry params
-		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
-			std::string gname = cTDEmGeometry::element_name(gi);
+		for (size_t gi = 0; gi < TDEmGeometry::size(); gi++) {
+			std::string gname = TDEmGeometry::element_name(gi);
 			cInvertibleFieldDefinition& g = fdG.ref(gname);
 			if (g.solve) {
 				g.offset = (int)nParamPerSounding;
@@ -928,8 +928,8 @@ public:
 
 		for (size_t si = 0; si < nSoundings; si++) {
 			cGeomStruct& g = G[si];
-			for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
-				const std::string ename = cTDEmGeometry::element_name(i);
+			for (size_t i = 0; i < TDEmGeometry::size(); i++) {
+				const std::string ename = TDEmGeometry::element_name(i);
 				const cInvertibleFieldDefinition& e = fdG.cref(ename);
 				if (e.bound()) {
 					const int pi = gindex(si, ename);
@@ -995,7 +995,7 @@ public:
 
 		double s = C.alpha / (double)(nGeomParamPerSounding * nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
-			for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
+			for (size_t gi = 0; gi < TDEmGeometry::size(); gi++) {
 				const int pi = gindex(si, gi);
 				if (pi >= 0) {
 					C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
@@ -1241,7 +1241,7 @@ public:
 		if (nSoundings < 3) return;
 		Matrix L = Matrix::Zero((nSoundings - 2) * nGeomParamPerSounding, nParam);
 		size_t nrows = 0;
-		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
+		for (size_t gi = 0; gi < TDEmGeometry::size(); gi++) {
 			if (solve_geometry_index(gi) == false)continue;
 			for (size_t si = 1; si < nSoundings - 1; si++) {
 				double d01 = std::hypot(Id[si].x - Id[si - 1].x, Id[si].y - Id[si - 1].y);
@@ -1273,7 +1273,7 @@ public:
 		}
 		d = d / (double)(nSoundings - 1);//average sample distance
 
-		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
+		for (size_t gi = 0; gi < TDEmGeometry::size(); gi++) {
 			if (solve_geometry_index(gi) == false)continue;
 			for (size_t si = 2; si < nSoundings - 2; si++) {
 				const int pi0 = gindex(si - 2, gi);
@@ -1300,7 +1300,7 @@ public:
 		if (nSoundings < 2) return;
 		Matrix L = Matrix::Zero(nSoundings * nGeomParamPerSounding, nParam);
 		size_t nrows = 0;
-		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
+		for (size_t gi = 0; gi < TDEmGeometry::size(); gi++) {
 			if (solve_geometry_index(gi) == false)continue;
 			for (size_t si = 0; si < nSoundings; si++) {
 				const int spi = gindex(si, gi);
@@ -1358,9 +1358,9 @@ public:
 
 	Vector CableLengths(const Vector& m) {
 		Vector cablelength(nSoundings);
-		const std::vector<cTDEmGeometry> gv = get_geometry(m);
+		const std::vector<TDEmGeometry> gv = get_geometry(m);
 		for (size_t si = 0; si < nSoundings; si++) {
-			const cTDEmGeometry& g = gv[si];
+			const TDEmGeometry& g = gv[si];
 			const double dr = g.txrx_dr();
 			cablelength[si] = dr;
 		}
@@ -1383,10 +1383,10 @@ public:
 		if (C.alpha == 0.0) return;
 		if (nGeomParamPerSounding <= 0) return;
 
-		const std::vector<cTDEmGeometry> gv = get_geometry(m);
+		const std::vector<TDEmGeometry> gv = get_geometry(m);
 		double s = C.alpha / (double)(nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
-			const cTDEmGeometry& g = gv[si];
+			const TDEmGeometry& g = gv[si];
 			const double dr = g.txrx_dr();
 			const int pix = gindex(si, "txrx_dx");
 			const int piy = gindex(si, "txrx_dy");
@@ -1711,8 +1711,8 @@ public:
 				}
 			}
 
-			for (int gi = 0; gi < cTDEmGeometry::size(); gi++) {
-				std::string gname = cTDEmGeometry::element_name(gi);
+			for (int gi = 0; gi < TDEmGeometry::size(); gi++) {
+				std::string gname = TDEmGeometry::element_name(gi);
 				const int pi = gindex(si, gname);
 				if (pi >= 0) {
 					RefParam[pi] = g.ref[gname];
@@ -1820,8 +1820,8 @@ public:
 
 		for (size_t si = 0; si < nSoundings; si++) {
 			cGeomStruct& g = G[si];
-			for (size_t i = 0; i < cTDEmGeometry::size(); i++) {
-				const std::string ename = cTDEmGeometry::element_name(i);
+			for (size_t i = 0; i < TDEmGeometry::size(); i++) {
+				const std::string ename = TDEmGeometry::element_name(i);
 				const cInvertibleFieldDefinition& e = fdG.cref(ename);
 				if (e.bound()) {
 					const int pi = gindex(si, ename);
@@ -1881,12 +1881,12 @@ public:
 		return ev;
 	}
 
-	std::vector<cTDEmGeometry> get_geometry(const Vector& parameters) {
-		std::vector<cTDEmGeometry> gv(nSoundings);
+	std::vector<TDEmGeometry> get_geometry(const Vector& parameters) {
+		std::vector<TDEmGeometry> gv(nSoundings);
 		for (size_t si = 0; si < nSoundings; si++) {
 			gv[si] = G[si].input;
-			for (int gi = 0; gi < cTDEmGeometry::size(); gi++) {
-				const std::string& gname = cTDEmGeometry::element_name(gi);
+			for (int gi = 0; gi < TDEmGeometry::size(); gi++) {
+				const std::string& gname = TDEmGeometry::element_name(gi);
 				const int pi = gindex(si, gname);
 				if (pi >= 0) {
 					gv[si][gname] = parameters[pi];
@@ -1912,7 +1912,7 @@ public:
 
 	void set_predicted(const Vector& parameters) {
 		std::vector<Earth1D> ev = get_earth(parameters);
-		std::vector<cTDEmGeometry> gv = get_geometry(parameters);
+		std::vector<TDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
 			cTDEmSystemInfo& S = SV[sysi];
 			S.predicted.resize(nSoundings);
@@ -1921,7 +1921,7 @@ public:
 			const size_t& nw = T.nwindows();
 			for (size_t si = 0; si < nSoundings; si++) {
 				const Earth1D& e = ev[si];
-				const cTDEmGeometry& g = gv[si];
+				const TDEmGeometry& g = gv[si];
 				T.set_earth(e);
 				T.set_geometry(g);
 
@@ -1964,7 +1964,7 @@ public:
 		}
 
 		std::vector<Earth1D> ev = get_earth(parameters);
-		std::vector<cTDEmGeometry> gv = get_geometry(parameters);
+		std::vector<TDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
 			cTDEmSystemInfo& S = SV[sysi];
 			cTDEmSystem& T = S.T;
@@ -1974,7 +1974,7 @@ public:
 			const size_t& nw = T.nwindows();
 			for (size_t si = 0; si < nSoundings; si++) {
 				const Earth1D& e = ev[si];
-				const cTDEmGeometry& g = gv[si];
+				const TDEmGeometry& g = gv[si];
 				T.set_earth(e);
 				T.set_geometry(g);
 				T.setup_computations();
@@ -2338,8 +2338,8 @@ public:
 		bool status = true;
 		const size_t si = bunchindex;
 		cGeomStruct& g = G[si];
-		for (size_t gi = 0; gi < cTDEmGeometry::size(); gi++) {
-			std::string ename = cTDEmGeometry::element_name(gi);
+		for (size_t gi = 0; gi < TDEmGeometry::size(); gi++) {
+			std::string ename = TDEmGeometry::element_name(gi);
 			const cInvertibleFieldDefinition ge = map.cref(ename);
 			bool inpstatus = IM->read(ge.input, g.input[gi]);
 			bool refstatus = IM->read(ge.ref, g.ref[gi]);
@@ -2437,7 +2437,7 @@ public:
 		writetofile(state.param, dp + "m.dat");
 		writetofile(state.pred, dp + "g.dat");
 		std::vector<Earth1D> e = get_earth(state.param);
-		std::vector <cTDEmGeometry> g = get_geometry(state.param);
+		std::vector <TDEmGeometry> g = get_geometry(state.param);
 		e[Bunch.master_index()].write(dumppath() + "earth_inv.dat");
 		g[Bunch.master_index()].write(dumppath() + "geometry_inv.dat");
 		dump_earth_all(e, dumppath() + "earth_all.dat");
@@ -2456,7 +2456,7 @@ public:
 		}
 	}
 
-	void dump_geometry_all(const std::vector <cTDEmGeometry> g, const std::string& path) {
+	void dump_geometry_all(const std::vector <TDEmGeometry> g, const std::string& path) {
 		std::ofstream of(path);
 		for (size_t si = 0; si < g.size(); si++) {
 			for (size_t gi = 0; gi < g[si].size(); gi++) {
@@ -2556,7 +2556,7 @@ public:
 		}
 
 		std::vector<Earth1D> ev = get_earth(CIS.param);
-		std::vector<cTDEmGeometry> gv = get_geometry(CIS.param);
+		std::vector<TDEmGeometry> gv = get_geometry(CIS.param);
 		for (size_t si = 0; si < nSoundings; si++) {
 			E[si].invmodel = ev[si];
 			G[si].invmodel = gv[si];
@@ -2726,7 +2726,7 @@ public:
 		}
 
 		//Geometry Modelled		
-		const cTDEmGeometry& g = G[si].invmodel;
+		const TDEmGeometry& g = G[si].invmodel;
 		invertedfieldsonly = true;
 		for (size_t gi = 0; gi < g.size(); gi++) {
 			if (invertedfieldsonly && solve_geometry_index(gi) == false)continue;
@@ -2834,7 +2834,7 @@ public:
 					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 
-			const cTDEmGeometry& g = G[si].input;
+			const TDEmGeometry& g = G[si].input;
 			for (size_t gi = 0; gi < g.size(); gi++) {
 				if (solve_geometry_index(gi) == true) {
 					const std::string& gname = g.element_name(gi);
@@ -2864,7 +2864,7 @@ public:
 					v.size(), ST_FLOAT, DN_LAYER, 'E', 15, 6);
 			}
 
-			const cTDEmGeometry& g = G[si].input;
+			const TDEmGeometry& g = G[si].input;
 			for (size_t gi = 0; gi < g.size(); gi++) {
 				if (solve_geometry_index(gi) == false) continue;
 				const std::string& gname = g.element_name(gi);

@@ -20,7 +20,7 @@ class cLogger glog; //The global instance of the log file manager
 
 using namespace AEM;
 
-static int parseinputrecord(const char* record, cTDEmGeometry& G, Earth1D& E)
+static int parseinputrecord(const char* record, TDEmGeometry& G, Earth1D& E)
 {
 	std::vector<double> v = getdoublevector(record, " ,\t\r\n");
 
@@ -201,7 +201,7 @@ static int process(std::string controlfilename)
 			continue;
 		}
 		glog.logmsg("Processing record %zu: ", recnum);
-		cTDEmGeometry G;
+		TDEmGeometry G;
 		Earth1D E;
 		parseinputrecord(CurrentRecord.c_str(), G, E);
 		glog.logmsg("%s\n", CurrentRecord.c_str());

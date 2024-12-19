@@ -130,7 +130,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 	std::vector<cTDEmSystemInfo> SV;
 	std::vector<TDEMNuisance> ntemplate;
 	std::vector<std::string> ninitial;
-	cTDEmGeometry  IG;
+	TDEmGeometry  IG;
 	cOutputFileInfo OI;
 
 	bool SaveMaps;
@@ -352,7 +352,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		fd_yord.initialise(b, "Northing");
 		fd_elevation.initialise(b, "GroundElevation");
 
-		cTDEmGeometry g;
+		TDEmGeometry g;
 		for (size_t gi = 0; gi < g.size(); gi++) {
 			fd_geometry[gi].initialise(b, g.element_name(gi));
 		}
@@ -979,9 +979,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		nmap.writedata(fname);
 	}
 
-	cTDEmGeometry getgeometry(const rjMcMC1DModel& m)
+	TDEmGeometry getgeometry(const rjMcMC1DModel& m)
 	{
-		cTDEmGeometry  OG = IG;
+		TDEmGeometry  OG = IG;
 
 		bool angledistance = false;
 		double angle = 0.0;
@@ -1061,7 +1061,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 
 		std::vector<double> t = m.getthicknesses();
 		Earth1D E(c, t);
-		cTDEmGeometry  G = getgeometry(m);
+		TDEmGeometry  G = getgeometry(m);
 		std::vector<double> pred(ndata);
 
 		size_t di = 0;

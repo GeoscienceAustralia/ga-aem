@@ -397,7 +397,7 @@ public:
 		return v;
 	}
 
-	bool forward_model(const Earth1D& E, const cTDEmGeometry & geometry) {
+	bool forward_model(const Earth1D& E, const TDEmGeometry & geometry) {
 		T.set_earth(E);
 		T.set_geometry(geometry);
 		T.lem().set_calculationtype(CMode::FM);
@@ -407,7 +407,7 @@ public:
 		return true;
 	}
 
-	bool forward_model_and_derivatives(const Earth1D& E, const cTDEmGeometry& geometry, std::vector<double>&predicted, std::vector<std::vector<double>>&derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
+	bool forward_model_and_derivatives(const Earth1D& E, const TDEmGeometry& geometry, std::vector<double>&predicted, std::vector<std::vector<double>>&derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
 		const size_t nlayers = E.nlayers();
 		T.set_earth(E);
 		T.set_geometry(geometry);
@@ -463,7 +463,7 @@ public:
 			}
 
 			for (size_t gi = 0; gi < UGI.size(); gi++) {
-				if (cTDEmGeometry::elementtype(UGI[gi]) == cTDEmGeometry::ElementType::rx_pitch) {
+				if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_pitch) {
 					std::vector<double> dxbdp;
 					std::vector<double> dzbdp;
 					T.drx_pitch(X, Z, geometry.rx_pitch, dxbdp, dzbdp);
@@ -477,7 +477,7 @@ public:
 					}
 				}
 				else {
-					T.lem().set_calculationtype(cTDEmGeometry::derivativetype(UGI[gi]));
+					T.lem().set_calculationtype(TDEmGeometry::derivativetype(UGI[gi]));
 					T.setup_computations();
 					T.setprimaryfields();
 					T.setsecondaryfields();
@@ -919,7 +919,7 @@ public:
 		G.resize(10);
 		cBlock g = Control.findblock("Input.Geometry");
 		for (size_t i = 0; i < G.size(); i++) {
-			std::string fname = cTDEmGeometry::element_name(i);
+			std::string fname = TDEmGeometry::element_name(i);
 			cBlock b = g.findblock(fname);
 			if (b.Name.size() == 0) {
 				glog.logmsg(0, "Could not find block for geometry parameter %s\n", fname.c_str());
@@ -1728,17 +1728,17 @@ public:
 		return d;
 	}
 
-	cTDEmGeometry get_geometry_ref(const size_t localsampleindex) {
-		cTDEmGeometry geom;
+	TDEmGeometry get_geometry_ref(const size_t localsampleindex) {
+		TDEmGeometry geom;
 		for (size_t gi = 0; gi < G.size(); gi++) {
 			geom[gi] = G[gi].ref(localsampleindex);
 		}
 		return geom;
 	}
 
-	cTDEmGeometry get_geometry_model(const size_t& localsampleindex, const double* mlocal)
+	TDEmGeometry get_geometry_model(const size_t& localsampleindex, const double* mlocal)
 	{
-		cTDEmGeometry geom = get_geometry_ref(localsampleindex);
+		TDEmGeometry geom = get_geometry_ref(localsampleindex);
 		size_t pi = nparampersample * localsampleindex;
 		for (size_t gi = 0; gi < UGI.size(); gi++) {
 			geom[UGI[gi]] = mlocal[pi + nlayers + gi];
@@ -1774,7 +1774,7 @@ public:
 			const std::vector<double> conductivity = get_conductivity_model(lsi, mlocal);
 			const std::vector<double> thickness = get_thicknesses_ref(lsi);
 			Earth1D E(conductivity, thickness);
-			cTDEmGeometry       geometry = get_geometry_model(lsi, mlocal);
+			TDEmGeometry       geometry = get_geometry_model(lsi, mlocal);
 
 			size_t gdi = dindex(si, 0);
 			size_t ldi = gdist.localind((PetscInt)gdi);
@@ -2109,8 +2109,8 @@ public:
 			thickness.push_back(thickness.back());
 			Earth1D E(conductivity, thickness);
 
-			cTDEmGeometry gref = get_geometry_ref(lsi);
-			cTDEmGeometry ginv = get_geometry_model(lsi, mlocal);
+			TDEmGeometry gref = get_geometry_ref(lsi);
+			TDEmGeometry ginv = get_geometry_model(lsi, mlocal);
 
 
 			OI.addfield("survey", 'I', 12, 0);

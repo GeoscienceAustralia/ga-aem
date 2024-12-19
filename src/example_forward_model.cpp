@@ -31,7 +31,7 @@ int skytem_example_ip()
 	
 
 	//Load the system geometry 
-	cTDEmGeometry G;
+	TDEmGeometry G;
 	G.tx_height = 40;
 	G.tx_roll = 0;       G.tx_pitch = 0; G.tx_yaw  = 0;
 	G.txrx_dx = -13.35;  G.txrx_dy  = 0; G.txrx_dz = +2.00;
@@ -79,7 +79,7 @@ int skytem_example()
 
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
-	cTDEmGeometry G;
+	TDEmGeometry G;
 	G.tx_height = 30;
 	G.tx_roll = 0;       G.tx_pitch = 0; G.tx_yaw = 0;
 	G.txrx_dx = -12.62;  G.txrx_dy = 0; G.txrx_dz = +2.16;
@@ -130,7 +130,7 @@ int skytem_computation_time()
 
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
-	cTDEmGeometry G;
+	TDEmGeometry G;
 	G.tx_height = 30;
 	G.tx_roll = 0;       G.tx_pitch = 0; G.tx_yaw = 0;
 	G.txrx_dx = -12.62;  G.txrx_dy = 0; G.txrx_dz = +2.16;

@@ -98,7 +98,7 @@ void windowtimes(void* hS, double* low, double* high)
 void setgeometry(void* hS, const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	const cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	const TDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.set_geometry(G);
 }
 
@@ -131,7 +131,7 @@ void forwardmodel(void* hS,
 	double* SZ)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	TDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.set_geometry(G);
 	Earth1D E(nlayers, conductivity, thickness);
 	T.lem().set_earth(E);
@@ -177,7 +177,7 @@ void forwardmodel_ip(void* hS,
 	double* SZ)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	TDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.set_geometry(G);
 	Earth1D E(nlayers, conductivity, thickness, chargeability, timeconstant, frequencydependence);
 	T.lem().set_iptype((AEM::IPType)iptype);
@@ -228,7 +228,7 @@ void fm_dlogc(void* hS,
 	double* R)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	cTDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
+	TDEmGeometry G(tx_height, tx_roll, tx_pitch, tx_yaw, txrx_dx, txrx_dy, txrx_dz, rx_roll, rx_pitch, rx_yaw);
 	T.set_geometry(G);
 	Earth1D E(nlayers, conductivity, thickness);
 	T.lem().set_earth(E);

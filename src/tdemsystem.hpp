@@ -87,7 +87,7 @@ namespace AEM {
 		std::vector<double> SZ;
 	};
 
-	class cTDEmGeometry {
+	class TDEmGeometry {
 
 	public:
 		enum class ElementType {
@@ -109,24 +109,24 @@ namespace AEM {
 		double rx_pitch = 0.0;
 		double rx_yaw = 0.0;
 
-		cTDEmGeometry() {};
+		TDEmGeometry() {};
 
-		cTDEmGeometry(const double& _tx_height, const double& _tx_roll, const double& _tx_pitch, const double& _tx_yaw, const double& _txrx_dx, const double& _txrx_dy, const double& _txrx_dz, const double& _rx_roll, const double& _rx_pitch, const double& _rx_yaw) {
+		TDEmGeometry(const double& _tx_height, const double& _tx_roll, const double& _tx_pitch, const double& _tx_yaw, const double& _txrx_dx, const double& _txrx_dy, const double& _txrx_dz, const double& _rx_roll, const double& _rx_pitch, const double& _rx_yaw) {
 			initialise(_tx_height, _tx_roll, _tx_pitch, _tx_yaw, _txrx_dx, _txrx_dy, _txrx_dz, _rx_roll, _rx_pitch, _rx_yaw);
 		}
 
-		cTDEmGeometry(const double* g) {
+		TDEmGeometry(const double* g) {
 			//const double tx_height, const double tx_roll, const double tx_pitch, const double tx_yaw, const double txrx_dx, const double txrx_dy, const double txrx_dz, const double rx_roll, const double rx_pitch, const double rx_yaw)
 			initialise(g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], g[9]);
 		}
 
-		cTDEmGeometry(const std::vector<double> gvector) {
+		TDEmGeometry(const std::vector<double> gvector) {
 			for (size_t i = 0; i < size(); i++) {
 				(*this)[i] = gvector[i];
 			}
 		}
 
-		cTDEmGeometry(const cBlock& b) {
+		TDEmGeometry(const cBlock& b) {
 			set_zero();
 			b.getvalue("tx_height", tx_height);
 			b.getvalue("tx_roll", tx_roll);
@@ -174,7 +174,7 @@ namespace AEM {
 		double operator[](const size_t& index) const
 		{
 			//Remove implied constness using const_cast
-			return (*(const_cast<cTDEmGeometry*>(this)))[index]; // Correctly calls the function above.		
+			return (*(const_cast<TDEmGeometry*>(this)))[index]; // Correctly calls the function above.		
 		};
 
 
@@ -188,7 +188,7 @@ namespace AEM {
 		{
 			//Remove implied constness using const_cast
 			const size_t& i = eindex(gname);
-			return (*(const_cast<cTDEmGeometry*>(this)))[i]; // Correctly calls the function above.
+			return (*(const_cast<TDEmGeometry*>(this)))[i]; // Correctly calls the function above.
 		};
 
 		void set_zero() {
@@ -197,7 +197,7 @@ namespace AEM {
 			}
 		}
 
-		void fillundefined(const cTDEmGeometry& g)
+		void fillundefined(const TDEmGeometry& g)
 		{
 			for (size_t i = 0; i < size(); i++) {
 				if ((*this)[i] == undefinedvalue<double>()) {
@@ -1032,11 +1032,10 @@ namespace AEM {
 	class cTDEmSystem : public AEMSystem {
 
 	private:
-		
 
 		FFTWPlanWrapper InverseFFTPlan;
 
-		std::vector<ComponentWorkStore> Comp;
+		std::vector<ComponentWorkStore> Component;
 		FixedPointSpline<double> FrequencySpliner;
 				
 		double FrequencyLog10Spacing = 0.0;
@@ -1055,8 +1054,8 @@ namespace AEM {
 		Waveform WvForm;
 		Transmitter Tx;
 
-		cTDEmGeometry Geometry;
-		cTDEmGeometry NormalizationGeometry;
+		TDEmGeometry Geometry;
+		TDEmGeometry NormalizationGeometry;
 		Mat3d RotMatrixToRxFrame;
 
 	public:
@@ -1079,27 +1078,27 @@ namespace AEM {
 			return WindScheme.nwindows();
 		}
 
-		const double& PX() const { return Comp[XCOMP].Primary; };
-		const double& PY() const { return Comp[YCOMP].Primary; };
-		const double& PZ() const { return Comp[ZCOMP].Primary; };
+		const double& PX() const { return Component[XCOMP].Primary; };
+		const double& PY() const { return Component[YCOMP].Primary; };
+		const double& PZ() const { return Component[ZCOMP].Primary; };
 
-		const std::vector<double>& XS() const { return Comp[XCOMP].Secondary; }
-		const std::vector<double>& YS() const { return Comp[YCOMP].Secondary; }
-		const std::vector<double>& ZS() const { return Comp[ZCOMP].Secondary; }
+		const std::vector<double>& XS() const { return Component[XCOMP].Secondary; }
+		const std::vector<double>& YS() const { return Component[YCOMP].Secondary; }
+		const std::vector<double>& ZS() const { return Component[ZCOMP].Secondary; }
 
 		double primary(const size_t component) const {
 			assert(component < NCOMP);
-			return Comp[component].Primary;
+			return Component[component].Primary;
 		}
 
 		double secondary(const size_t component, const size_t window) {
 			assert(component < NCOMP);
-			return Comp[component].Secondary[window];
+			return Component[component].Secondary[window];
 		}
 
 		std::vector<double> secondary(const size_t component) const {
 			assert(component < NCOMP);
-			return Comp[component].Secondary;
+			return Component[component].Secondary;
 		}
 
 	public:
@@ -1157,7 +1156,7 @@ namespace AEM {
 			lem().set_earth(earth);
 		};
 
-		void set_geometry(const cTDEmGeometry& G) {
+		void set_geometry(const TDEmGeometry& G) {
 			Geometry = G;
 
 			// Set geometry inside the LE Modeller
@@ -1186,7 +1185,7 @@ namespace AEM {
 			Response.SZ = ZS();
 		};
 
-		void forwardmodel(const cTDEmGeometry& G, const Earth1D& E, cTDEmResponse& R) {
+		void forwardmodel(const TDEmGeometry& G, const Earth1D& E, cTDEmResponse& R) {
 			set_geometry(G);
 			set_earth(E);
 			setup_computations();
@@ -1230,9 +1229,9 @@ namespace AEM {
 				v *= Tx.PeakdIdT;
 			}
 
-			Comp[XCOMP].Primary = v.x() * Comp[XCOMP].Scale;
-			Comp[YCOMP].Primary = v.y() * Comp[YCOMP].Scale;
-			Comp[ZCOMP].Primary = v.z() * Comp[ZCOMP].Scale;
+			Component[XCOMP].Primary = v.x() * Component[XCOMP].Scale;
+			Component[YCOMP].Primary = v.y() * Component[YCOMP].Scale;
+			Component[ZCOMP].Primary = v.z() * Component[ZCOMP].Scale;
 		};
 
 		void setsecondaryfields() {
@@ -1252,14 +1251,14 @@ namespace AEM {
 				}
 
 				for(size_t ci = 0; ci < NCOMP; ci++){
-					Comp[ci].IR_discrete_real[fi] = v[ci].real();
-					Comp[ci].IR_discrete_imag[fi] = v[ci].imag();
+					Component[ci].IR_discrete_real[fi] = v[ci].real();
+					Component[ci].IR_discrete_imag[fi] = v[ci].imag();
 				}
 			};
 
 			//Spline discreet frequencies		
 			for (size_t i = 0; i < NCOMP; i++) {
-				if (Comp[i].Scale == 0.0) return;
+				if (Component[i].Scale == 0.0) return;
 				spline_component(i);
 				inverse_fft_window_scale_component(i);
 			}
@@ -1284,8 +1283,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || 
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= Comp[XCOMP].RefGeomPrimary;
-				zb *= Comp[ZCOMP].RefGeomPrimary;
+				xb *= Component[XCOMP].RefGeomPrimary;
+				zb *= Component[ZCOMP].RefGeomPrimary;
 			}
 
 			double cosp = cos(D2R<double> *p);
@@ -1300,8 +1299,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || 
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dxbdp /= Comp[XCOMP].RefGeomPrimary;
-				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
+				dxbdp /= Component[XCOMP].RefGeomPrimary;
+				dzbdp /= Component[ZCOMP].RefGeomPrimary;
 			}
 		}
 
@@ -1314,8 +1313,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= Comp[XCOMP].RefGeomPrimary;
-				zb *= Comp[ZCOMP].RefGeomPrimary;
+				xb *= Component[XCOMP].RefGeomPrimary;
+				zb *= Component[ZCOMP].RefGeomPrimary;
 			}
 
 
@@ -1332,8 +1331,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dxbdp /= Comp[XCOMP].RefGeomPrimary;
-				dzbdp /= Comp[ZCOMP].RefGeomPrimary;
+				dxbdp /= Component[XCOMP].RefGeomPrimary;
+				dzbdp /= Component[ZCOMP].RefGeomPrimary;
 			}
 		}
 
@@ -1346,8 +1345,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= Comp[YCOMP].RefGeomPrimary;
-				zb *= Comp[ZCOMP].RefGeomPrimary;
+				yb *= Component[YCOMP].RefGeomPrimary;
+				zb *= Component[ZCOMP].RefGeomPrimary;
 			}
 
 			double cosr = cos(D2R<double> *r);
@@ -1362,8 +1361,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dybdr /= Comp[YCOMP].RefGeomPrimary;
-				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
+				dybdr /= Component[YCOMP].RefGeomPrimary;
+				dzbdr /= Component[ZCOMP].RefGeomPrimary;
 			}
 		}
 
@@ -1376,8 +1375,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= Comp[YCOMP].RefGeomPrimary;
-				zb *= Comp[ZCOMP].RefGeomPrimary;
+				yb *= Component[YCOMP].RefGeomPrimary;
+				zb *= Component[ZCOMP].RefGeomPrimary;
 			}
 
 			double cosr = cos(D2R<double> *r);
@@ -1393,22 +1392,22 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dybdr /= Comp[YCOMP].RefGeomPrimary;
-				dzbdr /= Comp[ZCOMP].RefGeomPrimary;
+				dybdr /= Component[YCOMP].RefGeomPrimary;
+				dzbdr /= Component[ZCOMP].RefGeomPrimary;
 			}
 		}
 
-		void drx_roll_new(const cTDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
+		void drx_roll_new(const TDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
 			Mat3d dM = g.rx_roll_derivative_matrix();
 			apply_rx_derivative_matrix(dM, fields, derivatives);
 		};
 
-		void drx_pitch_new(const cTDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
+		void drx_pitch_new(const TDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
 			Mat3d dM = g.rx_pitch_derivative_matrix();
 			apply_rx_derivative_matrix(dM, fields, derivatives);
 		};
 
-		void drx_yaw_new(const cTDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
+		void drx_yaw_new(const TDEmGeometry& g, const std::vector<Vec3d>& fields, std::vector<Vec3d>& derivatives) const {
 			Mat3d dM = g.rx_yaw_derivative_matrix();
 			apply_rx_derivative_matrix(dM, fields, derivatives);
 		};
@@ -1421,14 +1420,14 @@ namespace AEM {
 				for (size_t i = 0; i < n; i++) {
 					Vec3d ftrue = fields[i];
 					//Must work with true field vector directions (not the PPM scaled versinn)
-					ftrue[XCOMP] *= Comp[XCOMP].RefGeomPrimary;
-					ftrue[YCOMP] *= Comp[YCOMP].RefGeomPrimary;
-					ftrue[ZCOMP] *= Comp[ZCOMP].RefGeomPrimary;
+					ftrue[XCOMP] *= Component[XCOMP].RefGeomPrimary;
+					ftrue[YCOMP] *= Component[YCOMP].RefGeomPrimary;
+					ftrue[ZCOMP] *= Component[ZCOMP].RefGeomPrimary;
 					derivatives[i] = dM * ftrue;
 					//Convert back to PPMS
-					derivatives[i][XCOMP] /= Comp[XCOMP].RefGeomPrimary;
-					derivatives[i][YCOMP] /= Comp[YCOMP].RefGeomPrimary;
-					derivatives[i][ZCOMP] /= Comp[ZCOMP].RefGeomPrimary;
+					derivatives[i][XCOMP] /= Component[XCOMP].RefGeomPrimary;
+					derivatives[i][YCOMP] /= Component[YCOMP].RefGeomPrimary;
+					derivatives[i][ZCOMP] /= Component[ZCOMP].RefGeomPrimary;
 				}
 			}
 			else {
@@ -1515,16 +1514,16 @@ namespace AEM {
 			double tx_scale = MUZERO<double> * Tx.LoopArea * Tx.NumberOfTurns * Tx.PeakCurrent;
 			
 			//ModellingOptions
-			Comp[XCOMP].Scale = tx_scale * MO.XOutputScaling;
-			Comp[YCOMP].Scale = tx_scale * MO.YOutputScaling;
-			Comp[ZCOMP].Scale = tx_scale * MO.ZOutputScaling;
+			Component[XCOMP].Scale = tx_scale * MO.XOutputScaling;
+			Component[YCOMP].Scale = tx_scale * MO.YOutputScaling;
+			Component[ZCOMP].Scale = tx_scale * MO.ZOutputScaling;
 
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				cBlock b = STM.findblock("ReferenceGeometry");
 				if (b.Entries.size() == 0) {
 					glog.errormsg(_SRC_, "Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
 				}
-				NormalizationGeometry = cTDEmGeometry(b);
+				NormalizationGeometry = TDEmGeometry(b);
 				set_geometry(NormalizationGeometry);
 				setprimaryfields();
 
@@ -1537,7 +1536,7 @@ namespace AEM {
 				}
 
 				for (size_t i = 0; i < NCOMP; i++) {
-					ComponentWorkStore& c = Comp[i];
+					ComponentWorkStore& c = Component[i];
 					c.RefGeomPrimary = c.Primary;
 					if (c.RefGeomPrimary == 0.0) c.Scale = 0.0;
 					else c.Scale *= (s / c.RefGeomPrimary);
@@ -1571,16 +1570,16 @@ namespace AEM {
 		}
 
 		void setup_splines() {
-			Comp.resize(NCOMP);
-			Comp[XCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
-			Comp[YCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
-			Comp[ZCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
+			Component.resize(NCOMP);
+			Component[XCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
+			Component[YCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
+			Component[ZCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
 			FrequencySpliner.initialise(DiscreteFrequenciesLog10, SplinedFrequencieslog10);
 			//lem().initialise_frequencies(DiscreteFrequencies);
 		};
 		
 		void spline_component(const size_t& component) {
-			ComponentWorkStore& C = Comp[component];
+			ComponentWorkStore& C = Component[component];
 			const std::vector<double>& v = FrequencySpliner.interpolated_values();
 
 			const size_t n = v.size();
@@ -1599,7 +1598,7 @@ namespace AEM {
 
 		void inverse_fft_window_scale_component(const size_t& component) {
 
-			ComponentWorkStore& C = Comp[component];
+			ComponentWorkStore& C = Component[component];
 			// Reset to the stored transfer function
 			WvForm.FFT_WorkArray = WvForm.TransferFunction;
 			// Apply transfer function
@@ -1620,19 +1619,19 @@ namespace AEM {
 			}
 
 			// Scale
-			C.Secondary *= Comp[component].Scale;
+			C.Secondary *= Component[component].Scale;
 		}
 
 		void write_discretefrequencies(const fs::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumberOfDiscreteFrequencies; i++) {
 				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\t%15le\t%15le\n", DiscreteFrequencies[i],
-					Comp[XCOMP].IR_discrete_real[i],
-					Comp[XCOMP].IR_discrete_imag[i],
-					Comp[YCOMP].IR_discrete_real[i],
-					Comp[YCOMP].IR_discrete_imag[i],
-					Comp[ZCOMP].IR_discrete_real[i],
-					Comp[ZCOMP].IR_discrete_imag[i]);
+					Component[XCOMP].IR_discrete_real[i],
+					Component[XCOMP].IR_discrete_imag[i],
+					Component[YCOMP].IR_discrete_real[i],
+					Component[YCOMP].IR_discrete_imag[i],
+					Component[ZCOMP].IR_discrete_real[i],
+					Component[ZCOMP].IR_discrete_imag[i]);
 			}
 		}
 
@@ -1642,12 +1641,12 @@ namespace AEM {
 				double f = pow10(SplinedFrequencieslog10[i]);
 				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\t%15le\t%15le\n",
 					f,
-					Comp[XCOMP].IR_splined[i].real(),
-					Comp[XCOMP].IR_splined[i].imag(),
-					Comp[YCOMP].IR_splined[i].real(),
-					Comp[YCOMP].IR_splined[i].imag(),
-					Comp[ZCOMP].IR_splined[i].real(),
-					Comp[ZCOMP].IR_splined[i].imag());
+					Component[XCOMP].IR_splined[i].real(),
+					Component[XCOMP].IR_splined[i].imag(),
+					Component[YCOMP].IR_splined[i].real(),
+					Component[YCOMP].IR_splined[i].imag(),
+					Component[ZCOMP].IR_splined[i].real(),
+					Component[ZCOMP].IR_splined[i].imag());
 			}
 		}
 
