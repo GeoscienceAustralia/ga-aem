@@ -18,20 +18,21 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 namespace AEM {
 
-	inline static Mat3d YPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
-		const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
-		return Rot;
-	};
-
-	inline static Mat3d invYPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
-		const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
-		Mat3d RotT = Rot.transpose();
-		return RotT;
-	};
-
 	class TDEmGeometry {
 
 	public:
+
+		inline static Mat3d YPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
+			const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
+			return Rot;
+		};
+
+		inline static Mat3d invYPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
+			const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
+			Mat3d RotT = Rot.transpose();
+			return RotT;
+		};
+
 		enum class ElementType {
 			tx_height,
 			tx_roll, tx_pitch, tx_yaw,

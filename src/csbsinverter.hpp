@@ -624,7 +624,7 @@ public:
 		return (int)(si * nParamPerSounding + goff);
 	}
 
-	int sfindex(const size_t& sysi, const size_t& ci) const {
+	int scalefactor_pindex(const size_t& sysi, const size_t& ci) const {
 		int pi = SV[sysi].CompInfo[ci].fdSF.offset;
 		if (pi < 0) return -1;
 		return pi;
@@ -1012,7 +1012,7 @@ public:
 		double s = C.alpha / (double)(nScalingParam);
 		for (size_t sysi = 0; sysi < SV.size(); sysi++) {
 			for (size_t ci = 0; ci < 3; ci++) {
-				const int pi = sfindex(sysi, ci);
+				const int pi = scalefactor_pindex(sysi, ci);
 				if (pi >= 0) {
 					C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
 				}
@@ -1723,7 +1723,7 @@ public:
 			//Scaling params				
 			for (size_t sysi = 0; sysi < SV.size(); sysi++) {
 				for (size_t ci = 0; ci < 3; ci++) {
-					const int pi = sfindex(sysi, ci);
+					const int pi = scalefactor_pindex(sysi, ci);
 					if (pi >= 0) {
 						double ref = SV[sysi].CompInfo[ci].SF.ref;
 						double std = SV[sysi].CompInfo[ci].SF.std;
@@ -1896,16 +1896,13 @@ public:
 		return gv;
 	}
 
-	std::vector<double> get_scalefactors(const size_t sysi, const Vector& parameters) {
-		std::vector<double> sf(3);
+	Vec3d get_scalefactors(const size_t sysi, const Vector& parameters) const {
+		Vec3d sf;
 		const cTDEmSystemInfo& S = SV[sysi];
-		//bookmark
 		for (int ci = 0; ci < 3; ci++) {
 			sf[ci] = 1.0;
-			const int pi = sfindex(sysi, ci);
-			if (pi >= 0) {
-				sf[ci] = parameters[pi];
-			}
+			const int pi = scalefactor_pindex(sysi, ci);
+			if (pi >= 0) sf[ci] = parameters[pi];
 		}
 		return sf;
 	}
@@ -1955,7 +1952,7 @@ public:
 		forwardmodel_impl(parameters, predicted, jacobian, true);
 	}
 
-	void forwardmodel_impl(const Vector& parameters, Vector& predicted, Matrix& jacobian, bool computederivatives) {
+	void forwardmodel_impl_old(const Vector& parameters, Vector& predicted, Matrix& jacobian, bool computederivatives) {
 		Vector pred_all(nAllData);
 		Matrix J_all;
 		if (computederivatives) {
@@ -1969,7 +1966,7 @@ public:
 			cTDEmSystemInfo& S = SV[sysi];
 			cTDEmSystem& T = S.T;
 
-			std::vector<double> scalefactors = get_scalefactors(sysi, parameters);
+			Vec3d scalefactors = get_scalefactors(sysi, parameters);
 
 			const size_t& nw = T.nwindows();
 			for (size_t si = 0; si < nSoundings; si++) {
@@ -2046,7 +2043,7 @@ public:
 					//bookmark
 					for (size_t ci = 0; ci < NCOMP; ci++) {
 						if (S.CompInfo[ci].Use) {
-							const int pindex = sfindex(sysi, ci);
+							const int pindex = scalefactor_pindex(sysi, ci);
 							if (pindex >= 0) {
 								//Here filling with the forward itself as no new computations
 								fillDerivativeVectors(S, xdrv, ydrv, zdrv);
@@ -2159,8 +2156,199 @@ public:
 		}
 	}
 
-	void fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv)
-	{
+	void forwardmodel_impl(const Vector& parameters, Vector& predicted, Matrix& jacobian, bool computederivatives) {
+		Vector pred_all(nAllData);
+		Matrix J_all;
+		if (computederivatives) {
+			J_all.resize(nAllData, nParam);
+			J_all.setZero();
+		}
+
+		std::vector<Earth1D> ev = get_earth(parameters);
+		std::vector<TDEmGeometry> gv = get_geometry(parameters);
+		for (size_t sysi = 0; sysi < nSystems; sysi++) {
+			cTDEmSystemInfo& S = SV[sysi];
+			cTDEmSystem& T = S.T;
+
+			Vec3d scalefactors = get_scalefactors(sysi, parameters);
+
+			const size_t& nw = T.nwindows();
+			for (size_t si = 0; si < nSoundings; si++) {
+				const Earth1D& e = ev[si];
+				const TDEmGeometry& g = gv[si];
+				T.set_earth(e);
+				T.set_geometry(g);
+				T.setup_computations();
+				T.set_calculationtype(CMode::FM);
+				T.setprimaryfields();
+				T.setsecondaryfields();
+				TDEmVectorResponse FM = T.get_secondary_vector_response();
+
+				const size_t& nw = T.nwindows();
+				if (S.invertPrimaryPlusSecondary) {
+					FM += T.get_primary_vector_response();
+				}
+
+				if (scalefactors[XCOMP] != 1.0 || scalefactors[YCOMP] != 1.0 || scalefactors[ZCOMP] != 1.0){
+					FM.scale_components(scalefactors);
+				}
+
+				TDEmScalarResponse XZFM;
+				if (S.invertXPlusZ) {
+					XZFM = FM.xzamp();
+				}
+
+				// Predicted
+				if (S.invertXPlusZ) {
+					for (size_t wi = 0; wi < nw; wi++) {
+						const int& di = dindex(si, sysi, XZAMP, wi);
+						pred_all[di] = XZFM[wi];
+						if (S.CompInfo[YCOMP].Use) {
+							pred_all[dindex(si, sysi, YCOMP, wi)] = FM[wi][YCOMP];
+						}
+					}
+				}
+				else {
+					for (size_t ci = 0; ci < NCOMP; ci++) {
+						if (S.CompInfo[ci].Use) {
+							for (size_t wi = 0; wi < nw; wi++) {
+								pred_all[dindex(si, sysi, ci, wi)] = FM[wi][ci];
+							}
+						}
+					}
+				}
+
+				// Jacobian
+				if (computederivatives) {
+					//std::vector<double> xdrv(nw);
+					//std::vector<double> ydrv(nw);
+					//std::vector<double> zdrv(nw);
+					TDEmVectorResponse DRV = FM;
+
+					// Scale factor derivatives
+					for (size_t ci = 0; ci < NCOMP; ci++) {
+						if (S.CompInfo[ci].Use) {
+							const int pindex = scalefactor_pindex(sysi, ci);
+							if (pindex >= 0) {
+								// Here filling with the forward itself as derivative w.r.t scale factor param is the forward model itself
+								// But zero for other components
+								Vec3d f(0,0,0);
+								f[ci] = 1.0;
+								DRV.scale_components(f);								
+								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+							}
+						}
+					}
+
+					if (solve_conductivity()) {
+						for (size_t li = 0; li < nLayers; li++) {
+							const int pindex = cindex(si, li);
+							T.set_calculationtype(CalculationType(CMode::DC, li));
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							DRV = T.get_secondary_vector_response();
+							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.get_primary_vector_response();
+							//multiply by natural log(10) as parameters are in logbase10 units
+							const double f = log(10.0) * e.conductivity[li];
+							DRV *= f;
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+					}
+
+					if (solve_thickness()) {
+						for (size_t li = 0; li < nLayers - 1; li++) {
+							const int pindex = tindex(si, li);
+							T.set_calculationtype(CalculationType(CMode::DT, li));
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							DRV = T.get_secondary_vector_response();
+							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.get_primary_vector_response();
+							//multiply by natural log(10) as parameters are in logbase10 units
+							double f = log(10.0) * e.thickness[li];
+							DRV *= f;
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+					}
+
+					if (FreeGeometry) {
+						if (solve_geometry_element("tx_height")) {
+							const size_t pindex = gindex(si, "tx_height");
+							T.set_calculationtype(CMode::DH);
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							DRV = T.get_secondary_vector_response();
+							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.get_primary_vector_response();
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+
+						if (solve_geometry_element("txrx_dx")) {
+							const size_t pindex = gindex(si, "txrx_dx");
+							T.set_calculationtype(CMode::DX);
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							DRV = T.get_secondary_vector_response();
+							if (S.invertPrimaryPlusSecondary) DRV += T.get_primary_vector_response();
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+
+						if (solve_geometry_element("txrx_dy")) {
+							const size_t pindex = gindex(si, "txrx_dy");
+							T.set_calculationtype(CMode::DY);
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							DRV = T.get_secondary_vector_response();
+							if (S.invertPrimaryPlusSecondary) DRV += T.get_primary_vector_response();
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+
+						if (solve_geometry_element("txrx_dz")) {
+							const size_t pindex = gindex(si, "txrx_dz");
+							T.set_calculationtype(CMode::DZ);
+							T.setprimaryfields();
+							T.setsecondaryfields();
+							DRV = T.get_secondary_vector_response();
+							if (S.invertPrimaryPlusSecondary) DRV += T.get_primary_vector_response();
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+
+						if (solve_geometry_element("rx_pitch")) {
+							const size_t pindex = gindex(si, "rx_pitch");
+							T.drx_pitch_new(g, FM, DRV);
+							DRV = T.get_secondary_vector_response();
+							if (S.invertPrimaryPlusSecondary) DRV += T.get_primary_vector_response();
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+
+						if (solve_geometry_element("rx_roll")) {
+							const size_t pindex = gindex(si, "rx_roll");
+							T.drx_roll_new(g, FM, DRV);
+							DRV = T.get_secondary_vector_response();
+							if (S.invertPrimaryPlusSecondary) DRV += T.get_primary_vector_response();
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+					}
+				}
+			}
+		}
+		predicted = cull(pred_all);
+		if (computederivatives) jacobian = cull(J_all);
+
+		if (Verbose && computederivatives) {
+			//std::cerr << "\n-----------------\n";
+			//std::cerr << "J_all: It " << CIS.iteration + 1 << std::endl;			
+			//std::cerr << J_all;			
+			//std::cerr << "\n-----------------\n";
+		}
+
+		if (OO.Dump && computederivatives) {
+			const std::string dp = dumppath();
+			writetofile(J_all, dp + "J" + ".dat");
+			std::ofstream of(dp + "J1" + ".dat");
+			of << J_all;
+		}
+	}
+
+	void fillDerivativeVectors(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv) {
 		cTDEmSystem& T = S.T;
 		xdrv = T.XS();
 		ydrv = T.YS();
@@ -2172,8 +2360,33 @@ public:
 		}
 	}
 
-	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv)
-	{
+	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const TDEmVectorResponse& FM, const TDEmScalarResponse& XZFM, const TDEmVectorResponse& DRV) {
+		const cTDEmSystemInfo& S = SV[sysi];
+		const size_t& nw = S.T.nwindows();
+		if (S.invertXPlusZ) {
+			// dr/dp = (x/r)dx/dp + (y/r)dy/dp
+			for (size_t wi = 0; wi < nw; wi++) {
+				M(dindex(si, sysi, XZAMP, wi), pindex) = (FM[wi][XCOMP] * DRV[wi][XCOMP] + FM[wi][ZCOMP] *  DRV[wi][ZCOMP]) / XZFM[wi];
+			}
+
+			if (S.CompInfo[YCOMP].Use) {
+				for (size_t wi = 0; wi < nw; wi++) {
+					M(dindex(si, sysi, YCOMP, wi), pindex) = DRV[wi][YCOMP];
+				}
+			}
+		}
+		else {
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				if (S.CompInfo[ci].Use) {
+					for (size_t wi = 0; wi < nw; wi++) {
+						M(dindex(si, sysi, ci, wi), pindex) = DRV[wi][ci];
+					}
+				}
+			}
+		}
+	}
+
+	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv) {
 		const cTDEmSystemInfo& S = SV[sysi];
 		const size_t& nw = S.T.nwindows();
 		if (S.invertXPlusZ) {
@@ -2192,6 +2405,7 @@ public:
 			}
 		}
 	}
+
 
 	// Etc
 	void save_iteration_file(const cIterationState& S) const {
@@ -2494,7 +2708,7 @@ public:
 		bool   keepiterating = true;
 		while (keepiterating == true) {
 			if (Verbose && nScalingParam > 0) {
-				std::vector<double> scalefactors = get_scalefactors(0, CIS.param);
+				Vec3d scalefactors = get_scalefactors(0, CIS.param);
 				std::cout << "Scaling Factors ";
 				for (size_t ci = 0; ci < 3; ci++) {
 					std::cout << scalefactors[ci] << " ";
@@ -2699,8 +2913,7 @@ public:
 		return x;
 	}
 
-	void write_result(const int& pointindex)
-	{
+	void write_result(const int& pointindex) {
 		const Vector& m = CIS.param;
 		const Vector& m0 = RefParam;
 
@@ -2742,7 +2955,7 @@ public:
 		if (solve_scalingfactors()) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
 				cTDEmSystemInfo& S = SV[sysi];
-				std::vector<double> sf = get_scalefactors(sysi, m);
+				Vec3d sf = get_scalefactors(sysi, m);
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) {
 						std::string comp = S.CompInfo[ci].Name;
