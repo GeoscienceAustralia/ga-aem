@@ -26,7 +26,7 @@ public:
 	size_t nwindows = 0;
 	size_t ncomps = 0;
 	size_t nchans = 0;
-	cTDEmComponentInfo CompInfo[3];
+	cTDEmComponentInfo CompInfo[NCOMP];
 	std::vector<cTDEmData> predicted;
 	std::string units;
 	
@@ -45,7 +45,7 @@ public:
 		glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
 		glog.log_to_file(T.system_descriptor_block().get_as_string());
 		glog.log_to_file("==========================================================================\n");
-		nwindows = T.nwindows();
+		nwindows = T.nWindows();
 
 		std::string dummy;
 		if (b.getvalue("InvertTotalField", dummy)) {

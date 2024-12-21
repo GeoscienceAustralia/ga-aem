@@ -53,7 +53,7 @@ void waveform(void* hS, double* time, double* currentwaveform, double* voltagewa
 int nwindows(void* hS)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	return (int)T.nwindows();
+	return (int)T.nWindows();
 }
 
 int nturns(void* hS)
@@ -89,7 +89,7 @@ int nlayers(void* hS)
 void windowtimes(void* hS, double* low, double* high)
 {
 	cTDEmSystem& T = *(cTDEmSystem*)hS;
-	for (size_t i = 0; i < T.nwindows(); i++) {
+	for (size_t i = 0; i < T.nWindows(); i++) {
 		low[i] = T.window(i).TimeLow;
 		high[i] = T.window(i).TimeHigh;
 	}
@@ -140,12 +140,12 @@ void forwardmodel(void* hS,
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
-	size_t nw = T.nwindows();
+	size_t nw = T.nWindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = T.PX();
-	*PY = T.PY();
-	*PZ = T.PZ();
+	*PX = T.PX0();
+	*PY = T.PY0();
+	*PZ = T.PZ0();
 	memcpy(SX, T.XS().data(), sz);
 	memcpy(SY, T.YS().data(), sz);
 	memcpy(SZ, T.ZS().data(), sz);
@@ -187,12 +187,12 @@ void forwardmodel_ip(void* hS,
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
-	size_t nw = T.nwindows();
+	size_t nw = T.nWindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = T.PX();
-	*PY = T.PY();
-	*PZ = T.PZ();
+	*PX = T.PX0();
+	*PY = T.PY0();
+	*PZ = T.PZ0();
 	memcpy(SX, T.XS().data(), sz);
 	memcpy(SY, T.YS().data(), sz);
 	memcpy(SZ, T.ZS().data(), sz);
@@ -206,12 +206,12 @@ void derivative(void* hS, int dtype, int dlayer, double* PX, double* PY, double*
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
-	size_t nw = T.nwindows();
+	size_t nw = T.nWindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = T.PX();
-	*PY = T.PY();
-	*PZ = T.PZ();
+	*PX = T.PX0();
+	*PY = T.PY0();
+	*PZ = T.PZ0();
 	memcpy(SX, T.XS().data(), sz);
 	memcpy(SY, T.YS().data(), sz);
 	memcpy(SZ, T.ZS().data(), sz);
@@ -237,14 +237,14 @@ void fm_dlogc(void* hS,
 	T.setprimaryfields();
 	T.setsecondaryfields();
 
-	size_t nw = T.nwindows();
+	size_t nw = T.nWindows();
 	size_t sz = sizeof(double) * nw;
 	double* p = R;
-	*p = T.PX(); p++;
+	*p = T.PX0(); p++;
 	memcpy(p, T.XS().data(), sz); p += nw;
-	*p = T.PY(); p++;
+	*p = T.PY0(); p++;
 	memcpy(p, T.YS().data(), sz); p += nw;
-	*p = T.PZ(); p++;
+	*p = T.PZ0(); p++;
 	memcpy(p, T.ZS().data(), sz); p += nw;
 
 	for (size_t k = 0; k < (size_t)nlayers; k++) {
@@ -254,19 +254,19 @@ void fm_dlogc(void* hS,
 
 		//const double& c = T.lem().layers()[k].Conductivity;
 		const double& c = conductivity[k];
-		*p = T.PX() * c; p++;
+		*p = T.PX0() * c; p++;
 		for (size_t w = 0; w < nw; w++) {
 			*p = T.XS()[w] * c;
 			p++;
 		}
 
-		*p = T.PY() * c; p++;
+		*p = T.PY0() * c; p++;
 		for (size_t w = 0; w < nw; w++) {
 			*p = T.YS()[w] * c;
 			p++;
 		}
 
-		*p = T.PZ() * c; p++;
+		*p = T.PZ0() * c; p++;
 		for (size_t w = 0; w < nw; w++) {
 			*p = T.ZS()[w] * c;
 			p++;

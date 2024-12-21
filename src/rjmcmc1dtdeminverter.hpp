@@ -279,7 +279,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			glog.log_to_file(T.system_descriptor_block().get_as_string());
 			glog.log_to_file("==========================================================================\n");
 
-			S.nwindows = T.nwindows();
+			S.nwindows = T.nWindows();
 			S.useX = b.getboolvalue("UseXComponent");
 			S.useY = b.getboolvalue("UseYComponent");
 			S.useZ = b.getboolvalue("UseZComponent");
@@ -592,9 +592,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 				T.lem().set_calculationtype(CMode::FM);
 				T.setprimaryfields();
 
-				S.oPX = T.PX();
-				S.oPY = T.PY();
-				S.oPZ = T.PZ();
+				S.oPX = T.PX0();
+				S.oPY = T.PY0();
+				S.oPZ = T.PZ0();
 			}
 
 			if (S.useX) {

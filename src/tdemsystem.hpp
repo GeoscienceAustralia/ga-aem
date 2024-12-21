@@ -36,7 +36,7 @@ namespace AEM {
 		sTDEmNoiseModelComponent zcomponent;
 	};
 
-	struct cTDEmComponent {
+	struct cTDEmDataComponent {
 		double Primary = 0.0;
 		std::vector<double> Secondary;
 	};
@@ -44,28 +44,160 @@ namespace AEM {
 	class cTDEmData {
 
 	private:
-		cTDEmComponent data[NCOMP];
+		cTDEmDataComponent data[NCOMP];
 
 	public:
 
 		cTDEmData() {};
 
-		cTDEmComponent& component(const size_t i) { return data[i]; }
-		cTDEmComponent& xcomponent() { return data[0]; }
-		cTDEmComponent& ycomponent() { return data[1]; }
-		cTDEmComponent& zcomponent() { return data[2]; }
+		cTDEmDataComponent& component(const size_t i) { return data[i]; }
+		cTDEmDataComponent& xcomponent() { return data[0]; }
+		cTDEmDataComponent& ycomponent() { return data[1]; }
+		cTDEmDataComponent& zcomponent() { return data[2]; }
 
 	};
 
-	class cTDEmResponse {
+	class TDEmScalarResponse {
+
+	private:
+		std::vector<double> v;
 
 	public:
-		double PX;
-		double PY;
-		double PZ;
-		std::vector<double> SX;
-		std::vector<double> SY;
-		std::vector<double> SZ;
+
+		TDEmScalarResponse() {};
+
+		TDEmScalarResponse(const size_t& nwindows) {
+			resize(nwindows);
+		}
+
+		inline const size_t size() const { return v.size(); }
+
+		double& operator[](const size_t& i) {
+			return v[i];
+		}
+
+		double operator[](const size_t& i) const {
+			return v[i];
+		}
+
+		TDEmScalarResponse& operator+=(const TDEmScalarResponse& rhs) {
+			v += rhs.v;
+			return *this;
+		}
+
+		TDEmScalarResponse& operator*=(const double& rhs) {
+			v *= rhs;
+			return *this;
+		}
+
+	private:
+
+		void  resize(const size_t nwindows) {
+			v.resize(nwindows);
+		}
+
+	};
+	
+	class TDEmVectorResponse {
+
+		size_t nwindows=0;
+		std::array<std::vector<double>, 3> v;
+
+	public:
+
+		TDEmVectorResponse(const size_t _nwindows = 0) { nwindows = _nwindows; };
+
+		inline const size_t size() const { return nwindows; }
+
+		void resize(const size_t _nwindows) {
+			nwindows = _nwindows;
+			v[0].resize(nwindows);
+			v[1].resize(nwindows);
+			v[2].resize(nwindows);
+		};
+
+		Vec3d get_vec3d(const size_t window) const {
+			return Vec3d(v[0][window], v[1][window], v[2][window]);
+		};
+
+		void set_vec3d(const size_t window, const Vec3d& vec) {
+			v[0][window] = vec[0];
+			v[1][window] = vec[1];
+			v[2][window] = vec[2];
+		};
+
+		std::vector<double>& operator[](const size_t& component) {
+			return v[component];
+		}
+
+		const std::vector<double>& operator[](const size_t& component) const {
+			return v[component];
+		}
+
+		TDEmVectorResponse& operator+=(const TDEmVectorResponse& rhs) {
+			v[0] += rhs.v[0];
+			v[1] += rhs.v[1];
+			v[2] += rhs.v[2];
+			return *this;
+		}
+
+		TDEmVectorResponse& operator*=(const double& s) {
+			v[0] *= s;
+			v[1] *= s;
+			v[2] *= s;
+			return *this;
+		}
+
+		void scale_components(const Vec3d& scalefactors) {
+			const size_t nw = v.size();
+			v[0] *= scalefactors[0];
+			v[1] *= scalefactors[1];
+			v[2] *= scalefactors[2];
+		};
+
+		TDEmScalarResponse xzamp() {
+			TDEmScalarResponse r(nwindows);
+			for (size_t i = 0; i < nwindows; i++) {
+				r[i] = std::hypot(v[XCOMP][i], v[ZCOMP][i]);
+			}
+			return r;
+		};
+
+	private:
+
+	};
+
+	class TDEmResponse {
+	
+	public:
+		TDEmVectorResponse P;
+		TDEmVectorResponse S;
+
+		TDEmResponse() {};
+
+		TDEmResponse(const size_t& _nwindows) {
+			resize(_nwindows);
+		}
+
+		void resize(const size_t& _nwindows) {
+			P.resize(_nwindows);
+			S.resize(_nwindows);
+		}
+
+		const size_t& size() const {
+			return S.size();
+		}
+
+		const double primary(const size_t& component) const {
+			assert(component < NCOMP);
+			return P[component][0];
+		}
+
+		const double secondary(const size_t& component, const size_t& window) const {
+			assert(component < NCOMP);
+			assert(window < size());
+			return S[component][window];
+		}
 	};
 
 	class LowPassFilter {
@@ -332,7 +464,7 @@ namespace AEM {
 
 		enum class WeightingMethod { BoxCar, AreaUnderCurve, LinearTaper };
 
-		size_t nWindows = 0;
+		size_t nwindows = 0;
 		double TimeShift = 0.0;
 		WeightingMethod Method = WeightingMethod::BoxCar;
 		std::vector<WindowSpecification> Windows;
@@ -342,7 +474,7 @@ namespace AEM {
 		WindowingScheme(const cBlock& receiverblock, const Waveform& WFM) {
 			const cBlock& b = receiverblock;
 
-			if (!b.getvalue("NumberOfWindows", nWindows)) {
+			if (!b.getvalue("NumberOfWindows", nwindows)) {
 				glog.errormsg(_SRC_, "NumberOfWindows is not specified");
 			}
 
@@ -350,7 +482,7 @@ namespace AEM {
 				TimeShift = 0.0;
 			}
 
-			Windows.resize(nWindows);
+			Windows.resize(nwindows);
 
 			//Read window times
 			std::vector<std::vector<double>> wt;
@@ -358,11 +490,11 @@ namespace AEM {
 				glog.errormsg(_SRC_, "The WindowTimes have not been specified.");
 			}
 			size_t nw = wt.size();
-			if (nw != nWindows) {
+			if (nw != nwindows) {
 				glog.errormsg(_SRC_, "The number of WindowTimes does not match the NumberOfWindows\n");
 			}
 
-			for (size_t i = 0; i < nWindows; i++) {
+			for (size_t i = 0; i < nwindows; i++) {
 				if (wt[i].size() != 2) {
 					glog.errormsg(_SRC_, "The number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
 				}
@@ -383,7 +515,7 @@ namespace AEM {
 			else glog.errormsg(_SRC_, "WindowWeightingScheme %s unknown (must be \"AreaUnderCurve\" or  \"Boxcar\" or \"LinearTaper\")\n", wmethod.c_str());
 		}
 
-		const size_t& nwindows() const { return nWindows; }
+		const size_t& nWindows() const { return nwindows; }
 
 		void initialise_area(const Waveform& WFM) {
 			double tlow, thigh, t, tp, tn, tleft, tright;
@@ -391,7 +523,7 @@ namespace AEM {
 			double dwt = WFM.Time[1] - WFM.Time[0];
 			double eps = 1.0e-7;
 
-			for (size_t w = 0; w < nWindows; w++) {
+			for (size_t w = 0; w < nwindows; w++) {
 				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
 				for (size_t s = 0; s < WFM.NumSamples; s++) {
 					t = WFM.Time[s];
@@ -441,7 +573,7 @@ namespace AEM {
 		void initialise_boxcar(const Waveform& WFM)
 		{
 			double eps = 1.0e-7;
-			for (size_t w = 0; w < nWindows; w++) {
+			for (size_t w = 0; w < nwindows; w++) {
 				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
 				for (size_t s = 0; s < WFM.NumSamples; s++) {
 					double t = WFM.Time[s];
@@ -480,7 +612,7 @@ namespace AEM {
 		void initialise_lineartaper(const Waveform& WFM)
 		{
 			double eps = 1.0e-7;
-			for (size_t w = 0; w < nWindows; w++) {
+			for (size_t w = 0; w < nwindows; w++) {
 				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
 				for (size_t s = 0; s < WFM.NumSamples; s++) {
 					double t = WFM.Time[s];
@@ -528,7 +660,7 @@ namespace AEM {
 
 		void computewindow(const double* timeseries, std::vector<double>& windowed_values) {
 			std::fill(windowed_values.begin(), windowed_values.end(), 0.0); // Reset to zero
-			for (size_t w = 0; w < nWindows; w++) {
+			for (size_t w = 0; w < nwindows; w++) {
 				for (size_t k = 0; k < Windows[w].Sample.size(); k++) {
 					windowed_values[w] += timeseries[Windows[w].Sample[k]] * Windows[w].Weight[k];
 				}
@@ -538,14 +670,14 @@ namespace AEM {
 		void printwindows(const double& PX, const double& PY, const double& PZ, const std::vector<double>& SX, const std::vector<double>& SY, const std::vector<double>& SZ) const {
 			printf("Primary   %15.8lf%15.8lf%15.8lf\n\n", PX, PY, PZ);
 			printf("Window#             X               Y               Z\n");
-			for (size_t w = 0; w < nWindows; w++) {
+			for (size_t w = 0; w < nwindows; w++) {
 				printf("%2zu        %15.8lf%15.8lf%15.8lf\n", w + 1, SX[w], SY[w], SZ[w]);
 			}
 		};
 
 		void write_windows(const fs::path& path, const std::vector<double>& SX, const std::vector<double>& SY, const std::vector<double>& SZ) const {
 			std::ofstream ofs = ofstream_ex(path);
-			for (size_t w = 0; w < nWindows; w++) {
+			for (size_t w = 0; w < nwindows; w++) {
 				ofs << strprint("%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, Windows[w].TimeLow, Windows[w].TimeHigh, SX[w], SY[w], SZ[w]);
 			}
 		};
@@ -559,19 +691,13 @@ namespace AEM {
 		std::vector<double> IR_discrete_imag;// Imaginary impulse response discrete frequency nodes
 		std::vector<cdouble> IR_splined;// Complex splines impulse response
 
-		double Scale = 0.0;
-		double RefGeomPrimary = 0.0;
-
-		double Primary = 0.0;
-		std::vector<double> Secondary;
-
 		ComponentWorkStore() {};
 
 		void resize(const size_t nnodes, const size_t nfftfreq, const size_t nwindows) {
 			IR_discrete_real.resize(nnodes);
 			IR_discrete_imag.resize(nnodes);
 			IR_splined.resize(nfftfreq);
-			Secondary.resize(nwindows);
+			//Secondary.resize(nwindows);
 		};
 	};
 
@@ -704,104 +830,6 @@ namespace AEM {
 
 	};
 
-	class TDEmScalarResponse {
-
-	private:
-		std::vector<double> v;
-
-	public:
-		
-		TDEmScalarResponse() {};
-
-		TDEmScalarResponse(const size_t& nwindows) {
-			resize(nwindows);
-		}
-
-		inline const size_t size() const { return v.size(); }
-
-		double& operator[](const size_t& i) {
-			return v[i];
-		}
-
-		double operator[](const size_t& i) const {
-			return v[i];
-		}
-
-		TDEmScalarResponse& operator+=(const TDEmScalarResponse& rhs) {
-			v += rhs.v;
-			return *this;
-		}
-
-		TDEmScalarResponse& operator*=(const double& rhs) {
-			v *= rhs;
-			return *this;
-		}
-
-	private:
-
-		void  resize(const size_t nwindows) {
-			v.resize(nwindows);
-		}
-
-	};
-
-	class TDEmVectorResponse {
-
-	private:
-		std::vector<Vec3d> v;
-
-	public:
-
-		TDEmVectorResponse(const size_t nwindows) {
-			resize(nwindows);
-		}
-
-		inline const size_t size() const { return v.size(); }
-
-		Vec3d& operator[](const size_t& i) {
-			return v[i];
-		}
-
-		Vec3d operator[](const size_t& i) const {
-			return v[i];
-		}
-
-		TDEmVectorResponse& operator+=(const TDEmVectorResponse& rhs) {
-			v += rhs.v;
-			return *this;
-		}
-
-		TDEmVectorResponse& operator*=(const double& rhs) {
-			v *= rhs;
-			return *this;
-		}
-
-		void scale_components(const Vec3d& scalefactors) {
-			const size_t nw = v.size();
-			for (size_t i = 0; i < nw; i++) {
-				v[i][XCOMP] *= scalefactors[XCOMP];
-				v[i][YCOMP] *= scalefactors[YCOMP];
-				v[i][ZCOMP] *= scalefactors[ZCOMP];
-			}
-		};
-
-		TDEmScalarResponse xzamp() {
-			const size_t nw = v.size();
-			TDEmScalarResponse r(nw);
-			for (size_t i = 0; i < nw; i++) {
-				r[i] = std::hypot(v[i][XCOMP], v[i][ZCOMP]);
-			}
-			return r;
-		};
-
-	private:
-
-		void  resize(const size_t nwindows) {
-			v.resize(nwindows);
-		}
-
-	};
-
 	class AEMSystem {
 
 	protected:
@@ -820,12 +848,12 @@ namespace AEM {
 	class cTDEmSystem : public AEMSystem {
 
 	private:
-
+		FixedPointSpline<double> FrequencySpliner;
 		FFTWPlanWrapper InverseFFTPlan;
 
 		std::vector<ComponentWorkStore> Component;
-		FixedPointSpline<double> FrequencySpliner;
-				
+		TDEmResponse WR; // Work response class
+
 		double FrequencyLog10Spacing = 0.0;
 		double DiscreteFrequencyLow = 0.0;
 		double DiscreteFrequencyHigh = 0.0;
@@ -842,8 +870,8 @@ namespace AEM {
 		Waveform WvForm;
 		Transmitter Tx;
 
-		TDEmGeometry Geometry;
-		TDEmGeometry NormalizationGeometry;
+		Vec3d Scale;
+		Vec3d RefGeomPrimary; // For PPM systems
 		Mat3d RotMatrixToRxFrame;
 
 	public:
@@ -860,31 +888,30 @@ namespace AEM {
 
 		cTDEmSystem() {};
 		
-		const size_t& nwindows() const {
-			return WindScheme.nwindows();
+		const size_t& nWindows() const {
+			return WindScheme.nWindows();
 		}
 
-		const double& PX() const { return Component[XCOMP]. Primary; };
-		const double& PY() const { return Component[YCOMP].Primary; };
-		const double& PZ() const { return Component[ZCOMP].Primary; };
+		const double& PX0() const { return WR.P[XCOMP][0]; };
+		const double& PY0() const { return WR.P[YCOMP][0]; };
+		const double& PZ0() const { return WR.P[ZCOMP][0]; };
 
-		const std::vector<double>& XS() const { return Component[XCOMP].Secondary; }
-		const std::vector<double>& YS() const { return Component[YCOMP].Secondary; }
-		const std::vector<double>& ZS() const { return Component[ZCOMP].Secondary; }
+		const std::vector<double>& PX() const { return WR.P[XCOMP]; };
+		const std::vector<double>& PY() const { return WR.P[YCOMP]; };
+		const std::vector<double>& PZ() const { return WR.P[ZCOMP]; };
 
+		const std::vector<double>& XS() const { return WR.S[XCOMP]; }
+		const std::vector<double>& YS() const { return WR.S[YCOMP]; }
+		const std::vector<double>& ZS() const { return WR.S[ZCOMP]; }
+		
 		double primary(const size_t component) const {
 			assert(component < NCOMP);
-			return Component[component].Primary;
+			return WR.P[component][0];
 		}
 
 		double secondary(const size_t component, const size_t window) {
 			assert(component < NCOMP);
-			return Component[component].Secondary[window];
-		}
-
-		std::vector<double> secondary(const size_t component) const {
-			assert(component < NCOMP);
-			return Component[component].Secondary;
+			return WR.S[component][window];
 		}
 
 		void read_system_descriptor_file(const fs::path& systemdescriptorfile) {
@@ -910,7 +937,7 @@ namespace AEM {
 
 			cBlock rxblock = STM.findblock("Receiver");
 			WindScheme = WindowingScheme(rxblock, WvForm);
-
+			setup_nwindows();
 
 			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.TD_Waveform.size()) {
 				glog.errormsg(_SRC_, "The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
@@ -936,57 +963,45 @@ namespace AEM {
 		};
 
 		// Modelling
+
+		TDEmResponse forward_model(const Earth1D& E, const TDEmGeometry& G) {
+			set_earth(E);
+			set_geometry(G);
+			setup_computations();
+			set_calculationtype(CMode::FM);
+			setprimaryfields();
+			setsecondaryfields();
+			return WR;
+		}
+
+		TDEmResponse derivative(const CalculationType& calc) {
+			set_calculationtype(calc);
+			setprimaryfields();
+			setsecondaryfields();
+			return WR;
+		}
+
 		void set_earth(const Earth1D& earth) {
 			lem().set_earth(earth);
 		};
 
 		void set_geometry(const TDEmGeometry& G) {
-			Geometry = G;
-
 			// Set geometry inside the LE Modeller
 			Vec3d tx_reference_orientation = Vec3d::UnitZ();
-			const Vec3d sep = Geometry.txrx_separation();
-			const double& h = Geometry.tx_height;
+			const Vec3d sep = G.txrx_separation();
+			const double& h = G.tx_height;
 			const double& x = sep.x();
 			const double& y = sep.y();
 			const double& z = h + sep.z();
-			const Vec3d tx_orientation = Geometry.tx_orientation(Tx.Reference_Orientation);
+			const Vec3d tx_orientation = G.tx_orientation(Tx.Reference_Orientation);
 			lem().set_geometry(tx_orientation, h, x, y, z);
 			// Set the rotation matrix for rotating vector fields to Rx frame of reference
-			RotMatrixToRxFrame = Geometry.inertial_to_rx_frame_rotation_matrix();
+			RotMatrixToRxFrame = G.inertial_to_rx_frame_rotation_matrix();
 		};
 
 		void set_calculationtype(const CalculationType& _calculationtype) {
 			LEM.set_calculationtype(_calculationtype);
 		};
-
-		void set_response(cTDEmResponse& Response) const {
-			Response.PX = PX();
-			Response.PY = PY();
-			Response.PZ = PZ();
-			Response.SX = XS();
-			Response.SY = YS();
-			Response.SZ = ZS();
-		};
-
-		void forwardmodel(const TDEmGeometry& G, const Earth1D& E, cTDEmResponse& R) {
-			set_geometry(G);
-			set_earth(E);
-			setup_computations();
-			setprimaryfields();
-			setsecondaryfields();
-			set_response(R);
-		}
-
-		void getfields(double& px, double& py, double& pz, double* sx, double* sy, double* sz) const {
-			px = PX();
-			py = PY();
-			pz = PZ();
-			const size_t nw = nwindows();
-			for (size_t i = 0; i < nw; i++) sx[i] = XS()[i];
-			for (size_t i = 0; i < nw; i++) sy[i] = YS()[i];
-			for (size_t i = 0; i < nw; i++) sz[i] = ZS()[i];
-		}
 
 		void setup_computations() {
 			lem().setup_computations();
@@ -1013,9 +1028,9 @@ namespace AEM {
 				v *= Tx.PeakdIdT;
 			}
 
-			Component[XCOMP].Primary = v.x() * Component[XCOMP].Scale;
-			Component[YCOMP].Primary = v.y() * Component[YCOMP].Scale;
-			Component[ZCOMP].Primary = v.z() * Component[ZCOMP].Scale;
+			WR.P[XCOMP][0] = v.x() * Scale[XCOMP];
+			WR.P[YCOMP][0] = v.y() * Scale[YCOMP];
+			WR.P[ZCOMP][0] = v.z() * Scale[ZCOMP];
 		};
 
 		void setsecondaryfields() {
@@ -1040,11 +1055,11 @@ namespace AEM {
 				}
 			};
 
-			//Spline discreet frequencies		
-			for (size_t i = 0; i < NCOMP; i++) {
-				if (Component[i].Scale == 0.0) return;
-				spline_component(i);
-				inverse_fft_window_scale_component(i);
+			//Spline discreet frequencies
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				if (Scale[ci] == 0.0) return;
+				spline_component(ci);
+				inverse_fft_window_scale_component(ci);
 			}
 
 			if (MO.SaveDiagnosticFiles) {
@@ -1057,29 +1072,7 @@ namespace AEM {
 				WindScheme.write_windows("diag_windows.txt", XS(), YS(), ZS());
 			}
 		}
-
-		TDEmVectorResponse get_primary_vector_response() {
-			const size_t nw = nwindows();
-			TDEmVectorResponse R(nw);
-			for (size_t wi = 0; wi < nw; wi++) {
-				R[wi][0] = Component[0].Primary;
-				R[wi][1] = Component[1].Primary;
-				R[wi][2] = Component[2].Primary;
-			}
-			return R;
-		};
-
-		TDEmVectorResponse get_secondary_vector_response() {
-			const size_t nw = nwindows();
-			TDEmVectorResponse R(nw);
-			for (size_t wi = 0; wi < nw; wi++) {
-				R[wi][0] = Component[0].Secondary[wi];
-				R[wi][1] = Component[1].Secondary[wi];
-				R[wi][2] = Component[2].Secondary[wi];
-			}
-			return R;
-		};
-
+		
 		void drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp) {
 			//xi = (  xb*cosp  + zb*sinp);Inertial
 			//zi = ( -xb*sinp  + zb*cosp);
@@ -1089,8 +1082,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || 
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= Component[XCOMP].RefGeomPrimary;
-				zb *= Component[ZCOMP].RefGeomPrimary;
+				xb *= RefGeomPrimary[XCOMP];
+				zb *= RefGeomPrimary[ZCOMP];
 			}
 
 			double cosp = cos(D2R<double> *p);
@@ -1105,8 +1098,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || 
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dxbdp /= Component[XCOMP].RefGeomPrimary;
-				dzbdp /= Component[ZCOMP].RefGeomPrimary;
+				dxbdp /= RefGeomPrimary[XCOMP];
+				dzbdp /= RefGeomPrimary[ZCOMP];
 			}
 		}
 
@@ -1119,8 +1112,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= Component[XCOMP].RefGeomPrimary;
-				zb *= Component[ZCOMP].RefGeomPrimary;
+				xb *= RefGeomPrimary[XCOMP];
+				zb *= RefGeomPrimary[ZCOMP];
 			}
 
 
@@ -1137,8 +1130,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dxbdp /= Component[XCOMP].RefGeomPrimary;
-				dzbdp /= Component[ZCOMP].RefGeomPrimary;
+				dxbdp /= RefGeomPrimary[XCOMP];
+				dzbdp /= RefGeomPrimary[ZCOMP];
 			}
 		}
 
@@ -1151,8 +1144,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= Component[YCOMP].RefGeomPrimary;
-				zb *= Component[ZCOMP].RefGeomPrimary;
+				yb *= RefGeomPrimary[YCOMP];
+				zb *= RefGeomPrimary[ZCOMP];
 			}
 
 			double cosr = cos(D2R<double> *r);
@@ -1167,8 +1160,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dybdr /= Component[YCOMP].RefGeomPrimary;
-				dzbdr /= Component[ZCOMP].RefGeomPrimary;
+				dybdr /= RefGeomPrimary[YCOMP];
+				dzbdr /= RefGeomPrimary[ZCOMP];
 			}
 		}
 
@@ -1181,8 +1174,8 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= Component[YCOMP].RefGeomPrimary;
-				zb *= Component[ZCOMP].RefGeomPrimary;
+				yb *= RefGeomPrimary[YCOMP];
+				zb *= RefGeomPrimary[ZCOMP];
 			}
 
 			double cosr = cos(D2R<double> *r);
@@ -1198,47 +1191,51 @@ namespace AEM {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				//Convert back to PPMS
-				dybdr /= Component[YCOMP].RefGeomPrimary;
-				dzbdr /= Component[ZCOMP].RefGeomPrimary;
+				dybdr /= RefGeomPrimary[YCOMP];
+				dzbdr /= RefGeomPrimary[ZCOMP];
 			}
 		}
 
-		void drx_roll_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, const TDEmVectorResponse& derivatives) const {
+		void drx_roll_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
 			Mat3d dM = g.rx_roll_derivative_matrix();
 			apply_rx_derivative_matrix(dM, fields, derivatives);
 		};
 
-		void drx_pitch_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, const TDEmVectorResponse& derivatives) const {
+		void drx_pitch_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
 			Mat3d dM = g.rx_pitch_derivative_matrix();
 			apply_rx_derivative_matrix(dM, fields, derivatives);
 		};
 
-		void drx_yaw_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, const TDEmVectorResponse& derivatives) const {
+		void drx_yaw_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
 			Mat3d dM = g.rx_yaw_derivative_matrix();
 			apply_rx_derivative_matrix(dM, fields, derivatives);
 		};
 
 	private:
 
-		void apply_rx_derivative_matrix(const Mat3d& dM, const TDEmVectorResponse& fields, const TDEmVectorResponse& derivatives) const {			
+		void setup_nwindows() {
+			WR.resize(nWindows());
+		}
+
+		void apply_rx_derivative_matrix(const Mat3d& dM, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
 			const size_t n = fields.size();
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				for (size_t i = 0; i < n; i++) {
-					Vec3d ftrue = fields[i];
+					Vec3d ftrue = fields.get_vec3d(i);
 					//Must work with true field vector directions (not the PPM scaled versinn)
-					ftrue[XCOMP] *= Component[XCOMP].RefGeomPrimary;
-					ftrue[YCOMP] *= Component[YCOMP].RefGeomPrimary;
-					ftrue[ZCOMP] *= Component[ZCOMP].RefGeomPrimary;
-					derivatives[i] = dM * ftrue;
+					ftrue[XCOMP] *= RefGeomPrimary[XCOMP];
+					ftrue[YCOMP] *= RefGeomPrimary[YCOMP];
+					ftrue[ZCOMP] *= RefGeomPrimary[ZCOMP];
+					derivatives.set_vec3d(i, dM * ftrue);
 					//Convert back to PPMS
-					derivatives[i][XCOMP] /= Component[XCOMP].RefGeomPrimary;
-					derivatives[i][YCOMP] /= Component[YCOMP].RefGeomPrimary;
-					derivatives[i][ZCOMP] /= Component[ZCOMP].RefGeomPrimary;
+					derivatives[XCOMP][i] /= RefGeomPrimary[XCOMP];
+					derivatives[YCOMP][i] /= RefGeomPrimary[YCOMP];
+					derivatives[ZCOMP][i] /= RefGeomPrimary[ZCOMP];
 				}
 			}
 			else {
 				for (size_t i = 0; i < n; i++) {
-					derivatives[i] = dM * fields[i];
+					derivatives.set_vec3d(i,dM * fields.get_vec3d(i));
 				}
 			}
 		}
@@ -1263,11 +1260,7 @@ namespace AEM {
 			ForwardFFTPlan.execute();
 			const double scale = 1.0 / (double)WvForm.NumSamples;
 			WvForm.FD_Waveform *= scale; // Scale the spectrum
-			// Make sure every odd harmonic to exactly zero
-			//for (size_t k = 0; k < WvForm.NumFrequencies; k += 2) {
-			//	WvForm.F_Waveform[k] = 0.0;
-			//}
-
+			
 			bool convert_B_2_dBdT = false;
 			bool convert_dBdT_2_B = false;
 			if (WvForm.Type == Waveform::Type::TX) {
@@ -1320,16 +1313,18 @@ namespace AEM {
 			double tx_scale = MUZERO<double> * Tx.LoopArea * Tx.NumberOfTurns * Tx.PeakCurrent;
 			
 			//ModellingOptions
-			Component[XCOMP].Scale = tx_scale * MO.XOutputScaling;
-			Component[YCOMP].Scale = tx_scale * MO.YOutputScaling;
-			Component[ZCOMP].Scale = tx_scale * MO.ZOutputScaling;
+			Scale[XCOMP] = tx_scale * MO.XOutputScaling;
+			Scale[YCOMP] = tx_scale * MO.YOutputScaling;
+			Scale[ZCOMP] = tx_scale * MO.ZOutputScaling;
 
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				cBlock b = STM.findblock("ReferenceGeometry");
 				if (b.Entries.size() == 0) {
 					glog.errormsg(_SRC_, "Must define a ReferenceGeometry for PPM or PPMPEAKTOPEAK normalisation\n");
 				}
-				NormalizationGeometry = TDEmGeometry(b);
+
+				//Todo check this is working okay
+				TDEmGeometry NormalizationGeometry(b);
 				set_geometry(NormalizationGeometry);
 				setprimaryfields();
 
@@ -1341,11 +1336,10 @@ namespace AEM {
 					s *= 1.0e6;
 				}
 
-				for (size_t i = 0; i < NCOMP; i++) {
-					ComponentWorkStore& c = Component[i];
-					c.RefGeomPrimary = c.Primary;
-					if (c.RefGeomPrimary == 0.0) c.Scale = 0.0;
-					else c.Scale *= (s / c.RefGeomPrimary);
+				for (size_t ci = 0; ci < NCOMP; ci++) {
+					RefGeomPrimary[ci] = WR.P[ci][0];
+					if (RefGeomPrimary[ci] == 0.0) Scale[ci] = 0.0;
+					else Scale[ci] *= (s / RefGeomPrimary[ci]);
 				}
 			}
 		}
@@ -1377,9 +1371,9 @@ namespace AEM {
 
 		void setup_splines() {
 			Component.resize(NCOMP);
-			Component[XCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
-			Component[YCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
-			Component[ZCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nwindows());
+			Component[XCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nWindows());
+			Component[YCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nWindows());
+			Component[ZCOMP].resize(NumberOfDiscreteFrequencies, NumberOfSplinedFrequencies, nWindows());
 			FrequencySpliner.initialise(DiscreteFrequenciesLog10, SplinedFrequencieslog10);
 			//lem().initialise_frequencies(DiscreteFrequencies);
 		};
@@ -1418,12 +1412,12 @@ namespace AEM {
 			InverseFFTPlan.execute();
 
 			// Window
-			WindScheme.computewindow((double*)WvForm.FFT_WorkArray.data(), C.Secondary);
+			WindScheme.computewindow((double*)WvForm.FFT_WorkArray.data(), WR.S[component]);
 			if (MO.SaveDiagnosticFiles) {
 				write_timesseries("diag_xtimeseries.txt");
 			}
 			// Scale
-			C.Secondary *= Component[component].Scale;
+			WR.S[component] *= Scale[component];
 		}
 
 		void write_discretefrequencies(const fs::path& path) const {

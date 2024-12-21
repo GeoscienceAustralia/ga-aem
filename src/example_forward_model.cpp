@@ -58,18 +58,17 @@ int skytem_example_ip()
 	E.frequencydependence[2] = 0.0;
 	
 	//Create a response object
-	cTDEmResponse R;
+	TDEmResponse R;
 	//Run the forward model
-	S.forwardmodel(G, E, R);	
-	for (size_t i = 0; i < R.SZ.size(); i++){
+	R = S.forward(E, G);
+	for (size_t i = 0; i < R.size(); i++){
 		double wct = S.window(i).centre_time();
-		printf("%zu %10e %10e\n", i, wct, R.SZ[i]);		
+		printf("%zu %10e %10e\n", i, wct, R.secondary(ZCOMP,i));
 	}	
 	return 0;
 }
 
-int skytem_example()
-{
+int skytem_example() {
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
 	//LM = Low moment pulse
@@ -97,30 +96,25 @@ int skytem_example()
 	//bottom layer is infinite thickness and not set
 
 	//Create a response object for each moment (they have different numbers of windwos)
-	cTDEmResponse LMR;
-	cTDEmResponse HMR;	
+	TDEmResponse LMR;
+	TDEmResponse HMR;	
 				
 	//Run the forward model for each moment			
-	LM.forwardmodel(G, E, LMR);
-	HM.forwardmodel(G, E, HMR);			
+	LMR = LM.forward(E, G);
+	HMR = HM.forward(E, G);
 	
-	//Merge the secondary field vertical (Z) components data into one data vector
-	//std::vector<double> data = concaternate(LMR.SZ, HMR.SZ);
-	std::vector<double> data = -1.0*HMR.SZ;
-
-	for (size_t i = 0; i < LMR.SZ.size(); i++){
-		printf("%zu %g\n", i, LMR.SZ[i]);
+	for (size_t i = 0; i < LMR.size(); i++){
+		printf("%zu %g\n", i, LMR.secondary(ZCOMP,i));
 	}
 
-	for (size_t i = 0; i < HMR.SZ.size(); i++){
-		printf("%zu %g\n", i, HMR.SZ[i]);
+	for (size_t i = 0; i < HMR.size(); i++){
+		printf("%zu %g\n", i, HMR.secondary(ZCOMP,i));
 	}
 	
 	return 0;
 }
 
-int skytem_computation_time()
-{
+int skytem_computation_time() {
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
 	//LM = Low moment pulse
@@ -141,8 +135,8 @@ int skytem_computation_time()
 	Earth1D E(1);
 	
 	//Create a response object for each moment (they have different numbers of windwos)	
-	cTDEmResponse LMR;
-	cTDEmResponse HMR;
+	TDEmResponse LMR;
+	TDEmResponse HMR;
 	double sum = 0.0;
 	for (size_t j = 1; j <= 50; j++) {
 		size_t nlayers = j;
@@ -153,10 +147,10 @@ int skytem_computation_time()
 			//Run the forward model for each moment with random models
 			for (size_t k = 0; k < nlayers; k++) E.conductivity[k] = urand(0.001, 2.0);
 			for (size_t k = 0; k < nlayers - 1; k++) E.thickness[k] = urand(1.0, 10.0);
-			LM.forwardmodel(G, E, LMR);
-			HM.forwardmodel(G, E, HMR);
-			sum += LMR.PX;//Just to make sure compiler does not optimize out the computation
-			sum += HMR.PX;//Just to make sure compiler does not optimize out the computation
+			LMR = LM.forward(E, G);
+			HMR = HM.forward(E, G);
+			sum += LMR.primary(XCOMP);//Just to make sure compiler does not optimize out the computation
+			sum += HMR.primary(XCOMP);//Just to make sure compiler does not optimize out the computation
 		}
 		double t2 = gettime();
 		std::cout << "Time: " << j << " " << t2 - t1 << std::endl;
@@ -164,8 +158,7 @@ int skytem_computation_time()
 	return 0;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
 	try {
 		//skytem_example();
 		//skytem_example_ip();

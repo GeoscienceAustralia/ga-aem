@@ -126,18 +126,17 @@ static int writecsvheader(std::ofstream& ofs, const size_t& nw)
 	return 0;
 }
 
-static int writeoutputrecord(const bool& csvoutput, std::ofstream& ofsout, size_t recnum, const cTDEmSystem& T, const cTDEmResponse& R)
-{
+static int writeoutputrecord(const bool& csvoutput, std::ofstream& ofsout, size_t recnum, const cTDEmSystem& T, const TDEmResponse& R) {
 	char delim = ' ';
 	if (csvoutput) delim = ',';
-	ofsout << strprint(" %15g%c", R.PX, delim);
-	ofsout << strprint(" %15g%c", R.PY, delim);
-	ofsout << strprint(" %15g%c", R.PZ, delim);
+	ofsout << strprint(" %15g%c", R.primary(XCOMP), delim);
+	ofsout << strprint(" %15g%c", R.primary(YCOMP), delim);
+	ofsout << strprint(" %15g%c", R.primary(ZCOMP), delim);
 
-	size_t nw = R.SX.size();
-	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.SX[i], delim);
-	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.SY[i], delim);
-	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.SZ[i], delim);
+	const size_t nw = R.size();
+	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.secondary(XCOMP, i), delim);
+	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.secondary(YCOMP, i), delim);
+	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.secondary(ZCOMP, i), delim);
 	ofsout << std::endl;
 	return 0;
 }
@@ -189,9 +188,8 @@ static int process(std::string controlfilename)
 
 	glog.logmsg("Opening output header file %s\n", outputhdr.c_str());
 	std::ofstream ofshdr = ofstream_ex(outputhdr);
-	writehdr(ofshdr, T.nwindows());
+	writehdr(ofshdr, T.nWindows());
 
-	cTDEmResponse R;
 	size_t recnum = 1;
 	std::string CurrentRecord;
 	while (filegetline_ifs(ofsin, CurrentRecord)) {
@@ -205,10 +203,11 @@ static int process(std::string controlfilename)
 		Earth1D E;
 		parseinputrecord(CurrentRecord.c_str(), G, E);
 		glog.logmsg("%s\n", CurrentRecord.c_str());
-		T.forwardmodel(G, E, R);
-		if (recnum == 1) {
-			writecsvheader(ofsout, R.SX.size());
-		}
+
+
+		TDEmResponse R = T.forward(E, G);
+
+		if (recnum == 1) writecsvheader(ofsout, R.size());
 		writeoutputrecord(csvoutput, ofsout, recnum, T, R);
 		recnum++;
 	};

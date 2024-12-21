@@ -333,7 +333,7 @@ public:
 	bool initialise(const cBlock& b) {
 		std::string stm = b.getstringvalue("SystemFile");
 		T = cTDEmSystem(stm);
-		nw = T.nwindows();
+		nw = T.nWindows();
 
 		bool status;
 		status = b.getvalue("InvertTotalField", InvertTotalField);
@@ -430,7 +430,7 @@ public:
 		predicted.resize(ndata());
 		for (size_t ci = 0; ci < Comp.size(); ci++) {
 			if (Comp[ci].Use == false)continue;
-			for (size_t wi = 0; wi < T.nwindows(); wi++) {
+			for (size_t wi = 0; wi < T.nWindows(); wi++) {
 				predicted[dindex(ci, wi)] = T.secondary(ci, wi);
 				if (Comp[ci].InvertTotalField) {
 					predicted[dindex(ci, wi)] += T.primary(ci);
@@ -453,7 +453,7 @@ public:
 
 				for (size_t ci = 0; ci < Comp.size(); ci++) {
 					if (Comp[ci].Use == false)continue;
-					for (size_t wi = 0; wi < T.nwindows(); wi++) {
+					for (size_t wi = 0; wi < T.nWindows(); wi++) {
 						derivatives[dindex(ci, wi)][li] = T.secondary(ci, wi);
 						if (Comp[ci].InvertTotalField) {
 							derivatives[dindex(ci, wi)][li] += T.primary(ci);
@@ -469,7 +469,7 @@ public:
 					T.drx_pitch(X, Z, geometry.rx_pitch, dxbdp, dzbdp);
 					for (size_t ci = 0; ci < Comp.size(); ci++) {
 						if (Comp[ci].Use == false)continue;
-						for (size_t wi = 0; wi < T.nwindows(); wi++) {
+						for (size_t wi = 0; wi < T.nWindows(); wi++) {
 							if (ci == 0)      derivatives[dindex(ci, wi)][gi + nlayers] = dxbdp[wi];
 							else if (ci == 1) derivatives[dindex(ci, wi)][gi + nlayers] = 0.0;
 							else              derivatives[dindex(ci, wi)][gi + nlayers] = dzbdp[wi];
@@ -483,7 +483,7 @@ public:
 					T.setsecondaryfields();
 					for (size_t ci = 0; ci < Comp.size(); ci++) {
 						if (Comp[ci].Use == false) continue;
-						for (size_t wi = 0; wi < T.nwindows(); wi++) {
+						for (size_t wi = 0; wi < T.nWindows(); wi++) {
 							derivatives[dindex(ci, wi)][gi + nlayers] = T.secondary(ci, wi);
 							if (Comp[ci].InvertTotalField) {
 								derivatives[dindex(ci, wi)][gi + nlayers] += T.primary(ci);
