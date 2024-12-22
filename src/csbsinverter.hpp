@@ -1603,15 +1603,12 @@ public:
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
 				cTDEmSystemInfo& S = SV[sysi];
-				cTDEmSystem& T = S.T;
+				TDEmSystem& T = S.T;
 				if (S.reconstructPrimary) {
-					T.set_geometry(G[si].tfr);
-					T.set_calculationtype(CMode::FM);
-					T.setprimaryfields();
-
-					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = T.PX0();
-					if (S.CompInfo[YCOMP].Use) S.CompInfo[YCOMP].data[si].P = T.PY0();
-					if (S.CompInfo[ZCOMP].Use) S.CompInfo[ZCOMP].data[si].P = T.PZ0();
+					TDEmVectorResponse P = T.forward_model_primary_field(G[si].tfr);
+					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = P(XCOMP,0);
+					if (S.CompInfo[YCOMP].Use) S.CompInfo[YCOMP].data[si].P = P(YCOMP,0);
+					if (S.CompInfo[ZCOMP].Use) S.CompInfo[ZCOMP].data[si].P = P(ZCOMP,0);
 				}
 
 				if (S.invertXPlusZ) {
@@ -1932,7 +1929,7 @@ public:
 		std::vector<TDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
 			cTDEmSystemInfo& S = SV[sysi];
-			cTDEmSystem& T = S.T;
+			TDEmSystem& T = S.T;
 
 			Vec3d scalefactors = get_scalefactors(sysi, parameters);
 
@@ -1940,14 +1937,9 @@ public:
 			for (size_t si = 0; si < nSoundings; si++) {
 				const Earth1D& e = ev[si];
 				const TDEmGeometry& g = gv[si];
-				//T.set_earth(e);
-				//T.set_geometry(g);
-				//T.setup_computations();
-				//T.set_calculationtype(CMode::FM);
-				//T.setprimaryfields();
-				//T.setsecondaryfields();
-
-				TDEmResponse R = T.forward_model(e, g);
+				
+				// R is a reference to the Work Response struct
+				const TDEmResponse& R = T.forward_model(e, g);
 				
 				TDEmVectorResponse FM = R.S;
 
@@ -2008,10 +2000,7 @@ public:
 					if (solve_conductivity()) {
 						for (size_t li = 0; li < nLayers; li++) {
 							const int pindex = cindex(si, li);
-							R = T.derivative(CalculationType(CMode::DC, li));
-							//T.set_calculationtype(CalculationType(CMode::DC, li));
-							//T.setprimaryfields();
-							//T.setsecondaryfields();
+							T.derivative(CalculationType(CMode::DC, li));
 							DRV = R.S;
 							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.P;
 							//multiply by natural log(10) as parameters are in logbase10 units
@@ -2024,10 +2013,7 @@ public:
 					if (solve_thickness()) {
 						for (size_t li = 0; li < nLayers - 1; li++) {
 							const int pindex = tindex(si, li);
-							//T.set_calculationtype(CalculationType(CMode::DT, li));
-							//T.setprimaryfields();
-							//T.setsecondaryfields();
-							R = T.derivative(CalculationType(CMode::DT, li));
+							T.derivative(CalculationType(CMode::DT, li));
 							DRV = R.S;
 							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.P;
 							//multiply by natural log(10) as parameters are in logbase10 units
@@ -2040,10 +2026,7 @@ public:
 					if (FreeGeometry) {
 						if (solve_geometry_element("tx_height")) {
 							const size_t pindex = gindex(si, "tx_height");
-							//T.set_calculationtype(CMode::DH);
-							//T.setprimaryfields();
-							//T.setsecondaryfields();
-							R = T.derivative(CalculationType(CMode::DH));
+							T.derivative(CalculationType(CMode::DH));
 							DRV = R.S;
 							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.P;
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2051,10 +2034,7 @@ public:
 
 						if (solve_geometry_element("txrx_dx")) {
 							const size_t pindex = gindex(si, "txrx_dx");
-							//T.set_calculationtype(CMode::DX);
-							//T.setprimaryfields();
-							//T.setsecondaryfields();
-							R = T.derivative(CalculationType(CMode::DX));
+							T.derivative(CalculationType(CMode::DX));
 							DRV = R.S;
 							if (S.invertPrimaryPlusSecondary) DRV += R.P;
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2062,10 +2042,7 @@ public:
 
 						if (solve_geometry_element("txrx_dy")) {
 							const size_t pindex = gindex(si, "txrx_dy");
-							//T.set_calculationtype(CMode::DY);
-							//T.setprimaryfields();
-							//T.setsecondaryfields();
-							R = T.derivative(CalculationType(CMode::DY));
+							T.derivative(CalculationType(CMode::DY));
 							DRV = R.S;
 							if (S.invertPrimaryPlusSecondary) DRV += R.P;
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2073,10 +2050,7 @@ public:
 
 						if (solve_geometry_element("txrx_dz")) {
 							const size_t pindex = gindex(si, "txrx_dz");
-							//T.set_calculationtype(CMode::DZ);
-							//T.setprimaryfields();
-							//T.setsecondaryfields();
-							R = T.derivative(CalculationType(CMode::DZ));
+							T.derivative(CalculationType(CMode::DZ));
 							DRV = R.S;
 							if (S.invertPrimaryPlusSecondary) DRV += R.P;
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2148,288 +2122,15 @@ public:
 			cTDEmSystemInfo& S = SV[sysi];
 			S.predicted.resize(nSoundings);
 
-			cTDEmSystem& T = S.T;
+			TDEmSystem& T = S.T;
 			const size_t& nw = T.nWindows();
 			for (size_t si = 0; si < nSoundings; si++) {
 				const Earth1D& e = ev[si];
 				const TDEmGeometry& g = gv[si];
-				T.set_earth(e);
-				T.set_geometry(g);
-
-				//Forwardmodel
-				T.set_calculationtype(CMode::FM);
-				T.setup_computations();
-				T.setprimaryfields();
-				T.setsecondaryfields();
-
-				cTDEmData& d = S.predicted[si];
-				d.xcomponent().Primary = T.PX0();
-				d.ycomponent().Primary = T.PY0();
-				d.zcomponent().Primary = T.PZ0();
-				d.xcomponent().Secondary = T.XS();
-				d.ycomponent().Secondary = T.YS();
-				d.zcomponent().Secondary = T.ZS();
+				S.predicted[si] = T.forward_model(e, g);
 			}
 		}
 	}
-
-	/*
-	void set_predicted_old(const Vector& parameters) {
-		std::vector<Earth1D> ev = get_earth(parameters);
-		std::vector<TDEmGeometry> gv = get_geometry(parameters);
-		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			cTDEmSystemInfo& S = SV[sysi];
-			S.predicted.resize(nSoundings);
-
-			cTDEmSystem& T = S.T;
-			const size_t& nw = T.nwindows();
-			for (size_t si = 0; si < nSoundings; si++) {
-				const Earth1D& e = ev[si];
-				const TDEmGeometry& g = gv[si];
-				T.set_earth(e);
-				T.set_geometry(g);
-
-				//Forwardmodel
-				T.set_calculationtype(CMode::FM);
-				T.setup_computations();
-				T.setprimaryfields();
-				T.setsecondaryfields();
-
-				cTDEmData& d = S.predicted[si];
-				d.xcomponent().Primary = T.PX();
-				d.ycomponent().Primary = T.PY();
-				d.zcomponent().Primary = T.PZ();
-				d.xcomponent().Secondary = T.XS();
-				d.ycomponent().Secondary = T.YS();
-				d.zcomponent().Secondary = T.ZS();
-			}
-		}
-	}*/
-
-	/*
-	void forwardmodel_impl_old(const Vector& parameters, Vector& predicted, Matrix& jacobian, bool computederivatives) {
-	Vector pred_all(nAllData);
-	Matrix J_all;
-	if (computederivatives) {
-		J_all.resize(nAllData, nParam);
-		J_all.setZero();
-	}
-
-	std::vector<Earth1D> ev = get_earth(parameters);
-	std::vector<TDEmGeometry> gv = get_geometry(parameters);
-	for (size_t sysi = 0; sysi < nSystems; sysi++) {
-		cTDEmSystemInfo& S = SV[sysi];
-		cTDEmSystem& T = S.T;
-
-		Vec3d scalefactors = get_scalefactors(sysi, parameters);
-
-		const size_t& nw = T.nwindows();
-		for (size_t si = 0; si < nSoundings; si++) {
-			const Earth1D& e = ev[si];
-			const TDEmGeometry& g = gv[si];
-			T.set_earth(e);
-			T.set_geometry(g);
-			T.setup_computations();
-
-			//Forwardmodel
-			T.set_calculationtype(CMode::FM);
-			T.setprimaryfields();
-			T.setsecondaryfields();
-
-			const size_t& nw = T.nwindows();
-			std::vector<double> xfm = T.XS() * scalefactors[XCOMP];
-			std::vector<double> yfm = T.YS() * scalefactors[YCOMP];
-			std::vector<double> zfm = T.ZS() * scalefactors[ZCOMP];
-			std::vector<double> xzfm;
-
-			//std::cout << tostring(zfm," ") << std::endl;
-
-			if (S.invertPrimaryPlusSecondary) {
-				xfm += T.PX() * scalefactors[XCOMP];
-				yfm += T.PY() * scalefactors[YCOMP];
-				zfm += T.PZ() * scalefactors[ZCOMP];
-			}
-
-			if (S.invertXPlusZ) {
-				xzfm.resize(nw);
-				for (size_t wi = 0; wi < nw; wi++) {
-					xzfm[wi] = std::hypot(xfm[wi], zfm[wi]);
-				}
-			}
-
-			// Predicted
-			if (S.invertXPlusZ) {
-				for (size_t wi = 0; wi < nw; wi++) {
-					const int& di = dindex(si, sysi, XZAMP, wi);
-					pred_all[di] = xzfm[wi];
-					if (S.CompInfo[1].Use) {
-						pred_all[dindex(si, sysi, YCOMP, wi)] = yfm[wi];
-					}
-				}
-			}
-			else {
-				for (size_t wi = 0; wi < nw; wi++) {
-					if (S.CompInfo[XCOMP].Use) pred_all[dindex(si, sysi, XCOMP, wi)] = xfm[wi];
-					if (S.CompInfo[YCOMP].Use) pred_all[dindex(si, sysi, YCOMP, wi)] = yfm[wi];
-					if (S.CompInfo[ZCOMP].Use) pred_all[dindex(si, sysi, ZCOMP, wi)] = zfm[wi];
-				}
-			}
-
-			// Jacobian
-			if (computederivatives) {
-				std::vector<double> xdrv(nw);
-				std::vector<double> ydrv(nw);
-				std::vector<double> zdrv(nw);
-
-				//bookmark
-				for (size_t ci = 0; ci < NCOMP; ci++) {
-					if (S.CompInfo[ci].Use) {
-						const int pindex = scalefactor_pindex(sysi, ci);
-						if (pindex >= 0) {
-							//Here filling with the forward itself as no new computations
-							fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-							if (ci != XCOMP) xdrv *= 0.0;
-							if (ci != YCOMP) ydrv *= 0.0;
-							if (ci != ZCOMP) zdrv *= 0.0;
-							fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-						}
-					}
-				}
-
-				if (solve_conductivity()) {
-					for (size_t li = 0; li < nLayers; li++) {
-						const int pindex = cindex(si, li);
-						T.set_calculationtype(CalculationType(CMode::DC, li));
-						T.setprimaryfields();
-						T.setsecondaryfields();
-
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						//multiply by natural log(10) as parameters are in logbase10 units
-						const double f = log(10.0) * e.conductivity[li];
-						xdrv *= f; ydrv *= f; zdrv *= f;
-						fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-				}
-
-				if (solve_thickness()) {
-					for (size_t li = 0; li < nLayers - 1; li++) {
-						const int pindex = tindex(si, li);
-						T.set_calculationtype(CalculationType(CMode::DT, li));
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						//multiply by natural log(10) as parameters are in logbase10 units
-						double sf = log(10.0) * e.thickness[li];
-						xdrv *= sf; ydrv *= sf; zdrv *= sf;
-						fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-				}
-
-				if (FreeGeometry) {
-					if (solve_geometry_element("tx_height")) {
-						const size_t pindex = gindex(si, "tx_height");
-						T.set_calculationtype(CMode::DH);
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry_element("txrx_dx")) {
-						const size_t pindex = gindex(si, "txrx_dx");
-						T.set_calculationtype(CMode::DX);
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry_element("txrx_dy")) {
-						const size_t pindex = gindex(si, "txrx_dy");
-						T.set_calculationtype(CMode::DY);
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry_element("txrx_dz")) {
-						const size_t pindex = gindex(si, "txrx_dz");
-						T.set_calculationtype(CMode::DZ);
-						T.setprimaryfields();
-						T.setsecondaryfields();
-						fillDerivativeVectors(S, xdrv, ydrv, zdrv);
-						fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry_element("rx_pitch")) {
-						const size_t pindex = gindex(si, "rx_pitch");
-						T.drx_pitch(xfm, zfm, g.rx_pitch, xdrv, zdrv);
-						ydrv *= 0.0;
-						fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-
-					if (solve_geometry_element("rx_roll")) {
-						const size_t pindex = gindex(si, "rx_roll");
-						T.drx_roll(yfm, zfm, g.rx_roll, ydrv, zdrv);
-						xdrv *= 0.0;
-						fillMatrixColumn(J_all, si, sysi, pindex, xfm, yfm, zfm, xzfm, xdrv, ydrv, zdrv);
-					}
-				}
-			}
-		}
-	}
-	predicted = cull(pred_all);
-	if (computederivatives) jacobian = cull(J_all);
-
-	if (Verbose && computederivatives) {
-		//std::cerr << "\n-----------------\n";
-		//std::cerr << "J_all: It " << CIS.iteration + 1 << std::endl;
-		//std::cerr << J_all;
-		//std::cerr << "\n-----------------\n";
-	}
-
-	if (OO.Dump && computederivatives) {
-		const std::string dp = dumppath();
-		writetofile(J_all, dp + "J" + ".dat");
-		std::ofstream of(dp + "J1" + ".dat");
-		of << J_all;
-	}
-}*/
-
-	/*
-	void fillDerivativeVectors_old(cTDEmSystemInfo& S, std::vector<double>& xdrv, std::vector<double>& ydrv, std::vector<double>& zdrv) {
-		cTDEmSystem& T = S.T;
-		xdrv = T.XS();
-		ydrv = T.YS();
-		zdrv = T.ZS();
-		if (S.invertPrimaryPlusSecondary) {
-			xdrv += T.PX();
-			ydrv += T.PY();
-			zdrv += T.PZ();
-		}
-	}*/
-		
-	/*
-	void fillMatrixColumn_old(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const std::vector<double>& xfm, const std::vector<double>& yfm, const std::vector<double>& zfm, const std::vector<double>& xzfm, const std::vector<double>& xdrv, const std::vector<double>& ydrv, const std::vector<double>& zdrv) {
-		const cTDEmSystemInfo& S = SV[sysi];
-		const size_t& nw = S.T.nwindows();
-		if (S.invertXPlusZ) {
-			for (size_t wi = 0; wi < nw; wi++) {
-				M(dindex(si, sysi, XZAMP, wi), pindex) = (xfm[wi] * xdrv[wi] + zfm[wi] * zdrv[wi]) / xzfm[wi];
-				if (S.CompInfo[1].Use) {
-					M(dindex(si, sysi, YCOMP, wi), pindex) = ydrv[wi];
-				}
-			}
-		}
-		else {
-			for (size_t wi = 0; wi < nw; wi++) {
-				if (S.CompInfo[XCOMP].Use)M(dindex(si, sysi, XCOMP, wi), pindex) = xdrv[wi];
-				if (S.CompInfo[YCOMP].Use)M(dindex(si, sysi, YCOMP, wi), pindex) = ydrv[wi];
-				if (S.CompInfo[ZCOMP].Use)M(dindex(si, sysi, ZCOMP, wi), pindex) = zdrv[wi];
-			}
-		}
-	}*/
 
 	// Etc
 	void save_iteration_file(const cIterationState& S) const {
@@ -3150,8 +2851,8 @@ public:
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
-						S.predicted[si].component(ci).Primary,
-						S.predicted[si].component(ci).Secondary,
+						S.predicted[si].primary(ci),
+						S.predicted[si].secondary(ci),
 						S.invertPrimaryPlusSecondary, S.units);
 				}
 			}
@@ -3208,8 +2909,7 @@ public:
 		OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
 	}
 
-	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, std::vector<double>& s, const bool& includeprimary, const std::string& units, const bool& reconstructedprimaryflag = false)
-	{
+	void writeresult_emdata(const int& pointindex, const size_t& sysnum, const std::string& comp, const std::string& nameprefix, const std::string& descprefix, const char& form, const int& width, const int& decimals, const double& p, const std::vector<double>& s, const bool& includeprimary, const std::string& units, const bool& reconstructedprimaryflag = false) {
 		std::string DN_WINDOW = "em_window";
 		std::string sysname = nameprefix + strprint("_EMSystem_%d_", (int)sysnum + 1);
 		std::string sysdesc = descprefix + strprint(" EMSystem %d ", (int)sysnum + 1);

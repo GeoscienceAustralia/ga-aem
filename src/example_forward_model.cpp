@@ -26,8 +26,8 @@ using namespace AEM;
 int skytem_example_ip()
 {
 	//Load the AEM system specification files for the Skytem moments //only do this once				
-	//cTDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");	
-	cTDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
+	//TDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");	
+	TDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
 	
 
 	//Load the system geometry 
@@ -60,7 +60,7 @@ int skytem_example_ip()
 	//Create a response object
 	TDEmResponse R;
 	//Run the forward model
-	R = S.forward(E, G);
+	R = S.forward_model(E, G);
 	for (size_t i = 0; i < R.size(); i++){
 		double wct = S.window(i).centre_time();
 		printf("%zu %10e %10e\n", i, wct, R.secondary(ZCOMP,i));
@@ -72,9 +72,9 @@ int skytem_example() {
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
 	//LM = Low moment pulse
-	cTDEmSystem LM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");
+	TDEmSystem LM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");
 	//HM = high moment pulse	
-	cTDEmSystem HM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
+	TDEmSystem HM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
 
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
@@ -100,8 +100,8 @@ int skytem_example() {
 	TDEmResponse HMR;	
 				
 	//Run the forward model for each moment			
-	LMR = LM.forward(E, G);
-	HMR = HM.forward(E, G);
+	LMR = LM.forward_model(E, G);
+	HMR = HM.forward_model(E, G);
 	
 	for (size_t i = 0; i < LMR.size(); i++){
 		printf("%zu %g\n", i, LMR.secondary(ZCOMP,i));
@@ -118,9 +118,9 @@ int skytem_computation_time() {
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
 	//LM = Low moment pulse
-	cTDEmSystem LM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");
+	TDEmSystem LM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");
 	//HM = high moment pulse	
-	cTDEmSystem HM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
+	TDEmSystem HM("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
 
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
@@ -147,8 +147,8 @@ int skytem_computation_time() {
 			//Run the forward model for each moment with random models
 			for (size_t k = 0; k < nlayers; k++) E.conductivity[k] = urand(0.001, 2.0);
 			for (size_t k = 0; k < nlayers - 1; k++) E.thickness[k] = urand(1.0, 10.0);
-			LMR = LM.forward(E, G);
-			HMR = HM.forward(E, G);
+			LMR = LM.forward_model(E, G);
+			HMR = HM.forward_model(E, G);
 			sum += LMR.primary(XCOMP);//Just to make sure compiler does not optimize out the computation
 			sum += HMR.primary(XCOMP);//Just to make sure compiler does not optimize out the computation
 		}

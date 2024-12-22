@@ -26,7 +26,7 @@ using namespace AEM;
 class cTDEmSystemInfo{
 
 public:
-	cTDEmSystem T;
+	TDEmSystem T;
 	size_t ncomps;
 	size_t nwindows;
 	size_t nchans;
@@ -271,10 +271,10 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			std::string str = strprint("EMSystem%lu", i + 1);
 			cBlock b = Control.findblock(str);
 
-			cTDEmSystem& T = S.T;
+			TDEmSystem& T = S.T;
 			std::string stmfile = b.getstringvalue("SystemFile");
 			glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
-			T = cTDEmSystem(stmfile);
+			T = TDEmSystem(stmfile);
 			glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
 			glog.log_to_file(T.system_descriptor_block().get_as_string());
 			glog.log_to_file("==========================================================================\n");
@@ -573,9 +573,8 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		set_nuisance();
 	}
 
-	void set_data()
-	//set data *and* noise.
-	{
+	void set_data(){
+		//set data *and* noise.
 		//need to clear these in case this isn't our first
 		//sounding on this process
 		noisemag_dbounds.clear();
@@ -585,16 +584,15 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		size_t di = 0;
 		for (size_t i = 0; i < nsystems; i++) {
 			cTDEmSystemInfo& S = SV[i];
-			cTDEmSystem& T = S.T;
+			TDEmSystem& T = S.T;
 
 			if (S.reconstructPrimary) {
 				T.set_geometry(IG);
 				T.lem().set_calculationtype(CMode::FM);
-				T.setprimaryfields();
-
-				S.oPX = T.PX0();
-				S.oPY = T.PY0();
-				S.oPZ = T.PZ0();
+				auto P = T.forward_model_primary_field(IG);
+				S.oPX = P(XCOMP,0);
+				S.oPY = P(YCOMP,0);
+				S.oPZ = P(ZCOMP,0);
 			}
 
 			if (S.useX) {
@@ -1028,21 +1026,19 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		return OG;
 	}
 
-	std::vector<double> collect(const cTDEmSystemInfo& S, const cTDEmSystem& T)
-	{
+	std::vector<double> collect(const cTDEmSystemInfo& S, const TDEmResponse& R) {
 		std::vector<double> v(S.nchans);
 		std::vector<double> x, y, z;
 		if (S.useTotal) {
-			if (S.useX) x = T.XS() + T.PX();
-			if (S.useY) y = T.YS() + T.PY();
-			if (S.useZ) z = T.ZS() + T.PZ();
+			if (S.useX) x = R.secondary(XCOMP) + R.primary(XCOMP);
+			if (S.useY) y = R.secondary(YCOMP) + R.primary(YCOMP);
+			if (S.useZ) z = R.secondary(ZCOMP) + R.primary(ZCOMP);
 		}
 		else {
-			if (S.useX) x = T.XS();
-			if (S.useY) y = T.YS();
-			if (S.useZ) z = T.ZS();
+			if (S.useX) x = R.secondary(XCOMP);
+			if (S.useY) y = R.secondary(YCOMP);
+			if (S.useZ) z = R.secondary(ZCOMP);
 		}
-
 		size_t nx = x.size();
 		size_t ny = y.size();
 		for (size_t i = 0; i < x.size(); i++) v[i] = x[i];
@@ -1052,7 +1048,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		return v;
 	}
 
-	std::vector<double> forwardmodel(const rjMcMC1DModel& m)
+	std::vector<double> forward_model(const rjMcMC1DModel& m)
 	{
 		std::vector<double> c = m.getvalues();
 		if (param_value.islog10()){
@@ -1067,14 +1063,9 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		size_t di = 0;
 		for (size_t i = 0; i < nsystems; i++) {
 			cTDEmSystemInfo& S = SV[i];
-			cTDEmSystem& T = S.T;
-			T.set_earth(E);
-			T.set_geometry(G);
-			T.setup_computations();
-			T.lem().set_calculationtype(CMode::FM);
-			T.setprimaryfields();
-			T.setsecondaryfields();
-			std::vector<double> v = collect(S, T);
+			TDEmSystem& T = S.T;
+			auto R = T.forward_model(E, G);
+			std::vector<double> v = collect(S, R);
 			for (size_t j = 0; j < v.size(); j++) {
 				pred[di] = v[j];
 				di++;

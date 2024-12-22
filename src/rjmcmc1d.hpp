@@ -916,7 +916,7 @@ public:
 		mnmap.addmodel(m);
 	}
 
-	virtual std::vector<double> forwardmodel(const rjMcMC1DModel& m) = 0;
+	virtual std::vector<double> forward_model(const rjMcMC1DModel& m) = 0;
 
 	size_t nnuisances()
 	{
@@ -967,7 +967,7 @@ public:
 
 	void compute_predicted_and_residuals_squared(rjMcMC1DModel& m) {
 		//bookmark
-		std::vector<double> pred = forwardmodel(m);				
+		std::vector<double> pred = forward_model(m);				
 		std::vector<double> res2(ndata);
 		for (size_t di = 0; di < ndata; di++){
 			double rd = (obs[di]-pred[di])/obs[di];			

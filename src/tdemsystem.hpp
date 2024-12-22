@@ -24,683 +24,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "tdemgeometry.hpp"
 
 namespace AEM {
-
-	struct sTDEmNoiseModelComponent {
-		double MultiplicativeNoise;
-		std::vector<double> AdditiveNoise;
-	};
-
-	struct sTDEmNoiseModel {
-		sTDEmNoiseModelComponent xcomponent;
-		sTDEmNoiseModelComponent ycomponent;
-		sTDEmNoiseModelComponent zcomponent;
-	};
-
-	struct cTDEmDataComponent {
-		double Primary = 0.0;
-		std::vector<double> Secondary;
-	};
-
-	class cTDEmData {
-
-	private:
-		cTDEmDataComponent data[NCOMP];
-
-	public:
-
-		cTDEmData() {};
-
-		cTDEmDataComponent& component(const size_t i) { return data[i]; }
-		cTDEmDataComponent& xcomponent() { return data[0]; }
-		cTDEmDataComponent& ycomponent() { return data[1]; }
-		cTDEmDataComponent& zcomponent() { return data[2]; }
-
-	};
-
-	class TDEmScalarResponse {
-
-	private:
-		std::vector<double> v;
-
-	public:
-
-		TDEmScalarResponse() {};
-
-		TDEmScalarResponse(const size_t& nwindows) {
-			resize(nwindows);
-		}
-
-		inline const size_t size() const { return v.size(); }
-
-		double& operator[](const size_t& i) {
-			return v[i];
-		}
-
-		double operator[](const size_t& i) const {
-			return v[i];
-		}
-
-		TDEmScalarResponse& operator+=(const TDEmScalarResponse& rhs) {
-			v += rhs.v;
-			return *this;
-		}
-
-		TDEmScalarResponse& operator*=(const double& rhs) {
-			v *= rhs;
-			return *this;
-		}
-
-	private:
-
-		void  resize(const size_t nwindows) {
-			v.resize(nwindows);
-		}
-
-	};
 	
-	class TDEmVectorResponse {
-
-		size_t nwindows=0;
-		std::array<std::vector<double>, 3> v;
-
-	public:
-
-		TDEmVectorResponse(const size_t _nwindows = 0) { nwindows = _nwindows; };
-
-		inline const size_t size() const { return nwindows; }
-
-		void resize(const size_t _nwindows) {
-			nwindows = _nwindows;
-			v[0].resize(nwindows);
-			v[1].resize(nwindows);
-			v[2].resize(nwindows);
-		};
-
-		Vec3d get_vec3d(const size_t window) const {
-			return Vec3d(v[0][window], v[1][window], v[2][window]);
-		};
-
-		void set_vec3d(const size_t window, const Vec3d& vec) {
-			v[0][window] = vec[0];
-			v[1][window] = vec[1];
-			v[2][window] = vec[2];
-		};
-
-		std::vector<double>& operator[](const size_t& component) {
-			return v[component];
-		}
-
-		const std::vector<double>& operator[](const size_t& component) const {
-			return v[component];
-		}
-
-		TDEmVectorResponse& operator+=(const TDEmVectorResponse& rhs) {
-			v[0] += rhs.v[0];
-			v[1] += rhs.v[1];
-			v[2] += rhs.v[2];
-			return *this;
-		}
-
-		TDEmVectorResponse& operator*=(const double& s) {
-			v[0] *= s;
-			v[1] *= s;
-			v[2] *= s;
-			return *this;
-		}
-
-		void scale_components(const Vec3d& scalefactors) {
-			const size_t nw = v.size();
-			v[0] *= scalefactors[0];
-			v[1] *= scalefactors[1];
-			v[2] *= scalefactors[2];
-		};
-
-		TDEmScalarResponse xzamp() {
-			TDEmScalarResponse r(nwindows);
-			for (size_t i = 0; i < nwindows; i++) {
-				r[i] = std::hypot(v[XCOMP][i], v[ZCOMP][i]);
-			}
-			return r;
-		};
-
-	private:
-
-	};
-
-	class TDEmResponse {
-	
-	public:
-		TDEmVectorResponse P;
-		TDEmVectorResponse S;
-
-		TDEmResponse() {};
-
-		TDEmResponse(const size_t& _nwindows) {
-			resize(_nwindows);
-		}
-
-		void resize(const size_t& _nwindows) {
-			P.resize(_nwindows);
-			S.resize(_nwindows);
-		}
-
-		const size_t& size() const {
-			return S.size();
-		}
-
-		const double primary(const size_t& component) const {
-			assert(component < NCOMP);
-			return P[component][0];
-		}
-
-		const double secondary(const size_t& component, const size_t& window) const {
-			assert(component < NCOMP);
-			assert(window < size());
-			return S[component][window];
-		}
-	};
-
-	class LowPassFilter {
-
-	private:
-		double Order;
-		double CutoffFrequency;
-
-	public:
-
-		LowPassFilter(const double order, const double cutoff_frequency) {
-			Order = order;
-			CutoffFrequency = cutoff_frequency;
-		}
-
-		cdouble weight(const double& frequency) const {
-			cdouble a = 1.0 / cdouble(1.0, frequency / CutoffFrequency);
-			return std::pow(a, Order);
-		}
-
-	};
-
-	class Transmitter {
-
-	public:
-		double LoopArea = 0.0;
-		double NumberOfTurns = 0.0;
-		double PeakCurrent = 0.0;
-		double PeakdIdT = 0.0;
-		Vec3d Reference_Orientation = Vec3d::UnitZ();
-	};
-
-	class Waveform {
-
-	public:
-		enum class Type { TX, RX };
-
-		double BaseFrequency = 0.0;
-		double BasePeriod = 0.0;
-		double SampleFrequency = 0.0;
-		double SampleInterval = 0.0;
-		size_t NumSamples = 0;
-		size_t NumFrequencies = 0;
-
-		Waveform::Type Type; // Is the time domain waveform specified as TX current or Rx voltage
-		std::vector<double> Time; // Times in seconds
-		std::vector<double>  TD_Waveform; // Time domain waveform
-		std::vector<cdouble> FD_Waveform; // Pure frequency domain waveform
-		std::vector<cdouble> TransferFunction; // FD_Waveform * RX Filters * (b->db/dt or db/dt->b) conversion
-		std::vector<cdouble> FFT_WorkArray; // Work array for repeated inplace inverse FFTs
-		std::vector<double>  FFT_Frequency; // Pre-computed FFT frequencies
-
-		void initialise(const cBlock& b, const fs::path& systemdescriptorfile) {
-			BaseFrequency = b.getdoublevalue("BaseFrequency");
-			BasePeriod = 1.0 / BaseFrequency;
-			SampleFrequency = b.getdoublevalue("WaveformDigitisingFrequency");
-			bool wavformdefined = false;
-
-			if (wavformdefined == false) {
-				std::string path = b.getstringvalue("WaveformReceived.File");
-				if (isdefined(path)) {
-					FilePathParts fpp(systemdescriptorfile);
-					std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
-					if (wp.size() > 0) {
-						digitisewaveform(wp, Time, TD_Waveform);
-						Type = Waveform::Type::RX;
-						wavformdefined = true;
-					}
-				}
-			}
-
-			if (wavformdefined == false) {
-				std::string path = b.getstringvalue("WaveformCurrent.File");
-				if (isdefined(path)) {
-					FilePathParts fpp(systemdescriptorfile);
-					std::vector<std::vector<double>> wp = readwaveformfile(fpp.directory + path);
-					if (wp.size() > 0) {
-						digitisewaveform(wp, Time, TD_Waveform);
-						Type = Waveform::Type::TX;
-						wavformdefined = true;
-					}
-				}
-			}
-
-			if (wavformdefined == false) {
-				std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformCurrent");
-				if (wp.size() > 0) {
-					digitisewaveform(wp, Time, TD_Waveform);
-					Type = Waveform::Type::TX;
-					wavformdefined = true;
-				}
-			}
-
-			if (wavformdefined == false) {
-				std::vector<std::vector<double>> wp = b.getdoublematrix("WaveformReceived");
-				if (wp.size() > 0) {
-					digitisewaveform(wp, Time, TD_Waveform);
-					Type = Waveform::Type::RX;
-					wavformdefined = true;
-				}
-			}
-
-			if (wavformdefined == false) {
-				glog.errormsg(_SRC_, "The waveform is not defined\n");
-			}
-
-		};
-
-		double calculate_fft_frequency(const size_t index) const
-		{
-			double deltaF = 1.0 / ((double)NumSamples * SampleInterval);
-			double s = (double)index;
-			if (index > (NumSamples / 2)) {
-				s = (double)index - (double)NumSamples;
-			}
-			return s * deltaF;
-		}
-
-		static std::vector<std::vector<double>> readwaveformfile(const std::string& filename)
-		{
-			std::vector<std::vector<double>> w;
-			if (!fs::exists(filename)) {
-				glog.errormsg(_SRC_, "\n\tD'Oh! the specified waveform file (%s) does not exist\n", filename.c_str());
-			}
-
-			std::ifstream ifs = ifstream_ex(filename);
-			if (ifs.fail()) {
-				glog.errormsg(_SRC_, "Unable to open waveformfile %s\n", filename.c_str());
-			}
-
-			std::string s;
-			while (filegetline_ifs(ifs, s)) {
-				trim_inplace(s);
-				if (s.size() > 0) {
-					std::vector<double> v(2);
-					std::istringstream iss(s);
-					iss >> v[0];
-					iss >> v[1];
-					w.push_back(v);
-				}
-			}
-			return w;
-		}
-
-		void digitisewaveform(const std::vector<std::vector<double>>& wp, std::vector<double>& t, std::vector<double>& v) {
-			double hp = 0.5 / BaseFrequency;
-			SampleInterval = 1.0 / SampleFrequency;
-			NumSamples = (size_t)(SampleFrequency / BaseFrequency);
-
-			t.resize(NumSamples);
-			v.resize(NumSamples);
-
-			size_t np = wp.size();
-
-			if (wp[np - 1][0] - wp[0][0] < hp) {
-				glog.errormsg(_SRC_, "One complete halfcycle of the waveform has not been specified\n");
-
-				glog.errormsg(_SRC_, "One complete halfcycle of the waveform has not been specified\n \
-                                      Last waveform time - first waveform time must be >= 0.5/BaseFrequency\n");
-			}
-
-			std::vector<double> x(np);
-			std::vector<double> y(np);
-			for (size_t i = 0; i < np; i++) {
-				x[i] = wp[i][0];
-				y[i] = wp[i][1];
-			}
-
-
-			for (size_t i = 0; i < NumSamples / 2; i++) {
-				bool set = false;
-
-				double time = (double)i * SampleInterval;
-				t[i] = time;
-
-				if (time >= x[0] && time <= x[np - 1]) {
-					v[i] = linearinterp(x, y, time);
-					set = true;
-				}
-				else if ((time - hp) >= x[0] && (time - hp) <= x[np - 1]) {
-					v[i] = -linearinterp(x, y, time - hp);
-					set = true;
-				}
-				else if ((time - 2 * hp) >= x[0] && (time - 2 * hp) <= x[np - 1]) {
-					v[i] = linearinterp(x, y, time - 2.0 * hp);
-					set = true;
-				}
-				else if ((time + hp) >= x[0] && (time + hp) <= x[np - 1]) {
-					v[i] = -linearinterp(x, y, time + hp);
-					set = true;
-				}
-				else if ((time + 2 * hp) >= x[0] && (time + 2 * hp) <= x[np - 1]) {
-					v[i] = linearinterp(x, y, time + 2.0 * hp);
-					set = true;
-				}
-
-				if (set == false) {
-					glog.errormsg(_SRC_, "Error in waveform - not all defined\n");
-				}
-			}
-
-			for (size_t i = NumSamples / 2; i < NumSamples; i++) {
-				t[i] = hp + t[i - NumSamples / 2];
-				v[i] = -v[i - NumSamples / 2];
-			}
-		}
-
-		double compute_peak_didt() const {
-			double maxdidt = 0.0;
-			for (size_t i = 1; i < TD_Waveform.size(); i++) {
-				const double di = TD_Waveform[i] - TD_Waveform[i - 1];
-				const double dt = Time[i] - Time[i - 1];
-				double didt = std::fabs(di / dt);
-				if (didt > maxdidt) maxdidt = didt;
-			}
-			return maxdidt;
-		}
-
-		void write_timedomainwaveform(const fs::path& path) const {
-			std::ofstream ofs = ofstream_ex(path);
-			for (size_t i = 0; i < NumSamples; i++) {
-				ofs << strprint("%20le\t%20le\n", Time[i], TD_Waveform[i]);
-			}
-		}
-
-		void write_frequencydomainwaveform(const fs::path& path) const {
-			std::ofstream ofs = ofstream_ex(path);
-			for (size_t i = 0; i < NumFrequencies; i++) {
-				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\n", FFT_Frequency[i], FD_Waveform[i].real(), FD_Waveform[i].imag(), TransferFunction[i].real(), TransferFunction[i].imag());
-			}
-		}
-
-		void write_frequencyseries(const fs::path& path) const {
-			std::ofstream ofs = ofstream_ex(path);
-			for (size_t i = 0; i < NumFrequencies; i++) {
-				ofs << strprint("%15le\t%15le\t%15le\n", FFT_Frequency[i], FFT_WorkArray[i].real(), FFT_WorkArray[i].imag());
-			}
-		}
-	};
-
-	struct WindowSpecification {
-		size_t SampleLow = 0;
-		size_t SampleHigh = 0;
-		size_t NumberOfSamples = 0;
-
-		double TimeLow = 0.0;
-		double TimeHigh = 0.0;
-		double TimeWidth = 0.0;
-
-		std::vector<size_t> Sample;
-		std::vector<double> Weight;
-
-		double centre_time() const {
-			return (TimeLow + TimeHigh) / 2.0;
-		}
-	};
-
-	class WindowingScheme {
-
-	private:
-
-
-	public:
-
-		enum class WeightingMethod { BoxCar, AreaUnderCurve, LinearTaper };
-
-		size_t nwindows = 0;
-		double TimeShift = 0.0;
-		WeightingMethod Method = WeightingMethod::BoxCar;
-		std::vector<WindowSpecification> Windows;
-
-		WindowingScheme() {};
-
-		WindowingScheme(const cBlock& receiverblock, const Waveform& WFM) {
-			const cBlock& b = receiverblock;
-
-			if (!b.getvalue("NumberOfWindows", nwindows)) {
-				glog.errormsg(_SRC_, "NumberOfWindows is not specified");
-			}
-
-			if (!b.getvalue("TimeShift", TimeShift)) {
-				TimeShift = 0.0;
-			}
-
-			Windows.resize(nwindows);
-
-			//Read window times
-			std::vector<std::vector<double>> wt;
-			if (!b.getvalue("WindowTimes", wt)) {
-				glog.errormsg(_SRC_, "The WindowTimes have not been specified.");
-			}
-			size_t nw = wt.size();
-			if (nw != nwindows) {
-				glog.errormsg(_SRC_, "The number of WindowTimes does not match the NumberOfWindows\n");
-			}
-
-			for (size_t i = 0; i < nwindows; i++) {
-				if (wt[i].size() != 2) {
-					glog.errormsg(_SRC_, "The number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
-				}
-				Windows[i].TimeLow = wt[i][0] + TimeShift;
-				Windows[i].TimeHigh = wt[i][1] + TimeShift;
-			}
-
-			std::string wmethod = b.getstringvalue("WindowWeightingScheme");
-			if (strcasecmp(wmethod, "AreaUnderCurve") == 0) {
-				initialise_area(WFM);
-			}
-			else if (strcasecmp(wmethod, "Boxcar") == 0) {
-				initialise_boxcar(WFM);
-			}
-			else if (strcasecmp(wmethod, "LinearTaper") == 0) {
-				initialise_lineartaper(WFM);
-			}
-			else glog.errormsg(_SRC_, "WindowWeightingScheme %s unknown (must be \"AreaUnderCurve\" or  \"Boxcar\" or \"LinearTaper\")\n", wmethod.c_str());
-		}
-
-		const size_t& nWindows() const { return nwindows; }
-
-		void initialise_area(const Waveform& WFM) {
-			double tlow, thigh, t, tp, tn, tleft, tright;
-
-			double dwt = WFM.Time[1] - WFM.Time[0];
-			double eps = 1.0e-7;
-
-			for (size_t w = 0; w < nwindows; w++) {
-				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
-				for (size_t s = 0; s < WFM.NumSamples; s++) {
-					t = WFM.Time[s];
-					if (t + eps >= Windows[w].TimeLow) {
-						Windows[w].SampleLow = s;
-						break;
-					}
-				}
-
-				for (size_t s = WFM.NumSamples; s-- > 0;) {
-					//Note the unusual syntax for decrement of unsigned variable
-					t = WFM.Time[s];
-					if (t - eps <= Windows[w].TimeHigh) {
-						Windows[w].SampleHigh = s;
-						break;
-					}
-				}
-
-				Windows[w].NumberOfSamples = Windows[w].SampleHigh - Windows[w].SampleLow + 1;
-				Windows[w].Sample.resize(Windows[w].NumberOfSamples);
-				Windows[w].Weight.resize(Windows[w].NumberOfSamples);
-				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
-					Windows[w].Sample[k] = Windows[w].SampleLow + k;
-					Windows[w].Weight[k] = 0.0;
-				}
-
-				tlow = Windows[w].TimeLow;
-				thigh = Windows[w].TimeHigh;
-				double wsum = 0;
-				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
-					size_t s = Windows[w].Sample[k];
-					t = WFM.Time[s];
-					tp = WFM.Time[s] - dwt;
-					tn = WFM.Time[s] + dwt;
-					tleft = std::max(tp, tlow);
-					tright = std::min(tn, thigh);
-					Windows[w].Weight[k] = 0.5 * (t - tleft) + 0.5 * (tright - t);
-					Windows[w].Weight[k] /= Windows[w].TimeWidth;
-					wsum += Windows[w].Weight[k];
-				}
-				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
-					Windows[w].Weight[k] /= wsum;
-				}
-			}
-		}
-
-		void initialise_boxcar(const Waveform& WFM)
-		{
-			double eps = 1.0e-7;
-			for (size_t w = 0; w < nwindows; w++) {
-				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
-				for (size_t s = 0; s < WFM.NumSamples; s++) {
-					double t = WFM.Time[s];
-					if (t + eps >= Windows[w].TimeLow) {
-						Windows[w].SampleLow = s;
-						break;
-					}
-				}
-
-				for (size_t s = WFM.NumSamples; s-- > 0;) {
-					//Note the unusual syntax for decrement of unsigned variable
-					double t = WFM.Time[s];
-					if (t - eps <= Windows[w].TimeHigh) {
-						Windows[w].SampleHigh = s;
-						break;
-					}
-				}
-
-
-				Windows[w].NumberOfSamples = Windows[w].SampleHigh - Windows[w].SampleLow + 1;
-				Windows[w].Sample.resize(Windows[w].NumberOfSamples);
-				Windows[w].Weight.resize(Windows[w].NumberOfSamples);
-				double weightsum = 0.0;
-				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
-					Windows[w].Sample[k] = Windows[w].SampleLow + k;
-					Windows[w].Weight[k] = 1.0;
-					weightsum += Windows[w].Weight[k];
-				}
-				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
-					Windows[w].Weight[k] /= weightsum;
-				}
-				//printf("%lu %lu\n", w, WinSpec[w].NumberOfSamples);
-			}
-		}
-
-		void initialise_lineartaper(const Waveform& WFM)
-		{
-			double eps = 1.0e-7;
-			for (size_t w = 0; w < nwindows; w++) {
-				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
-				for (size_t s = 0; s < WFM.NumSamples; s++) {
-					double t = WFM.Time[s];
-					if (t + eps >= Windows[w].TimeLow) {
-						Windows[w].SampleLow = s;
-						break;
-					}
-				}
-
-				for (size_t s = WFM.NumSamples; s-- > 0;) {
-					//Note the unusual syntax for decrement of unsigned variable
-					double t = WFM.Time[s];
-					if (t - eps <= Windows[w].TimeHigh) {
-						Windows[w].SampleHigh = s;
-						break;
-					}
-				}
-
-				size_t ns = Windows[w].SampleHigh - Windows[w].SampleLow + 1;
-				Windows[w].NumberOfSamples = ns * 3;
-				Windows[w].SampleLow -= ns;
-				Windows[w].SampleHigh += ns;
-				Windows[w].Sample.resize(Windows[w].NumberOfSamples);
-				Windows[w].Weight.resize(Windows[w].NumberOfSamples);
-
-				double weightsum = 0.0;
-				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
-					Windows[w].Sample[k] = Windows[w].SampleLow + k;
-					if (k < ns) {
-						Windows[w].Weight[k] = (double)(k + 1) / (double)(ns + 1);
-					}
-					else if (k >= 2 * ns) {
-						Windows[w].Weight[k] = 1.0 - (double)((k + 1) - 2 * ns) / (double)(ns + 1);
-					}
-					else {
-						Windows[w].Weight[k] = 1.0;
-					}
-					weightsum += Windows[w].Weight[k];
-				}
-				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
-					Windows[w].Weight[k] /= weightsum;
-				}
-			}
-		}
-
-		void computewindow(const double* timeseries, std::vector<double>& windowed_values) {
-			std::fill(windowed_values.begin(), windowed_values.end(), 0.0); // Reset to zero
-			for (size_t w = 0; w < nwindows; w++) {
-				for (size_t k = 0; k < Windows[w].Sample.size(); k++) {
-					windowed_values[w] += timeseries[Windows[w].Sample[k]] * Windows[w].Weight[k];
-				}
-			}
-		}
-
-		void printwindows(const double& PX, const double& PY, const double& PZ, const std::vector<double>& SX, const std::vector<double>& SY, const std::vector<double>& SZ) const {
-			printf("Primary   %15.8lf%15.8lf%15.8lf\n\n", PX, PY, PZ);
-			printf("Window#             X               Y               Z\n");
-			for (size_t w = 0; w < nwindows; w++) {
-				printf("%2zu        %15.8lf%15.8lf%15.8lf\n", w + 1, SX[w], SY[w], SZ[w]);
-			}
-		};
-
-		void write_windows(const fs::path& path, const std::vector<double>& SX, const std::vector<double>& SY, const std::vector<double>& SZ) const {
-			std::ofstream ofs = ofstream_ex(path);
-			for (size_t w = 0; w < nwindows; w++) {
-				ofs << strprint("%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, Windows[w].TimeLow, Windows[w].TimeHigh, SX[w], SY[w], SZ[w]);
-			}
-		};
-	};
-
-	class ComponentWorkStore {
-
-	public:
-
-		std::vector<double> IR_discrete_real;// Real impulse response discrete frequency nodes
-		std::vector<double> IR_discrete_imag;// Imaginary impulse response discrete frequency nodes
-		std::vector<cdouble> IR_splined;// Complex splines impulse response
-
-		ComponentWorkStore() {};
-
-		void resize(const size_t nnodes, const size_t nfftfreq, const size_t nwindows) {
-			IR_discrete_real.resize(nnodes);
-			IR_discrete_imag.resize(nnodes);
-			IR_splined.resize(nfftfreq);
-			//Secondary.resize(nwindows);
-		};
-	};
-
 	class FFTWPlanWrapper {
 
 	private:
@@ -753,6 +77,182 @@ namespace AEM {
 			fftw_print_plan(Plan);
 		}
 
+	};
+
+	class TDEmScalarResponse {
+
+	private:
+		std::vector<double> v;
+
+	public:
+
+		TDEmScalarResponse() {};
+
+		TDEmScalarResponse(const size_t& nwindows) {
+			resize(nwindows);
+		}
+
+		inline const size_t size() const { return v.size(); }
+
+		double& operator[](const size_t& i) {
+			return v[i];
+		}
+
+		double operator[](const size_t& i) const {
+			return v[i];
+		}
+
+		TDEmScalarResponse& operator+=(const TDEmScalarResponse& rhs) {
+			v += rhs.v;
+			return *this;
+		}
+
+		TDEmScalarResponse& operator*=(const double& rhs) {
+			v *= rhs;
+			return *this;
+		}
+
+	private:
+
+		void  resize(const size_t nwindows) {
+			v.resize(nwindows);
+		}
+	};
+	
+	class TDEmVectorResponse {
+
+		size_t nwindows=0;
+		std::array<std::vector<double>, 3> v;
+
+	public:
+
+		TDEmVectorResponse(const size_t _nwindows = 0) { nwindows = _nwindows; };
+
+		inline const size_t size() const { return nwindows; }
+
+		void resize(const size_t _nwindows) {
+			nwindows = _nwindows;
+			v[0].resize(nwindows);
+			v[1].resize(nwindows);
+			v[2].resize(nwindows);
+		};
+
+		Vec3d get_vec3d(const size_t window) const {
+			return Vec3d(v[0][window], v[1][window], v[2][window]);
+		};
+
+		void set_vec3d(const size_t window, const Vec3d& vec) {
+			v[0][window] = vec[0];
+			v[1][window] = vec[1];
+			v[2][window] = vec[2];
+		};
+
+		std::vector<double>& operator[](const size_t& component) {
+			return v[component];
+		}
+
+		const std::vector<double>& operator[](const size_t& component) const {
+			return v[component];
+		}
+
+		TDEmVectorResponse& operator+=(const TDEmVectorResponse& rhs) {
+			v[0] += rhs.v[0];
+			v[1] += rhs.v[1];
+			v[2] += rhs.v[2];
+			return *this;
+		}
+
+		TDEmVectorResponse& operator*=(const double& s) {
+			v[0] *= s;
+			v[1] *= s;
+			v[2] *= s;
+			return *this;
+		}
+
+		double& operator()(const size_t& component, const size_t& window) {
+			assert(component < NCOMP);
+			assert(window < size());
+			return v[component][window];
+		}
+
+		void scale_components(const Vec3d& scalefactors) {
+			const size_t nw = v.size();
+			v[0] *= scalefactors[0];
+			v[1] *= scalefactors[1];
+			v[2] *= scalefactors[2];
+		};
+
+		TDEmScalarResponse xzamp() {
+			TDEmScalarResponse r(nwindows);
+			for (size_t i = 0; i < nwindows; i++) {
+				r[i] = std::hypot(v[XCOMP][i], v[ZCOMP][i]);
+			}
+			return r;
+		};
+
+	private:
+
+	};
+
+	class TDEmResponse {
+	
+	public:
+		TDEmVectorResponse P;
+		TDEmVectorResponse S;
+
+		TDEmResponse() {};
+
+		TDEmResponse(const size_t& _nwindows) {
+			resize(_nwindows);
+		}
+
+		void resize(const size_t& _nwindows) {
+			P.resize(_nwindows);
+			S.resize(_nwindows);
+		}
+
+		const size_t& size() const {
+			return S.size();
+		}
+
+		const double primary(const size_t& component) const {
+			assert(component < NCOMP);
+			return P[component][0];
+		}
+
+		const double secondary(const size_t& component, const size_t& window) const {
+			assert(component < NCOMP);
+			assert(window < size());
+			return S[component][window];
+		};
+
+		const std::vector<double> secondary(const size_t& component) const {
+			assert(component < NCOMP);
+			return S[component];
+		};
+
+		TDEmVectorResponse totalfield() const {
+			TDEmVectorResponse T = S;
+			T += P;
+			return T;
+		};
+	};
+
+	class ComponentWorkStore {
+
+	public:
+
+		std::vector<double> IR_discrete_real;// Real impulse response discrete frequency nodes
+		std::vector<double> IR_discrete_imag;// Imaginary impulse response discrete frequency nodes
+		std::vector<cdouble> IR_splined;// Complex splines impulse response
+
+		ComponentWorkStore() {};
+
+		void resize(const size_t nnodes, const size_t nfftfreq, const size_t nwindows) {
+			IR_discrete_real.resize(nnodes);
+			IR_discrete_imag.resize(nnodes);
+			IR_splined.resize(nfftfreq);
+		};
 	};
 
 	class ModellingOptions {
@@ -845,7 +345,7 @@ namespace AEM {
 
 	};
 
-	class cTDEmSystem : public AEMSystem {
+	class TDEmSystem : public AEMSystem {
 
 	private:
 		FixedPointSpline<double> FrequencySpliner;
@@ -882,28 +382,16 @@ namespace AEM {
 
 		ModellingOptions MO;
 
-		cTDEmSystem(const fs::path& descriptorpath) {
+		TDEmSystem(const fs::path& descriptorpath) {
 			read_system_descriptor_file(descriptorpath);
 		};
 
-		cTDEmSystem() {};
+		TDEmSystem() {};
 		
 		const size_t& nWindows() const {
 			return WindScheme.nWindows();
 		}
-
-		const double& PX0() const { return WR.P[XCOMP][0]; };
-		const double& PY0() const { return WR.P[YCOMP][0]; };
-		const double& PZ0() const { return WR.P[ZCOMP][0]; };
-
-		const std::vector<double>& PX() const { return WR.P[XCOMP]; };
-		const std::vector<double>& PY() const { return WR.P[YCOMP]; };
-		const std::vector<double>& PZ() const { return WR.P[ZCOMP]; };
-
-		const std::vector<double>& XS() const { return WR.S[XCOMP]; }
-		const std::vector<double>& YS() const { return WR.S[YCOMP]; }
-		const std::vector<double>& ZS() const { return WR.S[ZCOMP]; }
-		
+				
 		double primary(const size_t component) const {
 			assert(component < NCOMP);
 			return WR.P[component][0];
@@ -964,7 +452,14 @@ namespace AEM {
 
 		// Modelling
 
-		TDEmResponse forward_model(const Earth1D& E, const TDEmGeometry& G) {
+		const TDEmVectorResponse& forward_model_primary_field(const TDEmGeometry& G) {
+			set_geometry(G);
+			set_calculationtype(CMode::FM);
+			setprimaryfields();
+			return WR.P;
+		};
+
+		const TDEmResponse& forward_model(const Earth1D& E, const TDEmGeometry& G) {
 			set_earth(E);
 			set_geometry(G);
 			setup_computations();
@@ -972,9 +467,9 @@ namespace AEM {
 			setprimaryfields();
 			setsecondaryfields();
 			return WR;
-		}
+		};
 
-		TDEmResponse derivative(const CalculationType& calc) {
+		const TDEmResponse& derivative(const CalculationType& calc) {
 			set_calculationtype(calc);
 			setprimaryfields();
 			setsecondaryfields();
@@ -1007,72 +502,6 @@ namespace AEM {
 			lem().setup_computations();
 		}
 
-		void setprimaryfields() {
-			Vec3d v = lem().primaryfield_inertial();
-			//std::cout << v << std::endl;
-
-			// Rotate field to Rx frame
-			v = RotMatrixToRxFrame * v;
-
-			if (lem().cmode() == CMode::DH) {
-				//This is because when H changes Z also changes and DZ == DH ... //but they should be all zero anyway
-				v *= 2.0;
-			}
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				v *= 2.0;
-			}
-
-			if (MO.OutputType == ModellingOptions::OutputType::DBDT) {
-				//Must convert to dB/dt. This happens implicitly for the secondary via the waveform.
-				v *= Tx.PeakdIdT;
-			}
-
-			WR.P[XCOMP][0] = v.x() * Scale[XCOMP];
-			WR.P[YCOMP][0] = v.y() * Scale[YCOMP];
-			WR.P[ZCOMP][0] = v.z() * Scale[ZCOMP];
-		};
-
-		void setsecondaryfields() {
-			//Computation for discrete frequencies 	
-			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
-				Vec3cd v = lem().secondaryfield_inertial(fi);
-				//std::cout << v << std::endl;
-
-				// Rotate field to Rx frame
-				v = RotMatrixToRxFrame * v;
-
-				//std::cout << RotMatrixToRxFrame << std::endl;
-
-				if (lem().cmode() == CMode::DH) {
-					//This is because when H changes Z also changes and DZ == DH
-					v *= 2.0;
-				}
-
-				for(size_t ci = 0; ci < NCOMP; ci++){
-					Component[ci].IR_discrete_real[fi] = v[ci].real();
-					Component[ci].IR_discrete_imag[fi] = v[ci].imag();
-				}
-			};
-
-			//Spline discreet frequencies
-			for (size_t ci = 0; ci < NCOMP; ci++) {
-				if (Scale[ci] == 0.0) return;
-				spline_component(ci);
-				inverse_fft_window_scale_component(ci);
-			}
-
-			if (MO.SaveDiagnosticFiles) {
-				write_discretefrequencies("diag_discretefrequencies.txt");
-				write_splinedfrequencies("diag_splinedfrequencies.txt");
-				WvForm.write_frequencydomainwaveform("diag_frequencydomainwaveform.txt");
-			}
-
-			if (MO.SaveDiagnosticFiles) {
-				WindScheme.write_windows("diag_windows.txt", XS(), YS(), ZS());
-			}
-		}
-		
 		void drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp) {
 			//xi = (  xb*cosp  + zb*sinp);Inertial
 			//zi = ( -xb*sinp  + zb*cosp);
@@ -1212,6 +641,72 @@ namespace AEM {
 		};
 
 	private:
+
+		void setprimaryfields() {
+			Vec3d v = lem().primaryfield_inertial();
+			//std::cout << v << std::endl;
+
+			// Rotate field to Rx frame
+			v = RotMatrixToRxFrame * v;
+
+			if (lem().cmode() == CMode::DH) {
+				//This is because when H changes Z also changes and DZ == DH ... //but they should be all zero anyway
+				v *= 2.0;
+			}
+
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
+				v *= 2.0;
+			}
+
+			if (MO.OutputType == ModellingOptions::OutputType::DBDT) {
+				//Must convert to dB/dt. This happens implicitly for the secondary via the waveform.
+				v *= Tx.PeakdIdT;
+			}
+
+			WR.P[XCOMP][0] = v.x() * Scale[XCOMP];
+			WR.P[YCOMP][0] = v.y() * Scale[YCOMP];
+			WR.P[ZCOMP][0] = v.z() * Scale[ZCOMP];
+		};
+
+		void setsecondaryfields() {
+			//Computation for discrete frequencies 	
+			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
+				Vec3cd v = lem().secondaryfield_inertial(fi);
+				//std::cout << v << std::endl;
+
+				// Rotate field to Rx frame
+				v = RotMatrixToRxFrame * v;
+
+				//std::cout << RotMatrixToRxFrame << std::endl;
+
+				if (lem().cmode() == CMode::DH) {
+					//This is because when H changes Z also changes and DZ == DH
+					v *= 2.0;
+				}
+
+				for (size_t ci = 0; ci < NCOMP; ci++) {
+					Component[ci].IR_discrete_real[fi] = v[ci].real();
+					Component[ci].IR_discrete_imag[fi] = v[ci].imag();
+				}
+			};
+
+			//Spline discreet frequencies
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				if (Scale[ci] == 0.0) return;
+				spline_component(ci);
+				inverse_fft_window_scale_component(ci);
+			}
+
+			if (MO.SaveDiagnosticFiles) {
+				write_discretefrequencies("diag_discretefrequencies.txt");
+				write_splinedfrequencies("diag_splinedfrequencies.txt");
+				WvForm.write_frequencydomainwaveform("diag_frequencydomainwaveform.txt");
+			}
+
+			if (MO.SaveDiagnosticFiles) {
+				WindScheme.write_windows("diag_windows.txt", WR.secondary(XCOMP), WR.secondary(YCOMP), WR.secondary(ZCOMP));
+			}
+		}
 
 		void setup_nwindows() {
 			WR.resize(nWindows());

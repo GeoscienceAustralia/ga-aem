@@ -126,7 +126,7 @@ static int writecsvheader(std::ofstream& ofs, const size_t& nw)
 	return 0;
 }
 
-static int writeoutputrecord(const bool& csvoutput, std::ofstream& ofsout, size_t recnum, const cTDEmSystem& T, const TDEmResponse& R) {
+static int writeoutputrecord(const bool& csvoutput, std::ofstream& ofsout, size_t recnum, const TDEmSystem& T, const TDEmResponse& R) {
 	char delim = ' ';
 	if (csvoutput) delim = ',';
 	ofsout << strprint(" %15g%c", R.primary(XCOMP), delim);
@@ -178,7 +178,7 @@ static int process(std::string controlfilename)
 
 	std::string sysfile = C.getstringvalue("Control.SystemFile");
 	glog.logmsg("Opening AEM system file %s\n", sysfile.c_str());
-	cTDEmSystem T(sysfile.c_str());
+	TDEmSystem T(sysfile.c_str());
 	T.lem().set_iptype((AEM::IPType)iptype);
 
 	glog.logmsg("Opening input file %s\n", inputfile.c_str());
@@ -205,7 +205,7 @@ static int process(std::string controlfilename)
 		glog.logmsg("%s\n", CurrentRecord.c_str());
 
 
-		TDEmResponse R = T.forward(E, G);
+		TDEmResponse R = T.forward_model(E, G);
 
 		if (recnum == 1) writecsvheader(ofsout, R.size());
 		writeoutputrecord(csvoutput, ofsout, recnum, T, R);

@@ -325,14 +325,14 @@ private:
 	size_t nw=0;
 
 public:
-	cTDEmSystem T;
+	TDEmSystem T;
 	bool InvertTotalField=false;
 
 	std::vector<cTDEmComponentInfo> Comp;
 	cSystemInfo() {};
 	bool initialise(const cBlock& b) {
 		std::string stm = b.getstringvalue("SystemFile");
-		T = cTDEmSystem(stm);
+		T = TDEmSystem(stm);
 		nw = T.nWindows();
 
 		bool status;
@@ -397,6 +397,7 @@ public:
 		return v;
 	}
 
+	/*
 	bool forward_model(const Earth1D& E, const TDEmGeometry & geometry) {
 		T.set_earth(E);
 		T.set_geometry(geometry);
@@ -405,90 +406,82 @@ public:
 		T.setprimaryfields();
 		T.setsecondaryfields();
 		return true;
-	}
+	}*/
 
 	bool forward_model_and_derivatives(const Earth1D& E, const TDEmGeometry& geometry, std::vector<double>&predicted, std::vector<std::vector<double>>&derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
 		const size_t nlayers = E.nlayers();
-		T.set_earth(E);
-		T.set_geometry(geometry);
-		T.lem().set_calculationtype(CMode::FM);
-		T.setup_computations();
-		T.setprimaryfields();
-		T.setsecondaryfields();
-
+		const size_t nw = T.nWindows();
+		auto R = T.forward_model(E, geometry);
+		
+		//T.set_earth(E);
+		//T.set_geometry(geometry);
+		//T.lem().set_calculationtype(CMode::FM);
+		//T.setup_computations();
+		//T.setprimaryfields();
+		//T.setsecondaryfields();
 
 		//Save for later derivative calculations
-		std::vector<double> X = T.XS();
-		std::vector<double> Y = T.YS();
-		std::vector<double> Z = T.ZS();
-		if (InvertTotalField) {
-			X += T.PX();
-			Y += T.PY();
-			Z += T.PZ();
-		}
+		//std::vector<double> X = T.XS();
+		//std::vector<double> Y = T.YS();
+		//std::vector<double> Z = T.ZS();
+		//if (InvertTotalField) {
+		//	X += T.PX();
+		//	Y += T.PY();
+		//	Z += T.PZ();
+		//}
+
+		TDEmVectorResponse FM;
+		if (InvertTotalField) FM = R.totalfield();
+		else FM = R.S;
 
 		predicted.resize(ndata());
 		for (size_t ci = 0; ci < Comp.size(); ci++) {
 			if (Comp[ci].Use == false)continue;
-			for (size_t wi = 0; wi < T.nWindows(); wi++) {
-				predicted[dindex(ci, wi)] = T.secondary(ci, wi);
-				if (Comp[ci].InvertTotalField) {
-					predicted[dindex(ci, wi)] += T.primary(ci);
-				}
+			for (size_t wi = 0; wi < nw; wi++) {
+				predicted[dindex(ci, wi)] = FM(ci, wi);
 			}
 		}
 
 		if (computederivatives == true) {
-
 			derivatives.resize(ndata());
 			for (size_t di = 0; di < ndata(); di++) {
 				derivatives[di].resize(nlayers + UGI.size());
 			}
 
+			TDEmVectorResponse DRV;
 			for (size_t li = 0; li < nlayers; li++) {
-				T.lem().set_calculationtype(CalculationType(CMode::DC, li));
-				T.setup_computations();
-				T.setprimaryfields();
-				T.setsecondaryfields();
+				R = T.derivative(CalculationType(CMode::DC, li));
+				if (InvertTotalField) DRV = R.totalfield();
+				else DRV = R.S;
 
 				for (size_t ci = 0; ci < Comp.size(); ci++) {
 					if (Comp[ci].Use == false)continue;
-					for (size_t wi = 0; wi < T.nWindows(); wi++) {
-						derivatives[dindex(ci, wi)][li] = T.secondary(ci, wi);
-						if (Comp[ci].InvertTotalField) {
-							derivatives[dindex(ci, wi)][li] += T.primary(ci);
-						}
+					for (size_t wi = 0; wi < nw; wi++) {
+						derivatives[dindex(ci, wi)][li] = DRV(ci, wi);
 					}
 				}
 			}
 
 			for (size_t gi = 0; gi < UGI.size(); gi++) {
-				if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_pitch) {
-					std::vector<double> dxbdp;
-					std::vector<double> dzbdp;
-					T.drx_pitch(X, Z, geometry.rx_pitch, dxbdp, dzbdp);
-					for (size_t ci = 0; ci < Comp.size(); ci++) {
-						if (Comp[ci].Use == false)continue;
-						for (size_t wi = 0; wi < T.nWindows(); wi++) {
-							if (ci == 0)      derivatives[dindex(ci, wi)][gi + nlayers] = dxbdp[wi];
-							else if (ci == 1) derivatives[dindex(ci, wi)][gi + nlayers] = 0.0;
-							else              derivatives[dindex(ci, wi)][gi + nlayers] = dzbdp[wi];
-						}
-					}
+				if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_roll) {	
+					T.drx_roll_new(geometry, FM, DRV);
+				}
+				else if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_pitch) {
+					T.drx_pitch_new(geometry, FM, DRV);
+				}
+				else if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_yaw) {
+					T.drx_yaw_new(geometry, FM, DRV);
 				}
 				else {
-					T.lem().set_calculationtype(TDEmGeometry::derivativetype(UGI[gi]));
-					T.setup_computations();
-					T.setprimaryfields();
-					T.setsecondaryfields();
-					for (size_t ci = 0; ci < Comp.size(); ci++) {
-						if (Comp[ci].Use == false) continue;
-						for (size_t wi = 0; wi < T.nWindows(); wi++) {
-							derivatives[dindex(ci, wi)][gi + nlayers] = T.secondary(ci, wi);
-							if (Comp[ci].InvertTotalField) {
-								derivatives[dindex(ci, wi)][gi + nlayers] += T.primary(ci);
-							}
-						}
+					R = T.derivative(TDEmGeometry::derivativetype(UGI[gi]));
+					if (InvertTotalField) DRV = R.totalfield();
+					else DRV = R.S;
+				}
+
+				for (size_t ci = 0; ci < Comp.size(); ci++) {
+					if (Comp[ci].Use == false) continue;
+					for (size_t wi = 0; wi < nw; wi++) {
+						derivatives[dindex(ci, wi)][gi + nlayers] = DRV(ci, wi);
 					}
 				}
 			}
@@ -2248,7 +2241,7 @@ public:
 				size_t ldi = gdist.localind((PetscInt)dindex(gsi, 0));
 				for (size_t si = 0; si < T.size(); si++) {
 					cSystemInfo& S = T[si];
-					S.forward_model(E, ginv);
+					TDEmResponse R = S.T.forward_model(E, ginv);
 					std::string sys = strprint("EMSystem_%lu_", si + 1);
 					for (size_t ci = 0; ci < S.Comp.size(); ci++) {
 						cTDEmComponentInfo& C = S.Comp[ci];
@@ -2256,16 +2249,12 @@ public:
 						if (S.InvertTotalField) {
 							OI.addfield("predicted_" + sys + cid[ci] + "P", 'E', 15, 6);
 							OI.setdescription("Predicted " + sys + cid[ci] + "-component primary field");
-							if (ci == 0) buf += strprint("%15.6le", S.T.PX());
-							else if (ci == 1) buf += strprint("%15.6le", S.T.PY());
-							else              buf += strprint("%15.6le", S.T.PZ());
-
+							buf += strprint("%15.6le", R.primary(ci));
+							
 							OI.addfield("predicted_" + sys + cid[ci] + "S", 'E', 15, 6, C.nw);
 							OI.setdescription("Predicted " + sys + cid[ci] + "-component secondary field windows");
 							for (size_t w = 0; w < C.nw; w++) {
-								if (ci == 0) buf += strprint("%15.6le", S.T.XS()[w]);
-								else if (ci == 1) buf += strprint("%15.6le", S.T.YS()[w]);
-								else              buf += strprint("%15.6le", S.T.ZS()[w]);
+								buf += strprint("%15.6le", R.secondary(ci,w));
 							}
 						}
 						else {

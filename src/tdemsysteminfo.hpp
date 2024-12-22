@@ -16,18 +16,19 @@ using namespace AEM;
 class cTDEmSystemInfo {
 
 public:
-	const size_t XCOMP = 0;
-	const size_t YCOMP = 1;
-	const size_t ZCOMP = 2;
-	const size_t XZAMP = 3;
+	//const size_t XCOMP = 0;
+	//const size_t YCOMP = 1;
+	//const size_t ZCOMP = 2;
+	//const size_t XZAMP = 3;
 
-	cTDEmSystem T;
+	TDEmSystem T;
 	std::string SystemFile;
 	size_t nwindows = 0;
 	size_t ncomps = 0;
 	size_t nchans = 0;
 	cTDEmComponentInfo CompInfo[NCOMP];
-	std::vector<cTDEmData> predicted;
+	//std::vector<cTDEmData> predicted;
+	std::vector<TDEmResponse> predicted;
 	std::string units;
 	
 	bool invertXPlusZ = false;
@@ -35,7 +36,7 @@ public:
 	bool reconstructPrimary = false;
 	
 	cTDEmSystemInfo(cBlock& b, const size_t nsoundings) :
-		T(cTDEmSystem(b.getstringvalue("SystemFile")))
+		T(TDEmSystem(b.getstringvalue("SystemFile")))
 	{
 		initialise(b, nsoundings);
 	};
