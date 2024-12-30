@@ -7,7 +7,7 @@
 namespace CT {
 	class CalculationType {
 
-	public: enum class Mode { FM, DC, DT, DH, DR, DX, DY, DZ, NONE };
+	public: enum class Mode { FM, DC, DT, DH, DR, DX, DY, DZ, DTXHEIGHT, NONE };
 	private: inline static std::vector<std::string> ModeNames{ "FM", "DC", "DT", "DH", "DR", "DX", "DY", "DZ", "NONE" };
 	private: inline static std::vector<std::string> ModeDescriptions{ "Forward Model", "Layer conductivity derivative", "Layer thickness derivative", "Tx Height derivative", "Tx-Rx radial distance derivative", "Tx-Rx Dx horizontal distance derivative", "Tx-Rx Dy horizontal distance derivative", "Tx-Rx Dz horizontal distance derivative", "No calculation" };
 

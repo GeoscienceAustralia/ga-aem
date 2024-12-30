@@ -61,9 +61,9 @@ namespace LEM2 {
 
 	public:
 		double x = 0, y = 0, z = 0, h = 0;
-		double x2 = 0, y2 = 0, x4 = 0, y4 = 0;
+		double x2 = 0, y2 = 0;
 		double zh = 0, zh2 = 0;
-		double r = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0;
+		double r = 0, r2 = 0;
 		double R2 = 0, R5 = 0, R7 = 0;
 
 		bool update(const double& _x, const double& _y, const double& _z, const double& _h) {
@@ -71,23 +71,18 @@ namespace LEM2 {
 			if (x != _x) {
 				x = _x;
 				x2 = x * x;
-				x4 = x2 * x2;
 				update_r = true;
 			}
 
 			if (y != _y) {
 				y = _y;
 				y2 = y * y;
-				y4 = y2 * y2;
 				update_r = true;
 			}
 
 			if (update_r) {
 				r2 = x2 + y2;
 				r = std::sqrt(r2);
-				r3 = r2 * r;
-				r4 = r2 * r2;
-				r5 = r4 * r;
 			}
 
 			bool update_zh = false;
@@ -122,9 +117,9 @@ namespace LEM2 {
 
 	private:
 		double x = 0, y = 0, z = 0, h = 0;
-		double x2 = 0, y2 = 0, x4 = 0, y4 = 0;
+		double x2 = 0, y2 = 0;
 		double zh = 0, zh2 = 0;
-		double r = 0, r2 = 0, r3 = 0, r4 = 0, r5 = 0;
+		double r = 0, r2 = 0;
 		double R2 = 0, R5 = 0, R7 = 0;
 		bool geometrychanged  = true;
 
@@ -202,24 +197,10 @@ namespace LEM2 {
 		}
 
 		void set_xyzh(const LEGeometryStore& GS) {
-			x = GS.x;
-			y = GS.y;
-			z = GS.z;
-			h = GS.h;
-			x2 = GS.x2;
-			y2 = GS.y2;
-			x4 = GS.x4;
-			y4 = GS.y4;
-			zh = GS.zh;
-			zh2 = GS.zh2;
-			r = GS.r;
-			r2 = GS.r2;
-			r3 = GS.r3;
-			r4 = GS.r4;
-			r5 = GS.r5;
-			R2 = GS.R2;
-			R5 = GS.R5;
-			R7 = GS.R7;
+			x = GS.x; y = GS.y; z = GS.z; h = GS.h; 
+			x2 = GS.x2; y2 = GS.y2; zh = GS.zh; zh2 = GS.zh2;
+			r = GS.r; r2 = GS.r2;
+			R2 = GS.R2; R5 = GS.R5; R7 = GS.R7;
 			geometrychanged = true;
 		}
 
@@ -699,7 +680,7 @@ namespace LEM2 {
 
 		inline Mat3d dPTdH() const {
 			Mat3d m;
-			//of course this is just minus d/dZ		
+			//of course this is just minus d/dZ
 			m(0, 0) = 3.0 * zh * (4.0 * x2 - y2 - zh2) / R7;
 			m(0, 1) = 15.0 * x * y / R7 * zh;
 			m(0, 2) = -3.0 * x * (x2 + y2 - 4.0 * zh2) / R7;
@@ -791,16 +772,21 @@ namespace LEM2 {
 			const cdouble& T0FM = ForwardModelIntegrals[0];
 			const cdouble& T1FM = ForwardModelIntegrals[1];
 			const cdouble& T2FM = ForwardModelIntegrals[2];
+			
+			const double x3 = x * x2;
+			const double r3 = r * r2;
+			const double r4 = r2 * r2;
+			const double r5 = r2 * r3;
 
 			Mat3cd m;
-			m(0, 0) = (x4 * T2 - T0 * x4 * r - T2FM * x2 * x - T0 * x2 * r * y2 - 2.0 * T0FM * x * r * y2 + 5.0 * x * y2 * T2FM - y4 * T2) / r5;
-			m(0, 1) = 2.0 * y / r3 * T2FM - y / r2 * T0FM - 6.0 * x2 * y / r5 * T2FM + 2.0 * x2 * y / r4 * T0FM + 2.0 * x * y / r3 * T2 - x * y / r2 * T0;
-			m(0, 2) = -(T1FM * y2 + x2 * x * T1 + x * T1 * y2) / r3;
-
+			m(0, 0) = T2FM * (1.0 / r * ((x * 2.0) / r2 - x3 / r4 * 2.0 + x * y2 / r4 * 2.0) - x / r3 * (x2 / r2 - y2 / r2)) - T0FM * ((x * 2.0) / r2 - x3 / r4 * 2.0) + T2 / r * (x2 / r2 - y2 / r2) - (T0 * x2) / r2;
+			m(0, 1) = -T0FM * (y / r2 - x2 * y / r4 * 2.0) + T2FM * (y / r3 * 2.0 - x2 * y / r5 * 6.0) - (x * y * (T0 - T2 / r * 2.0)) / r2;
+			m(0, 2) = -T1 * x / r - T1FM * y2 / r3;
+			
 			m(1, 0) = m(0, 1);
-			m(1, 1) = -(T2 * x4 - T2FM * x2 * x + T0 * y2 * r * x2 - 2.0 * T0FM * y2 * x * r + 5.0 * x * y2 * T2FM + T0 * y4 * r - y4 * T2) / r5;
-			m(1, 2) = y / r3 * T1FM * x - y / r * T1;
-
+			m(1, 1) = -T2FM * (1.0 / r * ((x * 2.0) / r2 - x3 / r4 * 2.0 + x * y2 / r4 * 2.0) - x / r3 * (x2 / r2 - y2 / r2)) - T2 / r * (x2 / r2 - y2 / r2) - (T0 * y2) / r2 + T0FM * x * y2 / r4 * 2.0;
+			m(1, 2) = -T1 * y / r + T1FM * x * y / r3;
+			
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
@@ -816,15 +802,20 @@ namespace LEM2 {
 			const cdouble& T1FM = ForwardModelIntegrals[1];
 			const cdouble& T2FM = ForwardModelIntegrals[2];
 
+			const double y3 = y * y2;
+			const double r3 = r * r2;
+			const double r4 = r2 * r2;
+			const double r5 = r2 * r3;
+
 			Mat3cd m;
-			m(0, 0) = (x4 * T2 - T0 * x4 * r + 2.0 * T0FM * x2 * y * r - T0 * x2 * r * y2 - 5.0 * x2 * y * T2FM + y2 * y * T2FM - y4 * T2) / r5;
-			m(0, 1) = 2.0 * x / r3 * T2FM - x / r2 * T0FM - 6.0 * x * y2 / r5 * T2FM + 2.0 * x * y2 / r4 * T0FM + 2.0 * x * y / r3 * T2 - x * y / r2 * T0;
-			m(0, 2) = x / r3 * T1FM * y - x / r * T1;
-
+			m(0, 0) = -T2FM * (1.0 / r * ((y * 2.0) / r2 - y3 / r4 * 2.0 + x2 * y / r4 * 2.0) + y / r3 * (x2 / r2 - y2 / r2)) + T2 / r * (x2 / r2 - y2 / r2) - (T0 * x2) / r2 + T0FM * x2 * y / r4 * 2.0;
+			m(0, 1) = -T0FM * (x / r2 - x * y2 / r4 * 2.0) + T2FM * (x / r3 * 2.0 - x * y2 / r5 * 6.0) - (T0 * x * y) / r2 + T2 * x * y / r3 * 2.0;
+			m(0, 2) = -T1 * x / r + T1FM * x * y / r3;
+			
 			m(1, 0) = m(0, 1);
-			m(1, 1) = -(T2 * x4 + T0 * y2 * r * x2 + 2.0 * T0 * y * r * x2 - 5.0 * x2 * y * T2FM + T0 * y4 * r + y2 * y * T2 - y4 * T2) / r5;
-			m(1, 2) = -(T1 * x2 + y * T1 * x2 + y2 * y * T1) / r3;
-
+			m(1, 1) = -T0FM * ((y * 2.0) / r2 - y3 / r4 * 2.0) + T2FM * (1.0 / r * ((y * 2.0) / r2 - y3 / r4 * 2.0 + x2 * y / r4 * 2.0) + y / r3 * (x2 / r2 - y2 / r2)) - T2 / r * (x2 / r2 - y2 / r2) - (T0 * y2) / r2;
+			m(1, 2) = -T1 * y / r - T1FM * x2 / r3;
+			
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;

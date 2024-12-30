@@ -876,9 +876,9 @@ namespace LEM1 {
 				Fields.v.p.z = 0.0;
 			}
 			else if (cmode() == CMode::DH) {
-				Fields.v.p.x = 0.0;
-				Fields.v.p.y = 0.0;
-				Fields.v.p.z = 0.0;
+				Fields.v.p.x = -THREEONFOURPI<double>*X * (1.0 / BigR5 - 5.0 * (Z - H) * (Z - H) / BigR7);
+				Fields.v.p.y = -THREEONFOURPI<double>*Y * (1.0 / BigR5 - 5.0 * (Z - H) * (Z - H) / BigR7);
+				Fields.v.p.z = -THREEONFOURPI<double>*(3.0 * (Z - H) / BigR5 - 5.0 * (Z - H) * (Z - H) * (Z - H) / BigR7);
 			}
 			else if (cmode() == CMode::DZ) {
 				Fields.v.p.x = THREEONFOURPI<double>*X * (1.0 / BigR5 - 5.0 * (Z - H) * (Z - H) / BigR7);
@@ -1018,9 +1018,9 @@ namespace LEM1 {
 				Fields.h.p.z = 0.0;
 			}
 			else if (cmode() == CMode::DH) {
-				Fields.h.p.x = 0.0;
-				Fields.h.p.y = 0.0;
-				Fields.h.p.z = 0.0;
+				Fields.h.p.x = -THREEONFOURPI<double>*X * Y * (-5.0 * (Z - H) / BigR7);
+				Fields.h.p.y = -THREEONFOURPI<double>*Y * Y * (-5.0 * (Z - H) / BigR7) + ONEONFOURPI<double>*(-3.0 * (Z - H) / BigR5);
+				Fields.h.p.z = -THREEONFOURPI<double>*Y * (1.0 / BigR5 - 5.0 * (Z - H) * (Z - H) / BigR7);
 			}
 			else if (cmode() == CMode::DZ) {
 				Fields.h.p.x = THREEONFOURPI<double>*X * Y * (-5.0 * (Z - H) / BigR7);

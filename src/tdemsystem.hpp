@@ -8,15 +8,17 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #pragma once
 
+#include <cassert>
 #include <stdexcept>
 #include <complex>
 
-#include "eigen_utils.hpp"
-#include "fftw3.h"
-#include "file_utils.hpp"
+#include "numerical_utils.hpp"
 #include "vector_utils.hpp"
+#include "file_utils.hpp"
 #include "general_utils.hpp"
 #include "blocklanguage.hpp"
+#include "eigen_utils.hpp"
+#include "fftw3.h"
 
 #include "earth1d.hpp"
 #include "fixed_point_spline.hpp"
@@ -128,9 +130,9 @@ namespace AEM {
 
 		TDEmVectorResponse(const size_t _nwindows = 0) { nwindows = _nwindows; };
 
-		inline const size_t size() const { return nwindows; }
+		inline const size_t nWindows() const { return nwindows; }
 
-		void resize(const size_t _nwindows) {
+		void set_nWindows(const size_t _nwindows) {
 			nwindows = _nwindows;
 			v[0].resize(nwindows);
 			v[1].resize(nwindows);
@@ -162,6 +164,13 @@ namespace AEM {
 			return *this;
 		}
 
+		TDEmVectorResponse& operator-=(const TDEmVectorResponse& rhs) {
+			v[0] -= rhs.v[0];
+			v[1] -= rhs.v[1];
+			v[2] -= rhs.v[2];
+			return *this;
+		}
+
 		TDEmVectorResponse& operator*=(const double& s) {
 			v[0] *= s;
 			v[1] *= s;
@@ -169,9 +178,16 @@ namespace AEM {
 			return *this;
 		}
 
+		TDEmVectorResponse& operator/=(const double& s) {
+			v[0] /= s;
+			v[1] /= s;
+			v[2] /= s;
+			return *this;
+		}
+
 		double& operator()(const size_t& component, const size_t& window) {
 			assert(component < NCOMP);
-			assert(window < size());
+			assert(window < nWindows());
 			return v[component][window];
 		}
 
@@ -190,6 +206,16 @@ namespace AEM {
 			return r;
 		};
 
+		friend std::ostream& operator<<(std::ostream& os, const TDEmVectorResponse& R) {
+			for (size_t i = 0; i < R.nwindows; i++) {
+				os	<< exd(16, 6) << R[XCOMP][i]
+					<< exd(16, 6) << R[YCOMP][i]
+					<< exd(16, 6) << R[ZCOMP][i]
+					<< std::endl;
+			}
+			return os;
+		}
+
 	private:
 
 	};
@@ -203,16 +229,16 @@ namespace AEM {
 		TDEmResponse() {};
 
 		TDEmResponse(const size_t& _nwindows) {
-			resize(_nwindows);
+			set_nWindows(_nwindows);
 		}
 
-		void resize(const size_t& _nwindows) {
-			P.resize(_nwindows);
-			S.resize(_nwindows);
+		void set_nWindows(const size_t& _nwindows) {
+			P.set_nWindows(_nwindows);
+			S.set_nWindows(_nwindows);
 		}
 
-		const size_t& size() const {
-			return S.size();
+		const size_t& nWindows() const {
+			return S.nWindows();
 		}
 
 		const double primary(const size_t& component) const {
@@ -222,7 +248,7 @@ namespace AEM {
 
 		const double secondary(const size_t& component, const size_t& window) const {
 			assert(component < NCOMP);
-			assert(window < size());
+			assert(window < nWindows());
 			return S[component][window];
 		};
 
@@ -235,6 +261,111 @@ namespace AEM {
 			TDEmVectorResponse T = S;
 			T += P;
 			return T;
+		};
+
+		TDEmResponse& operator*=(const double& s) {
+			P *= s;
+			S *= s;
+			return *this;
+		};
+
+		TDEmResponse& operator/=(const double& s) {
+			P /= s;
+			S /= s;
+			return *this;
+		};
+
+		TDEmResponse& operator+=(const TDEmResponse& rhs) {
+			P += rhs.P;
+			S += rhs.S;
+			return *this;
+		};
+
+		TDEmResponse& operator-=(const TDEmResponse& rhs) {
+			P -= rhs.P;
+			S -= rhs.S;
+			return *this;
+		};
+
+		friend TDEmResponse operator+(const TDEmResponse& a, const TDEmResponse& b) {
+			TDEmResponse r = a;
+			r += b;
+			return r;
+		};
+
+		friend TDEmResponse operator-(const TDEmResponse& a, const TDEmResponse& b) {
+			TDEmResponse r = a;
+			r -= b;
+			return r;
+		};
+
+		friend TDEmResponse operator*(const TDEmResponse& a, const double& s) {
+			TDEmResponse r = a;
+			r *= s;
+			return r;
+		};
+
+		friend TDEmResponse operator*(const double& s, const TDEmResponse& a) {
+			TDEmResponse r = a;
+			r *= s;
+			return r;
+		};
+
+		friend TDEmResponse operator/(const TDEmResponse& a, const double& s) {
+			TDEmResponse r = a;
+			r /= s;
+			return r;
+		};
+
+		friend TDEmResponse elementwise_div(const TDEmResponse& a, const TDEmResponse& b) {
+			TDEmResponse r = a;
+			r.P[0] /= b.P[0];
+			r.P[1] /= b.P[1];
+			r.P[2] /= b.P[2];
+			r.S[0] /= b.S[0];
+			r.S[1] /= b.S[1];
+			r.S[2] /= b.S[2];
+			return r;
+		};
+
+		friend TDEmResponse percent_difference(const TDEmResponse& a, const TDEmResponse& b) {
+			TDEmResponse r = 100.0 * elementwise_div(b - a, a);
+			constexpr double eps = std::numeric_limits<double>::epsilon();
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				for (size_t wi = 0; wi < r.nWindows(); wi++) {
+					// Amend for closeness within numerical precision
+					if (nearly_equal_ulps(a.P[ci][wi], b.P[ci][wi])) r.P[ci][wi] = 0.0;
+					else if (a.P[ci][wi] == 0.0 && b.P[ci][wi] == 0.0) r.P[ci][wi] = 0.0;
+					else if (std::abs(a.P[ci][wi]) <= eps && std::abs(b.P[ci][wi] <= eps)) r.P[ci][wi] = 0.0;
+
+					if (nearly_equal_ulps(a.S[ci][wi], b.S[ci][wi])) r.S[ci][wi] = 0.0;
+					else if (a.S[ci][wi] == 0.0 && b.S[ci][wi] == 0.0) r.S[ci][wi] = 0.0;
+					else if (std::abs(a.S[ci][wi]) <= eps && std::abs(b.S[ci][wi] <= eps)) r.S[ci][wi] = 0.0;
+
+				}
+			}
+			return r;
+		};
+
+		static void display_max_abs_percent_difference(const TDEmResponse& PCD) {
+			fxd fmt = fxd(12, 6);
+			std::cout << "P (%): ";
+			std::cout << fmt << std::max(std::abs(min(PCD.P[XCOMP])), std::abs(max(PCD.P[XCOMP]))) << " ";
+			std::cout << fmt << std::max(std::abs(min(PCD.P[YCOMP])), std::abs(max(PCD.P[YCOMP]))) << " ";
+			std::cout << fmt << std::max(std::abs(min(PCD.P[ZCOMP])), std::abs(max(PCD.P[ZCOMP]))) << std::endl;
+			std::cout << "S (%): ";
+			std::cout << fmt << std::max(std::abs(min(PCD.S[XCOMP])), std::abs(max(PCD.S[XCOMP]))) << " ";
+			std::cout << fmt << std::max(std::abs(min(PCD.S[YCOMP])), std::abs(max(PCD.S[YCOMP]))) << " ";
+			std::cout << fmt << std::max(std::abs(min(PCD.S[ZCOMP])), std::abs(max(PCD.S[ZCOMP]))) << std::endl;
+			std::cout << std::endl;
+		};
+
+		friend std::ostream& operator<<(std::ostream& os, const TDEmResponse& R) {
+			os << "--Primary--" << std::endl;
+			os << R.P;
+			os << "--Secondary--" << std::endl;
+			os << R.S;
+			return os;
 		};
 	};
 
@@ -470,9 +601,23 @@ namespace AEM {
 		};
 
 		const TDEmResponse& derivative(const CalculationType& calc) {
-			set_calculationtype(calc);
-			setprimaryfields();
-			setsecondaryfields();
+			if (calc.get_mode() == CMode::DTXHEIGHT) {
+				// This is because when H changes Z also changes
+				set_calculationtype(CMode::DZ);
+				setprimaryfields();
+				setsecondaryfields();
+				TDEmResponse DZ = WR;
+
+				set_calculationtype(CMode::DH);
+				setprimaryfields();
+				setsecondaryfields();
+				WR += DZ;
+			}
+			else{
+				set_calculationtype(calc);
+				setprimaryfields();
+				setsecondaryfields();
+			}
 			return WR;
 		}
 
@@ -502,6 +647,7 @@ namespace AEM {
 			lem().setup_computations();
 		}
 
+		/*
 		void drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp) {
 			//xi = (  xb*cosp  + zb*sinp);Inertial
 			//zi = ( -xb*sinp  + zb*cosp);
@@ -536,7 +682,7 @@ namespace AEM {
 			//xi = (  xb*cosp  + zb*sinp);Inertial
 			//zi = ( -xb*sinp  + zb*cosp);
 			//xb = (  xi*cosp  - zi*sinp);As bird sees it
-			//zb = (  xi*sinp  + zi*cosp);						
+			//zb = (  xi*sinp  + zi*cosp);
 
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
 				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
@@ -546,12 +692,12 @@ namespace AEM {
 			}
 
 
-			double cosp = cos(D2R<double> *p);
-			double sinp = sin(D2R<double> *p);
+			const double cosp = cos(D2R<double>*p);
+			const double sinp = sin(D2R<double>*p);
 
 			//convert back to real coordinate system
-			std::vector<double> xi = (xb * cosp + zb * sinp);
-			std::vector<double> zi = (xb * -sinp + zb * cosp);
+			std::vector<double> xi = ((xb *  cosp) + (zb * sinp));
+			std::vector<double> zi = ((xb * -sinp) + (zb * cosp));
 
 			dxbdp = (xi * -sinp - zi * cosp) * D2R<double>;
 			dzbdp = (xi * cosp - zi * sinp) * D2R<double>;
@@ -623,7 +769,7 @@ namespace AEM {
 				dybdr /= RefGeomPrimary[YCOMP];
 				dzbdr /= RefGeomPrimary[ZCOMP];
 			}
-		}
+		}*/
 
 		void drx_roll_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
 			Mat3d dM = g.rx_roll_derivative_matrix();
@@ -649,11 +795,6 @@ namespace AEM {
 			// Rotate field to Rx frame
 			v = RotMatrixToRxFrame * v;
 
-			if (lem().cmode() == CMode::DH) {
-				//This is because when H changes Z also changes and DZ == DH ... //but they should be all zero anyway
-				v *= 2.0;
-			}
-
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				v *= 2.0;
 			}
@@ -676,13 +817,6 @@ namespace AEM {
 
 				// Rotate field to Rx frame
 				v = RotMatrixToRxFrame * v;
-
-				//std::cout << RotMatrixToRxFrame << std::endl;
-
-				if (lem().cmode() == CMode::DH) {
-					//This is because when H changes Z also changes and DZ == DH
-					v *= 2.0;
-				}
 
 				for (size_t ci = 0; ci < NCOMP; ci++) {
 					Component[ci].IR_discrete_real[fi] = v[ci].real();
@@ -709,11 +843,11 @@ namespace AEM {
 		}
 
 		void setup_nwindows() {
-			WR.resize(nWindows());
+			WR.set_nWindows(nWindows());
 		}
 
 		void apply_rx_derivative_matrix(const Mat3d& dM, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
-			const size_t n = fields.size();
+			const size_t n = fields.nWindows();
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				for (size_t i = 0; i < n; i++) {
 					Vec3d ftrue = fields.get_vec3d(i);
@@ -729,8 +863,8 @@ namespace AEM {
 				}
 			}
 			else {
-				for (size_t i = 0; i < n; i++) {
-					derivatives.set_vec3d(i,dM * fields.get_vec3d(i));
+				for (size_t wi = 0; wi < n; wi++) {
+					derivatives.set_vec3d(wi,dM * fields.get_vec3d(wi));
 				}
 			}
 		}
