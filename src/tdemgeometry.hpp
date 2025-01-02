@@ -234,18 +234,18 @@ namespace AEM {
 			return ElementType::unknown;
 		}
 
-		static CMode derivativetype(const size_t& index) {
+		static AEM::CalculationType::Mode derivativetype(const size_t& index) {
 			switch (index) {
-			case 0: return CMode::DH; break;
+			case 0: return CMode::DTX_HEIGHT; break;
 			case 1: return CMode::NONE; break;
 			case 2: return CMode::NONE; break;
 			case 3: return CMode::NONE; break;
 			case 4: return CMode::DX; break;
 			case 5: return CMode::DY; break;
 			case 6: return CMode::DZ; break;
-			case 7: return CMode::NONE; break;
-			case 8: return CMode::NONE; break;
-			case 9: return CMode::NONE; break;
+			case 7: return CMode::DRX_ROLL; break;
+			case 8: return CMode::DRX_PITCH; break;
+			case 9: return CMode::DRX_YAW; break;
 			default:
 				glog.errormsg(_SRC_, "Geometry index %zu out of range\n", index);
 			}

@@ -26,8 +26,8 @@ namespace AEM {
 namespace LEM2 {
 	using cdouble = std::complex<double>;
 	using cvector = std::vector<std::complex<double>>;
-	using CalculationType = CT::CalculationType;
-	using CMode = CT::CalculationType::Mode;
+	using CalculationType = AEM::CalculationType;
+	using CMode = AEM::CalculationType::Mode;
 	using PropogationMatrix = Eigen::Matrix2cd;
 	constexpr double DefaultLowerFractionalWidth = 4.44;
 	constexpr double DefaultUpperFractionalWidth = 1.84;
@@ -533,7 +533,7 @@ namespace LEM2 {
 				const double& l3e = A.Lambda3 * e;
 				const double& l4e = A.Lambda4 * e;
 				
-				const cdouble& earthkernel = -A.P21onP11 * A.loopfactor;
+				const cdouble& earthkernel = A.P21onP11 * A.loopfactor;
 				const double k0 = l3e * j0;
 				const double k1 = l3e * j1;
 				const double k2 = l2e * j1;
@@ -551,7 +551,7 @@ namespace LEM2 {
 			const size_t na = nAbscissa();
 			for (int ai = 0; ai < na; ai++) {
 				const AbscissaNode& A = Abscissa[ai]; const double& lambdar = A.Lambda_r; const double& j0 = A.j0Lambda_r; const double& j1 = A.j1Lambda_r; const double& e = A.exp_minus_lambdazplush; const double& l2e = A.Lambda2 * e; const double& l3e = A.Lambda3 * e; const double& l4e = A.Lambda4 * e;				
-				const cdouble earthkernel = -dP21onP11dCj(ai, derivativelayer) * A.loopfactor;
+				const cdouble earthkernel = dP21onP11dCj(ai, derivativelayer) * A.loopfactor;
 				const double k0 = l3e * j0;
 				const double k1 = l3e * j1;
 				const double k2 = l2e * j1;
@@ -564,7 +564,7 @@ namespace LEM2 {
 			const size_t na = nAbscissa();
 			for (int ai = 0; ai < na; ai++) {
 				const AbscissaNode& A = Abscissa[ai]; const double& lambdar = A.Lambda_r; const double& j0 = A.j0Lambda_r; const double& j1 = A.j1Lambda_r; const double& e = A.exp_minus_lambdazplush; const double& l2e = A.Lambda2 * e; const double& l3e = A.Lambda3 * e; const double& l4e = A.Lambda4 * e;
-				const cdouble earthkernel = -dP21onP11dTj(ai, derivativelayer) * A.loopfactor;
+				const cdouble earthkernel = dP21onP11dTj(ai, derivativelayer) * A.loopfactor;
 				const double k0 = l3e * j0;
 				const double k1 = l3e * j1;
 				const double k2 = l2e * j1;
@@ -577,7 +577,7 @@ namespace LEM2 {
 			const size_t na = nAbscissa();
 			for (int ai = 0; ai < na; ai++) {
 				const AbscissaNode& A = Abscissa[ai]; const double& lambdar = A.Lambda_r; const double& j0 = A.j0Lambda_r; const double& j1 = A.j1Lambda_r; const double& e = A.exp_minus_lambdazplush; const double& l2e = A.Lambda2 * e; const double& l3e = A.Lambda3 * e; const double& l4e = A.Lambda4 * e;
-				const cdouble earthkernel = -A.P21onP11 * A.loopfactor;
+				const cdouble earthkernel = A.P21onP11 * A.loopfactor;
 				const double k0 = -l4e * j1;
 				const double k1 = l4e * (j0 - j1 / lambdar);
 				const double k2 = l3e * (j0 - j1 / lambdar);
@@ -598,7 +598,7 @@ namespace LEM2 {
 			const size_t na = nAbscissa();
 			for (int ai = 0; ai < na; ai++) {
 				const AbscissaNode& A = Abscissa[ai]; const double& lambdar = A.Lambda_r; const double& j0 = A.j0Lambda_r; const double& j1 = A.j1Lambda_r; const double& e = A.exp_minus_lambdazplush; const double& l2e = A.Lambda2 * e; const double& l3e = A.Lambda3 * e; const double& l4e = A.Lambda4 * e;
-				const cdouble earthkernel = -A.P21onP11 * A.loopfactor;
+				const cdouble earthkernel = A.P21onP11 * A.loopfactor;
 				const double k0 = -l4e * j0;
 				const double k1 = -l4e * j1;
 				const double k2 = -l3e * j1;
@@ -626,7 +626,7 @@ namespace LEM2 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = (3.0 * zh2 - R2) / R5;
-			return -ONEONFOURPI<double> * T;
+			return ONEONFOURPI<double> * T;
 		};
 
 		inline Mat3d dPTdR() const {
@@ -647,7 +647,7 @@ namespace LEM2 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = 3.0 * x * (x2 + y2 - 4.0 * zh2) / R7;
-			return -ONEONFOURPI<double> * T;
+			return ONEONFOURPI<double> * T;
 		};
 
 		inline Mat3d dPTdY() const {
@@ -661,7 +661,7 @@ namespace LEM2 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = 3.0 * y * (x2 + y2 - 4.0 * zh2) / R7;
-			return -ONEONFOURPI<double> *T;
+			return ONEONFOURPI<double> *T;
 		};
 
 		inline Mat3d dPTdZ() const {
@@ -675,7 +675,7 @@ namespace LEM2 {
 			T(2, 0) = T(0, 2);
 			T(2, 1) = T(1, 2);
 			T(2, 2) = 3.0 * zh * (3.0 * x2 + 3.0 * y2 - 2.0 * zh2) / R7;
-			return -ONEONFOURPI<double> *T;
+			return ONEONFOURPI<double> *T;
 		};
 
 		inline Mat3d dPTdH() const {
@@ -690,7 +690,7 @@ namespace LEM2 {
 			m(2, 0) = m(0, 2);
 			m(2, 1) = m(1, 2);
 			m(2, 2) = -3.0 * zh * (3.0 * x2 + 3.0 * y2 - 2.0 * zh2) / R7;
-			return -ONEONFOURPI<double> *m;
+			return ONEONFOURPI<double> *m;
 		};
 
 		inline Mat3cd STFM() {
@@ -712,7 +712,7 @@ namespace LEM2 {
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return -ONEONFOURPI<double> *m;
+			return ONEONFOURPI<double> *m;
 		};
 
 		inline Mat3cd dSTdC(const size_t& derivativelayer) {
@@ -733,7 +733,7 @@ namespace LEM2 {
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return -ONEONFOURPI<double>*m;
+			return ONEONFOURPI<double>*m;
 		};
 
 		inline Mat3cd dSTdT(const size_t& derivativelayer) {
@@ -754,7 +754,7 @@ namespace LEM2 {
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return -ONEONFOURPI<double> *m;
+			return ONEONFOURPI<double> *m;
 		};
 
 		inline Mat3cd dSTdR() {
@@ -790,7 +790,7 @@ namespace LEM2 {
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return -ONEONFOURPI<double> * m;
+			return ONEONFOURPI<double> * m;
 		};
 
 		inline Mat3cd dSTdY() {
@@ -819,7 +819,7 @@ namespace LEM2 {
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return -ONEONFOURPI<double> * m;
+			return ONEONFOURPI<double> * m;
 		};
 
 		inline Mat3cd dSTdZ() {
@@ -840,7 +840,7 @@ namespace LEM2 {
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return -ONEONFOURPI<double> *m;
+			return ONEONFOURPI<double> *m;
 		};
 
 		inline Mat3cd dSTdH() {
@@ -861,7 +861,7 @@ namespace LEM2 {
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return -ONEONFOURPI<double> * m;
+			return ONEONFOURPI<double> * m;
 		};
 
 		Mat3d PrimaryTensor(const CalculationType& calculationtype) const {

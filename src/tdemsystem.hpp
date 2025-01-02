@@ -12,362 +12,19 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <stdexcept>
 #include <complex>
 
-#include "numerical_utils.hpp"
+#include "aemsystem.hpp"
+#include "tdemresponse.hpp"
+#include "fftwplanwrapper.hpp"
 #include "vector_utils.hpp"
 #include "file_utils.hpp"
 #include "general_utils.hpp"
 #include "blocklanguage.hpp"
 #include "eigen_utils.hpp"
-#include "fftw3.h"
-
 #include "earth1d.hpp"
 #include "fixed_point_spline.hpp"
-#include "aem_coredefs.hpp"
 #include "tdemgeometry.hpp"
 
 namespace AEM {
-	
-	class FFTWPlanWrapper {
-
-	private:
-		fftw_plan Plan = nullptr;
-
-	public:
-
-		// Default constructor
-		FFTWPlanWrapper() {
-			Plan = nullptr;
-		}
-
-		FFTWPlanWrapper(const fftw_plan plan) {
-			setplan(plan);
-		}
-
-		// Move constructor
-		FFTWPlanWrapper(FFTWPlanWrapper&& other) noexcept
-			: Plan(other.Plan)
-		{
-			other.Plan = nullptr;
-		};
-
-		// Copy assignment operator
-		FFTWPlanWrapper& operator=(FFTWPlanWrapper& other) noexcept {
-			setplan(other.Plan);
-			other.Plan = nullptr;
-			return *this;
-		};
-
-		~FFTWPlanWrapper() {
-			destroy();
-		};
-
-		void setplan(const fftw_plan plan) {
-			Plan = plan;
-		}
-
-		void destroy() const {
-			if (Plan) {
-				fftw_destroy_plan(Plan);
-			}
-		}
-
-		void execute() const {
-			fftw_execute(Plan);
-		}
-
-		void print() const {
-			fftw_print_plan(Plan);
-		}
-
-	};
-
-	class TDEmScalarResponse {
-
-	private:
-		std::vector<double> v;
-
-	public:
-
-		TDEmScalarResponse() {};
-
-		TDEmScalarResponse(const size_t& nwindows) {
-			resize(nwindows);
-		}
-
-		inline const size_t size() const { return v.size(); }
-
-		double& operator[](const size_t& i) {
-			return v[i];
-		}
-
-		double operator[](const size_t& i) const {
-			return v[i];
-		}
-
-		TDEmScalarResponse& operator+=(const TDEmScalarResponse& rhs) {
-			v += rhs.v;
-			return *this;
-		}
-
-		TDEmScalarResponse& operator*=(const double& rhs) {
-			v *= rhs;
-			return *this;
-		}
-
-	private:
-
-		void  resize(const size_t nwindows) {
-			v.resize(nwindows);
-		}
-	};
-	
-	class TDEmVectorResponse {
-
-		size_t nwindows=0;
-		std::array<std::vector<double>, 3> v;
-
-	public:
-
-		TDEmVectorResponse(const size_t _nwindows = 0) { nwindows = _nwindows; };
-
-		inline const size_t nWindows() const { return nwindows; }
-
-		void set_nWindows(const size_t _nwindows) {
-			nwindows = _nwindows;
-			v[0].resize(nwindows);
-			v[1].resize(nwindows);
-			v[2].resize(nwindows);
-		};
-
-		Vec3d get_vec3d(const size_t window) const {
-			return Vec3d(v[0][window], v[1][window], v[2][window]);
-		};
-
-		void set_vec3d(const size_t window, const Vec3d& vec) {
-			v[0][window] = vec[0];
-			v[1][window] = vec[1];
-			v[2][window] = vec[2];
-		};
-
-		std::vector<double>& operator[](const size_t& component) {
-			return v[component];
-		}
-
-		const std::vector<double>& operator[](const size_t& component) const {
-			return v[component];
-		}
-
-		TDEmVectorResponse& operator+=(const TDEmVectorResponse& rhs) {
-			v[0] += rhs.v[0];
-			v[1] += rhs.v[1];
-			v[2] += rhs.v[2];
-			return *this;
-		}
-
-		TDEmVectorResponse& operator-=(const TDEmVectorResponse& rhs) {
-			v[0] -= rhs.v[0];
-			v[1] -= rhs.v[1];
-			v[2] -= rhs.v[2];
-			return *this;
-		}
-
-		TDEmVectorResponse& operator*=(const double& s) {
-			v[0] *= s;
-			v[1] *= s;
-			v[2] *= s;
-			return *this;
-		}
-
-		TDEmVectorResponse& operator/=(const double& s) {
-			v[0] /= s;
-			v[1] /= s;
-			v[2] /= s;
-			return *this;
-		}
-
-		double& operator()(const size_t& component, const size_t& window) {
-			assert(component < NCOMP);
-			assert(window < nWindows());
-			return v[component][window];
-		}
-
-		void scale_components(const Vec3d& scalefactors) {
-			const size_t nw = v.size();
-			v[0] *= scalefactors[0];
-			v[1] *= scalefactors[1];
-			v[2] *= scalefactors[2];
-		};
-
-		TDEmScalarResponse xzamp() {
-			TDEmScalarResponse r(nwindows);
-			for (size_t i = 0; i < nwindows; i++) {
-				r[i] = std::hypot(v[XCOMP][i], v[ZCOMP][i]);
-			}
-			return r;
-		};
-
-		friend std::ostream& operator<<(std::ostream& os, const TDEmVectorResponse& R) {
-			for (size_t i = 0; i < R.nwindows; i++) {
-				os	<< exd(16, 6) << R[XCOMP][i]
-					<< exd(16, 6) << R[YCOMP][i]
-					<< exd(16, 6) << R[ZCOMP][i]
-					<< std::endl;
-			}
-			return os;
-		}
-
-	private:
-
-	};
-
-	class TDEmResponse {
-	
-	public:
-		TDEmVectorResponse P;
-		TDEmVectorResponse S;
-
-		TDEmResponse() {};
-
-		TDEmResponse(const size_t& _nwindows) {
-			set_nWindows(_nwindows);
-		}
-
-		void set_nWindows(const size_t& _nwindows) {
-			P.set_nWindows(_nwindows);
-			S.set_nWindows(_nwindows);
-		}
-
-		const size_t& nWindows() const {
-			return S.nWindows();
-		}
-
-		const double primary(const size_t& component) const {
-			assert(component < NCOMP);
-			return P[component][0];
-		}
-
-		const double secondary(const size_t& component, const size_t& window) const {
-			assert(component < NCOMP);
-			assert(window < nWindows());
-			return S[component][window];
-		};
-
-		const std::vector<double> secondary(const size_t& component) const {
-			assert(component < NCOMP);
-			return S[component];
-		};
-
-		TDEmVectorResponse totalfield() const {
-			TDEmVectorResponse T = S;
-			T += P;
-			return T;
-		};
-
-		TDEmResponse& operator*=(const double& s) {
-			P *= s;
-			S *= s;
-			return *this;
-		};
-
-		TDEmResponse& operator/=(const double& s) {
-			P /= s;
-			S /= s;
-			return *this;
-		};
-
-		TDEmResponse& operator+=(const TDEmResponse& rhs) {
-			P += rhs.P;
-			S += rhs.S;
-			return *this;
-		};
-
-		TDEmResponse& operator-=(const TDEmResponse& rhs) {
-			P -= rhs.P;
-			S -= rhs.S;
-			return *this;
-		};
-
-		friend TDEmResponse operator+(const TDEmResponse& a, const TDEmResponse& b) {
-			TDEmResponse r = a;
-			r += b;
-			return r;
-		};
-
-		friend TDEmResponse operator-(const TDEmResponse& a, const TDEmResponse& b) {
-			TDEmResponse r = a;
-			r -= b;
-			return r;
-		};
-
-		friend TDEmResponse operator*(const TDEmResponse& a, const double& s) {
-			TDEmResponse r = a;
-			r *= s;
-			return r;
-		};
-
-		friend TDEmResponse operator*(const double& s, const TDEmResponse& a) {
-			TDEmResponse r = a;
-			r *= s;
-			return r;
-		};
-
-		friend TDEmResponse operator/(const TDEmResponse& a, const double& s) {
-			TDEmResponse r = a;
-			r /= s;
-			return r;
-		};
-
-		friend TDEmResponse elementwise_div(const TDEmResponse& a, const TDEmResponse& b) {
-			TDEmResponse r = a;
-			r.P[0] /= b.P[0];
-			r.P[1] /= b.P[1];
-			r.P[2] /= b.P[2];
-			r.S[0] /= b.S[0];
-			r.S[1] /= b.S[1];
-			r.S[2] /= b.S[2];
-			return r;
-		};
-
-		friend TDEmResponse percent_difference(const TDEmResponse& a, const TDEmResponse& b) {
-			TDEmResponse r = 100.0 * elementwise_div(b - a, a);
-			constexpr double eps = std::numeric_limits<double>::epsilon();
-			for (size_t ci = 0; ci < NCOMP; ci++) {
-				for (size_t wi = 0; wi < r.nWindows(); wi++) {
-					// Amend for closeness within numerical precision
-					if (nearly_equal_ulps(a.P[ci][wi], b.P[ci][wi])) r.P[ci][wi] = 0.0;
-					else if (a.P[ci][wi] == 0.0 && b.P[ci][wi] == 0.0) r.P[ci][wi] = 0.0;
-					else if (std::abs(a.P[ci][wi]) <= eps && std::abs(b.P[ci][wi] <= eps)) r.P[ci][wi] = 0.0;
-
-					if (nearly_equal_ulps(a.S[ci][wi], b.S[ci][wi])) r.S[ci][wi] = 0.0;
-					else if (a.S[ci][wi] == 0.0 && b.S[ci][wi] == 0.0) r.S[ci][wi] = 0.0;
-					else if (std::abs(a.S[ci][wi]) <= eps && std::abs(b.S[ci][wi] <= eps)) r.S[ci][wi] = 0.0;
-
-				}
-			}
-			return r;
-		};
-
-		static void display_max_abs_percent_difference(const TDEmResponse& PCD) {
-			fxd fmt = fxd(12, 6);
-			std::cout << "P (%): ";
-			std::cout << fmt << std::max(std::abs(min(PCD.P[XCOMP])), std::abs(max(PCD.P[XCOMP]))) << " ";
-			std::cout << fmt << std::max(std::abs(min(PCD.P[YCOMP])), std::abs(max(PCD.P[YCOMP]))) << " ";
-			std::cout << fmt << std::max(std::abs(min(PCD.P[ZCOMP])), std::abs(max(PCD.P[ZCOMP]))) << std::endl;
-			std::cout << "S (%): ";
-			std::cout << fmt << std::max(std::abs(min(PCD.S[XCOMP])), std::abs(max(PCD.S[XCOMP]))) << " ";
-			std::cout << fmt << std::max(std::abs(min(PCD.S[YCOMP])), std::abs(max(PCD.S[YCOMP]))) << " ";
-			std::cout << fmt << std::max(std::abs(min(PCD.S[ZCOMP])), std::abs(max(PCD.S[ZCOMP]))) << std::endl;
-			std::cout << std::endl;
-		};
-
-		friend std::ostream& operator<<(std::ostream& os, const TDEmResponse& R) {
-			os << "--Primary--" << std::endl;
-			os << R.P;
-			os << "--Secondary--" << std::endl;
-			os << R.S;
-			return os;
-		};
-	};
 
 	class ComponentWorkStore {
 
@@ -461,21 +118,6 @@ namespace AEM {
 
 	};
 
-	class AEMSystem {
-
-	protected:
-		std::string SystemName;
-		std::string SystemType;
-		cBlock STM;
-		LEModeller LEM;
-
-	public:
-
-		const cBlock& system_descriptor_block() const { return STM; };
-		LEModeller& lem() { return LEM; };
-
-	};
-
 	class TDEmSystem : public AEMSystem {
 
 	private:
@@ -521,17 +163,7 @@ namespace AEM {
 		
 		const size_t& nWindows() const {
 			return WindScheme.nWindows();
-		}
-				
-		double primary(const size_t component) const {
-			assert(component < NCOMP);
-			return WR.P[component][0];
-		}
-
-		double secondary(const size_t component, const size_t window) {
-			assert(component < NCOMP);
-			return WR.S[component][window];
-		}
+		};
 
 		void read_system_descriptor_file(const fs::path& systemdescriptorfile) {
 			if (!fs::exists(systemdescriptorfile)) {
@@ -556,7 +188,7 @@ namespace AEM {
 
 			cBlock rxblock = STM.findblock("Receiver");
 			WindScheme = WindowingScheme(rxblock, WvForm);
-			setup_nwindows();
+			set_nwindows();
 
 			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.TD_Waveform.size()) {
 				glog.errormsg(_SRC_, "The number of WaveformTime values must match number of WaveformCurrent/WaveformReceived values and also be more than two\n");
@@ -586,7 +218,7 @@ namespace AEM {
 		const TDEmVectorResponse& forward_model_primary_field(const TDEmGeometry& G) {
 			set_geometry(G);
 			set_calculationtype(CMode::FM);
-			setprimaryfields();
+			set_primaryfields();
 			return WR.P;
 		};
 
@@ -595,31 +227,65 @@ namespace AEM {
 			set_geometry(G);
 			setup_computations();
 			set_calculationtype(CMode::FM);
-			setprimaryfields();
-			setsecondaryfields();
+			set_primaryfields();
+			set_secondaryfields();
 			return WR;
 		};
 
+		TDEmVectorResponse derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmVectorResponse& forward_model) {
+			TDEmVectorResponse derivative(nWindows());
+			if (calc.get_mode() == CMode::DRX_ROLL) {
+				drx_roll(G, forward_model, derivative);
+			}
+			else if (calc.get_mode() == CMode::DRX_PITCH) {
+				drx_pitch(G, forward_model, derivative);
+			}
+			else if (calc.get_mode() == CMode::DRX_YAW) {
+				drx_yaw(G, forward_model, derivative);
+			}
+			else {
+				glog.errormsg(_SRC_, "Invalid derivative operation.");
+			}
+			return derivative;
+		};
+
+		const TDEmResponse& derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmResponse& forward_model) {
+			TDEmResponse& derivative = WR;
+			if (calc.get_mode() == CMode::DRX_ROLL) {
+				drx_roll(G, forward_model, derivative);
+			}
+			else if (calc.get_mode() == CMode::DRX_PITCH) {
+				drx_pitch(G, forward_model, derivative);
+			}
+			else if (calc.get_mode() == CMode::DRX_YAW) {
+				drx_yaw(G, forward_model, derivative);
+			}
+			else{
+				glog.errormsg(_SRC_,"Invalid derivative operation.");
+			}
+			return derivative;
+		};
+
 		const TDEmResponse& derivative(const CalculationType& calc) {
-			if (calc.get_mode() == CMode::DTXHEIGHT) {
+			if (calc.get_mode() == CMode::DTX_HEIGHT) {
 				// This is because when H changes Z also changes
 				set_calculationtype(CMode::DZ);
-				setprimaryfields();
-				setsecondaryfields();
+				set_primaryfields();
+				set_secondaryfields();
 				TDEmResponse DZ = WR;
 
 				set_calculationtype(CMode::DH);
-				setprimaryfields();
-				setsecondaryfields();
+				set_primaryfields();
+				set_secondaryfields();
 				WR += DZ;
 			}
-			else{
+			else {
 				set_calculationtype(calc);
-				setprimaryfields();
-				setsecondaryfields();
+				set_primaryfields();
+				set_secondaryfields();
 			}
 			return WR;
-		}
+		};
 
 		void set_earth(const Earth1D& earth) {
 			lem().set_earth(earth);
@@ -645,155 +311,73 @@ namespace AEM {
 
 		void setup_computations() {
 			lem().setup_computations();
-		}
-
-		/*
-		void drx_pitch(double xb, double zb, double p, double& dxbdp, double& dzbdp) {
-			//xi = (  xb*cosp  + zb*sinp);Inertial
-			//zi = ( -xb*sinp  + zb*cosp);
-			//xb = (  xi*cosp  - zi*sinp);As bird sees it
-			//zb = (  xi*sinp  + zi*cosp);						
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || 
-				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= RefGeomPrimary[XCOMP];
-				zb *= RefGeomPrimary[ZCOMP];
-			}
-
-			double cosp = cos(D2R<double> *p);
-			double sinp = sin(D2R<double> *p);
-
-			double xi = (xb * cosp + zb * sinp);//convert back to real coordinate system
-			double zi = (-xb * sinp + zb * cosp);
-
-			dxbdp = D2R<double> *(-xi * sinp - zi * cosp);
-			dzbdp = D2R<double> *(+xi * cosp - zi * sinp);
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || 
-				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				//Convert back to PPMS
-				dxbdp /= RefGeomPrimary[XCOMP];
-				dzbdp /= RefGeomPrimary[ZCOMP];
-			}
-		}
-
-		void drx_pitch(std::vector<double> xb, std::vector<double> zb, double p, std::vector<double>& dxbdp, std::vector<double>& dzbdp) {
-			//xi = (  xb*cosp  + zb*sinp);Inertial
-			//zi = ( -xb*sinp  + zb*cosp);
-			//xb = (  xi*cosp  - zi*sinp);As bird sees it
-			//zb = (  xi*sinp  + zi*cosp);
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
-				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				//Must work with true field vector directions, not the PPM scaled versinn
-				xb *= RefGeomPrimary[XCOMP];
-				zb *= RefGeomPrimary[ZCOMP];
-			}
-
-
-			const double cosp = cos(D2R<double>*p);
-			const double sinp = sin(D2R<double>*p);
-
-			//convert back to real coordinate system
-			std::vector<double> xi = ((xb *  cosp) + (zb * sinp));
-			std::vector<double> zi = ((xb * -sinp) + (zb * cosp));
-
-			dxbdp = (xi * -sinp - zi * cosp) * D2R<double>;
-			dzbdp = (xi * cosp - zi * sinp) * D2R<double>;
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
-				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				//Convert back to PPMS
-				dxbdp /= RefGeomPrimary[XCOMP];
-				dzbdp /= RefGeomPrimary[ZCOMP];
-			}
-		}
-
-		void drx_roll(double yb, double zb, double r, double& dybdr, double& dzbdr) {
-			//yi = (  yb*cosr  - zb*sinr);Inertial
-			//zi = (  yb*sinr  + zb*cosr);
-			//yb = (  yi*cosr  + zi*sinr);As bird sees it
-			//zb = ( -yi*sinr  + zi*cosr);						
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
-				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= RefGeomPrimary[YCOMP];
-				zb *= RefGeomPrimary[ZCOMP];
-			}
-
-			double cosr = cos(D2R<double> *r);
-			double sinr = sin(D2R<double> *r);
-
-			double yi = (yb * cosr - zb * sinr);//convert back to real coordinate system
-			double zi = (yb * sinr + zb * cosr);
-
-			dybdr = D2R<double> *(-yi * sinr + zi * cosr);
-			dzbdr = D2R<double> *(-yi * cosr - zi * sinr);
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
-				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				//Convert back to PPMS
-				dybdr /= RefGeomPrimary[YCOMP];
-				dzbdr /= RefGeomPrimary[ZCOMP];
-			}
-		}
-
-		void  drx_roll(std::vector<double> yb, std::vector<double> zb, double r, std::vector<double>& dybdr, std::vector<double>& dzbdr) {
-			//yi = (  yb*cosr  - zb*sinr);Inertial
-			//zi = (  yb*sinr  + zb*cosr);
-			//yb = (  yi*cosr  + zi*sinr);As bird sees it
-			//zb = ( -yi*sinr  + zi*cosr);						
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
-				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				//Must work with true field vector directions, not the PPM scaled versinn
-				yb *= RefGeomPrimary[YCOMP];
-				zb *= RefGeomPrimary[ZCOMP];
-			}
-
-			double cosr = cos(D2R<double> *r);
-			double sinr = sin(D2R<double> *r);
-
-			//convert back to real coordinate system
-			std::vector<double> yi = (yb * cosr - zb * sinr);
-			std::vector<double> zi = (yb * sinr + zb * cosr);
-
-			dybdr = (yi * -sinr + zi * cosr) * D2R<double>;
-			dzbdr = (yi * -cosr - zi * sinr) * D2R<double>;
-
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM ||
-				MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				//Convert back to PPMS
-				dybdr /= RefGeomPrimary[YCOMP];
-				dzbdr /= RefGeomPrimary[ZCOMP];
-			}
-		}*/
-
-		void drx_roll_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
-			Mat3d dM = g.rx_roll_derivative_matrix();
-			apply_rx_derivative_matrix(dM, fields, derivatives);
-		};
-
-		void drx_pitch_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
-			Mat3d dM = g.rx_pitch_derivative_matrix();
-			apply_rx_derivative_matrix(dM, fields, derivatives);
-		};
-
-		void drx_yaw_new(const TDEmGeometry& g, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
-			Mat3d dM = g.rx_yaw_derivative_matrix();
-			apply_rx_derivative_matrix(dM, fields, derivatives);
 		};
 
 	private:
 
-		void setprimaryfields() {
+		void drx_roll(const TDEmGeometry& G, const TDEmVectorResponse& forward_model, TDEmVectorResponse& derivatives) const {
+			const Mat3d dM = G.rx_roll_derivative_matrix();
+			apply_rx_derivative_matrix(dM, forward_model, derivatives);
+		};
+
+		void drx_pitch(const TDEmGeometry& G, const TDEmVectorResponse& forward_model, TDEmVectorResponse& derivatives) const {
+			const Mat3d dM = G.rx_pitch_derivative_matrix();
+			apply_rx_derivative_matrix(dM, forward_model, derivatives);
+		};
+
+		void drx_yaw(const TDEmGeometry& G, const TDEmVectorResponse& forward_model, TDEmVectorResponse& derivatives) const {
+			const Mat3d dM = G.rx_yaw_derivative_matrix();
+			apply_rx_derivative_matrix(dM, forward_model, derivatives);
+		};
+
+		void drx_roll(const TDEmGeometry& G, const TDEmResponse& forward_model, TDEmResponse& derivatives) const {
+			const Mat3d dM = G.rx_roll_derivative_matrix();
+			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
+			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
+		};
+
+		void drx_pitch(const TDEmGeometry& G, const TDEmResponse& forward_model, TDEmResponse& derivatives) const {
+			const Mat3d dM = G.rx_pitch_derivative_matrix();
+			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
+			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
+		};
+
+		void drx_yaw(const TDEmGeometry& G, const TDEmResponse& forward_model, TDEmResponse& derivatives) const {
+			const Mat3d dM = G.rx_yaw_derivative_matrix();
+			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
+			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
+		};
+
+		void apply_rx_derivative_matrix(const Mat3d& dM, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
+			const size_t n = fields.nWindows();
+			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
+				for (size_t i = 0; i < n; i++) {
+					Vec3d ftrue = fields.get_vec3d(i);
+					//Must work with true field vector directions (not the PPM scaled versinn)
+					ftrue[XCOMP] *= RefGeomPrimary[XCOMP];
+					ftrue[YCOMP] *= RefGeomPrimary[YCOMP];
+					ftrue[ZCOMP] *= RefGeomPrimary[ZCOMP];
+					derivatives.set_vec3d(i, dM * ftrue);
+					//Convert back to PPMS
+					derivatives[XCOMP][i] /= RefGeomPrimary[XCOMP];
+					derivatives[YCOMP][i] /= RefGeomPrimary[YCOMP];
+					derivatives[ZCOMP][i] /= RefGeomPrimary[ZCOMP];
+				}
+			}
+			else {
+				for (size_t wi = 0; wi < n; wi++) {
+					derivatives.set_vec3d(wi, dM * fields.get_vec3d(wi));
+				}
+			}
+		};
+
+		void set_primaryfields() {
 			Vec3d v = lem().primaryfield_inertial();
 			//std::cout << v << std::endl;
 
 			// Rotate field to Rx frame
 			v = RotMatrixToRxFrame * v;
+			//std::cout << v << std::endl;
 
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				v *= 2.0;
@@ -804,12 +388,25 @@ namespace AEM {
 				v *= Tx.PeakdIdT;
 			}
 
-			WR.P[XCOMP][0] = v.x() * Scale[XCOMP];
-			WR.P[YCOMP][0] = v.y() * Scale[YCOMP];
-			WR.P[ZCOMP][0] = v.z() * Scale[ZCOMP];
+			v[XCOMP] *= Scale[XCOMP];
+			v[YCOMP] *= Scale[YCOMP];
+			v[ZCOMP] *= Scale[ZCOMP];
+
+			//WR.P[XCOMP][0] = v.x() * Scale[XCOMP];
+			//WR.P[YCOMP][0] = v.y() * Scale[YCOMP];
+			//WR.P[ZCOMP][0] = v.z() * Scale[ZCOMP];
+			//for (size_t wi = 1; wi < nWindows(); wi++) {
+			//	WR.P[XCOMP][wi] = WR.P[XCOMP][0];
+			//	WR.P[YCOMP][wi] = WR.P[XCOMP][0];
+			//	WR.P[ZCOMP][wi] = WR.P[XCOMP][0];
+			//}
+
+			std::fill(WR.P[XCOMP].begin(), WR.P[XCOMP].end(), v[XCOMP]);
+			std::fill(WR.P[YCOMP].begin(), WR.P[YCOMP].end(), v[YCOMP]);
+			std::fill(WR.P[ZCOMP].begin(), WR.P[ZCOMP].end(), v[ZCOMP]);
 		};
 
-		void setsecondaryfields() {
+		void set_secondaryfields() {
 			//Computation for discrete frequencies 	
 			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
 				Vec3cd v = lem().secondaryfield_inertial(fi);
@@ -842,32 +439,9 @@ namespace AEM {
 			}
 		}
 
-		void setup_nwindows() {
+		void set_nwindows() {
 			WR.set_nWindows(nWindows());
-		}
-
-		void apply_rx_derivative_matrix(const Mat3d& dM, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
-			const size_t n = fields.nWindows();
-			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				for (size_t i = 0; i < n; i++) {
-					Vec3d ftrue = fields.get_vec3d(i);
-					//Must work with true field vector directions (not the PPM scaled versinn)
-					ftrue[XCOMP] *= RefGeomPrimary[XCOMP];
-					ftrue[YCOMP] *= RefGeomPrimary[YCOMP];
-					ftrue[ZCOMP] *= RefGeomPrimary[ZCOMP];
-					derivatives.set_vec3d(i, dM * ftrue);
-					//Convert back to PPMS
-					derivatives[XCOMP][i] /= RefGeomPrimary[XCOMP];
-					derivatives[YCOMP][i] /= RefGeomPrimary[YCOMP];
-					derivatives[ZCOMP][i] /= RefGeomPrimary[ZCOMP];
-				}
-			}
-			else {
-				for (size_t wi = 0; wi < n; wi++) {
-					derivatives.set_vec3d(wi,dM * fields.get_vec3d(wi));
-				}
-			}
-		}
+		};
 
 		void setup_transforms() {
 			WvForm.NumFrequencies = WvForm.NumSamples / 2 + 1;
@@ -889,7 +463,7 @@ namespace AEM {
 			ForwardFFTPlan.execute();
 			const double scale = 1.0 / (double)WvForm.NumSamples;
 			WvForm.FD_Waveform *= scale; // Scale the spectrum
-			
+
 			bool convert_B_2_dBdT = false;
 			bool convert_dBdT_2_B = false;
 			if (WvForm.Type == Waveform::Type::TX) {
@@ -928,19 +502,19 @@ namespace AEM {
 			}
 
 			// FFTW_MEASURE does not seem to be thread safe
-			#if defined MULTITHREADED
-				unsigned int FFTW_FLAGS = FFTW_ESTIMATE;
-			#else
-				unsigned int FFTW_FLAGS = FFTW_MEASURE;
-			#endif
+#if defined MULTITHREADED
+			unsigned int FFTW_FLAGS = FFTW_ESTIMATE;
+#else
+			unsigned int FFTW_FLAGS = FFTW_MEASURE;
+#endif
 
 			InverseFFTPlan.setplan(fftw_plan_dft_c2r_1d(N, (fftw_complex*)WvForm.FFT_WorkArray.data(), (double*)WvForm.FFT_WorkArray.data(), FFTW_FLAGS));
-		}
+		};
 
 		void setup_scaling() {
 			Tx.PeakdIdT = WvForm.compute_peak_didt();
-			double tx_scale = MUZERO<double> * Tx.LoopArea * Tx.NumberOfTurns * Tx.PeakCurrent;
-			
+			double tx_scale = MUZERO<double> *Tx.LoopArea * Tx.NumberOfTurns * Tx.PeakCurrent;
+
 			//ModellingOptions
 			Scale[XCOMP] = tx_scale * MO.XOutputScaling;
 			Scale[YCOMP] = tx_scale * MO.YOutputScaling;
@@ -955,7 +529,7 @@ namespace AEM {
 				//Todo check this is working okay
 				TDEmGeometry NormalizationGeometry(b);
 				set_geometry(NormalizationGeometry);
-				setprimaryfields();
+				set_primaryfields();
 
 				double s = 1.0;
 				if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM) {
@@ -971,7 +545,7 @@ namespace AEM {
 					else Scale[ci] *= (s / RefGeomPrimary[ci]);
 				}
 			}
-		}
+		};
 
 		void setup_discrete_frequencies() {
 			double lf1 = log10(WvForm.BaseFrequency);
@@ -996,7 +570,7 @@ namespace AEM {
 				DiscreteFrequencies[fi] = pow(10.0, DiscreteFrequenciesLog10[fi]);
 			}
 			lem().initialise(DiscreteFrequencies, MO.NumAbscissa, MO.ModellingLoopRadius);
-		}
+		};
 
 		void setup_splines() {
 			Component.resize(NCOMP);
@@ -1047,7 +621,7 @@ namespace AEM {
 			}
 			// Scale
 			WR.S[component] *= Scale[component];
-		}
+		};
 
 		void write_discretefrequencies(const fs::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
@@ -1060,7 +634,7 @@ namespace AEM {
 					Component[ZCOMP].IR_discrete_real[i],
 					Component[ZCOMP].IR_discrete_imag[i]);
 			}
-		}
+		};
 
 		void write_splinedfrequencies(const fs::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
@@ -1075,7 +649,7 @@ namespace AEM {
 					Component[ZCOMP].IR_splined[i].real(),
 					Component[ZCOMP].IR_splined[i].imag());
 			}
-		}
+		};
 
 		void write_timesseries(const std::string& path) const {
 			std::ofstream ofs = ofstream_ex(path);
@@ -1083,7 +657,7 @@ namespace AEM {
 			for (size_t i = 0; i < WvForm.NumSamples; i++) {
 				ofs << strprint("%20.10le\t%20.10le\n", WvForm.Time[i], ts[i]);
 			}
-		}
+		};
 	};
 };
 

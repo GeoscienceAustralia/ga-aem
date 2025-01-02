@@ -25,8 +25,8 @@ namespace AEM {
 namespace LEM1 {
 	using cdouble = std::complex<double>;
 	using cvector = std::vector<std::complex<double>>;
-	using CalculationType = CT::CalculationType;
-	using CMode = CT::CalculationType::Mode;
+	using CalculationType = AEM::CalculationType;
+	using CMode = AEM::CalculationType::Mode;
 	enum class RZeroMethod { PROPOGATIONMATRIX, RECURSIVE };
 	constexpr double DefaultLowerFractionalWidth = 4.44;
 	constexpr double DefaultUpperFractionalWidth = 1.84;

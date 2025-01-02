@@ -31,9 +31,9 @@ public:
 	std::vector<TDEmResponse> predicted;
 	std::string units;
 	
-	bool invertXPlusZ = false;
-	bool invertPrimaryPlusSecondary = false;
-	bool reconstructPrimary = false;
+	bool InvertXZAmplitude = false;
+	bool InvertPrimaryPlusSecondary = false;
+	bool ReconstructPrimary = false;
 	
 	cTDEmSystemInfo(cBlock& b, const size_t nsoundings) :
 		T(TDEmSystem(b.getstringvalue("SystemFile")))
@@ -53,9 +53,14 @@ public:
 			glog.errormsg(_SRC_, "InvertTotalField is no longer an option, use InvertPrimaryPlusSecondary instead\n");
 		};
 
-		invertXPlusZ = b.getboolvalue("InvertXPlusZ");
-		invertPrimaryPlusSecondary = b.getboolvalue("InvertPrimaryPlusSecondary");
-		reconstructPrimary = b.getboolvalue("ReconstructPrimaryFieldFromInputGeometry");
+		//bool status = false;
+		if (b.getvalue("InvertXPlusZ", InvertXZAmplitude)) {
+			glog.warningmsg("'InvertXPlusZ' is deprecated, please use 'InvertXZAmplitude' instead.");
+		}
+		else (b.getvalue("InvertXZAmplitude", InvertXZAmplitude));
+
+		InvertPrimaryPlusSecondary = b.getboolvalue("InvertPrimaryPlusSecondary");
+		ReconstructPrimary = b.getboolvalue("ReconstructPrimaryFieldFromInputGeometry");
 
 		CompInfo[XCOMP].initialise(b.findblock("XComponent"), "X", nwindows, nsoundings);
 		CompInfo[YCOMP].initialise(b.findblock("YComponent"), "Y", nwindows, nsoundings);
@@ -66,7 +71,7 @@ public:
 		if (CompInfo[YCOMP].Use) ncomps++;
 		if (CompInfo[ZCOMP].Use) ncomps++;
 
-		if (invertXPlusZ) {
+		if (InvertXZAmplitude) {
 			CompInfo[XCOMP].Use = true;
 			CompInfo[ZCOMP].Use = true;
 		}

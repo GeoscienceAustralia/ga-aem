@@ -133,7 +133,7 @@ static int writeoutputrecord(const bool& csvoutput, std::ofstream& ofsout, size_
 	ofsout << strprint(" %15g%c", R.primary(YCOMP), delim);
 	ofsout << strprint(" %15g%c", R.primary(ZCOMP), delim);
 
-	const size_t nw = R.size();
+	const size_t nw = R.nWindows();
 	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.secondary(XCOMP, i), delim);
 	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.secondary(YCOMP, i), delim);
 	for (size_t i = 0; i < nw; i++) ofsout << strprint(" %15g%c", R.secondary(ZCOMP, i), delim);
@@ -207,7 +207,7 @@ static int process(std::string controlfilename)
 
 		TDEmResponse R = T.forward_model(E, G);
 
-		if (recnum == 1) writecsvheader(ofsout, R.size());
+		if (recnum == 1) writecsvheader(ofsout, R.nWindows());
 		writeoutputrecord(csvoutput, ofsout, recnum, T, R);
 		recnum++;
 	};

@@ -554,7 +554,7 @@ public:
 		return SV[sysi].CompInfo[ci].fdSF.solve;
 	}
 
-	bool solve_scalingfactors() {
+	bool solve_scalingfactors() const {
 		if (nScalingParam > 0) return true;
 		else return false;
 	}
@@ -630,8 +630,7 @@ public:
 		return pi;
 	}
 
-	void openlogfile()
-	{
+	void openlogfile() {
 		glog.logmsg(0, "Opening log file %s\n", OO.LogFile.c_str());
 		glog.open(OO.LogFile);
 		glog.logmsg(0, "%s\n", CommandLine.c_str());
@@ -1564,7 +1563,7 @@ public:
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
 				cTDEmSystemInfo& S = SV[sysi];
-				if (S.invertXPlusZ) {
+				if (S.InvertXZAmplitude) {
 					nAllData += S.nwindows;
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
 						_dindex_[si][sysi][XZAMP][wi] = di;
@@ -1604,20 +1603,20 @@ public:
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
 				cTDEmSystemInfo& S = SV[sysi];
 				TDEmSystem& T = S.T;
-				if (S.reconstructPrimary) {
+				if (S.ReconstructPrimary) {
 					TDEmVectorResponse P = T.forward_model_primary_field(G[si].tfr);
 					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = P(XCOMP,0);
 					if (S.CompInfo[YCOMP].Use) S.CompInfo[YCOMP].data[si].P = P(YCOMP,0);
 					if (S.CompInfo[ZCOMP].Use) S.CompInfo[ZCOMP].data[si].P = P(ZCOMP,0);
 				}
 
-				if (S.invertXPlusZ) {
+				if (S.InvertXZAmplitude) {
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
 						//XZ Amplitude						
 						int di = dindex(si, sysi, XZAMP, wi);
 						double X = S.CompInfo[XCOMP].data[si].S[wi];
 						double Z = S.CompInfo[ZCOMP].data[si].S[wi];
-						if (S.invertPrimaryPlusSecondary) {
+						if (S.InvertPrimaryPlusSecondary) {
 							X += S.CompInfo[XCOMP].data[si].P;
 							Z += S.CompInfo[ZCOMP].data[si].P;
 						}
@@ -1636,7 +1635,7 @@ public:
 						if (S.CompInfo[YCOMP].Use) {
 							int di = dindex(si, sysi, YCOMP, wi);
 							obs[di] = S.CompInfo[YCOMP].data[si].S[wi];
-							if (S.invertPrimaryPlusSecondary) {
+							if (S.InvertPrimaryPlusSecondary) {
 								obs[di] += S.CompInfo[YCOMP].data[si].P;
 							}
 							err[di] = S.CompInfo[YCOMP].data[si].E[wi];
@@ -1649,7 +1648,7 @@ public:
 						for (size_t wi = 0; wi < S.nwindows; wi++) {
 							int di = dindex(si, sysi, ci, wi);
 							obs[di] = S.CompInfo[ci].data[si].S[wi];
-							if (S.invertPrimaryPlusSecondary) {
+							if (S.InvertPrimaryPlusSecondary) {
 								obs[di] += S.CompInfo[ci].data[si].P;
 							}
 							err[di] = S.CompInfo[ci].data[si].E[wi];
@@ -1717,15 +1716,17 @@ public:
 				}
 			}
 
-			//Scaling params				
-			for (size_t sysi = 0; sysi < SV.size(); sysi++) {
-				for (size_t ci = 0; ci < 3; ci++) {
-					const int pi = scalefactor_pindex(sysi, ci);
-					if (pi >= 0) {
-						double ref = SV[sysi].CompInfo[ci].SF.ref;
-						double std = SV[sysi].CompInfo[ci].SF.std;
-						RefParam[pi] = SV[sysi].CompInfo[ci].SF.ref;
-						RefParamStd[pi] = SV[sysi].CompInfo[ci].SF.std;
+			//Scaling params
+			if (solve_scalingfactors()) {
+				for (size_t sysi = 0; sysi < SV.size(); sysi++) {
+					for (size_t ci = 0; ci < 3; ci++) {
+						const int pi = scalefactor_pindex(sysi, ci);
+						if (pi >= 0) {
+							double ref = SV[sysi].CompInfo[ci].SF.ref;
+							double std = SV[sysi].CompInfo[ci].SF.std;
+							RefParam[pi] = SV[sysi].CompInfo[ci].SF.ref;
+							RefParamStd[pi] = SV[sysi].CompInfo[ci].SF.std;
+						}
 					}
 				}
 			}
@@ -1930,36 +1931,34 @@ public:
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
 			cTDEmSystemInfo& S = SV[sysi];
 			TDEmSystem& T = S.T;
-
-			Vec3d scalefactors = get_scalefactors(sysi, parameters);
-
 			const size_t& nw = T.nWindows();
+
+			Vec3d scalefactors(1.0, 1.0, 1.0);
+			const bool solvesf = solve_scalingfactors();
+			if (solvesf) scalefactors = get_scalefactors(sysi, parameters);
+
 			for (size_t si = 0; si < nSoundings; si++) {
 				const Earth1D& e = ev[si];
 				const TDEmGeometry& g = gv[si];
 				
 				// R is a reference to the Work Response struct
 				const TDEmResponse& R = T.forward_model(e, g);
-				
-				TDEmVectorResponse FM = R.S;
+				//std::cout << R << std::endl;
 
-				const size_t& nw = T.nWindows();
-				if (S.invertPrimaryPlusSecondary) {
-					//FM += T.get_primary_vector_response();
-					FM += R.P;
-				}
+				TDEmVectorResponse FM;
+				if (S.InvertPrimaryPlusSecondary) FM = R.totalfield();
+				else FM = R.S;
+				//std::cout << FM << std::endl;
 
-				if (scalefactors[XCOMP] != 1.0 || scalefactors[YCOMP] != 1.0 || scalefactors[ZCOMP] != 1.0){
-					FM.scale_components(scalefactors);
-				}
+				if(solvesf) FM.scale_components(scalefactors);
 
 				TDEmScalarResponse XZFM;
-				if (S.invertXPlusZ) {
+				if (S.InvertXZAmplitude) {
 					XZFM = FM.xzamp();
 				}
 
 				// Predicted
-				if (S.invertXPlusZ) {
+				if (S.InvertXZAmplitude) {
 					for (size_t wi = 0; wi < nw; wi++) {
 						const int& di = dindex(si, sysi, XZAMP, wi);
 						pred_all[di] = XZFM[wi];
@@ -1980,19 +1979,22 @@ public:
 
 				// Jacobian
 				if (computederivatives) {
-					TDEmVectorResponse DRV = FM;
+					TDEmVectorResponse DRV;
 
 					// Scale factor derivatives
-					for (size_t ci = 0; ci < NCOMP; ci++) {
-						if (S.CompInfo[ci].Use) {
-							const int pindex = scalefactor_pindex(sysi, ci);
-							if (pindex >= 0) {
-								// Here filling with the forward itself as derivative w.r.t scale factor param is the forward model itself
-								// But zero for other components
-								Vec3d f(0,0,0);
-								f[ci] = 1.0;
-								DRV.scale_components(f);
-								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+					if (solvesf) {
+						for (size_t ci = 0; ci < NCOMP; ci++) {
+							if (S.CompInfo[ci].Use) {
+								const int pindex = scalefactor_pindex(sysi, ci);
+								if (pindex >= 0) {
+									DRV = FM;
+									// Here filling with the forward itself as derivative w.r.t scale factor param is the forward model itself
+									// But zero for other components
+									Vec3d f(0, 0, 0);
+									f[ci] = 1.0;
+									DRV.scale_components(f);
+									fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+								}
 							}
 						}
 					}
@@ -2001,11 +2003,14 @@ public:
 						for (size_t li = 0; li < nLayers; li++) {
 							const int pindex = cindex(si, li);
 							T.derivative(CalculationType(CMode::DC, li));
-							DRV = R.S;
-							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.P;
+							if (S.InvertPrimaryPlusSecondary) DRV = R.totalfield();
+							else DRV = R.S;
 							//multiply by natural log(10) as parameters are in logbase10 units
 							const double f = log(10.0) * e.conductivity[li];
 							DRV *= f;
+							if (solvesf) DRV.scale_components(scalefactors);
+							//std::cout << FM << std::endl;
+							//std::cout << DRV << std::endl;
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 						}
 					}
@@ -2014,11 +2019,12 @@ public:
 						for (size_t li = 0; li < nLayers - 1; li++) {
 							const int pindex = tindex(si, li);
 							T.derivative(CalculationType(CMode::DT, li));
-							DRV = R.S;
-							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.P;
+							if (S.InvertPrimaryPlusSecondary) DRV = R.totalfield();
+							else DRV = R.S;
 							//multiply by natural log(10) as parameters are in logbase10 units
 							double f = log(10.0) * e.thickness[li];
 							DRV *= f;
+							if (solvesf) DRV.scale_components(scalefactors);
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 						}
 					}
@@ -2026,45 +2032,62 @@ public:
 					if (FreeGeometry) {
 						if (solve_geometry_element("tx_height")) {
 							const size_t pindex = gindex(si, "tx_height");
-							T.derivative(CalculationType(CMode::DH));
-							DRV = R.S;
-							// Will be zero --- if (S.invertPrimaryPlusSecondary) DRV += T.P;
+							T.derivative(CalculationType(CMode::DTX_HEIGHT));
+							if (S.InvertPrimaryPlusSecondary) DRV = R.totalfield();
+							else DRV = R.S;
+							if (solvesf) DRV.scale_components(scalefactors);
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 						}
 
 						if (solve_geometry_element("txrx_dx")) {
 							const size_t pindex = gindex(si, "txrx_dx");
 							T.derivative(CalculationType(CMode::DX));
-							DRV = R.S;
-							if (S.invertPrimaryPlusSecondary) DRV += R.P;
+							if (S.InvertPrimaryPlusSecondary) DRV = R.totalfield();
+							else DRV = R.S;
+							if (solvesf) DRV.scale_components(scalefactors);
+							//std::cout << FM << std::endl;
+							//std::cout << DRV << std::endl;
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 						}
 
 						if (solve_geometry_element("txrx_dy")) {
 							const size_t pindex = gindex(si, "txrx_dy");
 							T.derivative(CalculationType(CMode::DY));
-							DRV = R.S;
-							if (S.invertPrimaryPlusSecondary) DRV += R.P;
+							if (S.InvertPrimaryPlusSecondary) DRV = R.totalfield();
+							else DRV = R.S;
+							if (solvesf) DRV.scale_components(scalefactors);
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 						}
 
 						if (solve_geometry_element("txrx_dz")) {
 							const size_t pindex = gindex(si, "txrx_dz");
 							T.derivative(CalculationType(CMode::DZ));
-							DRV = R.S;
-							if (S.invertPrimaryPlusSecondary) DRV += R.P;
-							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
-						}
-
-						if (solve_geometry_element("rx_pitch")) {
-							const size_t pindex = gindex(si, "rx_pitch");
-							T.drx_pitch_new(g, FM, DRV);
+							if (S.InvertPrimaryPlusSecondary) DRV = R.totalfield();
+							else DRV = R.S;
+							if (solvesf) DRV.scale_components(scalefactors);
+							//std::cout << FM << std::endl;
+							//std::cout << DRV << std::endl;
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 						}
 
 						if (solve_geometry_element("rx_roll")) {
 							const size_t pindex = gindex(si, "rx_roll");
-							T.drx_roll_new(g, FM, DRV);
+							DRV = T.derivative(CalculationType(CMode::DRX_ROLL), g, FM);
+							if (solvesf) DRV.scale_components(scalefactors);
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+
+						if (solve_geometry_element("rx_pitch")) {
+							const size_t pindex = gindex(si, "rx_pitch");
+							DRV = T.derivative(CalculationType(CMode::DRX_PITCH), g, FM);
+							if (solvesf) DRV.scale_components(scalefactors);
+							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+						}
+
+						if (solve_geometry_element("rx_yaw")) {
+							const size_t pindex = gindex(si, "rx_yaw");
+							DRV = T.derivative(CalculationType(CMode::DRX_YAW), g, FM);
+							if (solvesf) DRV.scale_components(scalefactors);
 							fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 						}
 					}
@@ -2092,10 +2115,10 @@ public:
 	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const TDEmVectorResponse& FM, const TDEmScalarResponse& XZFM, const TDEmVectorResponse& DRV) {
 		const cTDEmSystemInfo& S = SV[sysi];
 		const size_t& nw = S.T.nWindows();
-		if (S.invertXPlusZ) {
+		if (S.InvertXZAmplitude) {
 			// dr/dp = (x/r)dx/dp + (y/r)dy/dp
 			for (size_t wi = 0; wi < nw; wi++) {
-				M(dindex(si, sysi, XZAMP, wi), pindex) = (FM[wi][XCOMP] * DRV[XCOMP][wi] + FM[ZCOMP][wi] * DRV[ZCOMP][wi]) / XZFM[wi];
+				M(dindex(si, sysi, XZAMP, wi), pindex) = (FM[XCOMP][wi] * DRV[XCOMP][wi] + FM[ZCOMP][wi] * DRV[ZCOMP][wi]) / XZFM[wi];
 			}
 
 			if (S.CompInfo[YCOMP].Use) {
@@ -2820,12 +2843,12 @@ public:
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
 				cTDEmSystemInfo& S = SV[sysi];
 				bool reconstructedprimaryflag = false;
-				if (S.reconstructPrimary) reconstructedprimaryflag = true;//Only do this for the observed data but not for predicted data or noise
+				if (S.ReconstructPrimary) reconstructedprimaryflag = true;//Only do this for the observed data but not for predicted data or noise
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name,
 						"observed", "Observed",
-						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.invertPrimaryPlusSecondary, S.units, reconstructedprimaryflag);
+						'E', 15, 6, S.CompInfo[ci].data[si].P, S.CompInfo[ci].data[si].S, S.InvertPrimaryPlusSecondary, S.units, reconstructedprimaryflag);
 				}
 			}
 		}
@@ -2853,7 +2876,7 @@ public:
 						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
 						S.predicted[si].primary(ci),
 						S.predicted[si].secondary(ci),
-						S.invertPrimaryPlusSecondary, S.units);
+						S.InvertPrimaryPlusSecondary, S.units);
 				}
 			}
 		}

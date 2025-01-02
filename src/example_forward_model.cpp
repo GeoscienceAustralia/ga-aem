@@ -7,7 +7,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 /* Example driver program for simple forward model*/
-
 #include <vector>
 #include <cstring>
 #include <iostream>
@@ -23,8 +22,7 @@ class cLogger glog; //The global instance of the log file manager
 
 using namespace AEM;
 
-int skytem_example_ip()
-{
+int skytem_example_ip() {
 	//Load the AEM system specification files for the Skytem moments //only do this once				
 	//TDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");	
 	TDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
@@ -239,29 +237,22 @@ static void test_derivatives() {
 	R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
 
 	std::cout << "Tx Height derivative" << std::endl;
-	DA = T.derivative(CalculationType(CalculationType::Mode::DTXHEIGHT));
+	DA = T.derivative(CalculationType(CalculationType::Mode::DTX_HEIGHT));
 	G1 = G; // Rx moves with Tx
 	G1.tx_height += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
 	
 	delta = 0.001; // 0.001 degree
 	std::cout << "Rx roll derivative" << std::endl;
-	T.drx_roll_new(G, R.P, DA.P);
-	T.drx_roll_new(G, R.S, DA.S);
+	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_ROLL), G, R);
 	G1 = G; G1.rx_roll += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
 
 	std::cout << "Rx pitch derivative" << std::endl;
-	T.drx_pitch_new(G, R.P, DA.P);
-	T.drx_pitch_new(G, R.S, DA.S);
+	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_PITCH), G, R);
 	G1 = G; G1.rx_pitch += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
 	
 	std::cout << "Rx yaw derivative" << std::endl;
-	T.drx_yaw_new(G, R.P, DA.P);
-	T.drx_yaw_new(G, R.S, DA.S);
-	G1 = G; G1.rx_yaw += delta; 
-	R1 = T.forward_model(E, G1); 
-	DN = (R1 - R) / delta; 
-	PCD = percent_difference(DN, DA); 
-	TDEmResponse::display_max_abs_percent_difference(PCD);
+	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_YAW), G, R);
+	G1 = G; G1.rx_yaw += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
  };
 
 int main(int argc, char* argv[]) {

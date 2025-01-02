@@ -10,11 +10,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "blocklanguage.hpp"
 #include "lem.hpp"
 #include "layeredearthmodeller.hpp"
+#include "aem_coredefs.hpp"
 
 namespace AEM {
 	using namespace LEM2;
-	using CalculationType = CT::CalculationType;
-	using CMode = CT::CalculationType::Mode;
+	using CalculationType = AEM::CalculationType;
+	using CMode = AEM::CalculationType::Mode;
 
 	inline constexpr size_t XCOMP = 0;
 	inline constexpr size_t YCOMP = 1;
@@ -516,3 +517,6 @@ namespace AEM {
 	};
 
 };
+
+
+

@@ -397,39 +397,11 @@ public:
 		return v;
 	}
 
-	/*
-	bool forward_model(const Earth1D& E, const TDEmGeometry & geometry) {
-		T.set_earth(E);
-		T.set_geometry(geometry);
-		T.lem().set_calculationtype(CMode::FM);
-		T.setup_computations();
-		T.setprimaryfields();
-		T.setsecondaryfields();
-		return true;
-	}*/
-
 	bool forward_model_and_derivatives(const Earth1D& E, const TDEmGeometry& geometry, std::vector<double>&predicted, std::vector<std::vector<double>>&derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
 		const size_t nlayers = E.nlayers();
 		const size_t nw = T.nWindows();
 		auto R = T.forward_model(E, geometry);
 		
-		//T.set_earth(E);
-		//T.set_geometry(geometry);
-		//T.lem().set_calculationtype(CMode::FM);
-		//T.setup_computations();
-		//T.setprimaryfields();
-		//T.setsecondaryfields();
-
-		//Save for later derivative calculations
-		//std::vector<double> X = T.XS();
-		//std::vector<double> Y = T.YS();
-		//std::vector<double> Z = T.ZS();
-		//if (InvertTotalField) {
-		//	X += T.PX();
-		//	Y += T.PY();
-		//	Z += T.PZ();
-		//}
-
 		TDEmVectorResponse FM;
 		if (InvertTotalField) FM = R.totalfield();
 		else FM = R.S;
@@ -464,13 +436,13 @@ public:
 
 			for (size_t gi = 0; gi < UGI.size(); gi++) {
 				if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_roll) {	
-					T.drx_roll_new(geometry, FM, DRV);
+					DRV = T.derivative(CMode::DRX_ROLL, geometry, FM);
 				}
 				else if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_pitch) {
-					T.drx_pitch_new(geometry, FM, DRV);
+					DRV = T.derivative(CMode::DRX_PITCH, geometry, FM);
 				}
 				else if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_yaw) {
-					T.drx_yaw_new(geometry, FM, DRV);
+					DRV = T.derivative(CMode::DRX_YAW, geometry, FM);
 				}
 				else {
 					R = T.derivative(TDEmGeometry::derivativetype(UGI[gi]));

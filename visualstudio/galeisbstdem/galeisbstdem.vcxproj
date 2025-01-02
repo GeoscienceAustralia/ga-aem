@@ -110,10 +110,12 @@
     <ClCompile Include="..\..\src\galeisbstdem.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\aemsystem.hpp" />
     <ClInclude Include="..\..\src\aem_coredefs.hpp" />
     <ClInclude Include="..\..\src\airborne_types.hpp" />
     <ClInclude Include="..\..\src\cinverter.hpp" />
     <ClInclude Include="..\..\src\csbsinverter.hpp" />
+    <ClInclude Include="..\..\src\fftwplanwrapper.hpp" />
     <ClInclude Include="..\..\src\fixed_point_spline.hpp" />
     <ClInclude Include="..\..\src\gaaem_version.hpp" />
     <ClInclude Include="..\..\src\inputmanager.hpp" />
@@ -123,6 +125,7 @@
     <ClInclude Include="..\..\src\outputmanager.hpp" />
     <ClInclude Include="..\..\src\tdemcomponentinfo.hpp" />
     <ClInclude Include="..\..\src\tdemgeometry.hpp" />
+    <ClInclude Include="..\..\src\tdemresponse.hpp" />
     <ClInclude Include="..\..\src\tdemsystem.hpp" />
     <ClInclude Include="..\..\src\tdemsysteminfo.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\asciicolumnfile.hpp" />

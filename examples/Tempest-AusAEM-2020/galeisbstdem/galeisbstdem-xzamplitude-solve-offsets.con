@@ -2,7 +2,8 @@ Control Begin
 	
 	EMSystem Begin
 		SystemFile = ../stmfiles/Tempest-25.0Hz.stm
-		InvertXPlusZ = yes								//yes to invert the amplitude of the data in the XZ plane
+		InvertXZAmplitude = yes							//yes to invert the amplitude of the data in the XZ plane
+		//InvertXPlusZ = yes							//yes to invert the amplitude of the data in the XZ plane
 		InvertPrimaryPlusSecondary = yes				//yes to invert the total field (usually only for fixed-wing systems)
 		ReconstructPrimaryFieldFromInputGeometry = no	//yes to reconstruct primary field (from the input TFR geometry) if primary field not supplied in the data file
 
