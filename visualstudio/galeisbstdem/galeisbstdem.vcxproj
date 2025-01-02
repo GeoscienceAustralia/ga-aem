@@ -111,6 +111,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\aemsystem.hpp" />
+    <ClInclude Include="..\..\src\aemsysteminversioninfo.hpp" />
     <ClInclude Include="..\..\src\aem_coredefs.hpp" />
     <ClInclude Include="..\..\src\airborne_types.hpp" />
     <ClInclude Include="..\..\src\cinverter.hpp" />

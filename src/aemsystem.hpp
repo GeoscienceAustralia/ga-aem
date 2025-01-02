@@ -11,6 +11,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "lem.hpp"
 #include "layeredearthmodeller.hpp"
 #include "aem_coredefs.hpp"
+#include "tdemresponse.hpp"
+#include "tdemgeometry.hpp"
 
 namespace AEM {
 	class AEMSystem {
@@ -23,9 +25,22 @@ namespace AEM {
 
 	public:
 
+		AEMSystem() {};
+
+		AEMSystem(const fs::path& descriptorpath) {
+			read_system_descriptor_file(descriptorpath);
+		};
+
 		const cBlock& system_descriptor_block() const { return STM; };
 		LEModeller& lem() { return LEM; };
 
+		virtual void read_system_descriptor_file(const fs::path& systemdescriptorfile) = 0;
+		virtual const size_t& nWindows() const = 0;
+		virtual const TDEmVectorResponse& forward_model_primary_field(const TDEmGeometry& G) = 0;
+		virtual const TDEmResponse& forward_model(const Earth1D& E, const TDEmGeometry& G) = 0;
+		virtual TDEmVectorResponse derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmVectorResponse& forward_model) = 0;
+		virtual const TDEmResponse& derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmResponse& forward_model) = 0;
+		virtual const TDEmResponse& derivative(const CalculationType& calc) = 0;
 	};
 };
 

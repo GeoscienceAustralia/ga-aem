@@ -13,7 +13,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <complex>
 
 #include "aemsystem.hpp"
-#include "tdemresponse.hpp"
 #include "fftwplanwrapper.hpp"
 #include "vector_utils.hpp"
 #include "file_utils.hpp"
