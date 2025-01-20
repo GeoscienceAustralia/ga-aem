@@ -24,6 +24,7 @@ namespace AEM {
 		double invmodel;
 	};
 
+	template <typename ResponseType>
 	class AEMComponentInversionInfo {
 
 	private:
@@ -34,9 +35,9 @@ namespace AEM {
 
 		class SoundingData {
 		public:
-			double  P = 0.0;
-			std::vector<double> S;
-			std::vector<double> E;
+			ResponseType  P = 0.0;
+			std::vector<ResponseType> S;
+			std::vector<ResponseType> E;
 		};
 		std::vector<SoundingData> data;
 
@@ -46,8 +47,8 @@ namespace AEM {
 		cFieldDefinition fdS;
 		cFieldDefinition fdE;
 		bool EstimateNoiseFromModel = false;
-		std::vector<double> mn;
-		std::vector<double> an;
+		std::vector<ResponseType> mn;
+		std::vector<ResponseType> an;
 
 		cInvertibleFieldDefinition fdSF;
 		cScaleFactorsStruct SF;
@@ -125,16 +126,18 @@ namespace AEM {
 		}
 	};
 
+	template <typename ResponseType>
 	class AEMSystemInversionInfo {
 
 	public:
-		std::unique_ptr<AEMSystem> System;
+		
+		std::unique_ptr<AEMSystem<ResponseType>> System;
 		std::string SystemFile;
 		size_t nwindows = 0;
 		size_t ncomps = 0;
 		size_t nchans = 0;
-		AEMComponentInversionInfo CompInfo[NCOMP];
-		std::vector<TDEmResponse> predicted;
+		AEMComponentInversionInfo<ResponseType> CompInfo[NCOMP];		 
+		std::vector<TDEmResponse<ResponseType>> predicted;
 		std::string units;
 
 		bool InvertXZAmplitude = false;

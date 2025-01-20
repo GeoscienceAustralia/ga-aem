@@ -333,6 +333,7 @@ public:
 
 };
 
+template<typename ResponseType>
 class cSBSInverter : public cInverter {
 
 	double ErrorAddition = 0.0;
@@ -367,7 +368,7 @@ class cSBSInverter : public cInverter {
 	std::vector<cGeomStruct> G;
 	std::vector<cEarthStruct> E;
 	cOutputOptions OO;
-	std::vector<AEMSystemInversionInfo> SV;
+	std::vector<AEMSystemInversionInfo<ResponseType>> SV;
 
 	//Column definitions		
 	cInvertibleFieldDefinition fdC;
@@ -1531,7 +1532,7 @@ public:
 			cBlock& b = B[sysi];
 			std::string stmfile = b.getstringvalue("SystemFile");
 			glog.logmsg(0, "Reading system file %s\n", stmfile.c_str());
-			SV.emplace_back(AEMSystemInversionInfo(b, nSoundings));
+			SV.emplace_back(AEMSystemInversionInfo<ResponseType>(b, nSoundings));
 			SV[sysi].set_units(IM.get());
 		}
 		unset_fftw_lock();
@@ -1559,7 +1560,7 @@ public:
 		int di = 0;
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				AEMSystemInversionInfo& S = SV[sysi];
+				auto& S = SV[sysi];
 				if (S.InvertXZAmplitude) {
 					nAllData += S.nwindows;
 					for (size_t wi = 0; wi < S.nwindows; wi++) {
@@ -1576,8 +1577,8 @@ public:
 					}
 				}
 				else {
-					for (size_t ci = 0; ci < 3; ci++) {
-						AEMComponentInversionInfo& c = S.CompInfo[ci];
+					for (size_t ci = 0; ci < NCOMP; ci++) {
+						auto& c = S.CompInfo[ci];
 						if (c.Use) {
 							nAllData += S.nwindows;
 							for (size_t wi = 0; wi < S.nwindows; wi++) {
@@ -1598,8 +1599,8 @@ public:
 
 		for (size_t si = 0; si < nSoundings; si++) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				AEMSystemInversionInfo& S = SV[sysi];
-				AEMSystem& A = *S.System;
+				auto& S = SV[sysi];
+				AEMSystem<ResponseType>& A = *S.System;
 				if (S.ReconstructPrimary) {
 					TDEmVectorResponse P = A.forward_model_primary_field(G[si].tfr);
 					if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = P(XCOMP,0);
@@ -1893,7 +1894,7 @@ public:
 
 	Vec3d get_scalefactors(const size_t sysi, const Vector& parameters) const {
 		Vec3d sf;
-		const AEMSystemInversionInfo& S = SV[sysi];
+		const auto& S = SV[sysi];
 		for (int ci = 0; ci < 3; ci++) {
 			sf[ci] = 1.0;
 			const int pi = scalefactor_pindex(sysi, ci);
@@ -1926,8 +1927,8 @@ public:
 		std::vector<Earth1D> ev = get_earth(parameters);
 		std::vector<TDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			AEMSystemInversionInfo& S = SV[sysi];
-			AEMSystem& A = *S.System;
+			const auto& S = SV[sysi];
+			AEMSystem<ResponseType>& A = *S.System;
 			const size_t& nw = A.nWindows();
 
 			Vec3d scalefactors(1.0, 1.0, 1.0);
@@ -1939,17 +1940,17 @@ public:
 				const TDEmGeometry& g = gv[si];
 				
 				// R is a reference to the Work Response struct
-				const TDEmResponse& R = A.forward_model(e, g);
+				const TDEmResponse<ResponseType>& R = A.forward_model(e, g);
 				//std::cout << R << std::endl;
 
-				TDEmVectorResponse FM;
+				TDEmVectorResponse<ResponseType> FM;
 				if (S.InvertPrimaryPlusSecondary) FM = R.totalfield();
 				else FM = R.S;
 				//std::cout << FM << std::endl;
 
 				if(solvesf) FM.scale_components(scalefactors);
 
-				TDEmScalarResponse XZFM;
+				TDEmScalarResponse<ResponseType> XZFM;
 				if (S.InvertXZAmplitude) {
 					XZFM = FM.xzamp();
 				}
@@ -1976,7 +1977,7 @@ public:
 
 				// Jacobian
 				if (computederivatives) {
-					TDEmVectorResponse DRV;
+					TDEmVectorResponse<ResponseType> DRV;
 
 					// Scale factor derivatives
 					if (solvesf) {
@@ -2109,9 +2110,9 @@ public:
 		}
 	}
 
-	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const TDEmVectorResponse& FM, const TDEmScalarResponse& XZFM, const TDEmVectorResponse& DRV) {
-		const AEMSystemInversionInfo& S = SV[sysi];
-		const AEMSystem& A = *S.System;
+	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const TDEmVectorResponse<double>& FM, const TDEmScalarResponse<double>& XZFM, const TDEmVectorResponse<double>& DRV) {
+		const auto& S = SV[sysi];
+		const AEMSystem<ResponseType>& A = *S.System;
 		const size_t& nw = A.nWindows();
 		if (S.InvertXZAmplitude) {
 			// dr/dp = (x/r)dx/dp + (y/r)dy/dp
@@ -2136,14 +2137,42 @@ public:
 		}
 	}
 
+	/*
+	void fillMatrixColumn(Matrix& M, const size_t& si, const size_t& sysi, const size_t& pindex, const TDEmVectorResponse& FM, const TDEmScalarResponse& XZFM, const TDEmVectorResponse& DRV) {
+		const auto& S = SV[sysi];
+		const AEMSystem& A = *S.System;
+		const size_t& nw = A.nWindows();
+		if (S.InvertXZAmplitude) {
+			// dr/dp = (x/r)dx/dp + (y/r)dy/dp
+			for (size_t wi = 0; wi < nw; wi++) {
+				M(dindex(si, sysi, XZAMP, wi), pindex) = (FM[XCOMP][wi] * DRV[XCOMP][wi] + FM[ZCOMP][wi] * DRV[ZCOMP][wi]) / XZFM[wi];
+			}
+
+			if (S.CompInfo[YCOMP].Use) {
+				for (size_t wi = 0; wi < nw; wi++) {
+					M(dindex(si, sysi, YCOMP, wi), pindex) = DRV[YCOMP][wi];
+				}
+			}
+		}
+		else {
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				if (S.CompInfo[ci].Use) {
+					for (size_t wi = 0; wi < nw; wi++) {
+						M(dindex(si, sysi, ci, wi), pindex) = DRV[ci][wi];
+					}
+				}
+			}
+		}
+	}
+	*/
 	void set_predicted(const Vector& parameters) {
 		std::vector<Earth1D> ev = get_earth(parameters);
 		std::vector<TDEmGeometry> gv = get_geometry(parameters);
 		for (size_t sysi = 0; sysi < nSystems; sysi++) {
-			AEMSystemInversionInfo& S = SV[sysi];
+			auto& S = SV[sysi];
 			S.predicted.resize(nSoundings);
 
-			AEMSystem& A = *S.System;
+			AEMSystem<ResponseType>& A = *S.System;
 			const size_t& nw = A.nWindows();
 			for (size_t si = 0; si < nSoundings; si++) {
 				const Earth1D& e = ev[si];
@@ -2197,9 +2226,9 @@ public:
 
 		//bookmark
 		for (size_t sysi = 0; sysi < SV.size(); sysi++) {
-			AEMSystemInversionInfo& S = SV[sysi];
+			auto& S = SV[sysi];
 			for (size_t ci = 0; ci < 3; ci++) {
-				AEMComponentInversionInfo& C = S.CompInfo[ci];
+				auto& C = S.CompInfo[ci];
 				if (C.fdSF.solve) {
 					IM->read(C.fdSF.ref, C.SF.ref);
 					IM->read(C.fdSF.std, C.SF.std);
@@ -2346,7 +2375,7 @@ public:
 
 	void read_system_data(size_t& sysindex, const size_t& soundingindex)
 	{
-		AEMSystemInversionInfo& S = SV[sysindex];
+		AEMSystemInversionInfo<ResponseType>& S = SV[sysindex];
 		S.CompInfo[XCOMP].readdata(IM, soundingindex);
 		S.CompInfo[YCOMP].readdata(IM, soundingindex);
 		S.CompInfo[ZCOMP].readdata(IM, soundingindex);
@@ -2699,7 +2728,7 @@ public:
 		//Scaling factors
 		if (solve_scalingfactors()) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				AEMSystemInversionInfo& S = SV[sysi];
+				const auto& S = SV[sysi];
 				Vec3d sf = get_scalefactors(sysi, m);
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) {
@@ -2838,7 +2867,7 @@ public:
 		//ObservedData
 		if (OO.ObservedData) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				AEMSystemInversionInfo& S = SV[sysi];
+				const auto& S = SV[sysi];
 				bool reconstructedprimaryflag = false;
 				if (S.ReconstructPrimary) reconstructedprimaryflag = true;//Only do this for the observed data but not for predicted data or noise
 				for (size_t ci = 0; ci < 3; ci++) {
@@ -2854,7 +2883,7 @@ public:
 		//Noise Estimates
 		if (OO.NoiseEstimates) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				AEMSystemInversionInfo& S = SV[sysi];
+				const auto& S = SV[sysi];
 				for (size_t ci = 0; ci < 3; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name,
@@ -2867,8 +2896,8 @@ public:
 		//PredictedData
 		if (OO.PredictedData) {
 			for (size_t sysi = 0; sysi < nSystems; sysi++) {
-				AEMSystemInversionInfo& S = SV[sysi];
-				for (size_t ci = 0; ci < 3; ci++) {
+				const auto& S = SV[sysi];
+				for (size_t ci = 0; ci < NCOMP; ci++) {
 					if (S.CompInfo[ci].Use) writeresult_emdata(pi,
 						sysi, S.CompInfo[ci].Name, "predicted", "Predicted", 'E', 15, 6,
 						S.predicted[si].primary(ci),

@@ -90,8 +90,12 @@
     <ClCompile Include="..\..\src\example_forward_model.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\aemsystem.hpp" />
+    <ClInclude Include="..\..\src\aem_coredefs.hpp" />
     <ClInclude Include="..\..\src\earth1d.hpp" />
     <ClInclude Include="..\..\src\lem.hpp" />
+    <ClInclude Include="..\..\src\spectralaemsystem.hpp" />
+    <ClInclude Include="..\..\src\tdemresponse.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />

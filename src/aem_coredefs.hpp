@@ -42,16 +42,6 @@ namespace AEM {
 
 	};
 
-	class Transmitter {
-
-	public:
-		double LoopArea = 0.0;
-		double NumberOfTurns = 0.0;
-		double PeakCurrent = 0.0;
-		double PeakdIdT = 0.0;
-		Vec3d Reference_Orientation = Vec3d::UnitZ();
-	};
-
 	class Waveform {
 
 	public:
@@ -260,20 +250,42 @@ namespace AEM {
 		}
 	};
 
+	class Transmitter {
+
+	public:
+		double BaseFrequency = 0.0;
+		size_t nTurns = 1;
+		double LoopArea = 1.0;
+		double PeakCurrent = 1.0;
+		double PeakdIdT = 1.0;
+		Vec3d Reference_Orientation = Vec3d::UnitZ();
+
+		Transmitter() {};
+
+		Transmitter(const cBlock& b) {
+			if (b.getvalue("BaseFrequency", BaseFrequency) == false) {
+				glog.errormsg(_SRC_, "A Transmitter BaseFrequency must be specified.\n");
+			};
+			if (b.getvalue("PeakCurrent", PeakCurrent) == false) PeakCurrent = 1.0;
+			if (b.getvalue("LoopArea", LoopArea) == false) LoopArea = 1.0;
+			if (b.getvalue("NumberOfTurns", nTurns) == false) nTurns = 1;
+		};
+	};
+
 	struct WindowSpecification {
 		size_t SampleLow = 0;
 		size_t SampleHigh = 0;
 		size_t NumberOfSamples = 0;
 
-		double TimeLow = 0.0;
-		double TimeHigh = 0.0;
-		double TimeWidth = 0.0;
+		double Low = 0.0;
+		double High = 0.0;
+		double Width = 0.0;
 
 		std::vector<size_t> Sample;
 		std::vector<double> Weight;
 
-		double centre_time() const {
-			return (TimeLow + TimeHigh) / 2.0;
+		double centre() const {
+			return (Low + High) / 2.0;
 		}
 	};
 
@@ -287,12 +299,13 @@ namespace AEM {
 		enum class WeightingMethod { BoxCar, AreaUnderCurve, LinearTaper };
 
 		size_t nwindows = 0;
-		double TimeShift = 0.0;
+		double Shift = 0.0;
 		WeightingMethod Method = WeightingMethod::BoxCar;
 		std::vector<WindowSpecification> Windows;
 
 		WindowingScheme() {};
 
+		/*
 		WindowingScheme(const cBlock& receiverblock, const Waveform& WFM) {
 			const cBlock& b = receiverblock;
 
@@ -300,8 +313,8 @@ namespace AEM {
 				glog.errormsg(_SRC_, "NumberOfWindows is not specified");
 			}
 
-			if (!b.getvalue("TimeShift", TimeShift)) {
-				TimeShift = 0.0;
+			if (!b.getvalue("Shift", Shift)) {
+				Shift = 0.0;
 			}
 
 			Windows.resize(nwindows);
@@ -320,45 +333,90 @@ namespace AEM {
 				if (wt[i].size() != 2) {
 					glog.errormsg(_SRC_, "The number of WindowTimes must have exactly 2 columns (error in window %lu)\n", i + 1);
 				}
-				Windows[i].TimeLow = wt[i][0] + TimeShift;
-				Windows[i].TimeHigh = wt[i][1] + TimeShift;
+				Windows[i].Low = wt[i][0] + Shift;
+				Windows[i].High = wt[i][1] + Shift;
 			}
 
 			std::string wmethod = b.getstringvalue("WindowWeightingScheme");
 			if (strcasecmp(wmethod, "AreaUnderCurve") == 0) {
-				initialise_area(WFM);
+				initialise_area(WFM.Time);
 			}
 			else if (strcasecmp(wmethod, "Boxcar") == 0) {
-				initialise_boxcar(WFM);
+				initialise_boxcar(WFM.Time);
 			}
 			else if (strcasecmp(wmethod, "LinearTaper") == 0) {
-				initialise_lineartaper(WFM);
+				initialise_lineartaper(WFM.Time);
+			}
+			else glog.errormsg(_SRC_, "WindowWeightingScheme %s unknown (must be \"AreaUnderCurve\" or  \"Boxcar\" or \"LinearTaper\")\n", wmethod.c_str());
+		}
+		*/
+		WindowingScheme(const cBlock& receiverblock, const std::vector<double> series) {
+			const cBlock& b = receiverblock;
+
+			if (!b.getvalue("NumberOfWindows", nwindows)) {
+				glog.errormsg(_SRC_, "NumberOfWindows is not specified");
+			}
+
+			if (!b.getvalue("Shift", Shift)) {
+				Shift = 0.0;
+			}
+
+			Windows.resize(nwindows);
+
+			//Read window times
+			std::vector<std::vector<double>> w;
+			if(b.getvalue("WindowTimes", w)) {
+				glog.warningmsg("'WindowTimes' is deprecated. Please use 'Windows' instead.\n");
+			}
+			else if (!b.getvalue("Windows", w)) {
+				glog.errormsg(_SRC_, "The Windows have not been specified.");
+			}
+			size_t nw = w.size();
+			if (nw != nwindows) {
+				glog.errormsg(_SRC_, "The number of Windows does not match the NumberOfWindows\n");
+			}
+
+			for (size_t i = 0; i < nwindows; i++) {
+				if (w[i].size() != 2) {
+					glog.errormsg(_SRC_, "The number of WindowFrequencies must have exactly 2 columns (error in window %lu)\n", i + 1);
+				}
+				Windows[i].Low = w[i][0] + Shift;
+				Windows[i].High = w[i][1] + Shift;
+			}
+
+			std::string wmethod = b.getstringvalue("WindowWeightingScheme");
+			if (strcasecmp(wmethod, "AreaUnderCurve") == 0) {
+				initialise_area(series);
+			}
+			else if (strcasecmp(wmethod, "Boxcar") == 0) {
+				initialise_boxcar(series);
+			}
+			else if (strcasecmp(wmethod, "LinearTaper") == 0) {
+				initialise_lineartaper(series);
 			}
 			else glog.errormsg(_SRC_, "WindowWeightingScheme %s unknown (must be \"AreaUnderCurve\" or  \"Boxcar\" or \"LinearTaper\")\n", wmethod.c_str());
 		}
 
 		const size_t& nWindows() const { return nwindows; }
 
-		void initialise_area(const Waveform& WFM) {
-			double tlow, thigh, t, tp, tn, tleft, tright;
-
-			double dwt = WFM.Time[1] - WFM.Time[0];
+		void initialise_area(const std::vector<double>& series) {
+			double dwt = series[1] - series[0];
 			double eps = 1.0e-7;
 
 			for (size_t w = 0; w < nwindows; w++) {
-				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
-				for (size_t s = 0; s < WFM.NumSamples; s++) {
-					t = WFM.Time[s];
-					if (t + eps >= Windows[w].TimeLow) {
+				Windows[w].Width = Windows[w].High - Windows[w].Low;
+				for (size_t s = 0; s < series.size(); s++) {
+					const double& t = series[s];
+					if (t + eps >= Windows[w].Low) {
 						Windows[w].SampleLow = s;
 						break;
 					}
 				}
 
-				for (size_t s = WFM.NumSamples; s-- > 0;) {
+				for (size_t s = series.size(); s-- > 0;) {
 					//Note the unusual syntax for decrement of unsigned variable
-					t = WFM.Time[s];
-					if (t - eps <= Windows[w].TimeHigh) {
+					const double& t = series[s];
+					if (t - eps <= Windows[w].High) {
 						Windows[w].SampleHigh = s;
 						break;
 					}
@@ -372,18 +430,18 @@ namespace AEM {
 					Windows[w].Weight[k] = 0.0;
 				}
 
-				tlow = Windows[w].TimeLow;
-				thigh = Windows[w].TimeHigh;
+				const double& tlow = Windows[w].Low;
+				const double& thigh = Windows[w].High;
 				double wsum = 0;
 				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
 					size_t s = Windows[w].Sample[k];
-					t = WFM.Time[s];
-					tp = WFM.Time[s] - dwt;
-					tn = WFM.Time[s] + dwt;
-					tleft = std::max(tp, tlow);
-					tright = std::min(tn, thigh);
+					const double& t = series[s];
+					const double tp = series[s] - dwt;
+					const double tn = series[s] + dwt;
+					const double tleft = std::max(tp, tlow);
+					const double tright = std::min(tn, thigh);
 					Windows[w].Weight[k] = 0.5 * (t - tleft) + 0.5 * (tright - t);
-					Windows[w].Weight[k] /= Windows[w].TimeWidth;
+					Windows[w].Weight[k] /= Windows[w].Width;
 					wsum += Windows[w].Weight[k];
 				}
 				for (size_t k = 0; k < Windows[w].NumberOfSamples; k++) {
@@ -392,23 +450,22 @@ namespace AEM {
 			}
 		}
 
-		void initialise_boxcar(const Waveform& WFM)
-		{
+		void initialise_boxcar(const std::vector<double>& series) {
 			double eps = 1.0e-7;
 			for (size_t w = 0; w < nwindows; w++) {
-				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
-				for (size_t s = 0; s < WFM.NumSamples; s++) {
-					double t = WFM.Time[s];
-					if (t + eps >= Windows[w].TimeLow) {
+				Windows[w].Width = Windows[w].High - Windows[w].Low;
+				for (size_t s = 0; s < series.size(); s++) {
+					double t = series[s];
+					if (t + eps >= Windows[w].Low) {
 						Windows[w].SampleLow = s;
 						break;
 					}
 				}
 
-				for (size_t s = WFM.NumSamples; s-- > 0;) {
+				for (size_t s = series.size(); s-- > 0;) {
 					//Note the unusual syntax for decrement of unsigned variable
-					double t = WFM.Time[s];
-					if (t - eps <= Windows[w].TimeHigh) {
+					double t = series[s];
+					if (t - eps <= Windows[w].High) {
 						Windows[w].SampleHigh = s;
 						break;
 					}
@@ -431,23 +488,22 @@ namespace AEM {
 			}
 		}
 
-		void initialise_lineartaper(const Waveform& WFM)
-		{
+		void initialise_lineartaper(const std::vector<double>& series) {
 			double eps = 1.0e-7;
 			for (size_t w = 0; w < nwindows; w++) {
-				Windows[w].TimeWidth = Windows[w].TimeHigh - Windows[w].TimeLow;
-				for (size_t s = 0; s < WFM.NumSamples; s++) {
-					double t = WFM.Time[s];
-					if (t + eps >= Windows[w].TimeLow) {
+				Windows[w].Width = Windows[w].High - Windows[w].Low;
+				for (size_t s = 0; s < series.size(); s++) {
+					double t = series[s];
+					if (t + eps >= Windows[w].Low) {
 						Windows[w].SampleLow = s;
 						break;
 					}
 				}
 
-				for (size_t s = WFM.NumSamples; s-- > 0;) {
+				for (size_t s = series.size(); s-- > 0;) {
 					//Note the unusual syntax for decrement of unsigned variable
-					double t = WFM.Time[s];
-					if (t - eps <= Windows[w].TimeHigh) {
+					double t = series[s];
+					if (t - eps <= Windows[w].High) {
 						Windows[w].SampleHigh = s;
 						break;
 					}
@@ -480,11 +536,23 @@ namespace AEM {
 			}
 		}
 
+		/*
 		void computewindow(const double* timeseries, std::vector<double>& windowed_values) {
 			std::fill(windowed_values.begin(), windowed_values.end(), 0.0); // Reset to zero
 			for (size_t w = 0; w < nwindows; w++) {
 				for (size_t k = 0; k < Windows[w].Sample.size(); k++) {
 					windowed_values[w] += timeseries[Windows[w].Sample[k]] * Windows[w].Weight[k];
+				}
+			}
+		}
+		*/
+
+		template<typename T>
+		void computewindow(const T* values, std::vector<T>& windowed_values) {
+			std::fill(windowed_values.begin(), windowed_values.end(), T(0.0)); // Reset to zero
+			for (size_t w = 0; w < nwindows; w++) {
+				for (size_t k = 0; k < Windows[w].Sample.size(); k++) {
+					windowed_values[w] += values[Windows[w].Sample[k]] * Windows[w].Weight[k];
 				}
 			}
 		}
@@ -500,8 +568,34 @@ namespace AEM {
 		void write_windows(const fs::path& path, const std::vector<double>& SX, const std::vector<double>& SY, const std::vector<double>& SZ) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t w = 0; w < nwindows; w++) {
-				ofs << strprint("%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, Windows[w].TimeLow, Windows[w].TimeHigh, SX[w], SY[w], SZ[w]);
+				ofs << strprint("%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, Windows[w].Low, Windows[w].High, SX[w], SY[w], SZ[w]);
 			}
+		};
+
+		void write_windows(const fs::path& path, const std::vector<cdouble>& SX, const std::vector<cdouble>& SY, const std::vector<cdouble>& SZ) const {
+			std::ofstream ofs = ofstream_ex(path);
+			for (size_t w = 0; w < nwindows; w++) {
+				ofs << strprint("%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, Windows[w].Low, Windows[w].High, SX[w], SY[w], SZ[w]);
+			}
+		};
+	};
+
+	class Receiver {
+
+	public:
+		double SamplingFrequency = 0.0;
+		double Area = 1.0;
+		size_t nTurns = 1;
+		Vec3d Reference_Orientation = Vec3d::UnitZ();
+
+		Receiver() {};
+
+		Receiver(const cBlock& b) {
+			if (b.getvalue("SamplingFrequency", SamplingFrequency) == false) {
+				glog.errormsg(_SRC_,"A Receiver SamplingFrequency must be specified.\n");
+			};
+			if(b.getvalue("CoilArea", Area) == false) Area = 1.0;
+			if (b.getvalue("NumberOfTurns", nTurns) == false) nTurns = 1;
 		};
 	};
 

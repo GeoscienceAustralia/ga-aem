@@ -25,106 +25,112 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 namespace AEM {
 
-	class ComponentWorkStore {
-
-	public:
-
-		std::vector<double> IR_discrete_real;// Real impulse response discrete frequency nodes
-		std::vector<double> IR_discrete_imag;// Imaginary impulse response discrete frequency nodes
-		std::vector<cdouble> IR_splined;// Complex splines impulse response
-
-		ComponentWorkStore() {};
-
-		void resize(const size_t nnodes, const size_t nfftfreq, const size_t nwindows) {
-			IR_discrete_real.resize(nnodes);
-			IR_discrete_imag.resize(nnodes);
-			IR_splined.resize(nfftfreq);
-		};
-	};
-
-	class ModellingOptions {
-
-	public:
-		enum class OutputType { BFIELD, DBDT };
-		enum class NormalizationType { NONE, PPM, PPM_PEAKTOPEAK };
-
-		size_t FrequenciesPerDecade = 6;
-		size_t NumAbscissa = 17;
-		OutputType OutputType = OutputType::DBDT;
-		NormalizationType NormalisationType = NormalizationType::NONE;
-		double XOutputScaling = 1.0;
-		double YOutputScaling = 1.0;
-		double ZOutputScaling = 1.0;
-		double ModellingLoopRadius = 0.0;
-
-		bool SaveDiagnosticFiles = false;
-
-		ModellingOptions() {};
-
-		ModellingOptions(const cBlock& b) {
-			read_modelling_options(b);
-		};
-
-		void read_modelling_options(const cBlock& b) {
-			ModellingLoopRadius = b.getdoublevalue("ModellingLoopRadius");
-			if (!isdefined(ModellingLoopRadius)) {
-				ModellingLoopRadius = 0.0;
-			}
-
-			std::string ot = b.getstringvalue("OutputType");
-			if (strcasecmp(ot, "B") == 0) {
-				OutputType = OutputType::BFIELD;
-			}
-			else if (strcasecmp(ot, "dB/dt") == 0) {
-				OutputType = OutputType::DBDT;
-			}
-			else {
-				glog.errormsg(_SRC_, "OutputType %s unknown (must be one of \"B\" or \"dB/dt\")\n", ot.c_str());
-			}
-
-			FrequenciesPerDecade = b.getsizetvalue("FrequenciesPerDecade");
-			if (FrequenciesPerDecade < 5) {
-				glog.warningmsg(_SRC_, "It is wise to use at least 5 frequencies per decade\n");
-			}
-
-			NumAbscissa = b.getsizetvalue("NumberOfAbsiccaInHankelTransformEvaluation");
-			if (NumAbscissa < 17) {
-				glog.warningmsg(_SRC_, "It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
-			}
-
-			std::string n = b.getstringvalue("SecondaryFieldNormalisation");
-			if (strcasecmp(n, "None") == 0) {
-				NormalisationType = NormalizationType::NONE;
-			}
-			else if (strcasecmp(n, "PPM") == 0) {
-				NormalisationType = NormalizationType::PPM;
-			}
-			else if (strcasecmp(n, "PPMPEAKTOPEAK") == 0) {
-				NormalisationType = NormalizationType::PPM_PEAKTOPEAK;
-			}
-			else {
-				glog.errormsg(_SRC_, "Normalisation %s unknown (must be one of \"None,PPM,PPMPEAKTOPEAK\")\n", n.c_str());
-			}
-
-			XOutputScaling = b.getdoublevalue("XOutputScaling");
-			YOutputScaling = b.getdoublevalue("YOutputScaling");
-			ZOutputScaling = b.getdoublevalue("ZOutputScaling");
-
-
-			SaveDiagnosticFiles = b.getboolvalue("SaveDiagnosticFiles");
-
-		}
-
-	};
-
-	class TDEmSystem : public AEMSystem {
+	class TDEmSystem : public AEMSystem<double> {
 
 	private:
+
+		using Response = TDEmResponse<double>;
+		using VectorResponse = TDEmVectorResponse<double>;
+		using ScalarResponse = TDEmScalarResponse<double>;
+
+
+		class ComponentWorkStore {
+
+		public:
+
+			std::vector<double> IR_discrete_real;// Real impulse response discrete frequency nodes
+			std::vector<double> IR_discrete_imag;// Imaginary impulse response discrete frequency nodes
+			std::vector<cdouble> IR_splined;// Complex splines impulse response
+
+			ComponentWorkStore() {};
+
+			void resize(const size_t nnodes, const size_t nfftfreq, const size_t nwindows) {
+				IR_discrete_real.resize(nnodes);
+				IR_discrete_imag.resize(nnodes);
+				IR_splined.resize(nfftfreq);
+			};
+		};
+
+		class ModellingOptions {
+
+		public:
+			enum class OutputType { BFIELD, DBDT };
+			enum class NormalizationType { NONE, PPM, PPM_PEAKTOPEAK };
+
+			size_t FrequenciesPerDecade = 6;
+			size_t NumAbscissa = 17;
+			OutputType OutputType = OutputType::DBDT;
+			NormalizationType NormalisationType = NormalizationType::NONE;
+			double XOutputScaling = 1.0;
+			double YOutputScaling = 1.0;
+			double ZOutputScaling = 1.0;
+			double ModellingLoopRadius = 0.0;
+
+			bool SaveDiagnosticFiles = false;
+
+			ModellingOptions() {};
+
+			ModellingOptions(const cBlock& b) {
+				read_modelling_options(b);
+			};
+
+			void read_modelling_options(const cBlock& b) {
+				ModellingLoopRadius = b.getdoublevalue("ModellingLoopRadius");
+				if (!isdefined(ModellingLoopRadius)) {
+					ModellingLoopRadius = 0.0;
+				}
+
+				std::string ot = b.getstringvalue("OutputType");
+				if (strcasecmp(ot, "B") == 0) {
+					OutputType = OutputType::BFIELD;
+				}
+				else if (strcasecmp(ot, "dB/dt") == 0) {
+					OutputType = OutputType::DBDT;
+				}
+				else {
+					glog.errormsg(_SRC_, "OutputType %s unknown (must be one of \"B\" or \"dB/dt\")\n", ot.c_str());
+				}
+
+				FrequenciesPerDecade = b.getsizetvalue("FrequenciesPerDecade");
+				if (FrequenciesPerDecade < 5) {
+					glog.warningmsg(_SRC_, "It is wise to use at least 5 frequencies per decade\n");
+				}
+
+				NumAbscissa = b.getsizetvalue("NumberOfAbsiccaInHankelTransformEvaluation");
+				if (NumAbscissa < 17) {
+					glog.warningmsg(_SRC_, "It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
+				}
+
+				std::string n = b.getstringvalue("SecondaryFieldNormalisation");
+				if (strcasecmp(n, "None") == 0) {
+					NormalisationType = NormalizationType::NONE;
+				}
+				else if (strcasecmp(n, "PPM") == 0) {
+					NormalisationType = NormalizationType::PPM;
+				}
+				else if (strcasecmp(n, "PPMPEAKTOPEAK") == 0) {
+					NormalisationType = NormalizationType::PPM_PEAKTOPEAK;
+				}
+				else {
+					glog.errormsg(_SRC_, "Normalisation %s unknown (must be one of \"None,PPM,PPMPEAKTOPEAK\")\n", n.c_str());
+				}
+
+				XOutputScaling = b.getdoublevalue("XOutputScaling");
+				YOutputScaling = b.getdoublevalue("YOutputScaling");
+				ZOutputScaling = b.getdoublevalue("ZOutputScaling");
+
+
+				SaveDiagnosticFiles = b.getboolvalue("SaveDiagnosticFiles");
+
+			}
+
+		};
+
 		FixedPointSpline<double> FrequencySpliner;
 		FFTWPlanWrapper InverseFFTPlan;
 
 		std::vector<ComponentWorkStore> Component;
-		TDEmResponse WR; // Work response class
+		Response WR; // Work response class
 
 		double FrequencyLog10Spacing = 0.0;
 		double DiscreteFrequencyLow = 0.0;
@@ -178,15 +184,13 @@ namespace AEM {
 				glog.errormsg(_SRC_, "System Type is not Time Domain\n");
 			}
 
-			cBlock b = STM.findblock("Transmitter");
-			Tx.NumberOfTurns = b.getdoublevalue("NumberOfTurns");
-			Tx.PeakCurrent = b.getdoublevalue("PeakCurrent");
-			Tx.LoopArea = b.getdoublevalue("LoopArea");
-
-			WvForm.initialise(b, systemdescriptorfile);
+			cBlock txblock = STM.findblock("Transmitter");
+			Tx = Transmitter(txblock);
+			
+			WvForm.initialise(txblock, systemdescriptorfile);
 
 			cBlock rxblock = STM.findblock("Receiver");
-			WindScheme = WindowingScheme(rxblock, WvForm);
+			WindScheme = WindowingScheme(rxblock, WvForm.Time);
 			set_nwindows();
 
 			if (WvForm.Time.size() <= 2 || WvForm.Time.size() != WvForm.TD_Waveform.size()) {
@@ -203,8 +207,7 @@ namespace AEM {
 				Filters.push_back(LowPassFilter(v1[i], v2[i]));
 			}
 
-			b = STM.findblock("ForwardModelling");
-			MO = ModellingOptions(b);
+			MO = ModellingOptions(STM.findblock("ForwardModelling"));
 
 			setup_discrete_frequencies();
 			setup_transforms();
@@ -214,14 +217,14 @@ namespace AEM {
 
 		// Modelling
 
-		const TDEmVectorResponse& forward_model_primary_field(const TDEmGeometry& G) {
+		const VectorResponse& forward_model_primary_field(const TDEmGeometry& G) {
 			set_geometry(G);
 			set_calculationtype(CMode::FM);
 			set_primaryfields();
 			return WR.P;
 		};
 
-		const TDEmResponse& forward_model(const Earth1D& E, const TDEmGeometry& G) {
+		const Response& forward_model(const Earth1D& E, const TDEmGeometry& G) {
 			set_earth(E);
 			set_geometry(G);
 			setup_computations();
@@ -231,8 +234,8 @@ namespace AEM {
 			return WR;
 		};
 
-		TDEmVectorResponse derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmVectorResponse& forward_model) {
-			TDEmVectorResponse derivative(nWindows());
+		VectorResponse derivative(const CalculationType& calc, const TDEmGeometry& G, const VectorResponse& forward_model) {
+			VectorResponse derivative(nWindows());
 			if (calc.get_mode() == CMode::DRX_ROLL) {
 				drx_roll(G, forward_model, derivative);
 			}
@@ -248,8 +251,8 @@ namespace AEM {
 			return derivative;
 		};
 
-		const TDEmResponse& derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmResponse& forward_model) {
-			TDEmResponse& derivative = WR;
+		const Response& derivative(const CalculationType& calc, const TDEmGeometry& G, const Response& forward_model) {
+			Response& derivative = WR;
 			if (calc.get_mode() == CMode::DRX_ROLL) {
 				drx_roll(G, forward_model, derivative);
 			}
@@ -265,7 +268,7 @@ namespace AEM {
 			return derivative;
 		};
 
-		const TDEmResponse& derivative(const CalculationType& calc) {
+		const Response& derivative(const CalculationType& calc) {
 			if (calc.get_mode() == CMode::DTX_HEIGHT) {
 				// This is because when H changes Z also changes
 				set_calculationtype(CMode::DZ);
@@ -314,49 +317,49 @@ namespace AEM {
 
 	private:
 
-		void drx_roll(const TDEmGeometry& G, const TDEmVectorResponse& forward_model, TDEmVectorResponse& derivatives) const {
+		void drx_roll(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
 			const Mat3d dM = G.rx_roll_derivative_matrix();
 			apply_rx_derivative_matrix(dM, forward_model, derivatives);
 		};
 
-		void drx_pitch(const TDEmGeometry& G, const TDEmVectorResponse& forward_model, TDEmVectorResponse& derivatives) const {
+		void drx_pitch(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
 			const Mat3d dM = G.rx_pitch_derivative_matrix();
 			apply_rx_derivative_matrix(dM, forward_model, derivatives);
 		};
 
-		void drx_yaw(const TDEmGeometry& G, const TDEmVectorResponse& forward_model, TDEmVectorResponse& derivatives) const {
+		void drx_yaw(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
 			const Mat3d dM = G.rx_yaw_derivative_matrix();
 			apply_rx_derivative_matrix(dM, forward_model, derivatives);
 		};
 
-		void drx_roll(const TDEmGeometry& G, const TDEmResponse& forward_model, TDEmResponse& derivatives) const {
+		void drx_roll(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
 			const Mat3d dM = G.rx_roll_derivative_matrix();
 			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
 			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
 		};
 
-		void drx_pitch(const TDEmGeometry& G, const TDEmResponse& forward_model, TDEmResponse& derivatives) const {
+		void drx_pitch(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
 			const Mat3d dM = G.rx_pitch_derivative_matrix();
 			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
 			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
 		};
 
-		void drx_yaw(const TDEmGeometry& G, const TDEmResponse& forward_model, TDEmResponse& derivatives) const {
+		void drx_yaw(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
 			const Mat3d dM = G.rx_yaw_derivative_matrix();
 			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
 			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
 		};
 
-		void apply_rx_derivative_matrix(const Mat3d& dM, const TDEmVectorResponse& fields, TDEmVectorResponse& derivatives) const {
+		void apply_rx_derivative_matrix(const Mat3d& dM, const VectorResponse& fields, VectorResponse& derivatives) const {
 			const size_t n = fields.nWindows();
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				for (size_t i = 0; i < n; i++) {
-					Vec3d ftrue = fields.get_vec3d(i);
+					Vec3d ftrue = fields.get_vec3(i);
 					//Must work with true field vector directions (not the PPM scaled versinn)
 					ftrue[XCOMP] *= RefGeomPrimary[XCOMP];
 					ftrue[YCOMP] *= RefGeomPrimary[YCOMP];
 					ftrue[ZCOMP] *= RefGeomPrimary[ZCOMP];
-					derivatives.set_vec3d(i, dM * ftrue);
+					derivatives.set_vec3(i, dM * ftrue);
 					//Convert back to PPMS
 					derivatives[XCOMP][i] /= RefGeomPrimary[XCOMP];
 					derivatives[YCOMP][i] /= RefGeomPrimary[YCOMP];
@@ -365,7 +368,7 @@ namespace AEM {
 			}
 			else {
 				for (size_t wi = 0; wi < n; wi++) {
-					derivatives.set_vec3d(wi, dM * fields.get_vec3d(wi));
+					derivatives.set_vec3(wi, dM * fields.get_vec3(wi));
 				}
 			}
 		};
@@ -512,7 +515,7 @@ namespace AEM {
 
 		void setup_scaling() {
 			Tx.PeakdIdT = WvForm.compute_peak_didt();
-			double tx_scale = MUZERO<double> *Tx.LoopArea * Tx.NumberOfTurns * Tx.PeakCurrent;
+			double tx_scale = MUZERO<double> * Tx.LoopArea * Tx.nTurns * Tx.PeakCurrent;
 
 			//ModellingOptions
 			Scale[XCOMP] = tx_scale * MO.XOutputScaling;

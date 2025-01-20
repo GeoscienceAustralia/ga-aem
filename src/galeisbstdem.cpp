@@ -121,13 +121,13 @@ int main(int argc, char** argv) {
 		#pragma omp parallel num_threads(openmpsize)
 			{
 				int openmprank = omp_get_thread_num();
-				std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
+				std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter<double>>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
 			}
 			std::cerr << "Warning log closing " << timestamp() << std::endl;
 		#endif
 	}
 	else {
-		std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter>(controlfile, mpisize, mpirank, usingopenmp, commandline);
+		std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter<double>>(controlfile, mpisize, mpirank, usingopenmp, commandline);
 		#ifdef ENABLE_MPI
 			cMpiEnv::world_barrier();
 		#endif

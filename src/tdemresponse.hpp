@@ -6,10 +6,11 @@
 #include "vector_utils.hpp"
 
 namespace AEM {
+	template <typename T>
 	class TDEmScalarResponse {
 
 	private:
-		std::vector<double> v;
+		std::vector<T> v;
 
 	public:
 
@@ -21,11 +22,11 @@ namespace AEM {
 
 		inline const size_t size() const { return v.size(); }
 
-		double& operator[](const size_t& i) {
+		T& operator[](const size_t& i) {
 			return v[i];
 		}
 
-		double operator[](const size_t& i) const {
+		T operator[](const size_t& i) const {
 			return v[i];
 		}
 
@@ -46,10 +47,11 @@ namespace AEM {
 		}
 	};
 
+	template <typename T>
 	class TDEmVectorResponse {
 
 		size_t nwindows = 0;
-		std::array<std::vector<double>, 3> v;
+		std::array<std::vector<T>, 3> v;
 
 	public:
 
@@ -64,21 +66,21 @@ namespace AEM {
 			v[2].resize(nwindows);
 		};
 
-		Vec3d get_vec3d(const size_t window) const {
-			return Vec3d(v[0][window], v[1][window], v[2][window]);
+		Eigen::Vector<T,3> get_vec3(const size_t window) const {
+			return Eigen::Vector<T,3>(v[0][window], v[1][window], v[2][window]);
 		};
 
-		void set_vec3d(const size_t window, const Vec3d& vec) {
+		void set_vec3(const size_t window, const Eigen::Vector<T,3>& vec) {
 			v[0][window] = vec[0];
 			v[1][window] = vec[1];
 			v[2][window] = vec[2];
 		};
 
-		std::vector<double>& operator[](const size_t& component) {
+		std::vector<T>& operator[](const size_t& component) {
 			return v[component];
 		}
 
-		const std::vector<double>& operator[](const size_t& component) const {
+		const std::vector<T>& operator[](const size_t& component) const {
 			return v[component];
 		}
 
@@ -110,7 +112,7 @@ namespace AEM {
 			return *this;
 		}
 
-		double& operator()(const size_t& component, const size_t& window) {
+		T& operator()(const size_t& component, const size_t& window) {
 			assert(component < NCOMP);
 			assert(window < nWindows());
 			return v[component][window];
@@ -123,17 +125,17 @@ namespace AEM {
 			v[2] *= scalefactors[2];
 		};
 
-		TDEmScalarResponse xzamp() {
-			TDEmScalarResponse r(nwindows);
+		TDEmScalarResponse<T> xzamp() {
+			TDEmScalarResponse<T> r(nwindows);
 			for (size_t i = 0; i < nwindows; i++) {
 				r[i] = std::hypot(v[XCOMP][i], v[ZCOMP][i]);
 			}
 			return r;
 		};
 
-		friend std::ostream& operator<<(std::ostream& os, const TDEmVectorResponse& R) {
-			for (size_t i = 0; i < R.nwindows; i++) {
-				os << exd(16, 6) << R[XCOMP][i]
+		friend std::ostream& operator<<(std::ostream& os, const TDEmVectorResponse& R) {			
+			for (size_t i = 0; i < R.nwindows; i++) { 
+				os  << exd(16, 6) << R[XCOMP][i]
 					<< exd(16, 6) << R[YCOMP][i]
 					<< exd(16, 6) << R[ZCOMP][i]
 					<< std::endl;
@@ -141,15 +143,28 @@ namespace AEM {
 			return os;
 		}
 
+		void simple_output(std::ostream& os) {
+			for (size_t i = 0; i < nwindows; i++) {
+				os <<  exd(16, 6) << v[XCOMP][i].real()
+					<< exd(16, 6) << v[XCOMP][i].imag()
+					<< exd(16, 6) << v[YCOMP][i].real()
+					<< exd(16, 6) << v[YCOMP][i].imag()
+					<< exd(16, 6) << v[ZCOMP][i].real()
+					<< exd(16, 6) << v[ZCOMP][i].imag()
+					<< std::endl;
+			}
+		}
+
 	private:
 
 	};
 
+	template <typename T>
 	class TDEmResponse {
 
 	public:
-		TDEmVectorResponse P;
-		TDEmVectorResponse S;
+		TDEmVectorResponse<T> P;
+		TDEmVectorResponse<T> S;
 
 		TDEmResponse() {};
 
@@ -166,23 +181,23 @@ namespace AEM {
 			return S.nWindows();
 		}
 
-		const double primary(const size_t& component) const {
+		const T primary(const size_t& component) const {
 			assert(component < NCOMP);
 			return P[component][0];
 		}
 
-		const double secondary(const size_t& component, const size_t& window) const {
+		const T secondary(const size_t& component, const size_t& window) const {
 			assert(component < NCOMP);
 			assert(window < nWindows());
 			return S[component][window];
 		};
 
-		const std::vector<double> secondary(const size_t& component) const {
+		const std::vector<T> secondary(const size_t& component) const {
 			assert(component < NCOMP);
 			return S[component];
 		};
 
-		TDEmVectorResponse totalfield() const {
+		TDEmVectorResponse<T> totalfield() const {
 			TDEmVectorResponse T = S;
 			T += P;
 			return T;

@@ -10,7 +10,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <cstring>
 #include <iostream>
+#include <ostream>
 
+#include "spectralaemsystem.hpp"
 #include "vector_utils.hpp"
 #include "general_utils.hpp"
 #include "file_utils.hpp"
@@ -56,11 +58,11 @@ int skytem_example_ip() {
 	E.frequencydependence[2] = 0.0;
 	
 	//Create a response object
-	TDEmResponse R;
+	TDEmResponse<double> R;
 	//Run the forward model
 	R = S.forward_model(E, G);
 	for (size_t i = 0; i < R.nWindows(); i++){
-		double wct = S.window(i).centre_time();
+		double wct = S.window(i).centre();
 		printf("%zu %10e %10e\n", i, wct, R.secondary(ZCOMP,i));
 	}	
 	return 0;
@@ -94,8 +96,8 @@ int skytem_example() {
 	//bottom layer is infinite thickness and not set
 
 	//Create a response object for each moment (they have different numbers of windwos)
-	TDEmResponse LMR;
-	TDEmResponse HMR;	
+	TDEmResponse<double> LMR;
+	TDEmResponse<double> HMR;
 				
 	//Run the forward model for each moment			
 	LMR = LM.forward_model(E, G);
@@ -133,8 +135,8 @@ int skytem_computation_time() {
 	Earth1D E(1);
 
 	//Create a response object for each moment (they have different numbers of windwos)	
-	TDEmResponse LMR;
-	TDEmResponse HMR;
+	TDEmResponse<double> LMR;
+	TDEmResponse<double> HMR;
 	double sum = 0.0;
 	for (size_t j = 1; j <= 50; j++) {
 		size_t nlayers = j;
@@ -171,10 +173,10 @@ static void test_derivatives() {
 	Earth1D E(c, t);
 	TDEmResponse R = T.forward_model(E, G);
 
-	TDEmResponse DA; // Analytic derivative
-	TDEmResponse DN; // Numerical derivative
-	TDEmResponse R1; // Numerical perturbation response
-	TDEmResponse PCD; // Percentage difference
+	TDEmResponse<double> DA; // Analytic derivative
+	TDEmResponse<double> DN; // Numerical derivative
+	TDEmResponse<double> R1; // Numerical perturbation response
+	TDEmResponse<double> PCD; // Percentage difference
 
 	std::cout << "Conductivity derivatives" << std::endl;
 	for (size_t li = 0; li < c.size(); li++) {
@@ -190,14 +192,14 @@ static void test_derivatives() {
 		DN = (R1 - R) / delta;
 
 		// Difference
-		TDEmResponse PCD = percent_difference(DN, DA);
-		TDEmResponse::display_max_abs_percent_difference(PCD);
+		TDEmResponse<double> PCD = percent_difference(DN, DA);
+		TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 	}
 
 	std::cout << "Thickness derivatives" << std::endl;
 	for (size_t li = 0; li < c.size()-1; li++) {
 		// Analytic derivative DA
-		TDEmResponse DA = T.derivative(CalculationType(CalculationType::Mode::DT, li));
+		TDEmResponse<double> DA = T.derivative(CalculationType(CalculationType::Mode::DT, li));
 
 		// Numerical derivative DN
 		std::vector<double> t1 = t;
@@ -208,8 +210,8 @@ static void test_derivatives() {
 		TDEmResponse DN = (R1 - R) / delta;
 
 		// Difference
-		TDEmResponse PCD = percent_difference(DN, DA);
-		TDEmResponse::display_max_abs_percent_difference(PCD);
+		TDEmResponse<double> PCD = percent_difference(DN, DA);
+		TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 	}
 
 	TDEmGeometry G1; // Geometry perturbation
@@ -218,49 +220,104 @@ static void test_derivatives() {
 
 	std::cout << "DX derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DX));
-	G1 = G; G1.txrx_dx += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.txrx_dx += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 
 	std::cout << "DY derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DY));
-	G1 = G; G1.txrx_dy += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.txrx_dy += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 	//std::cout << DA;
 	//std::cout << DN;
 
 	std::cout << "DZ derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DZ));
-	G1 = G; G1.txrx_dz += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.txrx_dz += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 
 	std::cout << "DH derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DH));
 	G1 = G; // Tx moves independent of Rx
 	G1.tx_height += delta; G1.txrx_dz -= delta;
-	R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
+	R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 
 	std::cout << "Tx Height derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DTX_HEIGHT));
 	G1 = G; // Rx moves with Tx
-	G1.tx_height += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
+	G1.tx_height += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 	
 	delta = 0.001; // 0.001 degree
 	std::cout << "Rx roll derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_ROLL), G, R);
-	G1 = G; G1.rx_roll += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.rx_roll += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 
 	std::cout << "Rx pitch derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_PITCH), G, R);
-	G1 = G; G1.rx_pitch += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.rx_pitch += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 	
 	std::cout << "Rx yaw derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_YAW), G, R);
-	G1 = G; G1.rx_yaw += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.rx_yaw += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
  };
+
+static void test_spectral() {
+	fs::path stmpath = "C:/Users/rossc/Work/Tempest_Spectral/stmfiles/Tempest-Spectral.stm";
+	SpectralAEMSystem S(stmpath);
+
+	TDEmGeometry G;
+	
+
+	//1.0e-06 * 		-0.6094 -0.0245 -0.2924
+	//1.0e-06 *         -0.5635 -0.0388 -0.3226
+	// Average geometry of first line in Tempest convention
+	//G.tx_height = 135.8517;
+	//G.tx_roll =   -0.4199;	G.tx_pitch =   1.8746;	G.tx_yaw =         0;
+	//G.txrx_dx = -109.5602;	G.txrx_dy  = -10.9148;	G.txrx_dz =  48.2784;
+	//G.rx_roll =    1.6086;	G.rx_pitch =   0.9377;	G.rx_yaw =    3.6834;
+
+	// 902 Average geometry
+	G.tx_height = 135.8517;
+	G.tx_roll = 1.33772;	G.tx_pitch = 2.56432;	G.tx_yaw = 0;
+	G.txrx_dx = -108.05;	G.txrx_dy = -4.47019;	G.txrx_dz = 52.7301;
+	G.rx_roll = 2.11234;	G.rx_pitch = 0.0996245;	G.rx_yaw = 0.310114;
+
+	//G.tx_pitch += 2.2;
+	//G.rx_pitch += -0.5;
+	//G.rx_yaw   += -0.5;
+
+	//G.txrx_dx  -= 1.8;
+	//G.txrx_dz -= 1.8;
+
+	G.txrx_dy  *= -1.0;
+	G.txrx_dz  *= -1.0;
+	G.tx_pitch *= -1.0;
+	G.rx_pitch *= -1.0;
+	G.tx_yaw   *= -1.0;
+	G.rx_yaw   *= -1.0;
+
+	//G.tx_height = 120;
+	//G.tx_roll = 0;		G.tx_pitch = 0;	G.tx_yaw = 0;
+	//G.txrx_dx = -110;	G.txrx_dy = 0;	G.txrx_dz = -40;
+	//G.rx_roll = 0;		G.rx_pitch = 0;	G.rx_yaw = 0;
+
+	//std::vector<double> c = { 0.01, 0.1, 0.001 };
+	std::vector<double> c = { 0.01, 0.01, 0.01 };
+	std::vector<double> t = { 20, 30 };
+	Earth1D E(c, t);
+	TDEmResponse R = S.forward_model(E, G);
+	TDEmVectorResponse<cdouble> TF = R.totalfield();
+	std::ofstream ofs("C:/Users/rossc/Work/Tempest_Spectral/test/test.dat");
+	//TF.simple_output(std::cout);
+	R.P.simple_output(std::cout);
+	R.P.simple_output(ofs);
+	//R.S.simple_output(ofs);
+	//TF.simple_output(ofs);
+};
 
 int main(int argc, char* argv[]) {
 	try {
 		//skytem_example();
 		//skytem_example_ip();
 		//skytem_computation_time();
-		test_derivatives();
+		//test_derivatives();
+		test_spectral();
 	}
 	catch (std::exception& e) {
 		std::cout << e.what();

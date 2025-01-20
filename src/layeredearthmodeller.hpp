@@ -994,15 +994,15 @@ namespace LEM2 {
 
 	public:
 
-		std::vector<LESingleFrequencyModeller> FM;
+		std::vector<LESingleFrequencyModeller> SFM;
 
 		LEModeller() { };
 
-		size_t nFrequencies() const { return FM.size(); };
+		size_t nFrequencies() const { return SFM.size(); };
 		
 		size_t nLayers() const { 
 			// Todo
-			return FM[0].nLayers(); 
+			return SFM[0].nLayers(); 
 		};
 
 		void initialise(const std::vector<double>& discrete_frequencies, const size_t& numabscissa, const double& modelling_loop_radius) {
@@ -1013,12 +1013,12 @@ namespace LEM2 {
 
 			// Insert the frequencies
 			for (size_t fi = 0; fi < nf; fi++) {
-				FM.emplace_back(LESingleFrequencyModeller());
+				SFM.emplace_back(LESingleFrequencyModeller());
 			};
 			
 			// Now initialise them
 			for (size_t fi = 0; fi < nf; fi++) {
-				FM[fi].initialise(discrete_frequencies[fi], numabscissa, modelling_loop_radius);
+				SFM[fi].initialise(discrete_frequencies[fi], numabscissa, modelling_loop_radius);
 			}
 		}
 
@@ -1027,7 +1027,7 @@ namespace LEM2 {
 			const double meanlog10conductivity = EarthPtr->mean_weighted_conductivity_log10_calculation();
 			const size_t nf = nFrequencies();
 			for (size_t i = 0; i < nf; i++) {
-				FM[i].set_earth_ptr(EarthPtr, meanlog10conductivity);
+				SFM[i].set_earth_ptr(EarthPtr, meanlog10conductivity);
 			}
 		};
 		
@@ -1037,7 +1037,7 @@ namespace LEM2 {
 			bool geometrychanged = GeometryStore.update(x, y, z, h);
 			if (geometrychanged) {
 				for (size_t i = 0; i < nf; i++) {
-					FM[i].set_xyzh(GeometryStore);
+					SFM[i].set_xyzh(GeometryStore);
 				}
 			}
 		};
@@ -1045,7 +1045,7 @@ namespace LEM2 {
 		void setup_computations() {
 			const size_t nf = nFrequencies();
 			for (size_t i = 0; i < nf; i++) {
-				FM[i].setup_computations();
+				SFM[i].setup_computations();
 			}
 		};
 
@@ -1058,15 +1058,12 @@ namespace LEM2 {
 		};
 
 		Vec3d primaryfield_inertial() {
-			Vec3d pf = FM[0].primary_inertial_frame(calculationtype, Source_Orientation);
-			//std::cout << pf << std::endl;
+			Vec3d pf = SFM[0].primary_inertial_frame(calculationtype, Source_Orientation);
 			return pf;
 		};
 
 		Vec3cd secondaryfield_inertial(const size_t fi) {
-			//std::cout << Source_Orientation;
-			Vec3cd sf = FM[fi].secondary_inertial_frame(calculationtype, Source_Orientation);
-			//std::cout << sf << std::endl;
+			Vec3cd sf = SFM[fi].secondary_inertial_frame(calculationtype, Source_Orientation);
 			return sf;
 		};
 

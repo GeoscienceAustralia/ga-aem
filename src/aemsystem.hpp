@@ -15,6 +15,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "tdemgeometry.hpp"
 
 namespace AEM {
+	template <typename ResponseType>
 	class AEMSystem {
 
 	protected:
@@ -24,6 +25,7 @@ namespace AEM {
 		LEModeller LEM;
 
 	public:
+		//using RT = ResponseType;
 
 		AEMSystem() {};
 
@@ -36,11 +38,18 @@ namespace AEM {
 
 		virtual void read_system_descriptor_file(const fs::path& systemdescriptorfile) = 0;
 		virtual const size_t& nWindows() const = 0;
-		virtual const TDEmVectorResponse& forward_model_primary_field(const TDEmGeometry& G) = 0;
-		virtual const TDEmResponse& forward_model(const Earth1D& E, const TDEmGeometry& G) = 0;
-		virtual TDEmVectorResponse derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmVectorResponse& forward_model) = 0;
-		virtual const TDEmResponse& derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmResponse& forward_model) = 0;
-		virtual const TDEmResponse& derivative(const CalculationType& calc) = 0;
+
+		//virtual const TDEmVectorResponse& forward_model_primary_field(const TDEmGeometry& G) = 0;
+		//virtual const TDEmResponse& forward_model(const Earth1D& E, const TDEmGeometry& G) = 0;
+		//virtual TDEmVectorResponse derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmVectorResponse& forward_model) = 0;
+		//virtual const TDEmResponse& derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmResponse& forward_model) = 0;
+		//virtual const TDEmResponse& derivative(const CalculationType& calc) = 0;
+
+		virtual const TDEmVectorResponse<ResponseType>& forward_model_primary_field(const TDEmGeometry& G) = 0;
+		virtual const TDEmResponse<ResponseType>& forward_model(const Earth1D& E, const TDEmGeometry& G) = 0;
+		virtual TDEmVectorResponse<ResponseType> derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmVectorResponse<ResponseType>& forward_model) = 0;
+		virtual const TDEmResponse<ResponseType>& derivative(const CalculationType& calc, const TDEmGeometry& G, const TDEmResponse<ResponseType>& forward_model) = 0;
+		virtual const TDEmResponse<ResponseType>& derivative(const CalculationType& calc) = 0;
 	};
 };
 
