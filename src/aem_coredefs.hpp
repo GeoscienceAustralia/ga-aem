@@ -13,14 +13,89 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "aem_coredefs.hpp"
 
 namespace AEM {
+	using namespace VectorUtils;
+	// This allows the VectorUtils operator overloads to be found from this namespace 
+	// ... see https://www.reddit.com/r/cpp_questions/comments/17mdzzx/overload_resolution_fails_to_find_operator_from_a/?rdt=36798
+	using VectorUtils::operator+;
+	using VectorUtils::operator-;
+	using VectorUtils::operator*;
+	using VectorUtils::operator/;
+
 	using namespace LEM2;
 	using CalculationType = AEM::CalculationType;
 	using CMode = AEM::CalculationType::Mode;
+
+	enum class SystemType { TimeDomain, SpectralTimeDomain };
 
 	inline constexpr size_t XCOMP = 0;
 	inline constexpr size_t YCOMP = 1;
 	inline constexpr size_t ZCOMP = 2;
 	inline constexpr size_t NCOMP = 3;
+
+	// Get AEM SystemType from string
+	static AEM::SystemType aem_system_type(const std::string& typestr) {
+		if (strcasecmp(typestr, "Spectral Time Domain") == 0) return SystemType::SpectralTimeDomain;
+		else if (strcasecmp(typestr, "Time Domain") == 0) return SystemType::TimeDomain;
+		else {
+			glog.errormsg(_SRC_, "The AEM System 'Type' must be 'Spectral Time Domain' or 'Time Domain'.\n");
+		}
+	};
+
+	// Get AEM SystemType from stmfile
+	static AEM::SystemType aem_system_type(const fs::path& stmfile) {
+		cBlock b(stmfile);
+		std::string typestr;
+		if (b.getvalue("Type", typestr)) return aem_system_type(typestr);
+		else glog.errormsg(_SRC_, "The AEM System 'Type' is not specified.\n");
+	};
+
+	// Get AEM SystemType from template parameter
+	template<typename AEMSystemClass>
+	inline AEM::SystemType aem_system_type() {
+		return AEMSystemClass::get_type();
+	};
+	
+	// Utilities for handling double and complex<double> the same
+	inline double hypot(const double& x, const double& y) {
+		return std::hypot(x, y);
+	};
+
+	inline cdouble hypot(const cdouble& x, const cdouble& y) {
+		return cdouble(std::hypot(x.real(), y.real()), std::hypot(x.imag(), y.imag()));
+	};
+
+	inline double ewise_mul(const double& x, const double& y) {
+		return x * y;
+	};
+
+	inline cdouble ewise_mul(const cdouble& x, const cdouble& y) {
+		return cdouble(x.real() * y.real() , x.imag() * y.imag());
+	};
+
+	inline double ewise_div(const double& x, const double& y) {
+		return x / y;
+	};
+
+	inline cdouble ewise_div(const cdouble& x, const cdouble& y) {
+		return cdouble(x.real() / y.real(), x.imag() / y.imag());
+	};
+
+	template <typename T>
+	void complex_merge(const std::vector<T>& realv, const std::vector<T>& imagv, std::vector<std::complex<T>>& v) {
+		assert(realv.size() == imagv.size());
+		const size_t n = realv.size();
+		v.resize(n);
+		for (size_t k = 0; k < n; k++) {
+			v[k] = std::complex<T>(realv[k], imagv[k]);
+		}
+	}
+
+	template <typename T>
+	std::vector<std::complex<T>> complex_merge(const std::vector<T>& realv, const std::vector<T>& imagv) {
+		std::vector<std::complex<T>> v;
+		complexmerge(realv, imagv, v);
+		return v;
+	}
 
 	class LowPassFilter {
 

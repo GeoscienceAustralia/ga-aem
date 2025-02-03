@@ -51,11 +51,13 @@ namespace AEM {
 	class TDEmVectorResponse {
 
 		size_t nwindows = 0;
-		std::array<std::vector<T>, 3> v;
+		std::array<std::vector<T>, NCOMP> v;
 
 	public:
 
-		TDEmVectorResponse(const size_t _nwindows = 0) { nwindows = _nwindows; };
+		TDEmVectorResponse(const size_t _nwindows = 0) {
+			set_nWindows(_nwindows);
+		};
 
 		inline const size_t nWindows() const { return nwindows; }
 
@@ -128,7 +130,7 @@ namespace AEM {
 		TDEmScalarResponse<T> xzamp() {
 			TDEmScalarResponse<T> r(nwindows);
 			for (size_t i = 0; i < nwindows; i++) {
-				r[i] = std::hypot(v[XCOMP][i], v[ZCOMP][i]);
+				r[i] = AEM::hypot(v[XCOMP][i], v[ZCOMP][i]);
 			}
 			return r;
 		};
@@ -181,10 +183,17 @@ namespace AEM {
 			return S.nWindows();
 		}
 
-		const T primary(const size_t& component) const {
+		const T primary(const size_t& component, const size_t& window) const {
 			assert(component < NCOMP);
-			return P[component][0];
-		}
+			assert(window < nWindows());
+			return P[component][window];
+		};
+
+		const std::vector<T> primary(const size_t& component) const {
+			assert(component < NCOMP);
+			return P[component];
+		};
+
 
 		const T secondary(const size_t& component, const size_t& window) const {
 			assert(component < NCOMP);

@@ -114,16 +114,17 @@
     <ClInclude Include="..\..\src\aemsysteminversioninfo.hpp" />
     <ClInclude Include="..\..\src\aem_coredefs.hpp" />
     <ClInclude Include="..\..\src\airborne_types.hpp" />
-    <ClInclude Include="..\..\src\cinverter.hpp" />
-    <ClInclude Include="..\..\src\csbsinverter.hpp" />
     <ClInclude Include="..\..\src\fftwplanwrapper.hpp" />
     <ClInclude Include="..\..\src\fixed_point_spline.hpp" />
     <ClInclude Include="..\..\src\gaaem_version.hpp" />
     <ClInclude Include="..\..\src\inputmanager.hpp" />
     <ClInclude Include="..\..\src\inversion_line_searcher.hpp" />
+    <ClInclude Include="..\..\src\inverter.hpp" />
     <ClInclude Include="..\..\src\layeredearthmodeller.hpp" />
     <ClInclude Include="..\..\src\lem.hpp" />
     <ClInclude Include="..\..\src\outputmanager.hpp" />
+    <ClInclude Include="..\..\src\sbsinverter.hpp" />
+    <ClInclude Include="..\..\src\spectralaemsystem.hpp" />
     <ClInclude Include="..\..\src\tdemcomponentinfo.hpp" />
     <ClInclude Include="..\..\src\tdemgeometry.hpp" />
     <ClInclude Include="..\..\src\tdemresponse.hpp" />
@@ -143,6 +144,7 @@
     <ClInclude Include="..\..\submodules\cpp-utils\include\streamredirecter.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\string_utils.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\undefinedvalues.hpp" />
+    <ClInclude Include="..\..\submodules\cpp-utils\include\vector_utils.hpp" />
     <ClInclude Include="..\..\submodules\geophysics-netcdf\include\geophysics_netcdf.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

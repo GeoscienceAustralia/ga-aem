@@ -165,7 +165,13 @@ namespace AEM {
 		};
 
 		TDEmSystem() {};
-		
+
+		static AEM::SystemType get_type() { return AEM::SystemType::TimeDomain; };
+
+		static std::unique_ptr<AEMSystem<double>> unique_ptr(const fs::path stmfile) {
+			return std::make_unique<TDEmSystem>(stmfile);
+		};
+
 		const size_t& nWindows() const {
 			return WindScheme.nWindows();
 		};
@@ -178,10 +184,13 @@ namespace AEM {
 
 			STM = cBlock(systemdescriptorfile);
 			SystemName = STM.getstringvalue("Name");
-			SystemType = STM.getstringvalue("Type");
 
-			if (strcasecmp(SystemType, "Time Domain") != 0) {
-				glog.errormsg(_SRC_, "System Type is not Time Domain\n");
+			std::string typestr;
+			if (STM.getvalue("Type", typestr)) Type = aem_system_type(typestr);
+			else glog.errormsg(_SRC_,"The AEM System 'Type' is not specified.\n");
+			
+			if (Type != SystemType::TimeDomain) {
+				glog.errormsg(_SRC_, "System Type must be 'Time Domain'.\n");
 			}
 
 			cBlock txblock = STM.findblock("Transmitter");

@@ -17,7 +17,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include "gaaem_version.hpp"
 #include "aem_coredefs.hpp"
-#include "csbsinverter.hpp"
+#include "sbsinverter.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 
@@ -30,25 +30,29 @@ class cLogger glog; //The global instance of the log file manager
 omp_lock_t fftw_thread_lock;
 #endif
 
+using namespace AEM;
+using namespace AEM::INVERTER::SBSINVERTER;
+
 void finalise() {
 #ifdef ENABLE_MPI
 	glog.logmsg(0, "Finalizing MPI\n");
 	cMpiEnv::stop();
 #endif
-}
+};
 
 int finaliseandexit() {
 	finalise();
 	return EXIT_FAILURE;
-}
+};
 
 int main(int argc, char** argv) {
+
 	std::string commandline = commandlinestring(argc, argv);
 	int mpisize = 1;
 	int mpirank = 0;
 	bool usingopenmp = false;
 	int openmpsize = 1;
-	std::string controlfile;
+	fs::path controlfile;
 	std::string mpipname = "No MPI - Standalone";
 
 	#ifdef ENABLE_MPI
@@ -114,20 +118,35 @@ int main(int argc, char** argv) {
 #endif		
 	}
 
-	controlfile = std::string(argv[1]);
+	controlfile = fs::path(argv[1]);
+
+	AEM::SystemType systype = AEM::aem_system_type(SBSINVERTER::get_stmpath(controlfile));
 	if (usingopenmp) {
 		#if defined _OPENMP
 		omp_init_lock(&fftw_thread_lock);
 		#pragma omp parallel num_threads(openmpsize)
-			{
-				int openmprank = omp_get_thread_num();
-				std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter<double>>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
+		{
+			int openmprank = omp_get_thread_num();
+			std::unique_ptr<Inverter> I;
+			if (systype == AEM::SystemType::SpectralTimeDomain) {
+				I = std::make_unique<SBSInverter<SpectralAEMSystem,cdouble>>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
 			}
-			std::cerr << "Warning log closing " << timestamp() << std::endl;
+			else {
+				I = std::make_unique<SBSInverter<TDEmSystem,double>>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
+			}
+		}
+		std::cerr << "Warning log closing " << timestamp() << std::endl;
 		#endif
 	}
 	else {
-		std::unique_ptr<cInverter> I = std::make_unique<cSBSInverter<double>>(controlfile, mpisize, mpirank, usingopenmp, commandline);
+		std::unique_ptr<Inverter> I;
+		if (systype == AEM::SystemType::SpectralTimeDomain) {
+			I = std::make_unique<SBSInverter<SpectralAEMSystem,cdouble>>(controlfile, mpisize, mpirank, usingopenmp, commandline);
+		}
+		else {
+			I = std::make_unique<SBSInverter<TDEmSystem,double>>(controlfile, mpisize, mpirank, usingopenmp, commandline);
+		}
+
 		#ifdef ENABLE_MPI
 			cMpiEnv::world_barrier();
 		#endif

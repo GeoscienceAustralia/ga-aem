@@ -58,12 +58,6 @@
     <ClInclude Include="..\..\submodules\cpp-utils\include\asciicolumnfile.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\csbsinverter.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\cinverter.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\tdemcomponentinfo.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -119,6 +113,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\aemsysteminversioninfo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\spectralaemsystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\submodules\cpp-utils\include\vector_utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\inverter.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sbsinverter.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

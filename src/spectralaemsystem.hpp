@@ -162,7 +162,13 @@ namespace AEM {
 		};
 
 		SpectralAEMSystem() {};
+
+		static AEM::SystemType get_type() { return AEM::SystemType::SpectralTimeDomain; };
 		
+		static std::unique_ptr<AEMSystem<cdouble>> unique_ptr(const fs::path stmfile) {
+			return std::make_unique<SpectralAEMSystem>(stmfile);
+		};
+
 		const size_t& nWindows() const {
 			return WindScheme.nWindows();
 		};
@@ -175,11 +181,19 @@ namespace AEM {
 
 			STM = cBlock(systemdescriptorfile);
 			SystemName = STM.getstringvalue("Name");
-			SystemType = STM.getstringvalue("Type");
 
-			if (strcasecmp(SystemType, "Spectral Time Domain") != 0) {
-				glog.errormsg(_SRC_, "System Type is not 'Spectral Time Domain'\n");
+			std::string typestr;
+			if (STM.getvalue("Type", typestr)) Type = aem_system_type(typestr);
+			else glog.errormsg(_SRC_, "The AEM System 'Type' is not specified.\n");
+
+			if (Type != SystemType::SpectralTimeDomain) {
+				glog.errormsg(_SRC_, "System Type must be 'Spectral Time Domain'.\n");
 			}
+
+			//SystemType = STM.getstringvalue("Type");
+			//if (strcasecmp(SystemType, "Spectral Time Domain") != 0) {
+			//	glog.errormsg(_SRC_, "System Type is not 'Spectral Time Domain'\n");
+			//}
 
 			cBlock txb = STM.findblock("Transmitter");
 			Tx = Transmitter(txb);
