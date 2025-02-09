@@ -20,17 +20,20 @@ using namespace AEM::INVERTER;
 
 namespace AEM {
 
+
 	class cInvertibleFieldDefinition {
 
-	public:
+	private:
 		int  poffset = -1;//offset into paramter index 
-		bool solve = false;//should we solvr for this or not
+
+	public:
+
+		bool solve = false;//should we solve for this parameter or not
 		cFieldDefinition input;// input values
 		cFieldDefinition refval;// reference model
 		cFieldDefinition refvalstd;// std deviation uncertainty
 		cFieldDefinition minval;// minimum bound
 		cFieldDefinition maxval;// maximum bound
-		cFieldDefinition tfr;// total-field reconstruction field (may be required for geometry parameters)
 
 		cInvertibleFieldDefinition() {};
 
@@ -38,19 +41,29 @@ namespace AEM {
 			initialise(parent, key);
 		};
 
+		void set_poffset(const int& _poffset) {
+			poffset = _poffset;
+		};
+
+		int get_poffset() const {
+			if (solve) return poffset;
+			return -1;
+		};
+
 		bool initialise(const cBlock& parent, const std::string& key) {
 			std::string id = parent.findkey(key);
 			if (id.compare(undefinedvalue<std::string>()) != 0) {
-				return entryinit(parent, key);
+				return initialise_from_entry(parent, key);
 			}
 			else {
 				cBlock b = parent.findblock(key);
 				if (b.empty() == true) {
-					std::string msg = strprint("Could not find control file block: %s.", key.c_str());
-					glog.errormsg(_SRC_, msg);
+					//std::string msg = strprint("Could not find control file block: %s.", key.c_str());
+					//glog.warningmsg(msg);
+					return false;
 				}
 
-				if (blockinit(b) == false) {
+				if (initialise_from_block(b) == false) {
 					std::string msg = strprint("Could not parse control file block: %s.", key.c_str());
 					glog.errormsg(_SRC_, msg);
 				}
@@ -58,20 +71,19 @@ namespace AEM {
 			}
 		};
 
-		bool entryinit(const cBlock& b, const std::string& key) {
+		bool initialise_from_entry(const cBlock& b, const std::string& key) {
 			poffset = -1;
 			input.initialise(b, key);
 			return true;
 		};
 
-		bool blockinit(const cBlock& b) {
+		bool initialise_from_block(const cBlock& b) {
 			b.get("solve", solve, false);
 			input.initialise(b, "input");
 			refval.initialise(b, "ref");
 			refvalstd.initialise(b, "std");
 			minval.initialise(b, "min");
 			maxval.initialise(b, "max");
-			tfr.initialise(b, "tfr");
 			return true;
 		};
 
@@ -82,7 +94,8 @@ namespace AEM {
 			}
 			else return false;
 		}
-	};
+	};	
+	using IFDMap = std::map<std::string, cInvertibleFieldDefinition, caseinsensetiveless<std::string>>;
 
 	class GeometryStore {
 
@@ -92,8 +105,8 @@ namespace AEM {
 		TDEmGeometry refvalstd;
 		TDEmGeometry minval;
 		TDEmGeometry maxval;
-		TDEmGeometry tfr;
-		TDEmGeometry invmodel;
+		TDEmGeometry pfr;// Primary field reconstruction 
+		TDEmGeometry invmodel;// Inversion model
 	};
 
 	class EarthStore {
@@ -188,18 +201,16 @@ namespace AEM {
 		size_t nSoundings = 0;
 
 	public:
-		using cFDMap = std::map<std::string, cFieldDefinition, caseinsensetiveless<std::string>>;		
 		std::vector<SoundingData<RT>> data;
-
 		std::string Name;
 		bool Use = false;
-		cFDMap fdMap;
+		FDMap fdMap;
+		IFDMap ifdMap;
+		ScaleFactorsStore sfStore;
+
 		bool EstimateNoiseFromModel = false;
 		std::vector<RT> mn;
 		std::vector<RT> an;
-
-		cInvertibleFieldDefinition fdSF;
-		ScaleFactorsStore SF;
 
 		AEMComponentInversionInfo() {};
 
@@ -207,6 +218,14 @@ namespace AEM {
 			bool status = b.getvalue(key, v);
 			return status;
 		}
+
+		cInvertibleFieldDefinition& get_ifd(const std::string& key) {
+			return ifdMap.at(key);
+		};
+
+		const cInvertibleFieldDefinition& get_ifd(const std::string& key) const {
+			return ifdMap.at(key);
+		};
 
 		bool getvector_ri(const cBlock& b, const std::string& key, std::vector<cdouble>& v) {
 			std::vector<double> r;
@@ -236,11 +255,18 @@ namespace AEM {
 			fdMap[ikey] = cFieldDefinition(b, ikey);
 		};
 
+		void add_invertiblefielddefinition(const cBlock& b, const std::string& key) {
+			ifdMap[key] = cInvertibleFieldDefinition(b, key);
+		};
+
 		void add_fielddefinitions(const cBlock& b) {
 			add_fielddefinition<RT>(b, "Primary");
 			add_fielddefinition<RT>(b, "Secondary");
 			add_fielddefinition<RT>(b, "Noise");
 			add_fielddefinition<RT>(b, "Total");
+			add_fielddefinition<double>(b, "GA");
+			add_fielddefinition<double>(b, "GGA");
+			add_invertiblefielddefinition(b, "ScaleFactor");
 		};
 
 		void initialise(const cBlock& b, const std::string& name, const size_t& nwindows, const size_t& nsoundings) {
@@ -255,8 +281,6 @@ namespace AEM {
 			EstimateNoiseFromModel = b.getboolvalue("EstimateNoiseFromModel");
 
 			if (EstimateNoiseFromModel) {
-				//mn = b.getdoublevector("MultiplicativeNoise");
-				//an = b.getdoublevector("AdditiveNoise");
 				bool status1 = getvector_ri(b, "MultiplicativeNoise", mn);
 				bool status2 = getvector_ri(b, "AdditiveNoise", an);
 				if (an.size() == 1) {
@@ -274,15 +298,7 @@ namespace AEM {
 				}
 			}
 
-			//fdP.initialise(b, "Primary");
-			//fdS.initialise(b, "Secondary");
-			//fdE.initialise(b, "Noise");
 			add_fielddefinitions(b);
-
-			cBlock sfb = b.findblock("ScaleFactor");
-			if (sfb.empty() == false) {
-				fdSF.initialise(b, "ScaleFactor");
-			}
 
 			nSoundings = nsoundings;
 			nWindows = nwindows;
@@ -360,6 +376,11 @@ namespace AEM {
 				}
 			}
 		}
+
+		//int scalefactor_poffset() const {
+		//	const cInvertibleFieldDefinition& ifd = ifdMap.at("ScaleFactor");
+		//	return ifd.get_poffset();
+		//};
 	};
 
 	//RT is Response type double or std::complex<double>
@@ -377,8 +398,8 @@ namespace AEM {
 		std::vector<TDEmResponse<RT>> predicted;
 		std::string units;
 
-		bool InvertXZAmplitude = false;
-		bool InvertTotalField = false;
+		bool InvertXZAmplitude  = false;
+		bool InvertTotalField   = false;
 		bool ReconstructPrimary = false;
 
 		AEMSystemInversionInfo(cBlock& b, const size_t nsoundings){
@@ -399,6 +420,7 @@ namespace AEM {
 			}
 			else (b.getvalue("InvertTotalField", InvertTotalField));
 
+			ReconstructPrimary = false;
 			if (InvertTotalField) {
 				ReconstructPrimary = b.getboolvalue("ReconstructPrimaryFieldFromInputGeometry");
 			}
@@ -425,9 +447,9 @@ namespace AEM {
 		}
 
 		void set_units(cInputManager* IM) {
-			for (size_t ci = 0; ci < 3; ci++) {
+			for (size_t ci = 0; ci < NCOMP; ci++) {
 				cFieldDefinition& fd = CompInfo[ci].fdMap["Secondary"];
-				if (fd.varname.size() > 0) {
+				if (fd.get_varname().size() > 0) {
 					cAsciiColumnField c;
 					IM->get_acsiicolumnfield(fd, c);
 					std::string u = c.get_att("units");

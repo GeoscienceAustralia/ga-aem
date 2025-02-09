@@ -20,7 +20,6 @@ namespace AEM {
 
 	protected:
 		std::string SystemName;
-		AEM::SystemType Type;
 		cBlock STM;
 		LEModeller LEM;
 
@@ -35,6 +34,7 @@ namespace AEM {
 		const cBlock& system_descriptor_block() const { return STM; };
 		LEModeller& lem() { return LEM; };
 
+		virtual SystemType type() const = 0;
 		virtual void read_system_descriptor_file(const fs::path& systemdescriptorfile) = 0;
 		virtual const size_t& nWindows() const = 0;
 		virtual const TDEmVectorResponse<RT>& forward_model_primary_field(const TDEmGeometry& G) = 0;

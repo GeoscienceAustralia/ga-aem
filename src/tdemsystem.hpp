@@ -172,6 +172,11 @@ namespace AEM {
 			return std::make_unique<TDEmSystem>(stmfile);
 		};
 
+
+		SystemType type() const {
+			return AEM::SystemType::TimeDomain;
+		};
+
 		const size_t& nWindows() const {
 			return WindScheme.nWindows();
 		};
@@ -186,12 +191,15 @@ namespace AEM {
 			SystemName = STM.getstringvalue("Name");
 
 			std::string typestr;
-			if (STM.getvalue("Type", typestr)) Type = aem_system_type(typestr);
+			if (STM.getvalue("Type", typestr)) {
+				AEM::SystemType systype = aem_system_type(typestr);
+				if (systype != SystemType::TimeDomain) {
+					glog.errormsg(_SRC_, "System Type must be 'Time Domain'.\n");
+				}
+			}
 			else glog.errormsg(_SRC_,"The AEM System 'Type' is not specified.\n");
 			
-			if (Type != SystemType::TimeDomain) {
-				glog.errormsg(_SRC_, "System Type must be 'Time Domain'.\n");
-			}
+			
 
 			cBlock txblock = STM.findblock("Transmitter");
 			Tx = Transmitter(txblock);
@@ -306,7 +314,7 @@ namespace AEM {
 			// Set geometry inside the LE Modeller
 			Vec3d tx_reference_orientation = Vec3d::UnitZ();
 			const Vec3d sep = G.txrx_separation();
-			const double& h = G.tx_height;
+			const double& h = G.tx_height();
 			const double& x = sep.x();
 			const double& y = sep.y();
 			const double& z = h + sep.z();

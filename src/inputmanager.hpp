@@ -108,12 +108,18 @@ namespace IOManager {
 
 		template<typename T>
 		bool read(const cFieldDefinition& fd, T& v, const size_t n = 1) {
-			if (fd.definitiontype() == cFieldDefinition::TYPE::UNAVAILABLE) {
+			if (fd.get_type() == cFieldDefinition::TYPE::UNAVAILABLE) {
 				v = undefinedvalue<T>();
 				return false;
 			}
-			else if (fd.definitiontype() == cFieldDefinition::TYPE::NUMERIC) {
-				v = (T)fd.numericvalue[0];
+			else if (fd.get_type() == cFieldDefinition::TYPE::NUMERIC) {
+				size_t deflen = fd.get_numericvalue().size();
+				if (deflen != 1 && deflen != n) {
+					std::ostringstream oss;
+					oss << "Mismatch in field sizes for '<" << fd.get_keyname() << ">' : expected " << n << " but got " << deflen << std::endl;
+					glog.errormsg(_SRC_, oss.str().c_str());
+				}
+				v = (T)fd.get_numericvalue()[0];
 				return true;
 			}
 
@@ -130,23 +136,22 @@ namespace IOManager {
 		template<typename T>
 		bool read(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n) {
 			vec.resize(n);
-			if (fd.definitiontype() == cFieldDefinition::TYPE::NUMERIC) {
-				size_t deflen = fd.numericvalue.size();
+			if (fd.get_type() == cFieldDefinition::TYPE::NUMERIC) {
+				size_t deflen = fd.get_numericvalue().size();
 				if (deflen != 1 && deflen != n) {
 					std::ostringstream oss;
-					oss << "Mismatch in field sizes for '<" << fd.keyname << ">' : expected " << n << " but got " << deflen << std::endl;
+					oss << "Mismatch in field sizes for '<" << fd.get_keyname() << ">' : expected " << n << " but got " << deflen << std::endl;
 					glog.errormsg(_SRC_, oss.str().c_str());
 				}
 
-
 				if (deflen == 1) {
 					for (size_t i = 0; i < n; i++) {
-						vec[i] = (T)fd.numericvalue[0];
+						vec[i] = (T)fd.get_numericvalue()[0];
 					}
 				}
 				else {
 					for (size_t i = 0; i < n; i++) {
-						vec[i] = (T)fd.numericvalue[i];
+						vec[i] = (T)fd.get_numericvalue()[i];
 					}
 				}
 				return true;
@@ -389,11 +394,11 @@ namespace IOManager {
 
 		bool get_acsiicolumnfield(const cFieldDefinition& fd, cAsciiColumnField& c) const {
 			int findex = -1;
-			if (fd.type == cFieldDefinition::TYPE::VARIABLENAME) {
-				findex = AF.fieldindexbyname(fd.varname);
+			if (fd.get_type() == cFieldDefinition::TYPE::VARIABLENAME) {
+				findex = AF.fieldindexbyname(fd.get_varname());
 			}
-			else if (fd.type == cFieldDefinition::TYPE::COLUMNNUMBER) {
-				findex = (int)fd.column - 1;
+			else if (fd.get_type() == cFieldDefinition::TYPE::COLUMNNUMBER) {
+				findex = (int)fd.get_column() - 1;
 			}
 
 			if (findex >= 0) {
@@ -411,7 +416,7 @@ namespace IOManager {
 				return true;
 			}
 			else {
-				glog.errormsg(_SRC_, "Could not find field %s\n", fd.varname.c_str());
+				glog.errormsg(_SRC_, "Could not find field %s\n", fd.get_varname().c_str());
 				return false;
 			}
 		}
@@ -462,7 +467,7 @@ namespace IOManager {
 		template<typename T>
 		bool file_read_impl(const cFieldDefinition& fd, std::vector<T>& v, const size_t n)
 		{
-			NC.getDataByPointIndex(fd.varname, Record, v);
+			NC.getDataByPointIndex(fd.get_varname(), Record, v);
 			return true;
 		}
 	};

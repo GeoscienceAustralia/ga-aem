@@ -7,8 +7,7 @@
 namespace AEM {
 	class CalculationType {
 
-	public: enum class Mode { FM, DC, DT, DH, DR, DX, DY, DZ, 
-		DTX_HEIGHT, DRX_ROLL, DRX_PITCH, DRX_YAW, NONE };
+	public: enum class Mode { FM, DC, DT, DH, DR, DX, DY, DZ, DTX_HEIGHT, DRX_ROLL, DRX_PITCH, DRX_YAW, NONE };
 	private: inline static std::vector<std::string> ModeNames{ "FM", "DC", "DT", "DH", "DR", "DX", "DY", "DZ", "NONE" };
 	private: inline static std::vector<std::string> ModeDescriptions{ "Forward Model", "Layer conductivity derivative", "Layer thickness derivative", "Tx Height derivative", "Tx-Rx radial distance derivative", "Tx-Rx Dx horizontal distance derivative", "Tx-Rx Dy horizontal distance derivative", "Tx-Rx Dz horizontal distance derivative", "No calculation" };
 
