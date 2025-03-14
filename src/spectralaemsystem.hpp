@@ -177,6 +177,10 @@ namespace AEM {
 			return AEM::SystemType::SpectralTimeDomain;
 		};
 
+		std::string type_string() const {
+			return "SpectralTimeDomain";
+		};
+
 		void read_system_descriptor_file(const fs::path& systemdescriptorfile) {
 			if (!fs::exists(systemdescriptorfile)) {
 				std::string msg = strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.string().c_str());
@@ -419,7 +423,7 @@ namespace AEM {
 			}
 
 			if (MO.SaveDiagnosticFiles) {
-				WindScheme.write_windows("diag_windows.txt", WR.secondary(XCOMP), WR.secondary(YCOMP), WR.secondary(ZCOMP));
+				WindScheme.write_windows<cdouble,std::vector>("diag_windows.txt", WR.secondary(XCOMP), WR.secondary(YCOMP), WR.secondary(ZCOMP));
 			}
 		}
 

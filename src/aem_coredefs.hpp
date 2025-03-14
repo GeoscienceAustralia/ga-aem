@@ -10,7 +10,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "blocklanguage.hpp"
 #include "lem.hpp"
 #include "layeredearthmodeller.hpp"
-#include "aem_coredefs.hpp"
+#include "vector_utils.hpp"
+
 
 namespace AEM {
 	using namespace VectorUtils;
@@ -20,6 +21,8 @@ namespace AEM {
 	using VectorUtils::operator-;
 	using VectorUtils::operator*;
 	using VectorUtils::operator/;
+	using VectorUtils::operator+=;
+	using VectorUtils::operator-=;
 
 	using namespace LEM2;
 	using CalculationType = AEM::CalculationType;
@@ -95,7 +98,13 @@ namespace AEM {
 		std::vector<std::complex<T>> v;
 		complexmerge(realv, imagv, v);
 		return v;
-	}
+	};
+
+	template <typename T>
+	size_t value_size() {};
+	template<> size_t value_size<double>() { return 1; };
+	template<> size_t value_size<cdouble>() { return 2; };
+
 
 	class LowPassFilter {
 
@@ -632,6 +641,16 @@ namespace AEM {
 			}
 		}
 
+		template<typename T>
+		void computewindow(const T* values, Eigen::Matrix<T,-1,1>& windowed_values) {
+			std::fill(windowed_values.begin(), windowed_values.end(), T(0.0)); // Reset to zero
+			for (size_t w = 0; w < nwindows; w++) {
+				for (size_t k = 0; k < Windows[w].Sample.size(); k++) {
+					windowed_values[w] += values[Windows[w].Sample[k]] * Windows[w].Weight[k];
+				}
+			}
+		}
+
 		void printwindows(const double& PX, const double& PY, const double& PZ, const std::vector<double>& SX, const std::vector<double>& SY, const std::vector<double>& SZ) const {
 			printf("Primary   %15.8lf%15.8lf%15.8lf\n\n", PX, PY, PZ);
 			printf("Window#             X               Y               Z\n");
@@ -640,14 +659,19 @@ namespace AEM {
 			}
 		};
 
-		void write_windows(const fs::path& path, const std::vector<double>& SX, const std::vector<double>& SY, const std::vector<double>& SZ) const {
+		template<typename T, template<typename> typename V>
+		void write_windows(const fs::path& path, 
+			const V<T>& SX, 
+			const V<T>& SY, 
+			const V<T>& SZ) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t w = 0; w < nwindows; w++) {
 				ofs << strprint("%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, Windows[w].Low, Windows[w].High, SX[w], SY[w], SZ[w]);
 			}
 		};
 
-		void write_windows(const fs::path& path, const std::vector<cdouble>& SX, const std::vector<cdouble>& SY, const std::vector<cdouble>& SZ) const {
+		template<typename T, template<typename> typename V>
+		void write_windows(const fs::path& path, const V<std::complex<T>>& SX, const V<std::complex<T>>& SY, const V<std::complex<T>>& SZ) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t w = 0; w < nwindows; w++) {
 				ofs << strprint("%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, Windows[w].Low, Windows[w].High, SX[w], SY[w], SZ[w]);

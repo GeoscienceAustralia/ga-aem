@@ -250,7 +250,7 @@ namespace AEM::INVERTER {
 		virtual void forwardmodel(const Vector& parameters, Vector& predicted) = 0;
 		virtual void forwardmodel_and_jacobian(const Vector& parameters, Vector& predicted, Matrix& jacobian) = 0;
 		virtual Vector parameter_change(const double& lambda, const Vector& m_old, const Vector& g_old) = 0;
-		virtual double phiModel(const Vector& m) = 0;
+		virtual double phiModel(const Vector& m) const = 0;
 		virtual Vector solve_linear_system(const double& lambda, const Vector& param, const Vector& pred) = 0;
 
 		void initialise(const fs::path& controlfile) {

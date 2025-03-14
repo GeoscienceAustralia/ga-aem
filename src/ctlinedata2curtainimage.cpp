@@ -16,6 +16,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <iomanip>
 
 #include "gaaem_version.hpp"
+#include "logger.hpp"
 #include "general_types.hpp"
 #include "general_utils.hpp"
 #include "general_types.hpp"

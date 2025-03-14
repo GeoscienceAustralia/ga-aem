@@ -177,6 +177,10 @@ namespace AEM {
 			return AEM::SystemType::TimeDomain;
 		};
 
+		std::string type_string() const {
+			return "TimeDomain";
+		};
+
 		const size_t& nWindows() const {
 			return WindScheme.nWindows();
 		};
@@ -454,7 +458,7 @@ namespace AEM {
 			}
 
 			if (MO.SaveDiagnosticFiles) {
-				WindScheme.write_windows("diag_windows.txt", WR.secondary(XCOMP), WR.secondary(YCOMP), WR.secondary(ZCOMP));
+				WindScheme.write_windows<double,std::vector>("diag_windows.txt", WR.secondary(XCOMP), WR.secondary(YCOMP), WR.secondary(ZCOMP));
 			}
 		}
 

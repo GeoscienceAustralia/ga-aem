@@ -82,14 +82,16 @@ namespace AEM::INVERTER::SBSINVERTER {
 			PredictedData = b.getboolvalue("PredictedData");
 
 			if (b.getvalue("Dump", Dump)) {
-				if (b.getvalue("DumpPath", DumpBasePath)) {
-					DumpBasePath += fs::path::preferred_separator;
-					DumpBasePath.make_preferred();
-					makedirectory(DumpBasePath);
-				}
-				else {
-					std::string s = "If Dump = yes a DumpPath must be specified.\n";
-					glog.errormsg(_SRC_, s);
+				if (Dump) {
+					if (b.getvalue("DumpPath", DumpBasePath)) {
+						DumpBasePath += fs::path::preferred_separator;
+						DumpBasePath.make_preferred();
+						makedirectory(DumpBasePath);
+					}
+					else {
+						std::string s = "If Dump = yes a DumpPath must be specified.\n";
+						glog.errormsg(_SRC_, s);
+					}
 				}
 			}
 		}
@@ -342,20 +344,27 @@ namespace AEM::INVERTER::SBSINVERTER {
 		size_t nLayers = 0;
 		size_t nParamPerSounding = 0;
 		size_t nGeomParamPerSounding = 0;
+		size_t nGGAOffsetParamPerSounding = 0;
 		size_t nScalingParam = 0;
 
-		const size_t nSystems() const { return SysInfo.size(); };
+		const size_t nSystems() const { return SI.size(); };
 
 		size_t nPointsOutput = 0;
-		std::vector<GeometryStore> GStore;
 		std::vector<EarthStore> EStore;
+		std::vector<GeometryStore> GStore;
+		std::vector<std::vector<GGAOffsetStore>> GGAStore;
+
 		cOutputOptions OutputOpt;
-		std::vector<AEMSystemInversionInfo<AEMSystemClass, RT>> SysInfo;
+		using SysInfo = SystemInversionInfo<AEMSystemClass, RT>;
+		using CompInfo = ComponentInversionInfo<RT>;
+		std::vector<SysInfo> SI;
 
 		//Column definitions
-		cInvertibleFieldDefinition fdC;
-		cInvertibleFieldDefinition fdT;
-		using IFDKeyMap = std::map<std::string, cInvertibleFieldDefinition, caseinsensetiveless<std::string>>;		
+		Parameter pConductivity;
+		Parameter pThickness;
+
+		//using IFDKeyMap = std::map<std::string, cInvertibleFieldDefinition, caseinsensetiveless<std::string>>;
+		using IFDKeyMap = std::map<std::string, Parameter, caseinsensetiveless<std::string>>;
 		IFDKeyMap ifdGMap;
 		std::vector<cFieldDefinition> fdPFRGvec;
 
@@ -395,11 +404,6 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return mcull;
 		}
 
-		template <typename T>
-		size_t value_size() {};
-		template<> size_t value_size<double>() { return 1; };
-		template<> size_t value_size<cdouble>() { return 2; };
-
 		const AEM::SystemType& aem_system_type() const {
 			return AEM::aem_system_type<AEMSystemClass>();
 		};
@@ -411,6 +415,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 		cLinearConstraint LCrefc;//Conductivity reference model constraint
 		cLinearConstraint LCreft;//Thickness reference model constraint
 		cLinearConstraint LCrefg;//Geometry reference model constraint
+		cLinearConstraint LCrefo;//GGAoffset reference model constraint
 		cLinearConstraint LCrefs;//Scaling factor reference model constraint
 
 		cLinearConstraint LCvcsmth;//Vertical conductivity smoothness constraint
@@ -485,21 +490,24 @@ namespace AEM::INVERTER::SBSINVERTER {
 			OM->opendatafile(IM->datafilename(), IM->subsamplerate());
 		}
 
-		bool solve_thickness() const
-		{
-			return fdT.solve;
+		const CompInfo& compinfo(const size_t& systemindex, const size_t& componentindex) const {
+			return SI[systemindex].CI[componentindex];
+		};
+
+		bool solve_thickness() const {
+			return pThickness.solve();
 		};
 
 		bool solve_conductivity() const {
-			return fdC.solve;
+			return pConductivity.solve();
 		};
 
 		bool solve_geometry_elementname(const std::string& gname) const {
-			return ifdGMap.at(gname).solve;
+			return ifdGMap.at(gname).solve();
 		};
 
 		bool solve_geometry_index(const size_t index) const {
-			return ifdGMap.at(TDEmGeometry::element_name(index)).solve;
+			return ifdGMap.at(TDEmGeometry::element_name(index)).solve();
 		};
 
 		bool solve_geometry() const {
@@ -507,9 +515,15 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return true;
 		};
 
+		bool solve_ggaoffsets() const {
+			if (nGGAOffsetParamPerSounding > 0) return true;
+			return true;
+		};
+		
+
 		bool solve_scalingfactor(const size_t sysi, const size_t ci) const {
-			const cInvertibleFieldDefinition& ifd = get_ifd(sysi, ci, SCALEFACTOR);
-			return ifd.solve;
+			//if (nScalingParam == 0) return false;
+			return SI[sysi].CI[ci].scalingfactor.solve();
 		};
 
 		bool solve_scalingfactors() const {
@@ -517,15 +531,15 @@ namespace AEM::INVERTER::SBSINVERTER {
 			else return false;
 		}
 
-		cInvertibleFieldDefinition& get_ifd(const size_t sysi, const size_t ci, const std::string& key) {
-			AEMComponentInversionInfo<RT>& C = SysInfo[sysi].CompInfo[ci];
-			return C.get_ifd(key);
-		};
+		//cInvertibleFieldDefinition& get_ifd(const size_t sysi, const size_t ci, const std::string& key) {
+		//	CompInfo& C = SI[sysi].CI[ci];
+		//	return C.get_ifd(key);
+		//};
 
-		const cInvertibleFieldDefinition& get_ifd(const size_t sysi, const size_t ci, const std::string& key) const {
-			const AEMComponentInversionInfo<RT>& C = SysInfo[sysi].CompInfo[ci];
-			return C.get_ifd(key);
-		};
+		//const cInvertibleFieldDefinition& get_ifd(const size_t sysi, const size_t ci, const std::string& key) const {
+		//	const CompInfo& C = SI[sysi].CI[ci];
+		//	return C.get_ifd(key);
+		//};
 
 		std::string bunch_id() {
 			const size_t si = Bunch.master_index();
@@ -566,7 +580,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			if (solve_conductivity() == false) {
 				glog.errormsg(_SRC_, "Out of boundes in cindex().");
 			}
-			return (int)(si * nParamPerSounding + fdC.get_poffset() + li);
+			return (int)(si * nParamPerSounding + pConductivity.get_poffset() + li);
 			//return (int)(si * nParamPerSounding + cOffset + li);
 		}
 
@@ -574,13 +588,13 @@ namespace AEM::INVERTER::SBSINVERTER {
 			if (solve_thickness() == false) {
 				glog.errormsg(_SRC_, "Out of boundes in tindex().");
 			}
-			return (int)(si * nParamPerSounding + fdT.get_poffset() + li);
+			return (int)(si * nParamPerSounding + pThickness.get_poffset() + li);
 			//return (int)(si * nParamPerSounding + tOffset + li);
 		}
 
 		int gindex(const size_t& si, const std::string& gname) const {
-			const cInvertibleFieldDefinition& ifd = ifdGMap.at(gname);
-			int poffset = ifd.get_poffset();
+			const Parameter& p = ifdGMap.at(gname);
+			int poffset = p.get_poffset();
 			if (poffset >= 0) return (int)(si * nParamPerSounding + poffset);
 			return -1;
 		};
@@ -590,8 +604,19 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return gindex(si,gname);
 		};
 
+		int ggaoffsetindex(const size_t& si, const size_t& sysi, const size_t& ci) const {
+			const Parameter& p = SI[sysi].CI[ci].ggaoffset;
+			int po = p.get_poffset();
+			if (po >= 0) {
+				const int pi = (int)(si * nParamPerSounding + po);
+				return pi;
+			}
+		};
+
 		int sfindex(const size_t& sysi, const size_t& ci) const {
-			return get_ifd(sysi, ci, SCALEFACTOR).get_poffset();
+			const Parameter& p = SI[sysi].CI[ci].scalingfactor;
+			int po = p.get_poffset();
+			return po;
 		};
 
 		void openlogfile() {
@@ -673,6 +698,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			LCrefc = cLinearConstraint("ConductivityReferenceModel", { }, "RefCon", "Conductivity reference model");
 			LCreft = cLinearConstraint("ThicknessReferenceModel", { }, "RefThk", "Thickness reference model");
 			LCrefg = cLinearConstraint("GeometryReferenceModel", { }, "RefGeom", "Geometry reference model");
+			LCrefo = cLinearConstraint("GGAOffsetReferenceModel", { }, "RefGGAOffset", "GGA offset reference model");
 			LCrefs = cLinearConstraint("ScalingFactorsReferenceModel", { }, "RefScalingFactors", "ScalingFactors reference model");
 
 			LCvcsmth = cLinearConstraint("VerticalConductivity", { "Minimise1stDerivatives","Minimise2ndDerivatives" }, "VCsmth", "Vertical conductivity smoothness");
@@ -694,6 +720,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 				}
 				else if (LCrefg.parse(cstr)) {
 					LCrefg.set_operates_on_difference_from_reference_model();
+				}
+				else if (LCrefo.parse(cstr)) {
+					LCrefo.set_operates_on_difference_from_reference_model();
 				}
 				else if (LCrefs.parse(cstr)) {
 					LCrefs.set_operates_on_difference_from_reference_model();
@@ -754,9 +783,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 				glog.errormsg(_SRC_, msg.str());
 			}
 
-			fdC = cInvertibleFieldDefinition(b, "Conductivity");
+			pConductivity = Parameter(b, "Conductivity");
 			if (nLayers > 1) {
-				fdT = cInvertibleFieldDefinition(b, "Thickness");
+				pThickness = Parameter(b, "Thickness");
 			}
 		};
 
@@ -779,12 +808,12 @@ namespace AEM::INVERTER::SBSINVERTER {
 			}
 		};
 
-		IFDKeyMap get_field_definitions_geometry(const cBlock& parent) const {
+		IFDKeyMap get_field_definitions_geometry(const cBlock& parentblock) const {
 			IFDKeyMap gmap;
 			for (size_t i = 0; i < TDEmGeometry::NELEM; i++) {
 				std::string gname = TDEmGeometry::element_name(i);
-				if (gmap.count(gname) == 0) {
-					gmap[gname] = cInvertibleFieldDefinition(parent, gname);
+				if (gmap.find(gname) == gmap.end()) {
+					gmap[gname] = Parameter(parentblock, gname);
 				}
 				else {
 					std::string msg = strprint("Parameter %s has already been already added.", gname.c_str());
@@ -795,8 +824,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 		};
 
 		bool reconstruct_primary() const {
-			for (size_t sysi = 0; sysi < SysInfo.size(); sysi++) {
-				if (SysInfo[sysi].ReconstructPrimary == true) return true;
+			for (size_t sysi = 0; sysi < SI.size(); sysi++) {
+				if (SI[sysi].ReconstructPrimary == true) return true;
 			}
 			return false;
 		};
@@ -836,41 +865,50 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 			nParamPerSounding = 0;
 			nGeomParamPerSounding = 0;
-			//cOffset = 0;
-			//tOffset = 0;
+			nGGAOffsetParamPerSounding = 0;
 
-			//int poffset = 0;
 			if (solve_conductivity()) {
-				fdC.set_poffset((int)nParamPerSounding);
+				pConductivity.set_poffset((int)nParamPerSounding);
 				nParamPerSounding += nLayers;
 			}
 
 			if (solve_thickness()) {
-				fdT.set_poffset((int)nParamPerSounding);
+				pThickness.set_poffset((int)nParamPerSounding);
 				nParamPerSounding += nLayers - 1;
 			}
 
 			//Geometry params
 			for (size_t gi = 0; gi < TDEmGeometry::NELEM; gi++) {
 				std::string gname = TDEmGeometry::element_name(gi);
-				cInvertibleFieldDefinition& ifd = ifdGMap.at(gname);
-				if (ifd.solve) {
-					ifd.set_poffset((int)nParamPerSounding);
+				Parameter& p = ifdGMap.at(gname);
+				if (p.solve()) {
+					p.set_poffset((int)nParamPerSounding);
 					nParamPerSounding++;
 					nGeomParamPerSounding++;
 				}
-				else {
-					ifd.set_poffset(-1);
-				}
 			};
 
-			//Scaling params
-			for (size_t sysi = 0; sysi < SysInfo.size(); sysi++) {
+			//GGA Offset
+			for (size_t sysi = 0; sysi < SI.size(); sysi++) {
 				for (size_t ci = 0; ci < NCOMP; ci++) {
-					cInvertibleFieldDefinition& ifd = get_ifd(sysi, ci, SCALEFACTOR);
-					if(ifd.solve) {
-						ifd.set_poffset((int)(nParamPerSounding * nSoundings + nScalingParam));
-						nScalingParam++;
+					CompInfo& C = SI[sysi].CI[ci];
+					Parameter& p = C.ggaoffset;
+					if (p.solve()) {
+						p.set_poffset((int)nParamPerSounding);
+						nParamPerSounding++;
+						nGGAOffsetParamPerSounding++;
+					}
+				}
+			}
+
+			//Scaling params
+			for (size_t sysi = 0; sysi < SI.size(); sysi++) {
+				for (size_t ci = 0; ci < NCOMP; ci++) {
+					CompInfo& C = SI[sysi].CI[ci];
+					Parameter& p = C.scalingfactor;
+					if (p.solve()) {
+						p.set_poffset((int)(nParamPerSounding * nSoundings + nScalingParam));
+						nScalingParam++;						
 					}
 				}
 			}
@@ -882,6 +920,11 @@ namespace AEM::INVERTER::SBSINVERTER {
 			if (nGeomParamPerSounding == 0) {
 				LCrefg.alpha = 0.0;
 				NLCcablen.alpha = 0.0;
+			}
+
+			
+			if (nGGAOffsetParamPerSounding == 0) {
+				LCrefo.alpha = 0.0;
 			}
 
 			if (nScalingParam == 0) {
@@ -901,7 +944,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			Param_Min.setConstant(ud);
 			Param_Max.setConstant(ud);
 
-			if (fdC.bound()) {
+			if (pConductivity.bound()) {
 				for (size_t si = 0; si < nSoundings; si++) {
 					const EarthStore& e = EStore[si];
 					for (size_t li = 0; li < nLayers; li++) {
@@ -912,7 +955,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 				}
 			}
 
-			if (fdT.bound()) {
+			if (pThickness.bound()) {
 				for (size_t si = 0; si < nSoundings; si++) {
 					const EarthStore& e = EStore[si];
 					for (size_t li = 0; li < nLayers - 1; li++) {
@@ -927,8 +970,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 				const GeometryStore& g = GStore[si];
 				for (size_t i = 0; i < TDEmGeometry::NELEM; i++) {
 					const std::string ename = TDEmGeometry::element_name(i);
-					const cInvertibleFieldDefinition& e = ifdGMap.at(ename);
-					if (e.bound()) {
+					const Parameter& p = ifdGMap.at(ename);
+					if (p.bound()) {
 						const int pi = gindex(si, ename);
 						Param_Min[pi] = g.minval[ename];
 						Param_Max[pi] = g.maxval[ename];
@@ -936,16 +979,29 @@ namespace AEM::INVERTER::SBSINVERTER {
 				}
 			}
 
-			for (size_t sysi = 0; sysi < SysInfo.size(); sysi++) {
-				for (size_t ci = 0; ci < NCOMP; ci++) {
-					const cInvertibleFieldDefinition& ifd = get_ifd(sysi, ci, SCALEFACTOR);
-					if (ifd.bound()) {
-						int pi = ifd.get_poffset();
-						if (ifd.solve) {
-							const AEMComponentInversionInfo<RT>& C = SysInfo[sysi].CompInfo[ci];
-							Param_Min[pi] = C.sfStore.minval;
-							Param_Max[pi] = C.sfStore.maxval;
+			for (size_t si = 0; si < nSoundings; si++) {
+				for (size_t sysi = 0; sysi < SI.size(); sysi++) {
+					for (size_t ci = 0; ci < NCOMP; ci++) {
+						const CompInfo& C = SI[sysi].CI[ci];
+						const Parameter& p = C.ggaoffset;
+						if (p.bound()) {
+							int pi = ggaoffsetindex(si, sysi, ci);
+							Param_Min[pi] = C.ggaoffsetStore.minval[si];
+							Param_Max[pi] = C.ggaoffsetStore.maxval[si];
 						}
+					}
+				}
+			}
+
+			for (size_t sysi = 0; sysi < SI.size(); sysi++) {
+				for (size_t ci = 0; ci < NCOMP; ci++) {
+					const CompInfo& C  = SI[sysi].CI[ci];
+					const Parameter& p = C.scalingfactor;
+					if (p.bound()) {
+						int pi = p.get_poffset();
+						const CompInfo& C = SI[sysi].CI[ci];
+						Param_Min[pi] = C.sfStore.minval;
+						Param_Max[pi] = C.sfStore.maxval;
 					}
 				}
 			}
@@ -1002,7 +1058,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 		void initialise_Wg() {
 			cLinearConstraint& C = LCrefg;
 			C.W = Matrix::Zero(nParam, nParam);
-			if (nGeomParamPerSounding <= 0)return;
+			if (solve_geometry() <= 0)return;
 
 			double s = C.alpha / (double)(nGeomParamPerSounding * nSoundings);
 			for (size_t si = 0; si < nSoundings; si++) {
@@ -1015,22 +1071,44 @@ namespace AEM::INVERTER::SBSINVERTER {
 			}
 		};
 
+		void initialise_Wo() {
+			cLinearConstraint& C = LCrefo;
+			C.W = Matrix::Zero(nParam, nParam);
+			if (solve_ggaoffsets() == false)return;
+
+			double s = C.alpha / (double)(nGGAOffsetParamPerSounding * nSoundings);
+			for (size_t si = 0; si < nSoundings; si++) {
+				for (size_t sysi = 0; sysi < SI.size(); sysi++) {
+					for (size_t ci = 0; ci < NCOMP; ci++) {
+						if (compinfo(sysi,ci).Use){
+							const int pi = ggaoffsetindex(si, sysi, ci);
+							if (pi >= 0) {
+								C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+							}
+						}
+					}
+				}
+			}
+		};
+
 		void initialise_Ws() {
 			cLinearConstraint& C = LCrefs;
 			C.W = Matrix::Zero(nParam, nParam);
 			if (solve_scalingfactors() == false)return;
 
 			double s = C.alpha / (double)(nScalingParam);
-			for (size_t sysi = 0; sysi < SysInfo.size(); sysi++) {
+			for (size_t sysi = 0; sysi < SI.size(); sysi++) {
 				for (size_t ci = 0; ci < NCOMP; ci++) {
-					const int pi = sfindex(sysi, ci);
-					if (pi >= 0) {
-						C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+					if (compinfo(sysi, ci).Use) {
+						const int pi = sfindex(sysi, ci);
+						if (pi >= 0) {
+							C.W(pi, pi) = s / (RefParamStd[pi] * RefParamStd[pi]);
+						}
 					}
 				}
 			}
 		};
-
+		
 		void initialise_VC() {
 			cLinearConstraint& C = LCvcsmth;
 			C.W = Matrix::Zero(nParam, nParam);
@@ -1365,7 +1443,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			}
 		}
 
-		Vector CableLengths(const Vector& m) {
+		Vector CableLengths(const Vector& m) const {
 			Vector cablelength(nSoundings);
 			const std::vector<TDEmGeometry> gv = get_geometry(m);
 			for (size_t si = 0; si < nSoundings; si++) {
@@ -1376,7 +1454,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return cablelength;
 		}
 
-		Vector CableLengthConstraint_forward(const Vector& m) {
+		Vector CableLengthConstraint_forward(const Vector& m) const {
 			Vector predicted = CableLengths(m);
 			if (NLCcablen.method == "BunchSimilarity") {
 				double clmean = predicted.mean();
@@ -1455,8 +1533,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return dv;
 		}
 
-		Vector BoundsConstraint_forward(const Vector& m) {
-			cNonLinearConstraint& C = NLCbounds;
+		Vector BoundsConstraint_forward(const Vector& m) const {
+			const cNonLinearConstraint& C = NLCbounds;
 			Vector predicted = Vector::Zero(nParam);
 			if (C.alpha == 0.0) return predicted;
 			for (size_t pi = 0; pi < nParam; pi++) {
@@ -1486,12 +1564,14 @@ namespace AEM::INVERTER::SBSINVERTER {
 			initialise_Wc();
 			initialise_Wt();
 			initialise_Wg();
+			initialise_Wo();
 			initialise_Ws();
 
 			Wr = Matrix::Zero(nParam, nParam);
 			if (LCrefc.alpha > 0.0) Wr += LCrefc.W;
 			if (LCreft.alpha > 0.0) Wr += LCreft.W;
 			if (LCrefg.alpha > 0.0) Wr += LCrefg.W;
+			if (LCrefo.alpha > 0.0) Wr += LCrefo.W;
 			if (LCrefs.alpha > 0.0) Wr += LCrefs.W;
 		}
 
@@ -1516,6 +1596,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 				LCrefc.write_W_matrix(dp);
 				LCreft.write_W_matrix(dp);
 				LCrefg.write_W_matrix(dp);
+				LCrefo.write_W_matrix(dp);
 				LCrefs.write_W_matrix(dp);
 				LCvcsmth.write_W_matrix(dp);
 				LCvcsim.write_W_matrix(dp);
@@ -1562,8 +1643,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 				fs::path stmfile;
 				if (b.getvalue("SystemFile", stmfile)) {
 					glog.logmsg(0, "Reading AEM system file %s\n", stmfile.string().c_str());
-					SysInfo.emplace_back(AEMSystemInversionInfo<AEMSystemClass, RT>(b, nSoundings));
-					SysInfo[sysi].set_units(IM.get());
+					SI.emplace_back(SystemInversionInfo<AEMSystemClass, RT>(b, nSoundings));
+					SI[sysi].set_units(IM.get());
 				}
 				else glog.errormsg(_SRC_, "No AWM 'SystemFile' is specified.\n");
 			}
@@ -1580,8 +1661,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 				for (size_t sysi = 0; sysi < nsys; sysi++) {
 					_vindex_[si][sysi].resize(XZAMP+1);//4 because of xzinversion				
 					for (size_t ci = 0; ci < (XZAMP+1); ci++) {
-						_vindex_[si][sysi][ci].resize(SysInfo[sysi].nwindows);
-						for (size_t wi = 0; wi < SysInfo[sysi].nwindows; wi++) {
+						_vindex_[si][sysi][ci].resize(SI[sysi].nWindows());
+						for (size_t wi = 0; wi < SI[sysi].nWindows(); wi++) {
 							_vindex_[si][sysi][ci][wi] = -1;
 						}
 					}
@@ -1591,17 +1672,17 @@ namespace AEM::INVERTER::SBSINVERTER {
 			int vi = 0;
 			for (size_t si = 0; si < nSoundings; si++) {
 				for (size_t sysi = 0; sysi < nsys; sysi++) {
-					auto& S = SysInfo[sysi];
+					SysInfo& S = SI[sysi];
 					if (S.InvertXZAmplitude) {
-						nAllData += S.nwindows * vsize;
-						for (size_t wi = 0; wi < S.nwindows; wi++) {
+						nAllData += S.nWindows() * vsize;
+						for (size_t wi = 0; wi < S.nWindows(); wi++) {
 							_vindex_[si][sysi][XZAMP][wi] = vi;
 							vi++;
 						}
 
-						if (S.CompInfo[YCOMP].Use) {
-							nAllData += S.nwindows * vsize;
-							for (size_t wi = 0; wi < S.nwindows; wi++) {
+						if (S.CI[YCOMP].Use) {
+							nAllData += S.nWindows() * vsize;
+							for (size_t wi = 0; wi < S.nWindows(); wi++) {
 								_vindex_[si][sysi][YCOMP][wi] = vi;
 								vi++;
 							}
@@ -1609,10 +1690,10 @@ namespace AEM::INVERTER::SBSINVERTER {
 					}
 					else {
 						for (size_t ci = 0; ci < NCOMP; ci++) {
-							auto& c = S.CompInfo[ci];
-							if (c.Use) {
-								nAllData += S.nwindows * vsize;
-								for (size_t wi = 0; wi < S.nwindows; wi++) {
+							CompInfo& C = S.CI[ci];
+							if (C.Use) {
+								nAllData += S.nWindows() * vsize;
+								for (size_t wi = 0; wi < S.nWindows(); wi++) {
 									_vindex_[si][sysi][ci][wi] = vi;
 									vi++;
 								}
@@ -1632,31 +1713,30 @@ namespace AEM::INVERTER::SBSINVERTER {
 			const size_t nsys = nSystems();
 			for (size_t si = 0; si < nSoundings; si++) {
 				for (size_t sysi = 0; sysi < nsys; sysi++) {
-					auto& S = SysInfo[sysi];
-					AEMSystem<RT>& A = *S.System;
+					SysInfo& S = SI[sysi];
 					if (S.ReconstructPrimary) {
-						TDEmVectorResponse<RT> P = A.forward_model_primary_field(GStore[si].pfr);
-						if (S.CompInfo[XCOMP].Use) S.CompInfo[XCOMP].data[si].P = P[XCOMP];
-						if (S.CompInfo[YCOMP].Use) S.CompInfo[YCOMP].data[si].P = P[YCOMP];
-						if (S.CompInfo[ZCOMP].Use) S.CompInfo[ZCOMP].data[si].P = P[ZCOMP];
+						TDEmVectorResponse<RT> P = S.System->forward_model_primary_field(GStore[si].pfr);
+						if (S.CI[XCOMP].Use) S.CI[XCOMP].data[si].P = P[XCOMP];
+						if (S.CI[YCOMP].Use) S.CI[YCOMP].data[si].P = P[YCOMP];
+						if (S.CI[ZCOMP].Use) S.CI[ZCOMP].data[si].P = P[ZCOMP];
 					}
 
 					if (S.InvertXZAmplitude) {
-						for (size_t wi = 0; wi < S.nwindows; wi++) {
+						for (size_t wi = 0; wi < S.nWindows(); wi++) {
 							//XZ Amplitude
 							int vi = vindex(si, sysi, XZAMP, wi);
-							RT X = S.CompInfo[XCOMP].data[si].S[wi];
-							RT Z = S.CompInfo[ZCOMP].data[si].S[wi];
+							RT X = S.CI[XCOMP].data[si].S[wi];
+							RT Z = S.CI[ZCOMP].data[si].S[wi];
 							if (S.InvertTotalField) {
-								X += S.CompInfo[XCOMP].data[si].P[wi];
-								Z += S.CompInfo[ZCOMP].data[si].P[wi];
+								X += S.CI[XCOMP].data[si].P[wi];
+								Z += S.CI[ZCOMP].data[si].P[wi];
 							}
 							ov = AEM::hypot(X, Z);
 							set_data_vector(obs, vi, ov);
 
 
-							const RT& Xerr = S.CompInfo[XCOMP].data[si].E[wi];
-							const RT& Zerr = S.CompInfo[ZCOMP].data[si].E[wi];
+							const RT& Xerr = S.CI[XCOMP].data[si].E[wi];
+							const RT& Zerr = S.CI[ZCOMP].data[si].E[wi];
 
 							// Todo fix this 
 							if (ov == 0.0) {
@@ -1669,13 +1749,13 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 
 							//Y Comp
-							if (S.CompInfo[YCOMP].Use) {
+							if (S.CI[YCOMP].Use) {
 								int vi = vindex(si, sysi, YCOMP, wi);
-								ov = S.CompInfo[YCOMP].data[si].S[wi];
+								ov = S.CI[YCOMP].data[si].S[wi];
 								if (S.InvertTotalField) {
-									ov += S.CompInfo[YCOMP].data[si].P[wi];
+									ov += S.CI[YCOMP].data[si].P[wi];
 								}
-								ev = S.CompInfo[YCOMP].data[si].E[wi];
+								ev = S.CI[YCOMP].data[si].E[wi];
 								set_data_vector(obs, vi, ov);
 								set_data_vector(err, vi, ev);
 							}
@@ -1684,10 +1764,10 @@ namespace AEM::INVERTER::SBSINVERTER {
 					}
 					else {
 						for (size_t ci = 0; ci < NCOMP; ci++) {
-							if (S.CompInfo[ci].Use) {
-								const SoundingData<RT>& d = S.CompInfo[ci].data[si];
+							if (S.CI[ci].Use) {
+								const SoundingData<RT>& d = S.CI[ci].data[si];
 
-								for (size_t wi = 0; wi < S.nwindows; wi++) {
+								for (size_t wi = 0; wi < S.nWindows(); wi++) {
 									int vi = vindex(si, sysi, ci, wi);
 
 									if (S.InvertTotalField) ov = d.T[wi];
@@ -1733,10 +1813,11 @@ namespace AEM::INVERTER::SBSINVERTER {
 				return false;
 			}
 			return true;
-		}
+		};
 
 		void initialise_bunch_parameters() {
 
+			const size_t nsys = nSystems();
 			for (size_t si = 0; si < nSoundings; si++) {
 				const EarthStore& e = EStore[si];
 				const GeometryStore& g = GStore[si];
@@ -1763,11 +1844,29 @@ namespace AEM::INVERTER::SBSINVERTER {
 					}
 				}
 
-				//Scaling params
-				if (solve_scalingfactors()) {
-					for (size_t sysi = 0; sysi < SysInfo.size(); sysi++) {
+				//ggaoffsets
+				if (true) {
+					for (size_t sysi = 0; sysi < nsys; sysi++) {
 						for (size_t ci = 0; ci < NCOMP; ci++) {
-							const AEMComponentInversionInfo<RT>& C = SysInfo[sysi].CompInfo[ci];
+							const CompInfo& C = compinfo(sysi, ci);
+							if (C.Use) {
+								const int pi = ggaoffsetindex(si, sysi, ci);
+								if (pi >= 0) {
+									RefParam[pi] = C.ggaoffsetStore.refval[si];
+									RefParamStd[pi] = C.ggaoffsetStore.refvalstd[si];
+								}
+							}
+						}
+					}
+				}
+			}
+
+			//Scaling params
+			if (solve_scalingfactors()) {
+				for (size_t sysi = 0; sysi < SI.size(); sysi++) {
+					for (size_t ci = 0; ci < NCOMP; ci++) {
+						const CompInfo& C = compinfo(sysi, ci);
+						if (C.Use) {
 							const int pi = sfindex(sysi, ci);
 							if (pi >= 0) {
 								RefParam[pi] = C.sfStore.refval;
@@ -1777,7 +1876,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 					}
 				}
 			}
-		}
+		};
 
 		double max_step_fraction_to_bound(const Vector& m_old, const Vector& m_new, const Vector& dm) {
 			static const double ud = undefinedvalue<double>();
@@ -1797,105 +1896,11 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return maxf;
 		}
 
-		Vector elementwise_bound_restrict(const Vector& m_old, const Vector& m_new, Vector& dm) {
-			if (fdC.bound()) {
-				for (size_t si = 0; si < nSoundings; si++) {
-					const EarthStore& e = EStore[si];
-					for (size_t li = 0; li < nLayers; li++) {
-						const int pindex = cindex(si, li);
-						const double lmin = std::log10(e.minval.conductivity[li]);
-						const double lmax = std::log10(e.maxval.conductivity[li]);
-						if (m_new[pindex] < lmin) {
-							if (Verbose) {
-								//std::cerr << rec_it_str() << std::endl;
-								//std::cerr << "Lower conductivity bound reached" << std::endl;
-								//std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
-								//std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
-							}
-							dm[pindex] = lmin - m_old[pindex];
-							//if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
-						}
-						else if (m_new[pindex] > lmax) {
-							if (Verbose) {
-								//std::cerr << rec_it_str() << std::endl;
-								//std::cerr << "Upper conductivity bound reached" << std::endl;
-								//std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
-								//std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
-							}
-							dm[pindex] = lmax - m_old[pindex];
-							//if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
-						}
-					}
-				}
-			}
-
-			if (fdT.bound()) {
-				for (size_t si = 0; si < nSoundings; si++) {
-					const EarthStore& e = EStore[si];
-					for (size_t li = 0; li < nLayers - 1; li++) {
-						const int pindex = tindex(si, li);
-						const double lmin = std::log10(e.minval.thickness[li]);
-						const double lmax = std::log10(e.maxval.thickness[li]);
-						if (m_new[pindex] < lmin) {
-							if (Verbose) {
-								//std::cerr << rec_it_str() << std::endl;
-								//std::cerr << "Lower thickness bound reached" << std::endl;
-								//std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
-								//std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
-							}
-							dm[pindex] = lmin - m_old[pindex];
-							//if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
-						}
-						else if (m_new[pindex] > lmax) {
-							if (Verbose) {
-								//std::cerr << rec_it_str() << std::endl;
-								//std::cerr << "Upper thickness bound reached" << std::endl;
-								//std::cerr << "\t li=" << li << "\tdm=" << dm[pindex] << "\tm=" << m_old[pindex] << "\tm+dm=" << m_new[pindex] << std::endl;
-								//std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(m_new[pindex]) << std::endl;
-							}
-							dm[pindex] = lmax - m_old[pindex];
-							//if (Verbose) std::cerr << "\t li=" << li << "\tdm=" << pow10(dm[pindex]) << "\tm=" << pow10(m_old[pindex]) << "\tm+dm=" << pow10(dm[pindex] + m_old[pindex]) << std::endl;
-						}
-					}
-				}
-			}
-
-			for (size_t si = 0; si < nSoundings; si++) {
-				GeometryStore& g = GStore[si];
-				for (size_t gi = 0; gi < TDEmGeometry::NELEM; gi++) {
-					const std::string ename = TDEmGeometry::element_name(gi);
-					const cInvertibleFieldDefinition& e = ifdGMap.at(ename);
-					if (e.bound()) {
-						const int pi = gindex(si, ename);
-						const double emin = g.min[ename];
-						const double emax = g.max[ename];
-						if (m_new[pi] < emin) {
-							if (Verbose) {
-								//std::cerr << rec_it_str() << std::endl;
-								//std::cerr << "Lower " << ename << " bound reached" << std::endl;
-								//std::cerr << "\tdm=" << dm[pi] << "\tm=" << m_old[pi] << "\tm+dm=" << m_new[pi] << std::endl;
-							}
-							dm[pi] = emin - m_old[pi];
-						}
-						else if (m_new[pi] > emax) {
-							if (Verbose) {
-								//std::cerr << rec_it_str() << std::endl;
-								//std::cerr << "Upper " << ename << " bound reached" << std::endl;
-								//std::cerr << "\tdm=" << dm[pi] << "\tm=" << m_old[pi] << "\tm+dm=" << m_new[pi] << std::endl;
-							}
-							dm[pi] = emax - m_old[pi];
-						}
-					}
-				}
-			}
-
-			return dm;
-
-		}
-
 		Vector parameter_change(const double& lambda, const Vector& m_old, const Vector& pred) {
 			const Vector m_new = solve_linear_system(lambda, m_old, pred);
+			//std::cout << m_old;
 			Vector dm = m_new - m_old;
+			//std::cout << dm;
 			double maxf = max_step_fraction_to_bound(m_old, m_new, dm);
 			if (maxf < 1.0) return dm *= maxf;
 			return dm;
@@ -1921,7 +1926,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return ev;
 		}
 
-		std::vector<TDEmGeometry> get_geometry(const Vector& parameters) {
+		std::vector<TDEmGeometry> get_geometry(const Vector& parameters) const {
 			std::vector<TDEmGeometry> gv(nSoundings);
 			for (size_t si = 0; si < nSoundings; si++) {
 				gv[si] = GStore[si].input;
@@ -1936,6 +1941,22 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return gv;
 		}
 
+		Vec3d get_gga_offsets(const size_t& sysi, const size_t& si, const Vector& parameters) const {
+			Vec3d v;
+			const SysInfo& S = SI[sysi];
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				const CompInfo& C = S.CI[ci];
+				if (C.Use) {
+					v[ci] = C.ggaoffsetStore.input[si];
+					const int pi = ggaoffsetindex(si, sysi, ci);
+					if (pi >= 0) v[ci] = parameters[pi];
+				}
+			}
+			//std::cout << v;
+			//std::cout << parameters;
+			return v;
+		}
+
 		Vec3d get_scalefactors(const size_t sysi, const Vector& parameters) const {
 			Vec3d sf;
 			for (int ci = 0; ci < NCOMP; ci++) {
@@ -1944,7 +1965,17 @@ namespace AEM::INVERTER::SBSINVERTER {
 				if (pi >= 0) sf[ci] = parameters[pi];
 			}
 			return sf;
-		}
+		};
+
+		void get_ga_gga(const size_t& sysi, const size_t si, Vec3d& ga, Vec3d& gga) {
+			for(size_t ci=0; ci<NCOMP; ci++){
+				CompInfo& C = SI[sysi].CI[ci];
+				if (C.Use) {
+					ga[ci]  = SI[sysi].CI[ci].get_ga(si);
+					gga[ci] = SI[sysi].CI[ci].get_gga(si);
+				}
+			}
+		};
 
 		// Forward models and derivatives
 		void forwardmodel(const Vector& parameters, Vector& predicted) {
@@ -1988,28 +2019,43 @@ namespace AEM::INVERTER::SBSINVERTER {
 			const size_t nsys = nSystems();
 			std::vector<Earth1D> ev = get_earth(parameters);
 			std::vector<TDEmGeometry> gv = get_geometry(parameters);
+			//std::cout << parameters;
 			for (size_t sysi = 0; sysi < nsys; sysi++) {
-				const auto& S = SysInfo[sysi];
-				AEMSystem<RT>& A = *S.System;
+				SysInfo& S = SI[sysi];
+				AEMSystem<RT>& A = S.sys();
 				const size_t& nw = A.nWindows();
 
 				Vec3d scalefactors(1.0, 1.0, 1.0);
 				const bool solvesf = solve_scalingfactors();
 				if (solvesf) scalefactors = get_scalefactors(sysi, parameters);
-
+				
 				for (size_t si = 0; si < nSoundings; si++) {
 					const Earth1D& e = ev[si];
 					const TDEmGeometry& g = gv[si];
 
+
 					// R is a reference to the Work Response struct
 					const TDEmResponse<RT>& R = A.forward_model(e, g);
-					
+
+					const bool& invert_psi = S.InvertPSI;
 					TDEmVectorResponse<RT> FM;
 					if (S.InvertTotalField) FM = R.totalfield();
 					else FM = R.S;
-					//std::cout << FM << std::endl;
-
 					if (solvesf) FM.scale_components(scalefactors);
+
+					Vec3d ga;
+					Vec3d gga;
+					get_ga_gga(sysi, si, ga, gga);
+					Vec3d ggaoffsets = get_gga_offsets(sysi, si, parameters);
+					//std::cout << ggaoffsets;
+
+					FM.divide_components(ga*(1e-7*1e15));
+					FM.plus_components(ggaoffsets);
+
+					//TDEmVectorResponse<RT> PSI = FM;
+					//std::cout << ga << std::endl;
+					//std::cout << gga << std::endl;
+					//std::cout << FM << std::endl;
 
 					TDEmScalarResponse<RT> XZFM;
 					if (S.InvertXZAmplitude) {
@@ -2022,7 +2068,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 							int di = vindex(si, sysi, XZAMP, wi);
 							//pred_all[di] = XZFM[wi];
 							set_data_vector(pred_all, di, XZFM[wi]);
-							if (S.CompInfo[YCOMP].Use) {
+							if (S.CI[YCOMP].Use) {
 								di = vindex(si, sysi, YCOMP, wi);
 								//pred_all[di] = FM[wi][YCOMP];
 								set_data_vector(pred_all, di, FM[wi][YCOMP]);
@@ -2031,7 +2077,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 					}
 					else {
 						for (size_t ci = 0; ci < NCOMP; ci++) {
-							if (S.CompInfo[ci].Use) {
+							if (S.CI[ci].Use) {
 								for (size_t wi = 0; wi < nw; wi++) {
 									int di = vindex(si, sysi, ci, wi);
 									//pred_all[di] = FM[ci][wi];
@@ -2043,12 +2089,12 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 					// Jacobian
 					if (computederivatives) {
-						TDEmVectorResponse<RT> DRV;
+						TDEmVectorResponse<RT> DRV=FM;
 
 						// Scale factor derivatives
 						if (solvesf) {
 							for (size_t ci = 0; ci < NCOMP; ci++) {
-								if (S.CompInfo[ci].Use) {
+								if (S.CI[ci].Use) {
 									const int pindex = sfindex(sysi, ci);
 									if (pindex >= 0) {
 										DRV = FM;
@@ -2057,11 +2103,36 @@ namespace AEM::INVERTER::SBSINVERTER {
 										Vec3d f(0, 0, 0);
 										f[ci] = 1.0;
 										DRV.scale_components(f);
+										DRV.divide_components(ga * (1e-7 * 1e15));
 										fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 									}
 								}
 							}
 						}
+
+						// ggaoffset derivatives
+						if (true) {
+							for (size_t ci = 0; ci < NCOMP; ci++) {
+								if (S.CI[ci].Use) {
+									const int pindex = ggaoffsetindex(si,sysi,ci);
+									if (pindex >= 0) {
+										// Here filling with 1's 
+										// for real of component ci 
+										// and 0's for other components
+										// and 0's for imaginary
+										Vec3d v(0, 0, 0);
+										v[ci] = 1.0;
+										DRV.set_values(v);
+										//Vec3d f(0, 0, 0);
+										//f[ci] = 1.0;
+										//DRV.scale_components(f);
+										//DRV.divide_components(ga * (1e-7 * 1e15));
+										fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+									}
+								}
+							}
+						}
+
 
 						if (solve_conductivity()) {
 							for (size_t li = 0; li < nLayers; li++) {
@@ -2072,7 +2143,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 								//multiply by natural log(10) as parameters are in logbase10 units
 								const double f = log(10.0) * e.conductivity[li];
 								DRV *= f;
-								if (solvesf) DRV.scale_components(scalefactors);
+								if(solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								//std::cout << FM << std::endl;
 								//std::cout << DRV << std::endl;
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2089,6 +2161,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 								double f = log(10.0) * e.thickness[li];
 								DRV *= f;
 								if (solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 							}
 						}
@@ -2100,6 +2173,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 							}
 
@@ -2109,6 +2183,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								//std::cout << FM << std::endl;
 								//std::cout << DRV << std::endl;
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2120,6 +2195,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 							}
 
@@ -2129,6 +2205,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								//std::cout << FM << std::endl;
 								//std::cout << DRV << std::endl;
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2138,6 +2215,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 								const size_t pindex = gindex(si, "rx_roll");
 								DRV = A.derivative(CalculationType(CMode::DRX_ROLL), g, FM);
 								if (solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 							}
 
@@ -2145,6 +2223,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 								const size_t pindex = gindex(si, "rx_pitch");
 								DRV = A.derivative(CalculationType(CMode::DRX_PITCH), g, FM);
 								if (solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 							}
 
@@ -2152,6 +2231,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 								const size_t pindex = gindex(si, "rx_yaw");
 								DRV = A.derivative(CalculationType(CMode::DRX_YAW), g, FM);
 								if (solvesf) DRV.scale_components(scalefactors);
+								if (invert_psi) DRV.divide_components(ga * (1e-7 * 1e15));
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
 							}
 						}
@@ -2179,10 +2259,10 @@ namespace AEM::INVERTER::SBSINVERTER {
 			std::vector<TDEmGeometry> gv = get_geometry(parameters);
 			const size_t nsys = nSystems();
 			for (size_t sysi = 0; sysi < nsys; sysi++) {
-				auto& S = SysInfo[sysi];
+				SysInfo& S = SI[sysi];
 				S.predicted.resize(nSoundings);
 
-				AEMSystem<RT>& A = *S.System;
+				AEMSystem<RT>& A = S.sys();
 				const size_t& nw = A.nWindows();
 				for (size_t si = 0; si < nSoundings; si++) {
 					const Earth1D& e = ev[si];
@@ -2196,7 +2276,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			const TDEmVectorResponse<RT>& FM,
 			const TDEmScalarResponse<RT>& XZFM,
 			const TDEmVectorResponse<RT>& DRV) {
-			const auto& S = SysInfo[sysi];
+			const SysInfo& S = SI[sysi];
 			const AEMSystem<RT>& A = *S.System;
 			const size_t& nw = A.nWindows();
 			if (S.InvertXZAmplitude) {
@@ -2207,7 +2287,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 					set_mat(M, di, pindex, (FM[XCOMP][wi] * DRV[XCOMP][wi] + FM[ZCOMP][wi] * DRV[ZCOMP][wi]) / XZFM[wi]);
 				}
 
-				if (S.CompInfo[YCOMP].Use) {
+				if (S.CI[YCOMP].Use) {
 					for (size_t wi = 0; wi < nw; wi++) {
 						const int di = vindex(si, sysi, YCOMP, wi);
 						//M(di, pindex) = DRV[YCOMP][wi];
@@ -2217,7 +2297,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			}
 			else {
 				for (size_t ci = 0; ci < NCOMP; ci++) {
-					if (S.CompInfo[ci].Use) {
+					if (S.CI[ci].Use) {
 						for (size_t wi = 0; wi < nw; wi++) {
 							const int di = vindex(si, sysi, ci, wi);
 							//M(di, pindex) = DRV[ci][wi];
@@ -2271,15 +2351,23 @@ namespace AEM::INVERTER::SBSINVERTER {
 			}
 
 			if (solve_scalingfactors()) {
-				for (size_t sysi = 0; sysi < SysInfo.size(); sysi++) {
+				for (size_t sysi = 0; sysi < SI.size(); sysi++) {
 					for (size_t ci = 0; ci < NCOMP; ci++) {
-						const cInvertibleFieldDefinition& ifd = get_ifd(sysi, ci, SCALEFACTOR);
-						if (ifd.solve) {
-							auto& C = SysInfo[sysi].CompInfo[ci];
-							IM->read(ifd.refval, C.sfStore.refval);
-							IM->read(ifd.refvalstd, C.sfStore.refvalstd);
-							IM->read(ifd.minval, C.sfStore.minval);
-							IM->read(ifd.maxval, C.sfStore.maxval);
+						CompInfo& C = SI[sysi].CI[ci];
+						if (C.Use) {
+							const Parameter& p = C.scalingfactor;
+							if (p.initialised()) {
+								ScaleFactorsStore& s = C.sfStore;
+								IM->read(p.get_fd(Parameter::INPUT), s.input, 1);
+								if (p.solve()) {
+									IM->read(p.get_fd(Parameter::REF), s.refval, 1);
+									IM->read(p.get_fd(Parameter::STD), s.refvalstd, 1);
+									if (p.bound()) {
+										IM->read(p.get_fd(Parameter::MIN), s.minval, 1);
+										IM->read(p.get_fd(Parameter::MAX), s.maxval, 1);
+									}
+								}
+							}
 						}
 					}
 				}
@@ -2293,7 +2381,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			bool readstatus = true;
 			EarthStore& e = EStore[si];
 			GeometryStore& g = GStore[si];
-
+			
 			if (IM->parse_record() == false) return false;
 
 			bool status;
@@ -2301,24 +2389,31 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 			status = read_ancillary_fields(si);
 			status = read_geometry(si, ifdGMap);
-			status = IM->read(fdC.input, e.refval.conductivity, nLayers); if (status == false) readstatus = false;
-			if (solve_conductivity()) {
-				status = IM->read(fdC.refval, e.refval.conductivity, nLayers); if (status == false) readstatus = false;
-				status = IM->read(fdC.refvalstd, e.refvalstd.conductivity, nLayers); if (status == false) readstatus = false;
-				status = IM->read(fdC.minval, e.minval.conductivity, nLayers); if (status == false) readstatus = false;
-				status = IM->read(fdC.maxval, e.maxval.conductivity, nLayers); if (status == false) readstatus = false;
+
+			status = IM->read(pConductivity.get_fd(Parameter::INPUT), e.refval.conductivity, nLayers); if (status == false) readstatus = false;
+			if (pConductivity.solve()) {
+				status = IM->read(pConductivity.get_fd(Parameter::REF), e.refval.conductivity, nLayers); if (status == false) readstatus = false;
+				status = IM->read(pConductivity.get_fd(Parameter::STD), e.refvalstd.conductivity, nLayers); if (status == false) readstatus = false;
+				if (pConductivity.bound()) {
+					status = IM->read(pConductivity.get_fd(Parameter::MIN), e.minval.conductivity, nLayers); if (status == false) readstatus = false;
+					status = IM->read(pConductivity.get_fd(Parameter::MAX), e.maxval.conductivity, nLayers); if (status == false) readstatus = false;
+				}
 			}
 
-			status = IM->read(fdT.input, e.refval.thickness, nLayers - 1); if (status == false) readstatus = false;
-			if (solve_thickness()) {
-				status = IM->read(fdT.refval, e.refval.thickness, nLayers - 1); if (status == false) readstatus = false;
-				status = IM->read(fdT.refvalstd, e.refvalstd.thickness, nLayers - 1); if (status == false) readstatus = false;
-				status = IM->read(fdT.minval, e.minval.thickness, nLayers - 1); if (status == false) readstatus = false;
-				status = IM->read(fdT.maxval, e.maxval.thickness, nLayers - 1); if (status == false) readstatus = false;
+			status = IM->read(pThickness.get_fd(Parameter::INPUT), e.refval.thickness, nLayers-1); if (status == false) readstatus = false;
+			if (pThickness.solve()) {
+				status = IM->read(pThickness.get_fd(Parameter::REF), e.refval.thickness, nLayers-1); if (status == false) readstatus = false;
+				status = IM->read(pThickness.get_fd(Parameter::STD), e.refvalstd.thickness, nLayers-1); if (status == false) readstatus = false;
+				if (pThickness.bound()) {
+					status = IM->read(pThickness.get_fd(Parameter::MIN), e.minval.thickness, nLayers-1); if (status == false) readstatus = false;
+					status = IM->read(pThickness.get_fd(Parameter::MAX), e.maxval.thickness, nLayers-1); if (status == false) readstatus = false;
+				}
+			}
+			else {
+				//This is purely only so the the refvalstd 
+				e.refvalstd.thickness = std::vector<double>(nLayers - 1,0.0);
 			}
 			e.sanity_check();
-
-			status = IM->read(fdT.maxval, e.maxval.thickness, nLayers - 1); if (status == false) readstatus = false;
 
 			const size_t nsys = nSystems();
 			for (size_t sysi = 0; sysi < nsys; sysi++) {
@@ -2375,9 +2470,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 			GeometryStore& gstore = GStore[si];
 			for (size_t gi = 0; gi < TDEmGeometry::NELEM; gi++) {
 				std::string ename = TDEmGeometry::element_name(gi);
-				const cInvertibleFieldDefinition ge = map.at(ename);
-				bool inpstatus = IM->read(ge.input, gstore.input[gi]);
-				bool refstatus = IM->read(ge.refval, gstore.refval[gi]);
+				const Parameter& p = map.at(ename);
+				bool inpstatus = IM->read(p.get_fd(Parameter::INPUT), gstore.input[gi]);
+				bool refstatus = IM->read(p.get_fd(Parameter::REF), gstore.refval[gi]);
 
 				if (refstatus == false && inpstatus == true) {
 					gstore.refval[gi] = gstore.input[gi];
@@ -2400,16 +2495,18 @@ namespace AEM::INVERTER::SBSINVERTER {
 					glog.errormsg(_SRC_, msg.str());
 				}
 
-				if (ge.solve) {
-					bool stdstatus = IM->read(ge.refvalstd, gstore.refvalstd[gi]);
+				if (p.solve()) {
+					bool stdstatus = IM->read(p.get_fd(Parameter::STD), gstore.refvalstd[gi]);
 					if (stdstatus == false) {
 						std::ostringstream msg;
 						msg << "No 'Std' defined for " << ename << std::endl;
 						glog.errormsg(_SRC_, msg.str());
 					}
 
-					bool minstatus = IM->read(ge.minval, gstore.minval[gi]);
-					bool maxstatus = IM->read(ge.maxval, gstore.maxval[gi]);
+					if (p.bound()) {
+						bool minstatus = IM->read(p.get_fd(Parameter::MIN), gstore.minval[gi]);
+						bool maxstatus = IM->read(p.get_fd(Parameter::MAX), gstore.maxval[gi]);
+					}
 				}
 
 				if (reconstruct_primary()) {
@@ -2429,15 +2526,37 @@ namespace AEM::INVERTER::SBSINVERTER {
 				}
 			}
 			return status;
-		}
+		};
 
-		void read_system_data(size_t& sysindex, const size_t& soundingindex)
-		{
-			AEMSystemInversionInfo<AEMSystemClass, RT>& S = SysInfo[sysindex];
-			S.CompInfo[XCOMP].readdata(IM, soundingindex);
-			S.CompInfo[YCOMP].readdata(IM, soundingindex);
-			S.CompInfo[ZCOMP].readdata(IM, soundingindex);
-		}
+		void read_system_data(size_t& sysindex, const size_t& soundingindex) {
+			SystemInversionInfo<AEMSystemClass, RT>& S = SI[sysindex];
+			S.CI[XCOMP].readdata(IM, soundingindex);
+			S.CI[YCOMP].readdata(IM, soundingindex);
+			S.CI[ZCOMP].readdata(IM, soundingindex);
+
+			bool solve_ggaoffset = true;
+			if (solve_ggaoffset) {
+				SysInfo& S = SI[sysindex];
+				for (size_t ci = 0; ci < NCOMP; ci++) {
+					CompInfo& C = S.CI[ci];
+					if (C.Use) {
+						const Parameter& p = C.ggaoffset;
+						if (p.initialised()) {
+							GGAOffsetStore& s = C.ggaoffsetStore;
+							IM->read(p.get_fd(Parameter::INPUT), s.input[soundingindex], 1);
+							if (p.solve()) {
+								IM->read(p.get_fd(Parameter::REF), s.refval[soundingindex], 1);
+								IM->read(p.get_fd(Parameter::STD), s.refvalstd[soundingindex], 1);
+								if (p.bound()) {
+									IM->read(p.get_fd(Parameter::MIN), s.minval[soundingindex], 1);
+									IM->read(p.get_fd(Parameter::MAX), s.maxval[soundingindex], 1);
+								}
+							}
+						}
+					}
+				}
+			}
+		};
 
 		void dump_first_iteration() {
 
@@ -2448,6 +2567,10 @@ namespace AEM::INVERTER::SBSINVERTER {
 			GeometryStore& g = GStore[si];
 			EarthStore& e = EStore[si];
 			SampleId& id = Id[si];
+
+			dump_system_info(dp + "System_Info.dat");
+			dump_component_info(dp + "Component_Info.dat");
+			dump_id_info(id, dp + "Id_Info.dat");
 
 			write(Obs, dp + "observed.dat");
 			write(Err, dp + "observed_std.dat");
@@ -2461,19 +2584,70 @@ namespace AEM::INVERTER::SBSINVERTER {
 			g.refvalstd.write(dp + "geometry_std.dat");
 			e.refvalstd.write(dp + "earth_std.dat");
 
-			std::ofstream ofs(dp + "Id.dat");
-			char sep = '\n';
+		};
 
-			ofs << id.uniqueid << sep;
-			ofs << id.survey << sep;
-			ofs << id.date << sep;
-			ofs << id.flight << sep;
-			ofs << id.line << sep;
-			ofs << id.fiducial << sep;
-			ofs << id.x << sep;
-			ofs << id.y << sep;
-			ofs << id.elevation << sep;
-		}
+		void dump_id_info(const SampleId& id, const fs::path& path) {
+			std::ofstream of(path);
+			of << "UniquwId " << id.uniqueid << std::endl;
+			of << "Survey " << id.survey << std::endl;
+			of << "Date " << id.date << std::endl;
+			of << "Flight " << id.flight << std::endl;
+			of << "Line " << id.line << std::endl;
+			of << "Fiducial " << id.fiducial << std::endl;
+			of << "X " << id.x << std::endl;
+			of << "Y " << id.y << std::endl;
+			of << "Elevation " << id.elevation << std::endl; \
+		};
+
+		void dump_system_info(const fs::path& path) {
+			std::ofstream of(path);
+			std::string comma = ",";
+			of << "Index" << comma
+				<< "Name" << comma
+				<< "SystemTyps" << comma
+				<< "Units" << comma
+				<< "InvertTotalField" << comma
+				<< "InvertPSI" << comma
+				<< "InvertXZAmplitude" << comma
+				<< "ReconstructPrimary" << std::endl;
+
+			for (size_t sysi = 0; sysi < nSystems(); sysi++) {
+				const SysInfo& S = SI[sysi];
+				of	<< sysi << comma
+					<< S.sys().name() << comma
+					<< S.sys().type_string() << comma
+					<< S.Units << comma
+					<< S.InvertTotalField << comma
+					<< S.InvertPSI << comma
+					<< S.InvertXZAmplitude << comma
+					<< S.ReconstructPrimary << std::endl;
+			}
+		};
+
+		void dump_component_info(const fs::path& path) {
+			std::ofstream of(path);
+			of	<< "SystemIndex" << ","
+				<< "ComponentIndex" << ","
+				<< "Name" << ","
+				<< "Use" << ","
+				<< "nWindows" << ","
+				<< "nElements" << ","
+				<< "nChannels" << std::endl;
+
+			for (size_t sysi = 0; sysi < nSystems(); sysi++) {
+				const SysInfo& S = SI[sysi];
+				for (size_t ci = 0; ci < NCOMP; ci++) {
+					const CompInfo& C = S.CI[ci];
+					of	<< sysi << ","
+						<< ci << ","
+						<< C.Name << ","
+						<< C.Use << ","
+						<< C.nWindows() << ","
+						<< C.nElements() << ","
+						<< C.nChannels() << std::endl;
+				}
+			}
+		};
 
 		void dump_iteration(const cIterationState& state) {
 			const std::string dp = dumppath().string();
@@ -2526,6 +2700,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 		}
 
 		void iterate() {
+			//std::cout << "iterate"  <<std::endl;
 			setup_parameter_bounds();
 			CIS.iteration = 0;
 			//CIS.lambda = 1e8;
@@ -2569,6 +2744,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 					if (CIS.iteration + 1 >= BeginGeometrySolveIteration) FreeGeometry = true;
 					else FreeGeometry = false;
 
+					const double targetphid = std::max(CIS.phid * 0.7, MinimumPhiD);
+					
 					Vector g;
 					forwardmodel_and_jacobian(CIS.param, g, J);
 					if (CIS.iteration == 0) {
@@ -2579,7 +2756,6 @@ namespace AEM::INVERTER::SBSINVERTER {
 						}
 					}
 
-					const double targetphid = std::max(CIS.phid * 0.7, MinimumPhiD);
 					const cTrial t = lambda_search_targetphid(CIS.lambda, targetphid);
 					const Vector dm = parameter_change(t.lambda, CIS.param, CIS.pred);
 					const Vector m = CIS.param + (t.stepfactor * dm);
@@ -2622,13 +2798,17 @@ namespace AEM::INVERTER::SBSINVERTER {
 				if (record > (EndRecord - 1))break;
 				if ((paralleljob % Size) == Rank) {
 					std::ostringstream s;
+					//std::cout << "read_bunch" << std::endl;
 					if ((readstatus = read_bunch(record))) {
 						s << bunch_id();
+						//std::cout << "initialise_bunch" << std::endl;
 						if (initialise_bunch()) {
 							double t1 = gettime();
+							//std::cout << "iterate" << std::endl;
 							iterate();
 							double t2 = gettime();
 							double etime = t2 - t1;
+							//std::cout << "write_result" << std::endl;
 							write_result(record);
 							s << bunch_result(etime);
 						}
@@ -2648,12 +2828,12 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return 0;
 		}
 
-		double phiModel(const Vector& m)
-		{
+		double phiModel(const Vector& m) const {
 			double v = 0.0;
 			v += LCrefc.phi(m, RefParam);
 			v += LCreft.phi(m, RefParam);
 			v += LCrefg.phi(m, RefParam);
+			v += LCrefo.phi(m, RefParam);
 			v += LCrefs.phi(m, RefParam);
 			v += LCvcsmth.phi(m, RefParam);
 			v += LCvcsim.phi(m, RefParam);
@@ -2698,6 +2878,13 @@ namespace AEM::INVERTER::SBSINVERTER {
 			const Vector& e = Err;
 			const Vector& m0 = RefParam;
 
+			
+			//std::cout << m0;
+			//std::cout << RefParamStd;
+
+			//std::cout << Wr;
+
+
 			Matrix V = Wd;
 			if (NormType == NormType::L1) {
 				for (size_t i = 0; i < nData; i++) {
@@ -2712,6 +2899,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			Matrix A = JtVJ + lambda * Wm;
 			Vector b = JtV * (d - g + J * m);
 			b += lambda * (Wr * m0);
+			//std::cout << b;
 
 			if (LClatg.operates_on_difference_from_reference_model()) {
 				b += lambda * (LClatg.W * m0);
@@ -2783,7 +2971,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 				for (size_t sysi = 0; sysi < nsys; sysi++) {
 					Vec3d sf = get_scalefactors(sysi, m);
 					for (size_t ci = 0; ci < NCOMP; ci++) {
-						const AEMComponentInversionInfo<RT>& C = SysInfo[sysi].CompInfo[ci];
+						const CompInfo& C = SI[sysi].CI[ci];
 						if (C.Use && solve_scalingfactor(sysi, ci)) {
 							std::string comp = C.Name;
 							std::string fname = "scalingfactor" + strprint("_EMSystem_%d_", (int)sysi + 1) + comp;
@@ -2887,11 +3075,13 @@ namespace AEM::INVERTER::SBSINVERTER {
 			cAsciiColumnFormat emfmt('E', 15, 6);
 			if (OutputOpt.ObservedData) {
 				for (size_t sysi = 0; sysi < nsys; sysi++) {
-					const auto& S = SysInfo[sysi];
+					const SysInfo& S = SI[sysi];
 					bool reconstructed_primaryfield_flag = S.ReconstructPrimary;//Only do this for the observed data but not for predicted data or noise
 					for (size_t ci = 0; ci < NCOMP; ci++) {
-						const SoundingData<RT>& d = S.CompInfo[ci].data[si];
-						if (S.CompInfo[ci].Use) writeresult_emdata(pi, sysi, ci, "Observed", "Observed", S.units, emfmt, d.P, d.S, d.T);
+						if (S.CI[ci].Use) {
+							const SoundingData<RT>& d = S.CI[ci].data[si];
+							writeresult_emdata(pi, sysi, ci, "Observed", "Observed", S.Units, emfmt, d.P, d.S, d.T);
+						}
 					}
 				}
 			}
@@ -2900,10 +3090,12 @@ namespace AEM::INVERTER::SBSINVERTER {
 			//Noise Estimates
 			if (OutputOpt.NoiseEstimates) {
 				for (size_t sysi = 0; sysi < nsys; sysi++) {
-					const auto& S = SysInfo[sysi];
+					const SysInfo& S = SI[sysi];
 					for (size_t ci = 0; ci < NCOMP; ci++) {
-						const SoundingData<RT>& d = S.CompInfo[ci].data[si];
-						if (S.CompInfo[ci].Use) writeresult_emdata(pi, sysi, ci, "Noise", "Estimated noise", S.units, emfmt, d.P, d.E, d.T);
+						if (S.CI[ci].Use) {
+							const SoundingData<RT>& d = S.CI[ci].data[si];
+							writeresult_emdata(pi, sysi, ci, "Noise", "Estimated noise", S.Units, emfmt, d.P, d.E, d.T);
+						}
 					}
 				}
 			}
@@ -2911,12 +3103,14 @@ namespace AEM::INVERTER::SBSINVERTER {
 			//PredictedData
 			if (OutputOpt.PredictedData) {
 				for (size_t sysi = 0; sysi < nsys; sysi++) {
-					const auto& S = SysInfo[sysi];
+					const SysInfo& S = SI[sysi];
 					for (size_t ci = 0; ci < NCOMP; ci++) {
-						const auto p = S.predicted[si].primary(ci);
-						const auto s = S.predicted[si].secondary(ci);
-						const auto t = p + s;
-						if (S.CompInfo[ci].Use) writeresult_emdata(pi, sysi, ci, "Predicted", "Predicted", S.units, emfmt, p, s, t);
+						if (S.CI[ci].Use) {
+							const auto p = S.predicted[si].primary(ci);
+							const auto s = S.predicted[si].secondary(ci);
+							const auto t = p + s;
+							writeresult_emdata(pi, sysi, ci, "Predicted", "Predicted", S.Units, emfmt, p, s, t);
+						}
 					}
 				}
 			}
@@ -2925,6 +3119,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			write_result(pi, LCrefc, m, m0);
 			write_result(pi, LCreft, m, m0);
 			write_result(pi, LCrefg, m, m0);
+			write_result(pi, LCrefo, m, m0);
 			write_result(pi, LCrefs, m, m0);
 			write_result(pi, LCvcsmth, m, m0);
 			write_result(pi, LCvcsim, m, m0);
@@ -2945,7 +3140,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			//End of record book keeping
 			OM->end_point_output();
 			if (nPointsOutput == 0) {
-				OM->end_first_record();//only do this once		
+				OM->end_first_record();//only do this once
 			}
 			nPointsOutput++;
 		};
@@ -3018,8 +3213,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 		};
 
 		void writeresult_emdata(const int& pointindex, const size_t& sysindex, const size_t& compindex, const std::string& nameprefix, const std::string& descprefix, const std::string& units, const cAsciiColumnFormat& fmt, const std::vector<RT>& Primary, const std::vector<RT>& Secondary, const std::vector<RT>& Total) {
-			const AEMSystemInversionInfo<AEMSystemClass, RT>& S = SysInfo[sysindex];
-			const std::string compname = S.CompInfo[compindex].Name;
+			const SystemInversionInfo<AEMSystemClass, RT>& S = SI[sysindex];
+			const std::string compname = S.CI[compindex].Name;
 
 			const BinaryStorageType btype = ST_FLOAT;
 			std::string dimensionname = "em_window";
@@ -3028,21 +3223,23 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 			const int nbands = Secondary.size();
 
-			//Primary field
-			if (S.InvertTotalField) {
-				std::string name = sysname + compname + "P";
-				std::string desc = sysdesc + compname + "-component primary field";
-				if (S.ReconstructPrimary) desc += " reconstructed from input geometry";
-				cOutputField of(name, desc, units, nbands, btype, dimensionname, fmt);
-				write_plain_or_complex(pointindex, of, Primary);
-			}
+			if (S.InvertPSI == false) {
+				//Primary field
+				if (S.InvertTotalField) {
+					std::string name = sysname + compname + "P";
+					std::string desc = sysdesc + compname + "-component primary field";
+					if (S.ReconstructPrimary) desc += " reconstructed from input geometry";
+					cOutputField of(name, desc, units, nbands, btype, dimensionname, fmt);
+					write_plain_or_complex(pointindex, of, Primary);
+				}
 
-			// Secondary field
-			{
-				std::string name = sysname + compname + "S";
-				std::string desc = sysdesc + compname + "-component secondary field";
-				cOutputField of(name, desc, units, nbands, btype, dimensionname, fmt);
-				write_plain_or_complex(pointindex, of, Secondary);
+				// Secondary field
+				{
+					std::string name = sysname + compname + "S";
+					std::string desc = sysdesc + compname + "-component secondary field";
+					cOutputField of(name, desc, units, nbands, btype, dimensionname, fmt);
+					write_plain_or_complex(pointindex, of, Secondary);
+				}
 			}
 
 			// Toatal field

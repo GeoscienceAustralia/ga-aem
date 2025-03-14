@@ -6,6 +6,7 @@
 #include "vector_utils.hpp"
 
 namespace AEM {
+
 	template <typename T>
 	class TDEmScalarResponse {
 
@@ -50,9 +51,10 @@ namespace AEM {
 	template <typename T>
 	class TDEmVectorResponse {
 
+	private:
 		size_t nwindows = 0;
 		std::array<std::vector<T>, NCOMP> v;
-
+				
 	public:
 
 		TDEmVectorResponse(const size_t _nwindows = 0) {
@@ -125,6 +127,42 @@ namespace AEM {
 			v[0] *= scalefactors[0];
 			v[1] *= scalefactors[1];
 			v[2] *= scalefactors[2];
+		};
+
+		void divide_components(const Vec3d& dividefactors) {
+			v[0] /= dividefactors[0];
+			v[1] /= dividefactors[1];
+			v[2] /= dividefactors[2];
+		};
+
+		void plus_components(const Vec3d& values) {
+			v[0] += values[0];
+			v[1] += values[1];
+			v[2] += values[2];
+		};
+
+		void minus_components(const Vec3d& values) {
+			v[0] -= values[0];
+			v[1] -= values[1];
+			v[2] -= values[2];
+		};
+
+		void set_values(const T& value) {
+			set(v[0], value);
+			set(v[1], value);
+			set(v[2], value);
+		};
+
+		void set_values(const Vec3d& value) {
+			set(v[0], value[0]);
+			set(v[1], value[1]);
+			set(v[2], value[2]);
+		};
+
+		void set_values(const Vec3cd& value) {
+			set(v[0], value[0]);
+			set(v[1], value[1]);
+			set(v[2], value[2]);
 		};
 
 		TDEmScalarResponse<T> xzamp() {

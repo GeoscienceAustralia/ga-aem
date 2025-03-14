@@ -59,7 +59,7 @@ int nwindows(void* hS)
 int nturns(void* hS)
 {
 	TDEmSystem& T = *(TDEmSystem*)hS;
-	return (int)T.transmitter().NumberOfTurns;
+	return (int)T.transmitter().nTurns;
 }
 
 double peakcurrent(void* hS)
@@ -90,8 +90,8 @@ void windowtimes(void* hS, double* low, double* high)
 {
 	TDEmSystem& T = *(TDEmSystem*)hS;
 	for (size_t i = 0; i < T.nWindows(); i++) {
-		low[i] = T.window(i).TimeLow;
-		high[i] = T.window(i).TimeHigh;
+		low[i] = T.window(i).Low;
+		high[i] = T.window(i).High;
 	}
 }
 
@@ -138,9 +138,9 @@ void forwardmodel(void* hS,
 	size_t nw = T.nWindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = R.primary(XCOMP);
-	*PY = R.primary(YCOMP);
-	*PZ = R.primary(ZCOMP);
+	memcpy(PX, R.primary(XCOMP).data(), sz);
+	memcpy(PY, R.primary(YCOMP).data(), sz);
+	memcpy(PZ, R.primary(ZCOMP).data(), sz);
 	memcpy(SX, R.secondary(XCOMP).data(), sz);
 	memcpy(SY, R.secondary(YCOMP).data(), sz);
 	memcpy(SZ, R.secondary(ZCOMP).data(), sz);
@@ -181,9 +181,10 @@ void forwardmodel_ip(void* hS,
 	size_t nw = T.nWindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = R.primary(XCOMP);
-	*PY = R.primary(YCOMP);
-	*PZ = R.primary(ZCOMP);
+	memcpy(PX, R.primary(XCOMP).data(), sz);
+	memcpy(PY, R.primary(YCOMP).data(), sz);
+	memcpy(PZ, R.primary(ZCOMP).data(), sz);
+
 	memcpy(SX, R.secondary(XCOMP).data(), sz);
 	memcpy(SY, R.secondary(YCOMP).data(), sz);
 	memcpy(SZ, R.secondary(ZCOMP).data(), sz);	
@@ -198,9 +199,9 @@ void derivative(void* hS, int dtype, int dlayer, double* PX, double* PY, double*
 	size_t nw = T.nWindows();
 	size_t sz = sizeof(double) * nw;
 
-	*PX = R.primary(XCOMP);
-	*PY = R.primary(YCOMP);
-	*PZ = R.primary(ZCOMP);
+	memcpy(PX, R.primary(XCOMP).data(), sz);
+	memcpy(PY, R.primary(YCOMP).data(), sz);
+	memcpy(PZ, R.primary(ZCOMP).data(), sz);
 	memcpy(SX, R.secondary(XCOMP).data(), sz);
 	memcpy(SY, R.secondary(YCOMP).data(), sz);
 	memcpy(SZ, R.secondary(ZCOMP).data(), sz);
@@ -226,18 +227,24 @@ void fm_dlogc(void* hS,
 	size_t nw = T.nWindows();
 	size_t sz = sizeof(double) * nw;
 	double* p = Response;
-	*p = R.primary(XCOMP); p++; memcpy(p, R.secondary(XCOMP).data(), sz); p += nw;
-	*p = R.primary(YCOMP); p++; memcpy(p, R.secondary(YCOMP).data(), sz); p += nw;
-	*p = R.primary(ZCOMP); p++; memcpy(p, R.secondary(ZCOMP).data(), sz); p += nw;
-	
+	memcpy(p, R.primary(XCOMP).data(), sz); p += nw;
+	memcpy(p, R.secondary(XCOMP).data(), sz); p += nw;
+	memcpy(p, R.primary(YCOMP).data(), sz); p += nw;
+	memcpy(p, R.secondary(YCOMP).data(), sz); p += nw;
+	memcpy(p, R.primary(ZCOMP).data(), sz); p += nw;
+	memcpy(p, R.secondary(ZCOMP).data(), sz); p += nw;
+
 	for (size_t k = 0; k < (size_t)nlayers; k++) {
 		R = T.derivative(CalculationType(CMode::DC, k));
 		const double& c = conductivity[k];
 		R.P *= c; // Must scale by conductivity to get derivatibe w.r.t log(conductivity)
 		R.S *= c;
-		*p = R.primary(XCOMP); p++; memcpy(p, R.secondary(XCOMP).data(), sz); p += nw;
-		*p = R.primary(YCOMP); p++; memcpy(p, R.secondary(YCOMP).data(), sz); p += nw;
-		*p = R.primary(ZCOMP); p++; memcpy(p, R.secondary(ZCOMP).data(), sz); p += nw;
+		memcpy(p, R.primary(XCOMP).data(), sz); p += nw;
+		memcpy(p, R.secondary(XCOMP).data(), sz); p += nw;
+		memcpy(p, R.primary(YCOMP).data(), sz); p += nw;
+		memcpy(p, R.secondary(YCOMP).data(), sz); p += nw;
+		memcpy(p, R.primary(ZCOMP).data(), sz); p += nw;
+		memcpy(p, R.secondary(ZCOMP).data(), sz); p += nw;
 	}
 }
 

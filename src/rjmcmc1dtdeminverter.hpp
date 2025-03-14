@@ -353,7 +353,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		fd_elevation.initialise(b, "GroundElevation");
 
 		TDEmGeometry g;
-		for (size_t gi = 0; gi < g.size(); gi++) {
+		for (size_t gi = 0; gi < TDEmGeometry::NELEM; gi++) {
 			fd_geometry[gi].initialise(b, g.element_name(gi));
 		}
 
@@ -496,7 +496,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		fd_yord.getvalue(f, yord);
 		fd_elevation.getvalue(f, elevation);
 
-		for (size_t gi = 0; gi < IG.size(); gi++) {
+		for (size_t gi = 0; gi < TDEmGeometry::NELEM; gi++) {
 			fd_geometry[gi].getvalue(f, IG[gi]);
 		}		
 
@@ -684,30 +684,30 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			if (n->value == DBL_MIN) {
 				switch (n->type) {
 				case TDEMNuisance::Type::TX_HEIGHT:
-					n->value = IG.tx_height; break;
+					n->value = IG.tx_height(); break;
 				case TDEMNuisance::Type::TX_ROLL:
-					n->value = IG.tx_roll; break;
+					n->value = IG.tx_roll(); break;
 				case TDEMNuisance::Type::TX_PITCH:
-					n->value = IG.tx_pitch; break;
+					n->value = IG.tx_pitch(); break;
 				case TDEMNuisance::Type::TX_YAW:
-					n->value = IG.tx_yaw;	break;
+					n->value = IG.tx_yaw();	break;
 				case TDEMNuisance::Type::TXRX_DX:
-					n->value = IG.txrx_dx; break;
+					n->value = IG.txrx_dx(); break;
 				case TDEMNuisance::Type::TXRX_DY:
-					n->value = IG.txrx_dy; break;
+					n->value = IG.txrx_dy(); break;
 				case TDEMNuisance::Type::TXRX_DZ:
-					n->value = IG.txrx_dz; break;
+					n->value = IG.txrx_dz(); break;
 				case TDEMNuisance::Type::RX_ROLL:
-					n->value = IG.rx_roll; break;
+					n->value = IG.rx_roll(); break;
 				case TDEMNuisance::Type::RX_PITCH:
-					n->value = IG.rx_pitch; break;
+					n->value = IG.rx_pitch(); break;
 				case TDEMNuisance::Type::RX_YAW:
-					n->value = IG.rx_yaw; break;
+					n->value = IG.rx_yaw(); break;
 				case TDEMNuisance::Type::TXRX_DISTANCE:
-					n->value = sqrt(IG.txrx_dx * IG.txrx_dx + IG.txrx_dz * IG.txrx_dz);
+					n->value = sqrt(IG.txrx_dx() * IG.txrx_dx() + IG.txrx_dz() * IG.txrx_dz());
 					break;
 				case TDEMNuisance::Type::TXRX_ANGLE:
-					n->value = R2D<double> * std::atan2(IG.txrx_dz, IG.txrx_dx);
+					n->value = R2D<double> * std::atan2(IG.txrx_dz(), IG.txrx_dx());
 					break;
 				default:break;
 				}
@@ -989,25 +989,25 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			TDEMNuisance* n = dynamic_cast<TDEMNuisance*>(m.nuisances[i]);
 			switch (n->type) {
 			case TDEMNuisance::Type::TX_HEIGHT:
-				OG.tx_height = n->value; break;
+				OG.tx_height() = n->value; break;
 			case TDEMNuisance::Type::TX_ROLL:
-				OG.tx_roll = n->value; break;
+				OG.tx_roll() = n->value; break;
 			case TDEMNuisance::Type::TX_PITCH:
-				OG.tx_pitch = n->value; break;
+				OG.tx_pitch() = n->value; break;
 			case TDEMNuisance::Type::TX_YAW:
-				OG.tx_yaw = n->value; break;
+				OG.tx_yaw() = n->value; break;
 			case TDEMNuisance::Type::TXRX_DX:
-				OG.txrx_dx = n->value; break;
+				OG.txrx_dx() = n->value; break;
 			case TDEMNuisance::Type::TXRX_DY:
-				OG.txrx_dy = n->value; break;
+				OG.txrx_dy() = n->value; break;
 			case TDEMNuisance::Type::TXRX_DZ:
-				OG.txrx_dz = n->value; break;
+				OG.txrx_dz() = n->value; break;
 			case TDEMNuisance::Type::RX_ROLL:
-				OG.rx_roll = n->value; break;
+				OG.rx_roll() = n->value; break;
 			case TDEMNuisance::Type::RX_PITCH:
-				OG.rx_pitch = n->value; break;
+				OG.rx_pitch() = n->value; break;
 			case TDEMNuisance::Type::RX_YAW:
-				OG.rx_yaw = n->value; break;
+				OG.rx_yaw() = n->value; break;
 			case TDEMNuisance::Type::TXRX_DISTANCE:
 				angledistance = true;
 				distance = n->value; break;
@@ -1020,13 +1020,13 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		}
 
 		if (angledistance == true) {
-			OG.txrx_dx = distance * cos(D2R<double> * angle);
-			OG.txrx_dz = distance * sin(D2R<double> * angle);
+			OG.txrx_dx() = distance * cos(D2R<double> * angle);
+			OG.txrx_dz() = distance * sin(D2R<double> * angle);
 		}
 		return OG;
 	}
 
-	std::vector<double> collect(const cTDEmSystemInfo& S, const TDEmResponse& R) {
+	std::vector<double> collect(const cTDEmSystemInfo& S, const TDEmResponse<double>& R) {
 		std::vector<double> v(S.nchans);
 		std::vector<double> x, y, z;
 		if (S.useTotal) {

@@ -402,7 +402,7 @@ public:
 		const size_t nw = T.nWindows();
 		auto R = T.forward_model(E, geometry);
 		
-		TDEmVectorResponse FM;
+		TDEmVectorResponse<double> FM;
 		if (InvertTotalField) FM = R.totalfield();
 		else FM = R.S;
 
@@ -420,7 +420,7 @@ public:
 				derivatives[di].resize(nlayers + UGI.size());
 			}
 
-			TDEmVectorResponse DRV;
+			TDEmVectorResponse<double> DRV;
 			for (size_t li = 0; li < nlayers; li++) {
 				R = T.derivative(CalculationType(CMode::DC, li));
 				if (InvertTotalField) DRV = R.totalfield();

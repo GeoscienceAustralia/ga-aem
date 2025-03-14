@@ -135,6 +135,7 @@ namespace IOManager {
 
 		template<typename T>
 		bool read(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n) {
+			if (fd.isinitialised() == false) return false;
 			vec.resize(n);
 			if (fd.get_type() == cFieldDefinition::TYPE::NUMERIC) {
 				size_t deflen = fd.get_numericvalue().size();
@@ -167,6 +168,8 @@ namespace IOManager {
 
 		template<typename T>
 		bool read(const cFieldDefinition& fdr, const cFieldDefinition& fdi, std::vector<std::complex<T>>& complexvec, const size_t n) {
+			if (fdr.isinitialised() == false) return false;
+			if (fdi.isinitialised() == false) return false;
 			std::vector<T> vr(n);
 			std::vector<T> vi(n);
 			bool status1 = read(fdr, vr, n);

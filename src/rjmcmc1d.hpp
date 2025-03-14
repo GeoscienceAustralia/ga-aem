@@ -34,7 +34,7 @@ Richard L. Taylor, Geoscience Australia.
 
 using namespace netCDF;
 using namespace netCDF::exceptions;
-
+using namespace VectorUtils;
 
 class cParameterization {
 

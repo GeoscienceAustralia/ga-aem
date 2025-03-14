@@ -29,16 +29,16 @@ static int parseinputrecord(const char* record, TDEmGeometry& G, Earth1D& E)
 		glog.errormsg(_SRC_, "There should be at least 11 columns per record\n");
 	};
 
-	G.tx_height = v[0];
-	G.tx_roll = v[1];
-	G.tx_pitch = v[2];
-	G.tx_yaw = v[3];
-	G.txrx_dx = v[4];
-	G.txrx_dy = v[5];
-	G.txrx_dz = v[6];
-	G.rx_roll = v[7];
-	G.rx_pitch = v[8];
-	G.rx_yaw = v[9];
+	G.tx_height() = v[0];
+	G.tx_roll() = v[1];
+	G.tx_pitch() = v[2];
+	G.tx_yaw() = v[3];
+	G.txrx_dx() = v[4];
+	G.txrx_dy() = v[5];
+	G.txrx_dz() = v[6];
+	G.rx_roll() = v[7];
+	G.rx_pitch() = v[8];
+	G.rx_yaw() = v[9];
 
 
 	size_t nlayers = (size_t) v[10];
@@ -126,7 +126,7 @@ static int writecsvheader(std::ofstream& ofs, const size_t& nw)
 	return 0;
 }
 
-static int writeoutputrecord(const bool& csvoutput, std::ofstream& ofsout, size_t recnum, const TDEmSystem& T, const TDEmResponse& R) {
+static int writeoutputrecord(const bool& csvoutput, std::ofstream& ofsout, size_t recnum, const TDEmSystem& T, const TDEmResponse<double>& R) {
 	char delim = ' ';
 	if (csvoutput) delim = ',';
 	ofsout << strprint(" %15g%c", R.primary(XCOMP), delim);

@@ -24,6 +24,7 @@ class cLogger glog; //The global instance of the log file manager
 
 using namespace AEM;
 
+
 int skytem_example_ip() {
 	//Load the AEM system specification files for the Skytem moments //only do this once				
 	//TDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");	
@@ -32,10 +33,10 @@ int skytem_example_ip() {
 
 	//Load the system geometry 
 	TDEmGeometry G;
-	G.tx_height = 40;
-	G.tx_roll = 0;       G.tx_pitch = 0; G.tx_yaw  = 0;
-	G.txrx_dx = -13.35;  G.txrx_dy  = 0; G.txrx_dz = +2.00;
-	G.rx_roll = 0;       G.rx_pitch = 0; G.rx_yaw  = 0;
+	G.tx_height() = 40;
+	G.tx_roll() = 0;       G.tx_pitch() = 0; G.tx_yaw() = 0;
+	G.txrx_dx() = -13.35;  G.txrx_dy() = 0; G.txrx_dz() = +2.00;
+	G.rx_roll() = 0;       G.rx_pitch() = 0; G.rx_yaw() = 0;
 
 	//Create the  earth structure	
 	Earth1D E(3);
@@ -79,10 +80,10 @@ int skytem_example() {
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
 	TDEmGeometry G;
-	G.tx_height = 30;
-	G.tx_roll = 0;       G.tx_pitch = 0; G.tx_yaw = 0;
-	G.txrx_dx = -12.62;  G.txrx_dy = 0; G.txrx_dz = +2.16;
-	G.rx_roll = 1;       G.rx_pitch = 0; G.rx_yaw = 0;
+	G.tx_height() = 30;
+	G.tx_roll() = 0;       G.tx_pitch() = 0; G.tx_yaw() = 0;
+	G.txrx_dx() = -12.62;  G.txrx_dy() = 0; G.txrx_dz() = +2.16;
+	G.rx_roll() = 1;       G.rx_pitch() = 0; G.rx_yaw() = 0;
 
 	//Create the earth structure
 	//This changes every fiducial/station
@@ -125,10 +126,10 @@ int skytem_computation_time() {
 	//Load the system geometry (same for both moments)
 	//This changes every fiducial/station
 	TDEmGeometry G;
-	G.tx_height = 30;
-	G.tx_roll = 0;       G.tx_pitch = 0; G.tx_yaw = 0;
-	G.txrx_dx = -12.62;  G.txrx_dy = 0; G.txrx_dz = +2.16;
-	G.rx_roll = 0;       G.rx_pitch = 0; G.rx_yaw = 0;
+	G.tx_height() = 30;
+	G.tx_roll() = 0;       G.tx_pitch() = 0; G.tx_yaw() = 0;
+	G.txrx_dx() = -12.62;  G.txrx_dy() = 0; G.txrx_dz() = +2.16;
+	G.rx_roll() = 0;       G.rx_pitch() = 0; G.rx_yaw() = 0;
 
 	//Create the earth structure
 	//This changes every fiducial/station
@@ -149,8 +150,8 @@ int skytem_computation_time() {
 			for (size_t k = 0; k < nlayers - 1; k++) E.thickness[k] = urand(1.0, 10.0);
 			LMR = LM.forward_model(E, G);
 			HMR = HM.forward_model(E, G);
-			sum += LMR.primary(XCOMP);//Just to make sure compiler does not optimize out the computation
-			sum += HMR.primary(XCOMP);//Just to make sure compiler does not optimize out the computation
+			sum += LMR.primary(XCOMP,0);//Just to make sure compiler does not optimize out the computation
+			sum += HMR.primary(XCOMP,0);//Just to make sure compiler does not optimize out the computation
 		}
 		double t2 = gettime();
 		std::cout << "Time: " << j << " " << t2 - t1 << std::endl;
@@ -162,10 +163,10 @@ static void test_derivatives() {
 	fs::path stmpath = "../../examples/SkyTEM-BHMAR-2009/stmfiles/Skytem-LM.stm";
 	TDEmSystem T(stmpath);
 	TDEmGeometry G;
-	G.tx_height = 30;
-	G.tx_roll = 3;       G.tx_pitch = 10; G.tx_yaw = -5;
-	G.txrx_dx = -12.62;  G.txrx_dy = 12; G.txrx_dz = +2.16;
-	G.rx_roll = 4;       G.rx_pitch = -3; G.rx_yaw = 2;
+	G.tx_height() = 30;
+	G.tx_roll() = 3;       G.tx_pitch() = 10; G.tx_yaw() = -5;
+	G.txrx_dx() = -12.62;  G.txrx_dy() = 12; G.txrx_dz() = +2.16;
+	G.rx_roll() = 4;       G.rx_pitch() = -3; G.rx_yaw() = 2;
 	// The G.txrx_dy = 12 is so that we get some Y-component response
 
 	std::vector<double> c = { 0.01, 0.1, 0.001 };
@@ -220,41 +221,41 @@ static void test_derivatives() {
 
 	std::cout << "DX derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DX));
-	G1 = G; G1.txrx_dx += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.txrx_dx() += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 
 	std::cout << "DY derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DY));
-	G1 = G; G1.txrx_dy += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.txrx_dy() += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 	//std::cout << DA;
 	//std::cout << DN;
 
 	std::cout << "DZ derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DZ));
-	G1 = G; G1.txrx_dz += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.txrx_dz() += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 
 	std::cout << "DH derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DH));
 	G1 = G; // Tx moves independent of Rx
-	G1.tx_height += delta; G1.txrx_dz -= delta;
+	G1.tx_height() += delta; G1.txrx_dz() -= delta;
 	R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 
 	std::cout << "Tx Height derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DTX_HEIGHT));
 	G1 = G; // Rx moves with Tx
-	G1.tx_height += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
+	G1.tx_height() += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 	
 	delta = 0.001; // 0.001 degree
 	std::cout << "Rx roll derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_ROLL), G, R);
-	G1 = G; G1.rx_roll += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.rx_roll() += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 
 	std::cout << "Rx pitch derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_PITCH), G, R);
-	G1 = G; G1.rx_pitch += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.rx_pitch() += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
 	
 	std::cout << "Rx yaw derivative" << std::endl;
 	DA = T.derivative(CalculationType(CalculationType::Mode::DRX_YAW), G, R);
-	G1 = G; G1.rx_yaw += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
+	G1 = G; G1.rx_yaw() += delta; R1 = T.forward_model(E, G1); DN = (R1 - R) / delta; PCD = percent_difference(DN, DA); TDEmResponse<double>::display_max_abs_percent_difference(PCD);
  };
 
 static void test_spectral() {
@@ -264,19 +265,12 @@ static void test_spectral() {
 	TDEmGeometry G;
 	
 
-	//1.0e-06 * 		-0.6094 -0.0245 -0.2924
-	//1.0e-06 *         -0.5635 -0.0388 -0.3226
-	// Average geometry of first line in Tempest convention
-	//G.tx_height = 135.8517;
-	//G.tx_roll =   -0.4199;	G.tx_pitch =   1.8746;	G.tx_yaw =         0;
-	//G.txrx_dx = -109.5602;	G.txrx_dy  = -10.9148;	G.txrx_dz =  48.2784;
-	//G.rx_roll =    1.6086;	G.rx_pitch =   0.9377;	G.rx_yaw =    3.6834;
-
+	
 	// 902 Average geometry
-	G.tx_height = 135.8517;
-	G.tx_roll = 1.33772;	G.tx_pitch = 2.56432;	G.tx_yaw = 0;
-	G.txrx_dx = -108.05;	G.txrx_dy = -4.47019;	G.txrx_dz = 52.7301;
-	G.rx_roll = 2.11234;	G.rx_pitch = 0.0996245;	G.rx_yaw = 0.310114;
+	G.tx_height() = 135.8517;
+	G.tx_roll() = 1.33772;	G.tx_pitch() = 2.56432;	G.tx_yaw() = 0;
+	G.txrx_dx() = -108.05;	G.txrx_dy() = -4.47019;	G.txrx_dz() = 52.7301;
+	G.rx_roll() = 2.11234;	G.rx_pitch() = 0.0996245; G.rx_yaw() = 0.310114;
 
 	//G.tx_pitch += 2.2;
 	//G.rx_pitch += -0.5;
@@ -285,12 +279,12 @@ static void test_spectral() {
 	//G.txrx_dx  -= 1.8;
 	//G.txrx_dz -= 1.8;
 
-	G.txrx_dy  *= -1.0;
-	G.txrx_dz  *= -1.0;
-	G.tx_pitch *= -1.0;
-	G.rx_pitch *= -1.0;
-	G.tx_yaw   *= -1.0;
-	G.rx_yaw   *= -1.0;
+	G.txrx_dy() *= -1.0;
+	G.txrx_dz() *= -1.0;
+	G.tx_pitch() *= -1.0;
+	G.rx_pitch() *= -1.0;
+	G.tx_yaw() *= -1.0;
+	G.rx_yaw() *= -1.0;
 
 	//G.tx_height = 120;
 	//G.tx_roll = 0;		G.tx_pitch = 0;	G.tx_yaw = 0;

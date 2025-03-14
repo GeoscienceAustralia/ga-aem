@@ -20,7 +20,149 @@ using namespace AEM::INVERTER;
 
 namespace AEM {
 
+	class Parameter {
 
+		private:
+			bool _initialised_status = false;
+			bool _solve = false;
+			bool _bound = false;
+			FDMap fdmap;
+			int  poffset = -1;//offset into paramter index 
+
+		public:
+			static constexpr const char INPUT[] = "Input";
+			static constexpr const char REF[] = "Ref";
+			static constexpr const char STD[] = "Std";
+			static constexpr const char MIN[] = "Min";
+			static constexpr const char MAX[] = "Max";
+
+			Parameter() {};
+
+			Parameter(const cBlock& parentblock, const std::string& key) {
+				_initialised_status = initialise(parentblock, key);
+			};
+
+			bool initialised() const {
+				return _initialised_status;
+			};
+
+			bool solve() const {
+				return _solve;
+			};
+
+			bool bound() const {
+				return _bound;
+			};
+
+			void set_poffset(const int& _poffset) {
+				if (_initialised_status && _solve) {
+					poffset = _poffset;
+				}
+				else glog.errormsg(_SRC_, "Cannot set poffset for a fixed parameter.\n");
+			};
+
+			int get_poffset() const {
+				if(_initialised_status && _solve) return poffset;
+				return -1;
+			};
+
+			const cFieldDefinition& get_fd(const std::string & key) const {
+				if (has(key)) return fdmap.at(key);
+				else return cFieldDefinition();
+			};
+
+		private:
+			bool initialise(const cBlock& parentblock, const std::string& key) {
+				std::string id = parentblock.findkey(key);
+				if (id.compare(undefinedvalue<std::string>()) != 0) {
+					return initialise_from_entry(parentblock, key);
+				}
+				else {
+					cBlock b = parentblock.findblock(key);
+					if (b.empty() == true) {
+						return false;
+					}
+
+					if (initialise_from_block(b) == false) {
+						std::string msg = strprint("Could not parse control file block: %s.", key.c_str());
+						glog.errormsg(_SRC_, msg);
+						return false;
+					}
+					return true;
+				}
+			};
+
+			bool initialise_from_entry(const cBlock& b, const std::string& key) {
+				poffset = -1;
+				_solve = false;
+				_bound = false;
+				cFieldDefinition fd(b, key);
+				fdmap[INPUT] = fd;
+				return true;
+			};
+
+			bool has(const std::string& key) const {
+				if (fdmap.find(key) != fdmap.end())return true;
+				return false;
+			};
+
+			bool initialise_from_block(const cBlock& b) {
+				_solve = false;
+				_bound = false;
+				poffset = -1;
+
+				b.get("solve", _solve, false);
+				add_fielddefinition(b, INPUT);
+				add_fielddefinition(b, REF);
+
+				if (has(REF) == true && has(INPUT) == false) {
+					fdmap[INPUT] = fdmap[REF];
+				}
+
+				if (has(INPUT) == true && has(REF) == false) {
+					fdmap[REF] = fdmap[INPUT];
+				}
+
+				if (_solve) {
+					add_fielddefinition(b, STD);
+					add_fielddefinition(b, MIN);
+					add_fielddefinition(b, MAX);
+					
+					if (has(REF) == false) {
+						glog.errormsg(_SRC_, "Parameter %s with 'solve = yes' must have a 'Ref' or 'Imput'.\n", b.Name.c_str());
+					}
+
+					if (has(STD) == false) {
+						glog.errormsg(_SRC_, "Parameter %s with 'solve = yes' must have an 'Std'.\n", b.Name.c_str());
+					}
+
+					if (has(MIN) && has(MAX)) {
+						_bound = true;
+					}
+				}
+
+				if (has(INPUT) == false) {
+					glog.errormsg(_SRC_, "Parameter %s must have an 'Input' or 'Ref'.\n", b.Name.c_str());
+				}
+
+				
+				
+				return true;
+			};
+
+			bool add_fielddefinition(const cBlock& b, const std::string& key) {
+				cFieldDefinition fd(b, key);
+				if (fd.isinitialised()) {
+					fdmap[key] = fd;
+					return true;
+				}
+				return false;
+			}
+
+
+	};
+
+	/*
 	class cInvertibleFieldDefinition {
 
 	private:
@@ -96,18 +238,7 @@ namespace AEM {
 		}
 	};	
 	using IFDMap = std::map<std::string, cInvertibleFieldDefinition, caseinsensetiveless<std::string>>;
-
-	class GeometryStore {
-
-	public:
-		TDEmGeometry input;
-		TDEmGeometry refval;
-		TDEmGeometry refvalstd;
-		TDEmGeometry minval;
-		TDEmGeometry maxval;
-		TDEmGeometry pfr;// Primary field reconstruction 
-		TDEmGeometry invmodel;// Inversion model
-	};
+	*/
 
 	class EarthStore {
 
@@ -151,7 +282,7 @@ namespace AEM {
 			};
 
 			if (refvalstd.thickness.size() > 0) {
-				if (min(refvalstd.thickness) <= 0) oss << "The thickness std is <= 0 in at least one layer\n";
+				if (min(refvalstd.thickness) < 0) oss << "The thickness std is < 0 in at least one layer\n";
 			};
 
 			if (minval.thickness.size() > 0) {
@@ -169,6 +300,29 @@ namespace AEM {
 			};
 		}
 
+	};
+
+	class GeometryStore {
+
+	public:
+		TDEmGeometry input;
+		TDEmGeometry refval;
+		TDEmGeometry refvalstd;
+		TDEmGeometry minval;
+		TDEmGeometry maxval;
+		TDEmGeometry pfr;// Primary field reconstruction 
+		TDEmGeometry invmodel;// Inversion model
+	};
+
+	class GGAOffsetStore {
+
+	public:
+		std::vector<double> input;
+		std::vector<double> refval;
+		std::vector<double> refvalstd;
+		std::vector<double> minval;
+		std::vector<double> maxval;
+		std::vector<double> invmodel;
 	};
 
 	class ScaleFactorsStore {
@@ -190,42 +344,49 @@ namespace AEM {
 		std::vector<RT> P;//Primary
 		std::vector<RT> S;//Secondary
 		std::vector<RT> E;//Noise std estimate
+		double GA;//High altitude coupling
+		double GGA;//Coupling Ratio g/ga
 	};
 
 	//RT is Response type double or std::complex<double>
 	template <typename RT>
-	class AEMComponentInversionInfo {
-
-	private:
-		size_t nWindows = 0;
-		size_t nSoundings = 0;
+	class ComponentInversionInfo {
 
 	public:
 		std::vector<SoundingData<RT>> data;
 		std::string Name;
 		bool Use = false;
 		FDMap fdMap;
-		IFDMap ifdMap;
+		GGAOffsetStore ggaoffsetStore;
 		ScaleFactorsStore sfStore;
+		Parameter ggaoffset;
+		Parameter scalingfactor;
 
 		bool EstimateNoiseFromModel = false;
 		std::vector<RT> mn;
 		std::vector<RT> an;
 
-		AEMComponentInversionInfo() {};
+		ComponentInversionInfo() {
+			_nElements = value_size<RT>();
+		};
+
+		const size_t& nSoundings() const { return _nSoundings; };
+		const size_t& nWindows() const { return _nWindows; };
+		const size_t& nElements() const { return _nElements; };
+		const size_t& nChannels() const { return _nWindows * _nElements; };
+
+		double get_ga(const size_t& si) const {
+			return data[si].GA;
+		};
+
+		double get_gga(const size_t& si) const {
+			return data[si].GGA;
+		};
 
 		bool getvector_ri(const cBlock& b, const std::string& key, std::vector<double>& v) {
 			bool status = b.getvalue(key, v);
 			return status;
 		}
-
-		cInvertibleFieldDefinition& get_ifd(const std::string& key) {
-			return ifdMap.at(key);
-		};
-
-		const cInvertibleFieldDefinition& get_ifd(const std::string& key) const {
-			return ifdMap.at(key);
-		};
 
 		bool getvector_ri(const cBlock& b, const std::string& key, std::vector<cdouble>& v) {
 			std::vector<double> r;
@@ -265,9 +426,13 @@ namespace AEM {
 			add_fielddefinition<RT>(b, "Noise");
 			add_fielddefinition<RT>(b, "Total");
 			add_fielddefinition<double>(b, "GA");
-			add_fielddefinition<double>(b, "GGA");
-			add_invertiblefielddefinition(b, "ScaleFactor");
+			add_fielddefinition<double>(b, "GGA");			
 		};
+
+		void add_parameters(const cBlock& b) {
+			scalingfactor = Parameter(b, "ScaleFactor");
+			ggaoffset = Parameter(b, "GGAOffset");
+		}
 
 		void initialise(const cBlock& b, const std::string& name, const size_t& nwindows, const size_t& nsoundings) {
 			Name = name;
@@ -299,18 +464,28 @@ namespace AEM {
 			}
 
 			add_fielddefinitions(b);
+			add_parameters(b);
 
-			nSoundings = nsoundings;
-			nWindows = nwindows;
-			data.resize(nSoundings);
-			for (size_t si = 0; si < nSoundings; si++) {
-				data[si].S.resize(nWindows);
-				data[si].E.resize(nWindows);
+			_nSoundings = nsoundings;
+			_nWindows = nwindows;
+			_nElements = value_size<RT>();
+			_nChannels = _nWindows * _nElements;
+
+			data.resize(nSoundings());
+			for (size_t si = 0; si < nSoundings(); si++) {
+				data[si].S.resize(nWindows());
+				data[si].E.resize(nWindows());
 			}
-		}
 
-		const size_t& nw() const {
-			return nWindows;
+			if (ggaoffset.initialised()) {
+				ggaoffsetStore.input.resize(nSoundings());
+				if (ggaoffset.solve()) {
+					ggaoffsetStore.refval.resize(nSoundings());
+					ggaoffsetStore.refvalstd.resize(nSoundings());
+					ggaoffsetStore.minval.resize(nSoundings());
+					ggaoffsetStore.maxval.resize(nSoundings());
+				}
+			}
 		}
 
 		void readdata(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
@@ -326,83 +501,90 @@ namespace AEM {
 			if (Use == false) return;
 			SoundingData<RT>& d = data[si];
 
-			auto& fdP = fdMap["Primary"];
-			auto& fdS = fdMap["Secondary"];
-			IM->read(fdP, d.P, nw());
-			IM->read(fdS, d.S, nw());
+			const cFieldDefinition& fdP = fdMap["Primary"];
+			const cFieldDefinition& fdS = fdMap["Secondary"];
+			IM->read(fdP, d.P, nWindows());
+			IM->read(fdS, d.S, nWindows());
 			if (EstimateNoiseFromModel) {
-				for (size_t wi = 0; wi < nWindows; wi++) {
-					const RT v = 0.01 * AEM::ewise_mul(mn[wi],d.S[wi]);
+				for (size_t wi = 0; wi < nWindows(); wi++) {
+					const RT v = 0.01 * AEM::ewise_mul(mn[wi], d.S[wi]);
 					d.E[wi] = AEM::hypot(an[wi], v);
 				}
 			}
 			else {
 				const auto& fdE = fdMap["Noise"];
-				IM->read(fdE, d.E, nWindows);
+				IM->read(fdE, d.E, nWindows());
 			}
-		}
+		};
 
 		template <>
 		void readdata_impl<cdouble>(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
 			const size_t& si = soundingindex;
 			if (Use == false) return;
+
 			SoundingData<RT>& d = data[si];
-			const cFieldDefinition fdTr = fdMap["TotalReal"];
-			const cFieldDefinition fdTi = fdMap["TotalImag"];
-			const cFieldDefinition fdPr = fdMap["PrimaryReal"];
-			const cFieldDefinition fdPi = fdMap["PrimaryImag"];
-			const cFieldDefinition fdSr = fdMap["SecondaryReal"];
-			const cFieldDefinition fdSi = fdMap["SecondaryImag"];
-			const cFieldDefinition fdNr = fdMap["NoiseReal"];
-			const cFieldDefinition fdNi = fdMap["NoiseImag"];
 
-			IM->read(fdTr, fdTi, d.T, nw());
-			IM->read(fdSr, fdSi, d.S, nw());
-			IM->read(fdPr, fdPi, d.P, nw());
-			IM->read(fdNr, fdNi, d.E, nw());
+			const cFieldDefinition& fdGA = fdMap.at("GA");
+			IM->read(fdGA, d.GA, 1);
+			const cFieldDefinition& fdGGA = fdMap.at("GGA");
+			IM->read(fdGGA, d.GGA, 1);
 
-			if(EstimateNoiseFromModel){
+
+			const cFieldDefinition& fdTr = fdMap.at("TotalReal");
+			const cFieldDefinition& fdTi = fdMap.at("TotalImag");
+			const cFieldDefinition& fdPr = fdMap.at("PrimaryReal");
+			const cFieldDefinition& fdPi = fdMap.at("PrimaryImag");
+			const cFieldDefinition& fdSr = fdMap.at("SecondaryReal");
+			const cFieldDefinition& fdSi = fdMap.at("SecondaryImag");
+			const cFieldDefinition& fdNr = fdMap.at("NoiseReal");
+			const cFieldDefinition& fdNi = fdMap.at("NoiseImag");
+
+			IM->read(fdTr, fdTi, d.T, nWindows());
+			IM->read(fdSr, fdSi, d.S, nWindows());
+			IM->read(fdPr, fdPi, d.P, nWindows());
+			IM->read(fdNr, fdNi, d.E, nWindows());
+
+			if (EstimateNoiseFromModel) {
 				if (fdTr.isinitialised()) {
-					for (size_t wi = 0; wi < nWindows; wi++) {
+					for (size_t wi = 0; wi < nWindows(); wi++) {
 						const RT v = 0.01 * AEM::ewise_mul(mn[wi], d.T[wi]);
 						d.E[wi] = AEM::hypot(an[wi], v);
 					}
 				}
 				else {
-					for (size_t wi = 0; wi < nWindows; wi++) {
+					for (size_t wi = 0; wi < nWindows(); wi++) {
 						const RT v = 0.01 * AEM::ewise_mul(mn[wi], d.S[wi]);
 						d.E[wi] = AEM::hypot(an[wi], v);
 					}
 				}
 			}
-		}
+		};
 
-		//int scalefactor_poffset() const {
-		//	const cInvertibleFieldDefinition& ifd = ifdMap.at("ScaleFactor");
-		//	return ifd.get_poffset();
-		//};
+		private:
+			size_t _nWindows = 0;
+			size_t _nElements = 0;
+			size_t _nChannels = 0;
+			size_t _nSoundings = 0;
 	};
 
 	//RT is Response type double or std::complex<double>
 	template <typename AEMSystemClass, typename RT>
-	class AEMSystemInversionInfo {
+	class SystemInversionInfo {
 
 	public:
 		
 		std::unique_ptr<AEMSystem<RT>> System;
-		
-		size_t nwindows = 0;
-		size_t ncomps = 0;
-		size_t nchans = 0;
-		AEMComponentInversionInfo<RT> CompInfo[NCOMP];		 
+		ComponentInversionInfo<RT> CI[NCOMP];
+		using CompInfo = ComponentInversionInfo<RT>;
 		std::vector<TDEmResponse<RT>> predicted;
-		std::string units;
+		std::string Units;
 
 		bool InvertXZAmplitude  = false;
 		bool InvertTotalField   = false;
+		bool InvertPSI = false;
 		bool ReconstructPrimary = false;
 
-		AEMSystemInversionInfo(cBlock& b, const size_t nsoundings){
+		SystemInversionInfo(cBlock& b, const size_t nsoundings){
 			fs::path stmfile = b.getstringvalue("SystemFile");
 			System = AEMSystemClass::unique_ptr(stmfile);
 			initialise(b, nsoundings);
@@ -413,12 +595,15 @@ namespace AEM {
 			glog.log_to_file(strprint("==============System file %s\n", stmfile.c_str()));
 			glog.log_to_file(System->system_descriptor_block().get_as_string());
 			glog.log_to_file("==========================================================================\n");
-			nwindows = System->nWindows();
+			_nWindows = System->nWindows();
 
 			if (b.getvalue("InvertPrimaryPlusSecondary", InvertTotalField)) {
 				glog.warningmsg("'InvertPrimaryPlusSecondary' is deprecated, please use 'InvertTotalField' instead\n");
 			}
 			else (b.getvalue("InvertTotalField", InvertTotalField));
+
+
+			b.get("InvertPSI", InvertPSI, false);
 
 			ReconstructPrimary = false;
 			if (InvertTotalField) {
@@ -430,40 +615,57 @@ namespace AEM {
 			}
 			else (b.getvalue("InvertXZAmplitude", InvertXZAmplitude));
 
-			CompInfo[XCOMP].initialise(b.findblock("XComponent"), "X", nwindows, nsoundings);
-			CompInfo[YCOMP].initialise(b.findblock("YComponent"), "Y", nwindows, nsoundings);
-			CompInfo[ZCOMP].initialise(b.findblock("ZComponent"), "Z", nwindows, nsoundings);
+			CI[XCOMP].initialise(b.findblock("XComponent"), "X", _nWindows, nsoundings);
+			CI[YCOMP].initialise(b.findblock("YComponent"), "Y", _nWindows, nsoundings);
+			CI[ZCOMP].initialise(b.findblock("ZComponent"), "Z", _nWindows, nsoundings);
 
-			ncomps = 0;
-			if (CompInfo[XCOMP].Use) ncomps++;
-			if (CompInfo[YCOMP].Use) ncomps++;
-			if (CompInfo[ZCOMP].Use) ncomps++;
+			_nActiveComponents = 0;
+			if (CI[XCOMP].Use) _nActiveComponents++;
+			if (CI[YCOMP].Use) _nActiveComponents++;
+			if (CI[ZCOMP].Use) _nActiveComponents++;
 
 			if (InvertXZAmplitude) {
-				CompInfo[XCOMP].Use = true;
-				CompInfo[ZCOMP].Use = true;
+				CI[XCOMP].Use = true;
+				CI[ZCOMP].Use = true;
 			}
-			//nchans = nwindows * ncomps;
+			size_t vsize = value_size<RT>();
+			_nChannels = _nWindows * _nActiveComponents * vsize;
 		}
 
 		void set_units(cInputManager* IM) {
 			for (size_t ci = 0; ci < NCOMP; ci++) {
-				cFieldDefinition& fd = CompInfo[ci].fdMap["Secondary"];
+				cFieldDefinition& fd = CI[ci].fdMap["Secondary"];
 				if (fd.get_varname().size() > 0) {
 					cAsciiColumnField c;
 					IM->get_acsiicolumnfield(fd, c);
 					std::string u = c.get_att("units");
-					if (units.size() > 0) {
-						if (ciequal(u, units) == false) {
+					if (Units.size() > 0) {
+						if (ciequal(u, Units) == false) {
 							std::ostringstream msg;
-							msg << "Error: units must be the same on all EM system/components. " << units << "does niot match " << u << "." << std::endl;
+							msg << "Error: units must be the same on all EM system/components. " << Units << "does niot match " << u << "." << std::endl;
 							glog.errormsg(_SRC_, msg.str().c_str());
 						}
 					}
-					else units = u;
+					else Units = u;
 				}
 			}
 		}
 
+		AEMSystem<RT>& sys() {
+			return *System;
+		};
+
+		const AEMSystem<RT>& sys() const {
+			return *System;
+		};
+
+		const size_t& nWindows() const { return _nWindows; };
+		const size_t& nActiveComponents() const { return _nActiveComponents; };
+		const size_t& nChannels() const { return _nChannels; };
+
+	private:
+		size_t _nWindows = 0;
+		size_t _nActiveComponents = 0;
+		size_t _nChannels = 0;
 	};
 };

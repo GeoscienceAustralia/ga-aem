@@ -35,6 +35,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 class cLogger glog; //The global instance of the log file manager
 
 using namespace std;
+using namespace VectorUtils;
 
 class cGridOptions {
 

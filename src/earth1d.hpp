@@ -113,12 +113,12 @@ namespace AEM {
 		}
 
 		void print() const {
-			std::cout << this;
+			std::cout << *this;
 		}
 
 		void write(const fs::path& filepath) const {
 			std::ofstream ofs = ofstream_ex(filepath);
-			ofs << this;
+			ofs << *this;
 		}
 
 		std::vector<double> dummy_thickness() const {

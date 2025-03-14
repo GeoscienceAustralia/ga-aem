@@ -31,10 +31,12 @@ namespace AEM {
 			read_system_descriptor_file(descriptorpath);
 		};
 
+		const std::string& name() const { return SystemName; };
 		const cBlock& system_descriptor_block() const { return STM; };
 		LEModeller& lem() { return LEM; };
 
 		virtual SystemType type() const = 0;
+		virtual std::string type_string() const = 0;
 		virtual void read_system_descriptor_file(const fs::path& systemdescriptorfile) = 0;
 		virtual const size_t& nWindows() const = 0;
 		virtual const TDEmVectorResponse<RT>& forward_model_primary_field(const TDEmGeometry& G) = 0;
