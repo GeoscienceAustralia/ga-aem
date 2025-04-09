@@ -41,6 +41,10 @@ namespace AEM {
 			return *this;
 		}
 
+		std::vector<T> storage() const {
+			return v;
+		}
+
 	private:
 
 		void  resize(const size_t nwindows) {
@@ -165,7 +169,7 @@ namespace AEM {
 			set(v[2], value[2]);
 		};
 
-		TDEmScalarResponse<T> xzamp() {
+		TDEmScalarResponse<T> xzamp() const {
 			TDEmScalarResponse<T> r(nwindows);
 			for (size_t i = 0; i < nwindows; i++) {
 				r[i] = AEM::hypot(v[XCOMP][i], v[ZCOMP][i]);
@@ -242,6 +246,24 @@ namespace AEM {
 		const std::vector<T> secondary(const size_t& component) const {
 			assert(component < NCOMP);
 			return S[component];
+		};
+
+		const std::vector<T> total(const size_t& component) const {
+			assert(component < NCOMP);
+			return primary(component) + secondary(component);
+		};
+
+		std::vector<T> psi(const size_t& component, const double& scaled_ga_component) const {
+			assert(component < NCOMP);
+			std::vector<T> t = primary(component) + secondary(component);
+			t /= scaled_ga_component;
+			return t;
+		};
+
+		std::vector<T> psi_xzamp(const Vec3d& scaled_ga) const {
+			std::vector<T> psix = psi(XCOMP, scaled_ga[XCOMP]);
+			std::vector<T> psiz = psi(ZCOMP, scaled_ga[ZCOMP]);
+			return AEM::hypot(psix,psiz);
 		};
 
 		TDEmVectorResponse<T> totalfield() const {

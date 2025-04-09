@@ -344,7 +344,7 @@ namespace AEM {
 		std::vector<RT> P;//Primary
 		std::vector<RT> S;//Secondary
 		std::vector<RT> E;//Noise std estimate
-		double GA;//High altitude coupling
+		double GA;//High altitude coupling ga
 		double GGA;//Coupling Ratio g/ga
 	};
 
@@ -363,12 +363,21 @@ namespace AEM {
 		Parameter scalingfactor;
 
 		bool EstimateNoiseFromModel = false;
-		std::vector<RT> mn;
-		std::vector<RT> an;
+		std::vector<RT> multiplicative_noise;
+		std::vector<RT> additive_noise;
 
 		ComponentInversionInfo() {
 			_nElements = value_size<RT>();
 		};
+
+
+		const std::string& name() const {
+			return Name;
+		}
+
+		std::string longname() const {
+			return Name + "-component";
+		}
 
 		const size_t& nSoundings() const { return _nSoundings; };
 		const size_t& nWindows() const { return _nWindows; };
@@ -446,19 +455,19 @@ namespace AEM {
 			EstimateNoiseFromModel = b.getboolvalue("EstimateNoiseFromModel");
 
 			if (EstimateNoiseFromModel) {
-				bool status1 = getvector_ri(b, "MultiplicativeNoise", mn);
-				bool status2 = getvector_ri(b, "AdditiveNoise", an);
-				if (an.size() == 1) {
-					an = std::vector<RT>(nwindows, an[0]);
+				bool status1 = getvector_ri(b, "MultiplicativeNoise", multiplicative_noise);
+				bool status2 = getvector_ri(b, "AdditiveNoise", additive_noise);
+				if (additive_noise.size() == 1) {
+					additive_noise = std::vector<RT>(nwindows, additive_noise[0]);
 				}
-				else if (an.size() != nwindows) {
+				else if (additive_noise.size() != nwindows) {
 					glog.errormsg(_SRC_, "Must have exactly 1 or nwindows AdditiveNoise values\n");
 				};
 
-				if (mn.size() == 1) {
-					mn = std::vector<RT>(nwindows, mn[0]);
+				if (multiplicative_noise.size() == 1) {
+					multiplicative_noise = std::vector<RT>(nwindows, multiplicative_noise[0]);
 				}
-				if (mn.size() != nwindows) {
+				if (multiplicative_noise.size() != nwindows) {
 					glog.errormsg(_SRC_, "Must have exactly 1 or nwindows MultiplicativeNoise values\n");
 				}
 			}
@@ -507,8 +516,8 @@ namespace AEM {
 			IM->read(fdS, d.S, nWindows());
 			if (EstimateNoiseFromModel) {
 				for (size_t wi = 0; wi < nWindows(); wi++) {
-					const RT v = 0.01 * AEM::ewise_mul(mn[wi], d.S[wi]);
-					d.E[wi] = AEM::hypot(an[wi], v);
+					const RT v = 0.01 * AEM::ewise_mul(multiplicative_noise[wi], d.S[wi]);
+					d.E[wi] = AEM::hypot(additive_noise[wi], v);
 				}
 			}
 			else {
@@ -519,16 +528,11 @@ namespace AEM {
 
 		template <>
 		void readdata_impl<cdouble>(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
-			const size_t& si = soundingindex;
+			
 			if (Use == false) return;
 
+			const size_t& si = soundingindex;
 			SoundingData<RT>& d = data[si];
-
-			const cFieldDefinition& fdGA = fdMap.at("GA");
-			IM->read(fdGA, d.GA, 1);
-			const cFieldDefinition& fdGGA = fdMap.at("GGA");
-			IM->read(fdGGA, d.GGA, 1);
-
 
 			const cFieldDefinition& fdTr = fdMap.at("TotalReal");
 			const cFieldDefinition& fdTi = fdMap.at("TotalImag");
@@ -544,18 +548,48 @@ namespace AEM {
 			IM->read(fdPr, fdPi, d.P, nWindows());
 			IM->read(fdNr, fdNi, d.E, nWindows());
 
-			if (EstimateNoiseFromModel) {
-				if (fdTr.isinitialised()) {
-					for (size_t wi = 0; wi < nWindows(); wi++) {
-						const RT v = 0.01 * AEM::ewise_mul(mn[wi], d.T[wi]);
-						d.E[wi] = AEM::hypot(an[wi], v);
+			const cFieldDefinition& fdGA = fdMap.at("GA");
+			IM->read(fdGA, d.GA, 1);
+			const cFieldDefinition& fdGGA = fdMap.at("GGA");
+			IM->read(fdGGA, d.GGA, 1);
+
+		};
+
+		void read_ggaoffset_data(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
+			if (Use == false) return;
+			const Parameter& p = ggaoffset;
+			if (p.initialised()) {
+				GGAOffsetStore& s = ggaoffsetStore;
+				IM->read(p.get_fd(Parameter::INPUT), s.input[soundingindex], 1);
+				if (p.solve()) {
+					IM->read(p.get_fd(Parameter::REF), s.refval[soundingindex], 1);
+					IM->read(p.get_fd(Parameter::STD), s.refvalstd[soundingindex], 1);
+					if (p.bound()) {
+						IM->read(p.get_fd(Parameter::MIN), s.minval[soundingindex], 1);
+						IM->read(p.get_fd(Parameter::MAX), s.maxval[soundingindex], 1);
 					}
 				}
-				else {
-					for (size_t wi = 0; wi < nWindows(); wi++) {
-						const RT v = 0.01 * AEM::ewise_mul(mn[wi], d.S[wi]);
-						d.E[wi] = AEM::hypot(an[wi], v);
-					}
+			}
+		};
+
+		void estimate_noise_from_model(const size_t& soundingindex) {
+			if (Use == false) return;
+			if (EstimateNoiseFromModel == false) return;
+			SoundingData<RT>& d = data[soundingindex];
+			bool invertpsi = true;//Todo fix this bookmark
+			if (invertpsi) {
+				double gga = get_gga(soundingindex);
+				for (size_t wi = 0; wi < nWindows(); wi++) {
+					RT val = d.T[wi];
+					val -= gga;
+					const RT mn = 0.01 * AEM::ewise_mul(multiplicative_noise[wi], val);
+					d.E[wi] = AEM::hypot(additive_noise[wi], mn);
+				}
+			}
+			else {
+				for (size_t wi = 0; wi < nWindows(); wi++) {
+					const RT mn = 0.01 * AEM::ewise_mul(multiplicative_noise[wi], d.S[wi]);
+					d.E[wi] = AEM::hypot(additive_noise[wi], mn);
 				}
 			}
 		};
@@ -662,6 +696,59 @@ namespace AEM {
 		const size_t& nWindows() const { return _nWindows; };
 		const size_t& nActiveComponents() const { return _nActiveComponents; };
 		const size_t& nChannels() const { return _nChannels; };
+
+		Vec3d get_scaled_ga(const size_t& si) const {
+			Vec3d ga(1.0, 1.0, 1.0);
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				const CompInfo& C = CI[ci];
+				if (C.Use) ga[ci] = CI[ci].get_ga(si);
+			}
+			return (1e-7 * 1e15) * ga;
+		};
+
+		Vec3d get_gga(const size_t si) {
+			Vec3d gga(1.0, 1.0, 1.0);
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				CompInfo& C = CI[ci];
+				if (C.Use) {
+					gga[ci] = CI[ci].get_gga(si);
+				}
+			}
+			return gga;
+		};
+
+		std::vector<RT> get_predicted1(const size_t& si, const size_t& ci) const {
+			if (InvertPSI) {
+				std::vector<RT> v = predicted[si].total(ci);
+				CompInfo& C = CI[ci];
+				C.get_ga(si)
+			}
+			else if (InvertTotalField) {
+				return predicted[si].total(ci);
+			}
+			else return predicted[si].secondary(ci);
+		};
+
+		std::vector<RT> get_predicted_xzamp1(const size_t& si) const {
+			if(InvertTotalField){
+				TDEmVectorResponse<RT> T = predicted[si].totalfield();
+				return T.xzamp().storage();
+			}
+			if (InvertPSI) {
+				//const std::vector<RT>& p = predicted[si].primary(ci);
+				//const std::vector<RT>& s = predicted[si].secondary(ci);
+				//const std::vector<RT> t = tx + sx;
+			}
+		};
+
+		//std::vector<RT> get_xzamp(const size_t si) {
+		//	//if(InvertPSI)
+		//	if (InvertXZAmplitude) {
+		//		const std::vector<RT> px = predicted[si].primary(ci);
+		//		const std::vector<RT> sx = predicted[si].secondary(ci);
+		//		const std::vector<RT> tx = px + sx;
+		//	}
+		//};
 
 	private:
 		size_t _nWindows = 0;

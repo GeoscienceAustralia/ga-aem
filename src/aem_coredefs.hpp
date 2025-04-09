@@ -23,6 +23,7 @@ namespace AEM {
 	using VectorUtils::operator/;
 	using VectorUtils::operator+=;
 	using VectorUtils::operator-=;
+	using VectorUtils::operator<<;
 
 	using namespace LEM2;
 	using CalculationType = AEM::CalculationType;
@@ -58,6 +59,27 @@ namespace AEM {
 		return AEMSystemClass::get_type();
 	};
 	
+	template <typename T>
+	std::vector<T> real(const std::vector<std::complex<T>>& cv) {
+		const size_t n = cv.size();
+		std::vector<T> v(n);
+		for (size_t i = 0; i < n; i++) {
+			v[i] = cv[i].real();
+		}
+		return v;
+	};
+
+	template <typename T>
+	std::vector<T> imaginary(const std::vector<std::complex<T>>& cv) {
+		const size_t n = cv.size();
+		std::vector<T> v(n);
+		for (size_t i = 0; i < n; i++) {
+			v[i] = cv[i].imag();
+		}
+		return v;
+	};
+
+
 	// Utilities for handling double and complex<double> the same
 	inline double hypot(const double& x, const double& y) {
 		return std::hypot(x, y);
@@ -65,6 +87,24 @@ namespace AEM {
 
 	inline cdouble hypot(const cdouble& x, const cdouble& y) {
 		return cdouble(std::hypot(x.real(), y.real()), std::hypot(x.imag(), y.imag()));
+	};
+
+	inline std::vector<double> hypot(const std::vector<double>& x, const std::vector<double>& y) {
+		const size_t n = x.size();
+		std::vector<double> h(n);
+		for (size_t i = 0; i < n; i++) {
+			h[i]  = hypot(x[i], y[i]);
+		}
+		return h;
+	};
+
+	inline std::vector<cdouble> hypot(const std::vector<cdouble>& x, const std::vector<cdouble>& y) {
+		const size_t n = x.size();
+		std::vector<cdouble> h(n);
+		for (size_t i = 0; i < n; i++) {
+			h[i] = hypot(x[i], y[i]);
+		}
+		return h;
 	};
 
 	inline double ewise_mul(const double& x, const double& y) {

@@ -274,9 +274,10 @@ namespace AEM::INVERTER {
 		cBlock Control;
 
 		size_t nData;
-		size_t nParam;
 		Vector Obs;
 		Vector Err;
+
+		size_t nParam;
 		Vector RefParam;
 		Vector RefParamStd;
 		Vector ParameterSensitivity;

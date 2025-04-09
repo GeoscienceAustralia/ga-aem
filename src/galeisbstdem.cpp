@@ -45,6 +45,26 @@ int finaliseandexit() {
 	return EXIT_FAILURE;
 };
 
+fs::path get_warning_log_path() {
+	
+	std::string s = "warning.log";
+	int k = 1;
+	do {
+		if (fs::exists(s)) {
+			std::error_code ec;
+			bool status = std::filesystem::remove(s, ec);
+			if (status == false) {
+				// Path must be being used by another process so increment the suffix
+				s = strprint("warning_%d.log", k);
+				k++;
+			}
+			else return fs::path(s);
+		}
+		else return fs::path(s);
+	} while(true);
+};
+
+
 int main(int argc, char** argv) {
 
 	std::string commandline = commandlinestring(argc, argv);
@@ -65,8 +85,10 @@ int main(int argc, char** argv) {
 		//glog.logmsg(0, "MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
 	#endif
 
-	std::string wlogpath = "warning.log";
-	if (mpirank == 0) std::filesystem::remove(wlogpath);
+	fs::path wlogpath;
+	if (mpirank == 0) {
+		wlogpath = get_warning_log_path();
+	};
 
 	#ifdef ENABLE_MPI
 		cMpiEnv::world_barrier();
@@ -121,6 +143,7 @@ int main(int argc, char** argv) {
 	controlfile = fs::path(argv[1]);
 
 	AEM::SystemType systype = AEM::aem_system_type(SBSINVERTER::get_stmpath(controlfile));
+
 	if (usingopenmp) {
 		#if defined _OPENMP
 		omp_init_lock(&fftw_thread_lock);
