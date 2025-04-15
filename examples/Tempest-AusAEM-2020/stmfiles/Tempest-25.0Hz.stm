@@ -24,7 +24,8 @@ System Begin
 		NumberOfWindows = 15
 		WindowWeightingScheme = Boxcar
 
-		WindowTimes Begin
+		// WindowTimes is deprecated in favour of Windows
+		Windows Begin
 			0.0000066667	0.0000200000
 			0.0000333333	0.0000466667
 			0.0000600000	0.0000733333
@@ -40,7 +41,7 @@ System Begin
 			0.0051266667	0.0079933333
 			0.0080066667	0.0123933333
 			0.0124066667	0.0199933333
-		WindowTimes End
+		Windows End
 
 	Receiver End
 

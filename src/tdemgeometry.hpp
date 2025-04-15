@@ -239,12 +239,18 @@ namespace AEM {
 		};
 
 		inline Mat3d rx_pitch_derivative_matrix() const {
-			// f(p) = [R(r) P(p) Y(y)]' * I     // fp is field vector in Rx reference frame
-			// I    = [R(r) P(p) Y(y)]  * f(p)  //  I is field vector in the inertial reference frame
-			// df(p)/dp = d([R(r) P(p) Y(y)]')/dp * I + [R(r) P(p) Y(y)]' * d(I)/dp
-			// df(p)/dp = d([R(r) P(p) Y(y)]')/dp * I         since d(I)/dp = 0
-			//          = d([R(r)    P(p)  Y(y)]')/dp * [R(r) P(p) Y(y)] * f(p)
-			//          =   [R(r) dP(p)/dp Y(y)]'   * [R(r) P(p) Y(y)] * f(p)
+			// i = field direction in inertial frame
+			// v = field direction in Rx frame
+			
+			// v = [R(r) P(p) Y(y)]' * i
+			// i = [R(r) P(p) Y(y)]  * v
+			 
+			// dv/dp = ([R(r) P(p) Y(y)]' * i)/dp
+			// dv/dp = ([R(r) P(p) Y(y)]')/dp * i) + [R(r) P(p) Y(y)]' * di/dp  -> since d(uv)/dx = udv/dx + vdu/dx
+			// dv/dp = ([R(r) P(p) Y(y)]')/dp * i) -> since di/dp = 0i/dp
+			// dv/dp = ([R(r) P(p)/dp Y(y)]') * i)
+			// dv/dp = ([R(r) P(p)/dp Y(y)]') * [R(r) P(p) Y(y)]  * v)
+
 			const Mat3d R = roll_matrix_degrees(rx_roll());
 			const Mat3d P = pitch_matrix_degrees(rx_pitch());
 			const Mat3d Y = yaw_matrix_degrees(rx_yaw());

@@ -1007,9 +1007,9 @@ namespace LEM2 {
 
 		void initialise(const std::vector<double>& discrete_frequencies, const size_t& numabscissa, const double& modelling_loop_radius) {
 			const size_t nf = discrete_frequencies.size();
-			GeometryStore.x = 100;
-			GeometryStore.y = 101;
-			GeometryStore.z = 102;
+			//GeometryStore.x = 100;
+			//GeometryStore.y = 101;
+			//GeometryStore.z = 102;
 
 			// Insert the frequencies
 			for (size_t fi = 0; fi < nf; fi++) {

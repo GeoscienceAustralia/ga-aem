@@ -179,6 +179,7 @@ namespace AEM {
 
 		friend std::ostream& operator<<(std::ostream& os, const TDEmVectorResponse& R) {			
 			for (size_t i = 0; i < R.nwindows; i++) { 
+			//for (size_t i = 0; i < 2; i++) {
 				os  << exd(16, 6) << R[XCOMP][i]
 					<< exd(16, 6) << R[YCOMP][i]
 					<< exd(16, 6) << R[ZCOMP][i]
@@ -187,7 +188,7 @@ namespace AEM {
 			return os;
 		}
 
-		void simple_output(std::ostream& os) {
+		void simple_output(std::ostream& os) const {
 			for (size_t i = 0; i < nwindows; i++) {
 				os <<  exd(16, 6) << v[XCOMP][i].real()
 					<< exd(16, 6) << v[XCOMP][i].imag()
@@ -337,26 +338,18 @@ namespace AEM {
 			return r;
 		};
 
-		friend TDEmResponse percent_difference(const TDEmResponse& a, const TDEmResponse& b) {
-			TDEmResponse r = 100.0 * elementwise_div(b - a, a);
-			constexpr double eps = std::numeric_limits<double>::epsilon();
+		friend TDEmResponse percent_difference(const TDEmResponse& a, const TDEmResponse& b, const double tol = std::numeric_limits<double>::epsilon()) {
+			TDEmResponse r(a.nWindows());
 			for (size_t ci = 0; ci < NCOMP; ci++) {
 				for (size_t wi = 0; wi < r.nWindows(); wi++) {
-					// Amend for closeness within numerical precision
-					if (nearly_equal_ulps(a.P[ci][wi], b.P[ci][wi])) r.P[ci][wi] = 0.0;
-					else if (a.P[ci][wi] == 0.0 && b.P[ci][wi] == 0.0) r.P[ci][wi] = 0.0;
-					else if (std::abs(a.P[ci][wi]) <= eps && std::abs(b.P[ci][wi] <= eps)) r.P[ci][wi] = 0.0;
-
-					if (nearly_equal_ulps(a.S[ci][wi], b.S[ci][wi])) r.S[ci][wi] = 0.0;
-					else if (a.S[ci][wi] == 0.0 && b.S[ci][wi] == 0.0) r.S[ci][wi] = 0.0;
-					else if (std::abs(a.S[ci][wi]) <= eps && std::abs(b.S[ci][wi] <= eps)) r.S[ci][wi] = 0.0;
-
+					r.P[ci][wi] = pct_diff_ex(a.P[ci][wi], b.P[ci][wi], tol);
+					r.S[ci][wi] = pct_diff_ex(a.S[ci][wi], b.S[ci][wi], tol);
 				}
 			}
 			return r;
 		};
-
-		static void display_max_abs_percent_difference(const TDEmResponse& PCD) {
+		
+		static void xxxdisplay_max_abs_percent_difference(const TDEmResponse<double>& PCD) {
 			fxd fmt = fxd(12, 6);
 			std::cout << "P (%): ";
 			std::cout << fmt << std::max(std::abs(min(PCD.P[XCOMP])), std::abs(max(PCD.P[XCOMP]))) << " ";
@@ -369,9 +362,36 @@ namespace AEM {
 			std::cout << std::endl;
 		};
 
+		static void display_max_abs_percent_difference(const TDEmResponse<double>& PCD) {
+			fxd fmt = fxd(10, 6);
+			std::cout << "P (%): ";
+			std::cout << fmt << maxabs(PCD.P[XCOMP]) << " ";
+			std::cout << fmt << maxabs(PCD.P[YCOMP]) << " ";
+			std::cout << fmt << maxabs(PCD.P[ZCOMP]) << std::endl;
+			std::cout << "S (%): ";
+			std::cout << fmt << maxabs(PCD.S[XCOMP]) << " ";
+			std::cout << fmt << maxabs(PCD.S[YCOMP]) << " ";
+			std::cout << fmt << maxabs(PCD.S[ZCOMP]) << std::endl;
+			std::cout << std::endl;
+		};
+
+		static void display_max_abs_percent_difference(const TDEmResponse<cdouble>& PCD) {
+			fxd fmt = fxd(12, 8);
+			std::cout << "P (%): "
+				<< "[" << fmt << maxabs(real(PCD.P[XCOMP])) << "," << fmt << maxabs(imaginary(PCD.P[XCOMP])) << "]  "
+				<< "[" << fmt << maxabs(real(PCD.P[YCOMP])) << "," << fmt << maxabs(imaginary(PCD.P[YCOMP])) << "]  "
+				<< "[" << fmt << maxabs(real(PCD.P[ZCOMP])) << "," << fmt << maxabs(imaginary(PCD.P[ZCOMP])) << "]" << std::endl;
+			std::cout << "S (%): " 
+				<< "[" << fmt << maxabs(real(PCD.S[XCOMP])) << "," << fmt << maxabs(imaginary(PCD.S[XCOMP])) << "]  "
+				<< "[" << fmt << maxabs(real(PCD.S[YCOMP])) << "," << fmt << maxabs(imaginary(PCD.S[YCOMP])) << "]  "
+				<< "[" << fmt << maxabs(real(PCD.S[ZCOMP])) << "," << fmt << maxabs(imaginary(PCD.S[ZCOMP])) << "]" << std::endl;
+			std::cout << std::endl;
+		};
+		
+
 		friend std::ostream& operator<<(std::ostream& os, const TDEmResponse& R) {
-			os << "--Primary--" << std::endl;
-			os << R.P;
+			//os << "--Primary--" << std::endl;
+			//os << R.P;
 			os << "--Secondary--" << std::endl;
 			os << R.S;
 			return os;

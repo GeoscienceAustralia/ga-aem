@@ -444,7 +444,7 @@ namespace LEM1 {
 			cdouble u = std::sqrt(cdouble(lambda2, gamma2));
 			cdouble y = u / imuzeroomega;
 
-			int i = nl - 2;
+			int i = (int)nl - 2;
 			while (i >= 0) {
 				gamma2 = muzeroomega * Earth.conductivity[i];
 				u = std::sqrt(cdouble(lambda2, gamma2));

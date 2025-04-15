@@ -49,7 +49,7 @@ namespace AEM {
 		enum class NormalizationType { NONE, PPM, PPM_PEAKTOPEAK };
 
 		size_t FrequenciesPerDecade = 6;
-		size_t NumAbscissa = 17;
+		size_t NumAbscissa = 21;
 		OutputType OutputType = OutputType::DBDT;
 		NormalizationType NormalisationType = NormalizationType::NONE;
 		double XOutputScaling = 1.0;
@@ -83,13 +83,13 @@ namespace AEM {
 			}
 
 			FrequenciesPerDecade = b.getsizetvalue("FrequenciesPerDecade");
-			if (FrequenciesPerDecade < 5) {
-				glog.warningmsg(_SRC_, "It is wise to use at least 5 frequencies per decade\n");
+			if (FrequenciesPerDecade < 6) {
+				glog.warningmsg(_SRC_, "It is wise to use at least 6 frequencies per decade\n");
 			}
 
 			NumAbscissa = b.getsizetvalue("NumberOfAbsiccaInHankelTransformEvaluation");
-			if (NumAbscissa < 17) {
-				glog.warningmsg(_SRC_, "It is wise to use at least 17 Absicca for integrating the Hankel Transforms");
+			if (NumAbscissa < 21) {
+				glog.warningmsg(_SRC_, "It is wise to use at least 21 Absicca for integrating the Hankel Transforms");
 			}
 
 			std::string n = b.getstringvalue("SecondaryFieldNormalisation");
@@ -109,7 +109,6 @@ namespace AEM {
 			XOutputScaling = b.getdoublevalue("XOutputScaling");
 			YOutputScaling = b.getdoublevalue("YOutputScaling");
 			ZOutputScaling = b.getdoublevalue("ZOutputScaling");
-
 
 			SaveDiagnosticFiles = b.getboolvalue("SaveDiagnosticFiles");
 
@@ -205,10 +204,11 @@ namespace AEM {
 			cBlock rxb = STM.findblock("Receiver");
 			Rx = Receiver(rxb);
 
+			MO = ModellingOptions(STM.findblock("ForwardModelling"));
 			setup_frequencies();
 			WindScheme = WindowingScheme(rxb, FrequencySeries);
 			set_nwindows();
-			MO = ModellingOptions(STM.findblock("ForwardModelling"));
+			
 			setup_splines();
 			setup_scaling();
 		};

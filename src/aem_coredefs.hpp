@@ -145,7 +145,6 @@ namespace AEM {
 	template<> size_t value_size<double>() { return 1; };
 	template<> size_t value_size<cdouble>() { return 2; };
 
-
 	class LowPassFilter {
 
 	private:
