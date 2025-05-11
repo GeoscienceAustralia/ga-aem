@@ -96,6 +96,7 @@
     <ClInclude Include="..\..\src\lem.hpp" />
     <ClInclude Include="..\..\src\spectralaemsystem.hpp" />
     <ClInclude Include="..\..\src\tdemresponse.hpp" />
+    <ClInclude Include="..\..\src\tdemsystem.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\blocklanguage.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\file_utils.hpp" />
     <ClInclude Include="..\..\submodules\cpp-utils\include\general_utils.hpp" />

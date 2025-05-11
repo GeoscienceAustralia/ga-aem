@@ -51,14 +51,14 @@ namespace AEM {
 	public:
 
 		inline static Mat3d YPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
-			const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
-			return Rot;
+			const Mat3d M = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
+			return M;
 		};
 
 		inline static Mat3d invYPR(const double& roll_degrees, const double& pitch_degrees, const double& yaw_degrees) {
-			const Mat3d Rot = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
-			Mat3d RotT = Rot.transpose();
-			return RotT;
+			const Mat3d M = yawpitchroll_matrix(roll_degrees * D2R<double>, pitch_degrees * D2R<double>, yaw_degrees * D2R<double>);
+			Mat3d MT = M.transpose();
+			return MT;
 		};
 
 
@@ -229,42 +229,54 @@ namespace AEM {
 			return invYPR(rx_roll(), rx_pitch(), rx_yaw());
 		};
 
-		inline Mat3d rx_roll_derivative_matrix() const {
-			const Mat3d R = roll_matrix_degrees(rx_roll());
-			const Mat3d P = pitch_matrix_degrees(rx_pitch());
-			const Mat3d Y = yaw_matrix_degrees(rx_yaw());
+		inline Mat3d tx_roll_derivative_matrix() const {
+			// M = R P Y // dM/dr = dR/dr * P * Y
+			const Mat3d dR = roll_matrix_derivative_degrees(tx_roll());
+			const Mat3d P = pitch_matrix_degrees(tx_pitch());
+			const Mat3d Y = yaw_matrix_degrees(tx_yaw());
+			const Mat3d m = dR * P * Y;
+			return m;
+		};
+
+		inline Mat3d tx_pitch_derivative_matrix() const {
+			// M = R P Y // dM/dp = R * P/dp * Y
+			const Mat3d R = roll_matrix_degrees(tx_roll());
+			const Mat3d dP = pitch_matrix_derivative_degrees(tx_pitch());
+			const Mat3d Y = yaw_matrix_degrees(tx_yaw());
+			const Mat3d m = R * dP * Y;
+			return m;
+		};
+
+		inline Mat3d tx_yaw_derivative_matrix() const {
+			// M = R P Y // dM/dp = R * P * dY/dy
+			const Mat3d R = roll_matrix_degrees(tx_roll());
+			const Mat3d P = pitch_matrix_degrees(tx_pitch());
+			const Mat3d dY = yaw_matrix_derivative_degrees(tx_yaw());
+			const Mat3d m = R * P * dY;
+			return m;
+		};
+
+		inline Mat3d dInt2RxFrame_droll() const {
 			const Mat3d dR = roll_matrix_derivative_degrees(rx_roll());
-			const Mat3d m = (dR * P * Y).transpose() * R * P * Y;
+			const Mat3d P = pitch_matrix_degrees(rx_pitch());
+			const Mat3d Y = yaw_matrix_degrees(rx_yaw());
+			const Mat3d m = (dR * P * Y).transpose();
 			return m;
 		};
 
-		inline Mat3d rx_pitch_derivative_matrix() const {
-			// i = field direction in inertial frame
-			// v = field direction in Rx frame
-			
-			// v = [R(r) P(p) Y(y)]' * i
-			// i = [R(r) P(p) Y(y)]  * v
-			 
-			// dv/dp = ([R(r) P(p) Y(y)]' * i)/dp
-			// dv/dp = ([R(r) P(p) Y(y)]')/dp * i) + [R(r) P(p) Y(y)]' * di/dp  -> since d(uv)/dx = udv/dx + vdu/dx
-			// dv/dp = ([R(r) P(p) Y(y)]')/dp * i) -> since di/dp = 0i/dp
-			// dv/dp = ([R(r) P(p)/dp Y(y)]') * i)
-			// dv/dp = ([R(r) P(p)/dp Y(y)]') * [R(r) P(p) Y(y)]  * v)
-
+		inline Mat3d dInt2RxFrame_dpitch() const {
 			const Mat3d R = roll_matrix_degrees(rx_roll());
-			const Mat3d P = pitch_matrix_degrees(rx_pitch());
-			const Mat3d Y = yaw_matrix_degrees(rx_yaw());
 			const Mat3d dP = pitch_matrix_derivative_degrees(rx_pitch());
-			const Mat3d m = (R * dP * Y).transpose() * R * P * Y;
+			const Mat3d Y = yaw_matrix_degrees(rx_yaw());
+			const Mat3d m = (R * dP * Y).transpose();
 			return m;
 		};
 
-		inline Mat3d rx_yaw_derivative_matrix() const {
+		inline Mat3d dInt2RxFrame_dyaw() const {
 			const Mat3d R = roll_matrix_degrees(rx_roll());
 			const Mat3d P = pitch_matrix_degrees(rx_pitch());
-			const Mat3d Y = yaw_matrix_degrees(rx_yaw());
 			const Mat3d dY = yaw_matrix_derivative_degrees(rx_yaw());
-			const Mat3d m = (R * P * dY).transpose() * R * P * Y;
+			const Mat3d m = (R * P * dY).transpose();
 			return m;
 		};
 	};

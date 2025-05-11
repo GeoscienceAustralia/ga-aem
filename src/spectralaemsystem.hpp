@@ -125,10 +125,6 @@ namespace AEM {
 		using ScalarResponse = TDEmScalarResponse<cdouble>;
 
 		std::vector<ComponentWorkStore> Component;
-		Response WR; // Work response class
-
-		Transmitter Tx;
-		Receiver    Rx;
 		
 		// Discrete frequency knots to be splined
 		size_t NumberOfKnots = 0;
@@ -142,12 +138,6 @@ namespace AEM {
 		// Odd harmonic frequencies where splines are to be evaluated
 		std::vector<double> FrequencySeries;
 		std::vector<double> FrequencySeriesLog10;
-
-		WindowingScheme WindScheme;
-
-		Vec3d Scale;
-		Vec3d RefGeomPrimary; // For PPM systems
-		Mat3d RotMatrixToRxFrame;
 
 	public:
 
@@ -166,10 +156,6 @@ namespace AEM {
 		
 		static std::unique_ptr<AEMSystem<cdouble>> unique_ptr(const fs::path stmfile) {
 			return std::make_unique<SpectralAEMSystem>(stmfile);
-		};
-
-		const size_t& nWindows() const {
-			return WindScheme.nWindows();
 		};
 
 		SystemType type() const {
@@ -207,174 +193,26 @@ namespace AEM {
 			MO = ModellingOptions(STM.findblock("ForwardModelling"));
 			setup_frequencies();
 			WindScheme = WindowingScheme(rxb, FrequencySeries);
-			set_nwindows();
+			//set_nwindows();
 			
 			setup_splines();
 			setup_scaling();
 		};
 
-		// Modelling
-
-		const TDEmVectorResponse<cdouble>& forward_model_primary_field(const TDEmGeometry& G) {
-			set_geometry(G);
-			set_calculationtype(CMode::FM);
-			set_primaryfields();
-			return WR.P;
-		};
-
-		const Response& forward_model(const Earth1D& E, const TDEmGeometry& G) {
-			set_earth(E);
-			set_geometry(G);
-			setup_computations();
-			set_calculationtype(CMode::FM);
-			set_primaryfields();
-			set_secondaryfields();
-			return WR;
-		};
-
-		VectorResponse derivative(const CalculationType& calc, const TDEmGeometry& G, const VectorResponse& forward_model) {
-			VectorResponse derivative(nWindows());
-			if (calc.get_mode() == CMode::DRX_ROLL) {
-				drx_roll(G, forward_model, derivative);
-			}
-			else if (calc.get_mode() == CMode::DRX_PITCH) {
-				drx_pitch(G, forward_model, derivative);
-			}
-			else if (calc.get_mode() == CMode::DRX_YAW) {
-				drx_yaw(G, forward_model, derivative);
-			}
-			else {
-				glog.errormsg(_SRC_, "Invalid derivative operation.");
-			}
-			return derivative;
-		};
-
-		const Response& derivative(const CalculationType& calc, const TDEmGeometry& G, const Response& forward_model) {
-			Response& derivative = WR;
-			if (calc.get_mode() == CMode::DRX_ROLL) {
-				drx_roll(G, forward_model, derivative);
-			}
-			else if (calc.get_mode() == CMode::DRX_PITCH) {
-				drx_pitch(G, forward_model, derivative);
-			}
-			else if (calc.get_mode() == CMode::DRX_YAW) {
-				drx_yaw(G, forward_model, derivative);
-			}
-			else{
-				glog.errormsg(_SRC_,"Invalid derivative operation.");
-			}
-			return derivative;
-		};
-
-		const Response& derivative(const CalculationType& calc) {
-			if (calc.get_mode() == CMode::DTX_HEIGHT) {
-				// This is because when H changes Z also changes
-				set_calculationtype(CMode::DZ);
-				set_primaryfields();
-				set_secondaryfields();
-				TDEmResponse DZ = WR;
-
-				set_calculationtype(CMode::DH);
-				set_primaryfields();
-				set_secondaryfields();
-				WR += DZ;
-			}
-			else {
-				set_calculationtype(calc);
-				set_primaryfields();
-				set_secondaryfields();
-			}
-			return WR;
-		};
-
-		void set_earth(const Earth1D& earth) {
-			lem().set_earth(earth);
-		};
-
-		void set_geometry(const TDEmGeometry& G) {
-			// Set geometry inside the LE Modeller
-			Vec3d tx_reference_orientation = Vec3d::UnitZ();
-			const Vec3d sep = G.txrx_separation();
-			const double& h = G.tx_height();
-			const double& x = sep.x();
-			const double& y = sep.y();
-			const double& z = h + sep.z();
-			const Vec3d tx_orientation = G.tx_orientation(Tx.Reference_Orientation);
-			lem().set_geometry(tx_orientation, h, x, y, z);
-			// Set the rotation matrix for rotating vector fields to Rx frame of reference
-			RotMatrixToRxFrame = G.inertial_to_rx_frame_rotation_matrix();
-		};
-
-		void set_calculationtype(const CalculationType& _calculationtype) {
-			LEM.set_calculationtype(_calculationtype);
-		};
-
-		void setup_computations() {
-			lem().setup_computations();
-		};
-
 	private:
 
-		void drx_roll(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
-			const Mat3d dM = G.rx_roll_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model, derivatives);
-		};
-
-		void drx_pitch(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
-			const Mat3d dM = G.rx_pitch_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model, derivatives);
-		};
-
-		void drx_yaw(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
-			const Mat3d dM = G.rx_yaw_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model, derivatives);
-		};
-
-		void drx_roll(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
-			const Mat3d dM = G.rx_roll_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
-			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
-		};
-
-		void drx_pitch(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
-			const Mat3d dM = G.rx_pitch_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
-			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
-		};
-
-		void drx_yaw(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
-			const Mat3d dM = G.rx_yaw_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
-			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
-		};
-
-		void apply_rx_derivative_matrix(const Mat3d& dM, const VectorResponse& fields, VectorResponse& derivatives) const {
-			const size_t n = fields.nWindows();
+		bool is_ppm_system() const {
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-				for (size_t i = 0; i < n; i++) {
-					Vec3cd ftrue = fields.get_vec3(i);
-					//Must work with true field vector directions (not the PPM scaled versinn)
-					ftrue[XCOMP] *= RefGeomPrimary[XCOMP];
-					ftrue[YCOMP] *= RefGeomPrimary[YCOMP];
-					ftrue[ZCOMP] *= RefGeomPrimary[ZCOMP];
-					derivatives.set_vec3(i, dM * ftrue);
-					//Convert back to PPMS
-					derivatives[XCOMP][i] /= RefGeomPrimary[XCOMP];
-					derivatives[YCOMP][i] /= RefGeomPrimary[YCOMP];
-					derivatives[ZCOMP][i] /= RefGeomPrimary[ZCOMP];
-				}
+				return true;
 			}
-			else {
-				for (size_t wi = 0; wi < n; wi++) {
-					derivatives.set_vec3(wi, dM * fields.get_vec3(wi));
-				}
-			}
+			return false;
 		};
 
-		void set_primaryfields() {
-			Vec3d v = lem().primaryfield_inertial();
+		void set_primaryfields(VectorResponse& P, const Vec3d& txvec, const Mat3d& rxmat) {
+			Vec3d v = lem().primaryfield_inertial(txvec);
+
 			// Rotate field to Rx frame
-			v = RotMatrixToRxFrame * v;
+			v = rxmat * v;
 
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				v *= 2.0;
@@ -388,20 +226,20 @@ namespace AEM {
 			v[XCOMP] *= Scale[XCOMP];
 			v[YCOMP] *= Scale[YCOMP];
 			v[ZCOMP] *= Scale[ZCOMP];
-			std::fill(WR.P[XCOMP].begin(), WR.P[XCOMP].end(), v[XCOMP]);
-			std::fill(WR.P[YCOMP].begin(), WR.P[YCOMP].end(), v[YCOMP]);
-			std::fill(WR.P[ZCOMP].begin(), WR.P[ZCOMP].end(), v[ZCOMP]);
+			std::fill(P[XCOMP].begin(), P[XCOMP].end(), v[XCOMP]);
+			std::fill(P[YCOMP].begin(), P[YCOMP].end(), v[YCOMP]);
+			std::fill(P[ZCOMP].begin(), P[ZCOMP].end(), v[ZCOMP]);
 		};
 
-		void set_secondaryfields() {
+		void set_secondaryfields(VectorResponse& S, const Vec3d& txvec, const Mat3d& rxmat) {
 			//Computation for discrete frequencies 	
 			for (size_t fi = 0; fi < NumberOfKnots; fi++) {
-				Vec3cd v = lem().secondaryfield_inertial(fi);
+				Vec3cd v = lem().secondaryfield_inertial(fi,txvec);
 
 				//std::cout << v << std::endl;
 
 				// Rotate field to Rx frame
-				v = RotMatrixToRxFrame * -v;
+				v = rxmat * -v;
 				
 				for (size_t ci = 0; ci < NCOMP; ci++) {
 					Component[ci].IR_discrete_real[fi] = v[ci].real();
@@ -413,8 +251,8 @@ namespace AEM {
 			for (size_t ci = 0; ci < NCOMP; ci++) {
 				if (Scale[ci] == 0.0) return;
 				spline_component(ci);
-				window_component(ci);
-				scale_component(ci);
+				window_component(S,ci);
+				scale_component(S,ci);
 			}
 
 			if (MO.SaveDiagnosticFiles) {
@@ -423,13 +261,9 @@ namespace AEM {
 			}
 
 			if (MO.SaveDiagnosticFiles) {
-				WindScheme.write_windows<cdouble,std::vector>("diag_windows.txt", WR.secondary(XCOMP), WR.secondary(YCOMP), WR.secondary(ZCOMP));
+				WindScheme.write_windows<cdouble,std::vector>("diag_windows.txt", S[XCOMP], S[YCOMP], S[ZCOMP]);
 			}
 		}
-
-		void set_nwindows() {
-			WR.set_nWindows(nWindows());
-		};
 
 		void setup_scaling() {
 			//Tx.PeakdIdT = WvForm.compute_peak_didt();
@@ -450,7 +284,9 @@ namespace AEM {
 				//Todo check this is working okay
 				TDEmGeometry NormalizationGeometry(b);
 				set_geometry(NormalizationGeometry);
-				set_primaryfields();
+				
+				VectorResponse P(nWindows());
+				set_primaryfields(P,Tx.Orientation,InertialToRxFrame);
 
 				double s = 1.0;
 				if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM) {
@@ -461,7 +297,7 @@ namespace AEM {
 				}
 
 				for (size_t ci = 0; ci < NCOMP; ci++) {
-					RefGeomPrimary[ci] = WR.P[ci][0].real();
+					RefGeomPrimary[ci] = P[ci][0].real();
 					if (RefGeomPrimary[ci] == 0.0) Scale[ci] = 0.0;
 					else Scale[ci] *= (s / RefGeomPrimary[ci]);
 				}
@@ -526,18 +362,18 @@ namespace AEM {
 			}
 		};
 
-		void window_component(const size_t& component) {
+		void window_component(VectorResponse& V, const size_t& component) {
 			ComponentWorkStore& C = Component[component];
 			// Window
-			WindScheme.computewindow(C.IR_splined.data(), WR.S[component]);
+			WindScheme.computewindow(C.IR_splined.data(), V[component]);
 			//if (MO.SaveDiagnosticFiles) {
 			//	write_frequencyseries("diag_xtimeseries.txt");
 			//}
 		};
 
-		void scale_component(const size_t& component) {
-			ComponentWorkStore& C = Component[component];
-			WR.S[component] *= Scale[component];
+		void scale_component(VectorResponse& V, const size_t& component) {
+			//ComponentWorkStore& C = Component[component];
+			V[component] *= Scale[component];
 		};
 
 		void write_discretefrequencies(const fs::path& path) const {

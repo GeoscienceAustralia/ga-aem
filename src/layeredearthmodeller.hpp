@@ -146,6 +146,9 @@ namespace LEM2 {
 		double UpperBound;
 		double AbscissaSpacing;
 
+		Mat3d _PTFM_;
+		Mat3cd _STFM_;
+
 	public:
 
 		LESingleFrequencyModeller() {};
@@ -612,21 +615,22 @@ namespace LEM2 {
 		};
 
 		// Tensors
-		inline Mat3d PTFM() const {
-			Mat3d T;
-			T(0, 0) = (3.0 * x2 - R2) / R5;
-			T(0, 1) = 3.0 * x * y / R5;
-			T(0, 2) = 3.0 * x * zh / R5;
+		inline Mat3d PTFM() {
+			Mat3d m;
+			m(0, 0) = (3.0 * x2 - R2) / R5;
+			m(0, 1) = 3.0 * x * y / R5;
+			m(0, 2) = 3.0 * x * zh / R5;
 
 			//Note error in Fitterman and Yin paper should no be minus sign at element 2,1
-			T(1, 0) = T(0, 1);
-			T(1, 1) = (3.0 * y2 - R2) / R5;
-			T(1, 2) = 3.0 * y * zh / R5;
+			m(1, 0) = m(0, 1);
+			m(1, 1) = (3.0 * y2 - R2) / R5;
+			m(1, 2) = 3.0 * y * zh / R5;
 
-			T(2, 0) = T(0, 2);
-			T(2, 1) = T(1, 2);
-			T(2, 2) = (3.0 * zh2 - R2) / R5;
-			return ONEONFOURPI<double> * T;
+			m(2, 0) = m(0, 2);
+			m(2, 1) = m(1, 2);
+			m(2, 2) = (3.0 * zh2 - R2) / R5;
+			_PTFM_ = ONEONFOURPI<double> * m;
+			return _PTFM_;
 		};
 
 		inline Mat3d dPTdR() const {
@@ -712,7 +716,8 @@ namespace LEM2 {
 			m(2, 0) = -m(0, 2);
 			m(2, 1) = -m(1, 2);
 			m(2, 2) = -T0;
-			return ONEONFOURPI<double> *m;
+			_STFM_ = ONEONFOURPI<double> * m;
+			return _STFM_;
 		};
 
 		inline Mat3cd dSTdC(const size_t& derivativelayer) {
@@ -864,7 +869,7 @@ namespace LEM2 {
 			return ONEONFOURPI<double> * m;
 		};
 
-		Mat3d PrimaryTensor(const CalculationType& calculationtype) const {
+		Mat3d PrimaryTensor(const CalculationType& calculationtype) {
 			switch (calculationtype.get_mode()) {
 			case CMode::FM: return PTFM();
 			case CMode::DC: return Mat3d::Zero();
@@ -896,16 +901,37 @@ namespace LEM2 {
 
 	public:
 
-		inline Vec3d primary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir) const {
-			return PrimaryTensor(calculationtype) * txdir;
-		}
+		inline Vec3d primary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txvec) {
+			//For most calculations txvec is the yaw, pitch, rolled unit source reference v0
+			//    txvec = R P Y v0
+			//but for Tx roll, pitch or yaw derivatives
+			//	  txvec = d(R)/d(roll) P Y v0 
+			//	  txvec = R d(P)/d(pitch) Y v0 
+			//	  txvec = R P d(Y)/d(yaw) v0 
 
-		inline Vec3cd secondary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txdir) {
-			return SecondaryTensor(calculationtype) * txdir;
-		}
+			const CMode& mode = calculationtype.get_mode();
+			if (mode == CMode::DTX_ROLL || mode == CMode::DTX_PITCH || mode == CMode::DTX_YAW || mode == CMode::DRX_ROLL || mode == CMode::DRX_PITCH || mode == CMode::DRX_YAW) {
+				return _PTFM_ * txvec;
+			}
+			return PrimaryTensor(calculationtype) * txvec;
+		};
 
-		double primary(const Vec3d& txdir, const Vec3d& rxdir)
-		{
+		inline Vec3cd secondary_inertial_frame(const CalculationType& calculationtype, const Vec3d& txvec) {
+			//For most calculations txvec is the yaw, pitch, rolled unit source reference v0
+			//    txvec = R P Y v0
+			//    but for Tx roll or pitch or yaw derivatives
+			//	  txvec = d(R)/d(roll) P Y v0 
+			//	  txvec = R d(P)/d(pitch) Y v0 
+			//	  txvec = R P d(Y)/d(yaw) v0 
+
+			const CMode& mode = calculationtype.get_mode();
+			if (mode == CMode::DTX_ROLL || mode == CMode::DTX_PITCH || mode == CMode::DTX_YAW || mode == CMode::DRX_ROLL || mode == CMode::DRX_PITCH || mode == CMode::DRX_YAW) {
+				return _STFM_ * txvec;
+			}
+			return SecondaryTensor(calculationtype) * txvec;
+		};
+
+		/*double primary(const Vec3d& txdir, const Vec3d& rxdir) {
 			Vec3d v = primary_inertial_frame(CMode::FM, txdir);
 			return v.dot(rxdir);
 		}
@@ -913,15 +939,14 @@ namespace LEM2 {
 		cdouble secondary(const Vec3d& txdir, const Vec3d& rxdir) {
 			Vec3cd v = secondary_inertial_frame(CMode::FM, txdir);
 			return v.dot(rxdir);
-		}
+		}*/
 
-		double  dp(const CalculationType& calculationtype, const Vec3d& txdir, const Vec3d& rxdir)
-		{
+		/*double  dp(const CalculationType& calculationtype, const Vec3d& txdir, const Vec3d& rxdir) {
 			Vec3d v = primary_inertial_frame(calculationtype, txdir);
 			return v.dot(rxdir);
-		}
+		}*/
 
-		cdouble ds(const CalculationType& calculationtype, const Vec3d& txdir, const Vec3d& rxdir)
+		/*cdouble ds(const CalculationType& calculationtype, const Vec3d& txdir, const Vec3d& rxdir)
 		{
 			Vec3cd v = secondary_inertial_frame(calculationtype, txdir);
 			return v.dot(rxdir);
@@ -963,9 +988,9 @@ namespace LEM2 {
 			const CalculationType calct(CMode::DT, dlayer);
 			Vec3cd sf = secondary_inertial_frame(calct, txdir);
 			return sf.dot(rxdir);
-		}
+		}*/
 
-		cdouble ppm(const Vec3d& txdir, const Vec3d& rxdir)
+		/*cdouble ppm(const Vec3d& txdir, const Vec3d& rxdir)
 		{
 			double  pf = primary(txdir, rxdir);
 			cdouble sf = secondary(txdir, rxdir);
@@ -980,7 +1005,7 @@ namespace LEM2 {
 			cdouble dsf = ds(calculationtype, txdir, rxdir);
 			dsf = std::complex<double>(dsf.real(), -dsf.imag());
 			return 1.0e6 * (dsf / pf);
-		}
+		}*/
 
 	};
 
@@ -988,7 +1013,7 @@ namespace LEM2 {
 
 	private:
 		LEGeometryStore GeometryStore;
-		Vec3d Source_Orientation;
+		//Vec3d Source_Orientation;
 		CalculationType calculationtype;
 		std::shared_ptr<Earth1D> EarthPtr;
 
@@ -1032,7 +1057,7 @@ namespace LEM2 {
 		};
 		
 		void set_geometry(const Vec3d& source_orientation, double h, double x, double y, double z) {
-			Source_Orientation = source_orientation;
+			//Source_Orientation = source_orientation;
 			const size_t nf = nFrequencies();
 			bool geometrychanged = GeometryStore.update(x, y, z, h);
 			if (geometrychanged) {
@@ -1057,13 +1082,13 @@ namespace LEM2 {
 			return calculationtype.get_mode();
 		};
 
-		Vec3d primaryfield_inertial() {
-			Vec3d pf = SFM[0].primary_inertial_frame(calculationtype, Source_Orientation);
+		Vec3d primaryfield_inertial(const Vec3d& txvec) {
+			Vec3d pf = SFM[0].primary_inertial_frame(calculationtype, txvec);
 			return pf;
 		};
 
-		Vec3cd secondaryfield_inertial(const size_t fi) {
-			Vec3cd sf = SFM[fi].secondary_inertial_frame(calculationtype, Source_Orientation);
+		Vec3cd secondaryfield_inertial(const size_t fi, const Vec3d& txvec) {
+			Vec3cd sf = SFM[fi].secondary_inertial_frame(calculationtype, txvec);
 			return sf;
 		};
 

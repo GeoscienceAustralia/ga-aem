@@ -382,6 +382,7 @@ namespace AEM {
 		double PeakCurrent = 1.0;
 		double PeakdIdT = 1.0;
 		Vec3d Reference_Orientation = Vec3d::UnitZ();
+		Vec3d Orientation = Vec3d::UnitZ();
 
 		Transmitter() {};
 
@@ -724,7 +725,7 @@ namespace AEM {
 		double SamplingFrequency = 0.0;
 		double Area = 1.0;
 		size_t nTurns = 1;
-		Vec3d Reference_Orientation = Vec3d::UnitZ();
+		//Vec3d Reference_Orientation = Vec3d::UnitZ();
 
 		Receiver() {};
 

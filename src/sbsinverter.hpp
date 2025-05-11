@@ -333,6 +333,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 		inline static const size_t YCOMP = 1;
 		inline static const size_t ZCOMP = 2;
 		inline static const size_t XZAMP = 3;
+
 		std::vector<std::vector<std::vector<std::vector<int>>>> _vindex_;
 		std::vector<size_t> _si_;
 		std::vector<size_t> _sysi_;
@@ -2220,10 +2221,10 @@ namespace AEM::INVERTER::SBSINVERTER {
 				J_all.setZero();
 			}
 
+			//bookmark
 			const size_t nsys = nSystems();
 			std::vector<Earth1D> ev = get_earth(parameters);
 			std::vector<TDEmGeometry> gv = get_geometry(parameters);
-			//std::cout << parameters;
 			for (size_t sysi = 0; sysi < nsys; sysi++) {
 				SysInfo& S = SI[sysi];
 				AEMSystem<RT>& A = S.sys();
@@ -2234,40 +2235,24 @@ namespace AEM::INVERTER::SBSINVERTER {
 				if (solvesf) scalefactors = get_scalefactors(sysi, parameters);
 				
 				for (size_t si = 0; si < nSoundings; si++) {
-					const Earth1D& e = ev[si];
-					const TDEmGeometry& g = gv[si];
-
-
-					// R is a reference to the Work Response struct
-					const TDEmResponse<RT>& R = A.forward_model(e, g);
-
-					//const bool& invert_psi = S.InvertPSI;
+					const Earth1D& E = ev[si];
+					const TDEmGeometry& G = gv[si];
+					
 					TDEmVectorResponse<RT> FM;
+
+					TDEmResponse<RT> R = A.forward_model(E, G);
 					if (S.InvertTotalField) FM = R.totalfield();
 					else FM = R.S;
 					if (solvesf) FM.scale_components(scalefactors);
-
-					TDEmVectorResponse<RT> FM_orig = FM;
 
 					Vec3d ga_scaled;
 					//bookmark
 					if (S.InvertPSI) {
 						ga_scaled = S.get_scaled_ga(si);
 						Vec3d ggaoffsets = get_gga_offsets(sysi, si, parameters);
-						
-						//std::cout << ga_scaled << std::endl;
-						//std::cout << ggaoffsets << std::endl;
-						//std::cout << FM << std::endl;
 
 						FM.divide_components(ga_scaled);
 						FM.plus_components(ggaoffsets);
-
-						//std::cout << FM << std::endl;
-
-						//TDEmVectorResponse<RT> PSI = FM;
-						//std::cout << ga << std::endl;
-						//std::cout << gga << std::endl;
-						//std::cout << FM << std::endl;
 					};
 
 					// Predicted
@@ -2276,11 +2261,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 						XZFM = FM.xzamp();
 						for (size_t wi = 0; wi < nw; wi++) {
 							int di = vindex(si, sysi, XZAMP, wi);
-							//std::cout << wi << " " << di << std::endl;
 							set_data_vector(pred_all, di, XZFM[wi]);
 							if (S.CI[YCOMP].Use) {
 								di = vindex(si, sysi, YCOMP, wi);
-								//std::cout << wi << " " << di << std::endl;
 								set_data_vector(pred_all, di, FM[YCOMP][wi]);
 							}
 						}
@@ -2298,8 +2281,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 					// Jacobian
 					if (computederivatives) {
-						TDEmVectorResponse<RT> DRV=FM;
-
+						TDEmVectorResponse<RT> DRV(A.nWindows());
+						
 						// Scale factor derivatives
 						if (solvesf) {
 							for (size_t ci = 0; ci < NCOMP; ci++) {
@@ -2346,11 +2329,11 @@ namespace AEM::INVERTER::SBSINVERTER {
 						if (solve_conductivity()) {
 							for (size_t li = 0; li < nLayers; li++) {
 								const int pindex = cindex(si, li);
-								A.derivative(CalculationType(CMode::DC, li));
+								R = A.derivative(G,CalculationType(CMode::DC, li));
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								//multiply by natural log(10) as parameters are in logbase10 units
-								const double f = log(10.0) * e.conductivity[li];
+								const double f = log(10.0) * E.conductivity[li];
 								DRV *= f;
 								if(solvesf) DRV.scale_components(scalefactors);
 								if (S.InvertPSI) DRV.divide_components(ga_scaled);
@@ -2363,11 +2346,11 @@ namespace AEM::INVERTER::SBSINVERTER {
 						if (solve_thickness()) {
 							for (size_t li = 0; li < nLayers - 1; li++) {
 								const int pindex = tindex(si, li);
-								A.derivative(CalculationType(CMode::DT, li));
+								R = A.derivative(G,CalculationType(CMode::DT, li));
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								//multiply by natural log(10) as parameters are in logbase10 units
-								double f = log(10.0) * e.thickness[li];
+								double f = log(10.0) * E.thickness[li];
 								DRV *= f;
 								if (solvesf) DRV.scale_components(scalefactors);
 								if (S.InvertPSI) DRV.divide_components(ga_scaled);
@@ -2378,7 +2361,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 						if (FreeGeometry) {
 							if (solve_geometry_elementname("tx_height")) {
 								const size_t pindex = gindex(si, "tx_height");
-								A.derivative(CalculationType(CMode::DTX_HEIGHT));
+								R = A.derivative(G,CalculationType(CMode::DTX_HEIGHT));
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
@@ -2388,7 +2371,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 							if (solve_geometry_elementname("txrx_dx")) {
 								const size_t pindex = gindex(si, "txrx_dx");
-								A.derivative(CalculationType(CMode::DX));
+								R = A.derivative(G,CalculationType(CMode::DX));
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
@@ -2400,7 +2383,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 							if (solve_geometry_elementname("txrx_dy")) {
 								const size_t pindex = gindex(si, "txrx_dy");
-								A.derivative(CalculationType(CMode::DY));
+								R = A.derivative(G,CalculationType(CMode::DY));
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
@@ -2410,7 +2393,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 							if (solve_geometry_elementname("txrx_dz")) {
 								const size_t pindex = gindex(si, "txrx_dz");
-								A.derivative(CalculationType(CMode::DZ));
+								R = A.derivative(G,CalculationType(CMode::DZ));
 								if (S.InvertTotalField) DRV = R.totalfield();
 								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
@@ -2422,7 +2405,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 							if (solve_geometry_elementname("rx_roll")) {
 								const size_t pindex = gindex(si, "rx_roll");
-								DRV = A.derivative(CalculationType(CMode::DRX_ROLL), g, FM_orig);
+								R = A.derivative(G,CalculationType(CMode::DRX_ROLL));
+								if (S.InvertTotalField) DRV = R.totalfield();
+								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
 								if (S.InvertPSI)DRV.divide_components(ga_scaled);
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2430,7 +2415,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 							if (solve_geometry_elementname("rx_pitch")) {
 								const size_t pindex = gindex(si, "rx_pitch");
-								DRV = A.derivative(CalculationType(CMode::DRX_PITCH), g, FM_orig);
+								R = A.derivative(G,CalculationType(CMode::DRX_PITCH));
+								if (S.InvertTotalField) DRV = R.totalfield();
+								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
 								if (S.InvertPSI) DRV.divide_components(ga_scaled);
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
@@ -2438,7 +2425,39 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 							if (solve_geometry_elementname("rx_yaw")) {
 								const size_t pindex = gindex(si, "rx_yaw");
-								DRV = A.derivative(CalculationType(CMode::DRX_YAW), g, FM_orig);
+								R = A.derivative(G,CalculationType(CMode::DRX_YAW));
+								if (S.InvertTotalField) DRV = R.totalfield();
+								else DRV = R.S;
+								if (solvesf) DRV.scale_components(scalefactors);
+								if (S.InvertPSI) DRV.divide_components(ga_scaled);
+								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+							}
+
+							if (solve_geometry_elementname("tx_roll")) {
+								const size_t pindex = gindex(si, "tx_roll");
+								R = A.derivative(G,CalculationType(CMode::DTX_ROLL));
+								if (S.InvertTotalField) DRV = R.totalfield();
+								else DRV = R.S;
+								if (solvesf) DRV.scale_components(scalefactors);
+								if (S.InvertPSI) DRV.divide_components(ga_scaled);
+								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+							}
+
+							if (solve_geometry_elementname("tx_pitch")) {
+								const size_t pindex = gindex(si, "tx_pitch");
+								R = A.derivative(G,CalculationType(CMode::DTX_PITCH));
+								if (S.InvertTotalField) DRV = R.totalfield();
+								else DRV = R.S;
+								if (solvesf) DRV.scale_components(scalefactors);
+								if (S.InvertPSI) DRV.divide_components(ga_scaled);
+								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);
+							}
+
+							if (solve_geometry_elementname("tx_yaw")) {
+								const size_t pindex = gindex(si, "tx_yaw");
+								R = A.derivative(G,CalculationType(CMode::DTX_YAW));
+								if (S.InvertTotalField) DRV = R.totalfield();
+								else DRV = R.S;
 								if (solvesf) DRV.scale_components(scalefactors);
 								if (S.InvertPSI) DRV.divide_components(ga_scaled);
 								fillMatrixColumn(J_all, si, sysi, pindex, FM, XZFM, DRV);

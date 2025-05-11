@@ -188,15 +188,24 @@ namespace AEM {
 			return os;
 		}
 
+		const static std::string ss(const double& v) {
+			std::ostringstream os;
+			os << exd(16, 6) << v;
+			return os.str();
+		}
+
+		const static std::string ss(const std::complex<double>& v) {
+			std::ostringstream os;
+			os << exd(16, 6) << v.real() << exd(16, 6) << v.imag();
+			return os.str();
+		}
+
 		void simple_output(std::ostream& os) const {
 			for (size_t i = 0; i < nwindows; i++) {
-				os <<  exd(16, 6) << v[XCOMP][i].real()
-					<< exd(16, 6) << v[XCOMP][i].imag()
-					<< exd(16, 6) << v[YCOMP][i].real()
-					<< exd(16, 6) << v[YCOMP][i].imag()
-					<< exd(16, 6) << v[ZCOMP][i].real()
-					<< exd(16, 6) << v[ZCOMP][i].imag()
-					<< std::endl;
+				os << ss(v[XCOMP][i]);
+				os << ss(v[YCOMP][i]);
+				os << ss(v[ZCOMP][i]);
+				os << std::endl;
 			}
 		}
 
