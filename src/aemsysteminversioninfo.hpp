@@ -370,7 +370,6 @@ namespace AEM {
 			_nElements = value_size<RT>();
 		};
 
-
 		const std::string& name() const {
 			return Name;
 		}
@@ -443,14 +442,19 @@ namespace AEM {
 			ggaoffset = Parameter(b, "GGAOffset");
 		}
 
-		void initialise(const cBlock& b, const std::string& name, const size_t& nwindows, const size_t& nsoundings) {
+		void initialise(const bool& forceuse, const cBlock& b, const std::string& name, const size_t& nwindows, const size_t& nsoundings) {
 			Name = name;
 			if (b.Entries.size() == 0) {
 				Use = false;
-				return;
+				if (forceuse) glog.errormsg(_SRC_, "%sComponent is required in this inversion but is not specified.\n",name.c_str());
+				return ;
 			}
-			Use = b.getboolvalue("Use");
-			if (Use == false)return;
+			b.get("Use",Use,false);
+			if (forceuse == true && Use == false) {
+				glog.warningmsg("%sComponent is required here ... so overriding and turning it on.\n", name.c_str());
+				Use = true;
+			}
+			if (Use == false) return;
 
 			EstimateNoiseFromModel = b.getboolvalue("EstimateNoiseFromModel");
 
@@ -517,7 +521,7 @@ namespace AEM {
 			if (EstimateNoiseFromModel) {
 				for (size_t wi = 0; wi < nWindows(); wi++) {
 					const RT v = 0.01 * AEM::ewise_mul(multiplicative_noise[wi], d.S[wi]);
-					d.E[wi] = AEM::hypot(additive_noise[wi], v);
+					d.E[wi] = AEM::ewise_hypot(additive_noise[wi], v);
 				}
 			}
 			else {
@@ -583,13 +587,13 @@ namespace AEM {
 					RT val = d.T[wi];
 					val -= gga;
 					const RT mn = 0.01 * AEM::ewise_mul(multiplicative_noise[wi], val);
-					d.E[wi] = AEM::hypot(additive_noise[wi], mn);
+					d.E[wi] = AEM::ewise_hypot(additive_noise[wi], mn);
 				}
 			}
 			else {
 				for (size_t wi = 0; wi < nWindows(); wi++) {
 					const RT mn = 0.01 * AEM::ewise_mul(multiplicative_noise[wi], d.S[wi]);
-					d.E[wi] = AEM::hypot(additive_noise[wi], mn);
+					d.E[wi] = AEM::ewise_hypot(additive_noise[wi], mn);
 				}
 			}
 		};
@@ -614,6 +618,8 @@ namespace AEM {
 		std::string Units;
 
 		bool InvertXZAmplitude  = false;
+		bool InvertXYZAmplitude = false;
+
 		bool InvertTotalField   = false;
 		bool InvertPSI = false;
 		bool ReconstructPrimary = false;
@@ -631,37 +637,52 @@ namespace AEM {
 			glog.log_to_file("==========================================================================\n");
 			_nWindows = System->nWindows();
 
-			if (b.getvalue("InvertPrimaryPlusSecondary", InvertTotalField)) {
+			b.get("InvertPSI", InvertPSI, false);
+
+			if (b.get("InvertPrimaryPlusSecondary", InvertTotalField,false)) {
 				glog.warningmsg("'InvertPrimaryPlusSecondary' is deprecated, please use 'InvertTotalField' instead\n");
 			}
-			else (b.getvalue("InvertTotalField", InvertTotalField));
-
-
-			b.get("InvertPSI", InvertPSI, false);
+			else (b.get("InvertTotalField", InvertTotalField,false));
 
 			ReconstructPrimary = false;
 			if (InvertTotalField) {
-				ReconstructPrimary = b.getboolvalue("ReconstructPrimaryFieldFromInputGeometry");
+				b.get("ReconstructPrimaryFieldFromInputGeometry",ReconstructPrimary,false);
 			}
 
-			if (b.getvalue("InvertXPlusZ", InvertXZAmplitude)) {
+			// InvertXYZAmplitude and InvertXZAmplitude
+			b.get("InvertXYZAmplitude", InvertXYZAmplitude,false);
+			if (b.get("InvertXPlusZ", InvertXZAmplitude,false) ){
 				glog.warningmsg("'InvertXPlusZ' is deprecated, please use 'InvertXZAmplitude' instead.");
 			}
-			else (b.getvalue("InvertXZAmplitude", InvertXZAmplitude));
+			else (b.get("InvertXZAmplitude", InvertXZAmplitude,false));
+			if (InvertXYZAmplitude && InvertXZAmplitude) {
+				glog.errormsg(_SRC_,"'You may not have InvertXYZAmplitude=yes and InvertXZAmplitude=yes'.");
+			}
 
-			CI[XCOMP].initialise(b.findblock("XComponent"), "X", _nWindows, nsoundings);
-			CI[YCOMP].initialise(b.findblock("YComponent"), "Y", _nWindows, nsoundings);
-			CI[ZCOMP].initialise(b.findblock("ZComponent"), "Z", _nWindows, nsoundings);
+			bool xforceuse = false;
+			bool yforceuse = false;
+			bool zforceuse = false;
+			if (InvertXYZAmplitude) {
+				xforceuse = true;
+				yforceuse = true; 
+				zforceuse = true;
+			}
+
+			if (InvertXZAmplitude) {
+				xforceuse = true;
+				zforceuse = true;
+			}
+
+			CI[XCOMP].initialise(xforceuse,b.findblock("XComponent"), "X", _nWindows, nsoundings);
+			CI[YCOMP].initialise(yforceuse,b.findblock("YComponent"), "Y", _nWindows, nsoundings);
+			CI[ZCOMP].initialise(zforceuse,b.findblock("ZComponent"), "Z", _nWindows, nsoundings);
+
 
 			_nActiveComponents = 0;
 			if (CI[XCOMP].Use) _nActiveComponents++;
 			if (CI[YCOMP].Use) _nActiveComponents++;
 			if (CI[ZCOMP].Use) _nActiveComponents++;
 
-			if (InvertXZAmplitude) {
-				CI[XCOMP].Use = true;
-				CI[ZCOMP].Use = true;
-			}
 			size_t vsize = value_size<RT>();
 			_nChannels = _nWindows * _nActiveComponents * vsize;
 		}

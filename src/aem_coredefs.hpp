@@ -81,28 +81,36 @@ namespace AEM {
 
 
 	// Utilities for handling double and complex<double> the same
-	inline double hypot(const double& x, const double& y) {
+	inline double ewise_hypot(const double& x, const double& y) {
 		return std::hypot(x, y);
 	};
 
-	inline cdouble hypot(const cdouble& x, const cdouble& y) {
+	inline double ewise_hypot(const double& x, const double& y, const double& z) {
+		return std::hypot(x, y, z);
+	};
+
+	inline cdouble ewise_hypot(const cdouble& x, const cdouble& y) {
 		return cdouble(std::hypot(x.real(), y.real()), std::hypot(x.imag(), y.imag()));
 	};
 
-	inline std::vector<double> hypot(const std::vector<double>& x, const std::vector<double>& y) {
+	inline cdouble ewise_hypot(const cdouble& x, const cdouble& y, const cdouble& z) {
+		return cdouble(std::hypot(x.real(), y.real(), z.real()), std::hypot(x.imag(), y.imag(), z.imag()));
+	};
+
+	inline std::vector<double>ewise_hypot(const std::vector<double>& x, const std::vector<double>& y) {
 		const size_t n = x.size();
 		std::vector<double> h(n);
 		for (size_t i = 0; i < n; i++) {
-			h[i]  = hypot(x[i], y[i]);
+			h[i]  = ewise_hypot(x[i], y[i]);
 		}
 		return h;
 	};
 
-	inline std::vector<cdouble> hypot(const std::vector<cdouble>& x, const std::vector<cdouble>& y) {
+	inline std::vector<cdouble> ewise_hypot(const std::vector<cdouble>& x, const std::vector<cdouble>& y) {
 		const size_t n = x.size();
 		std::vector<cdouble> h(n);
 		for (size_t i = 0; i < n; i++) {
-			h[i] = hypot(x[i], y[i]);
+			h[i] = ewise_hypot(x[i], y[i]);
 		}
 		return h;
 	};

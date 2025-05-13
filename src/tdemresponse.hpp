@@ -169,10 +169,26 @@ namespace AEM {
 			set(v[2], value[2]);
 		};
 
+		TDEmScalarResponse<T> component(const size_t& ci) const {
+			TDEmScalarResponse<T> c(nwindows);
+			for (size_t wi = 0; wi < nwindows; wi++) {
+				c[wi] = v[ci][wi];
+			}
+			return c;
+		};
+
 		TDEmScalarResponse<T> xzamp() const {
 			TDEmScalarResponse<T> r(nwindows);
 			for (size_t i = 0; i < nwindows; i++) {
-				r[i] = AEM::hypot(v[XCOMP][i], v[ZCOMP][i]);
+				r[i] = AEM::ewise_hypot(v[XCOMP][i], v[ZCOMP][i]);
+			}
+			return r;
+		};
+
+		TDEmScalarResponse<T> xyzamp() const {
+			TDEmScalarResponse<T> r(nwindows);
+			for (size_t i = 0; i < nwindows; i++) {
+				r[i] = AEM::ewise_hypot(v[XCOMP][i], v[YCOMP][i], v[ZCOMP][i]);
 			}
 			return r;
 		};
@@ -273,7 +289,7 @@ namespace AEM {
 		std::vector<T> psi_xzamp(const Vec3d& scaled_ga) const {
 			std::vector<T> psix = psi(XCOMP, scaled_ga[XCOMP]);
 			std::vector<T> psiz = psi(ZCOMP, scaled_ga[ZCOMP]);
-			return AEM::hypot(psix,psiz);
+			return AEM::ewise_hypot(psix,psiz);
 		};
 
 		TDEmVectorResponse<T> totalfield() const {
