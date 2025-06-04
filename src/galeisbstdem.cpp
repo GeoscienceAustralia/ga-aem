@@ -133,11 +133,11 @@ int main(int argc, char** argv) {
 				return finaliseandexit();
 			}
 		#elif 
-		glog.logmsg(0, "Usage: %s control_file_name [number_of_openmp_threads]\n", argv[0]);
-		glog.logmsg(0, "       **Error: This executable has not been compiled with OpenMP enabbled\n");
-		glog.logmsg(0, "       **Compile with OpenMP or do not specify [number_of_openmp_threads]\n");
-		return finaliseandexit();
-#endif		
+			glog.logmsg(0, "Usage: %s control_file_name [number_of_openmp_threads]\n", argv[0]);
+			glog.logmsg(0, "       **Error: This executable has not been compiled with OpenMP enabbled\n");
+			glog.logmsg(0, "       **Compile with OpenMP or do not specify [number_of_openmp_threads]\n");
+			return finaliseandexit();
+		#endif
 	}
 
 	controlfile = fs::path(argv[1]);
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
 
 	if (usingopenmp) {
 		#if defined _OPENMP
-		omp_init_lock(&fftw_thread_lock);
+		if (systype == AEM::SystemType::TimeDomain) omp_init_lock(&fftw_thread_lock);
 		#pragma omp parallel num_threads(openmpsize)
 		{
 			int openmprank = omp_get_thread_num();

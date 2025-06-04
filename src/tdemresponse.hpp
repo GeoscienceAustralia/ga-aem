@@ -45,6 +45,13 @@ namespace AEM {
 			return v;
 		}
 
+		friend std::ostream& operator<<(std::ostream& os, const TDEmScalarResponse& S) {
+			for (size_t i = 0; i < S.size(); i++) {
+				os	<< exd(16, 6) << S[i] << std::endl;
+			}
+			return os;
+		}
+
 	private:
 
 		void  resize(const size_t nwindows) {
@@ -58,7 +65,7 @@ namespace AEM {
 	private:
 		size_t nwindows = 0;
 		std::array<std::vector<T>, NCOMP> v;
-				
+
 	public:
 
 		TDEmVectorResponse(const size_t _nwindows = 0) {
@@ -126,17 +133,17 @@ namespace AEM {
 			return v[component][window];
 		}
 
-		void scale_components(const Vec3d& scalefactors) {
+		void scale_components(const Vec3d& factors) {
 			const size_t nw = v.size();
-			v[0] *= scalefactors[0];
-			v[1] *= scalefactors[1];
-			v[2] *= scalefactors[2];
+			if(factors[0] != 1.0) v[0] *= factors[0];
+			if(factors[1] != 1.0) v[1] *= factors[1];
+			if(factors[2] != 1.0) v[2] *= factors[2];
 		};
 
-		void divide_components(const Vec3d& dividefactors) {
-			v[0] /= dividefactors[0];
-			v[1] /= dividefactors[1];
-			v[2] /= dividefactors[2];
+		void divide_components(const Vec3d& factors) {
+			if (factors[0] != 1.0) v[0] /= factors[0];
+			if (factors[1] != 1.0) v[1] /= factors[1];
+			if (factors[2] != 1.0) v[2] /= factors[2];
 		};
 
 		void plus_components(const Vec3d& values) {
@@ -193,16 +200,16 @@ namespace AEM {
 			return r;
 		};
 
-		friend std::ostream& operator<<(std::ostream& os, const TDEmVectorResponse& R) {			
-			for (size_t i = 0; i < R.nwindows; i++) { 
-			//for (size_t i = 0; i < 2; i++) {
-				os  << exd(16, 6) << R[XCOMP][i]
+		friend std::ostream& operator<<(std::ostream& os, const TDEmVectorResponse& R) {
+			for (size_t i = 0; i < R.nwindows; i++) {
+				//for (size_t i = 0; i < 2; i++) {
+				os << exd(16, 6) << R[XCOMP][i]
 					<< exd(16, 6) << R[YCOMP][i]
-					<< exd(16, 6) << R[ZCOMP][i]
-					<< std::endl;
+						<< exd(16, 6) << R[ZCOMP][i]
+							<< std::endl;
 			}
 			return os;
-		}
+		};
 
 		const static std::string ss(const double& v) {
 			std::ostringstream os;

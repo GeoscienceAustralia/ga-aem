@@ -413,7 +413,6 @@ namespace IOManager {
 			const size_t& _width,//ascii width
 			const size_t& _decimals//ascii number of decimals places			
 		) {
-			//todo
 			spcOutputField sp = getfield(_name);
 			if (!sp) {
 				cOutputField f(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
@@ -429,7 +428,6 @@ namespace IOManager {
 		}
 
 		virtual spcOutputField addfield(cAsciiColumnField c) {
-			//todo
 			spcOutputField sp = getfield(c.name);
 			if (!sp) {
 				cOutputField f(c);

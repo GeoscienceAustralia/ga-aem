@@ -43,7 +43,16 @@ namespace AEM {
 		inline static const std::array<std::string, NELEM> defined_names{TX_HEIGHT, TX_ROLL, TX_PITCH, TX_YAW, TXRX_DX, TXRX_DY, TXRX_DZ, RX_ROLL, RX_PITCH, RX_YAW };
 		inline static const std::array<std::string, NELEM> defined_units{"m", "degrees", "degrees", "degrees", "m", "m", "m", "degrees", "degrees", "degrees" };
 		inline static const std::array<ElementType, NELEM> defined_elementtypes{ ElementType::tx_height, ElementType::tx_roll, ElementType::tx_pitch, ElementType::tx_yaw, ElementType::txrx_dx, ElementType::txrx_dy, ElementType::txrx_dz, ElementType::rx_roll, ElementType::rx_pitch, ElementType::rx_yaw };
-		inline static const std::array<CalculationType::Mode, NELEM> defined_derivative_modes{ CalculationType::Mode::DTX_HEIGHT, CalculationType::Mode::NONE, CalculationType::Mode::NONE, CalculationType::Mode::NONE, CalculationType::Mode::DX, CalculationType::Mode::DY, CalculationType::Mode::DZ, CalculationType::Mode::DRX_ROLL, CalculationType::Mode::DRX_PITCH, CalculationType::Mode::DRX_YAW };
+		inline static const std::array<CalculationType::Mode, NELEM> defined_derivative_modes{ CalculationType::Mode::DTX_HEIGHT,
+			CalculationType::Mode::DTX_ROLL,
+			CalculationType::Mode::DTX_PITCH,
+			CalculationType::Mode::DTX_YAW,
+			CalculationType::Mode::DX,
+			CalculationType::Mode::DY,
+			CalculationType::Mode::DZ,
+			CalculationType::Mode::DRX_ROLL,
+			CalculationType::Mode::DRX_PITCH,
+			CalculationType::Mode::DRX_YAW };
 		inline static const std::array<std::string, NELEM> defined_descriptions{"Tx height above ground level", "Tx roll - left side up + ve", "Tx pitch - nose down + ve", "Tx yaw - turn left + ve", "Tx - Rx horizonatl inline separation", "Tx - Rx horizonatl transverse separation", "Tx - Rx vertical separation", "Rx roll - left side up + ve", "Rx pitch - nose down + ve", "Rx yaw - turn left + ve" };
 
 		std::array<double,NELEM> _elements_;

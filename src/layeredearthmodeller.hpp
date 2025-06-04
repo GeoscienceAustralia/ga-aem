@@ -1013,7 +1013,6 @@ namespace LEM2 {
 
 	private:
 		LEGeometryStore GeometryStore;
-		//Vec3d Source_Orientation;
 		CalculationType calculationtype;
 		std::shared_ptr<Earth1D> EarthPtr;
 

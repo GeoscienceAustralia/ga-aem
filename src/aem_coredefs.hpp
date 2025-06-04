@@ -668,17 +668,6 @@ namespace AEM {
 			}
 		}
 
-		/*
-		void computewindow(const double* timeseries, std::vector<double>& windowed_values) {
-			std::fill(windowed_values.begin(), windowed_values.end(), 0.0); // Reset to zero
-			for (size_t w = 0; w < nwindows; w++) {
-				for (size_t k = 0; k < Windows[w].Sample.size(); k++) {
-					windowed_values[w] += timeseries[Windows[w].Sample[k]] * Windows[w].Weight[k];
-				}
-			}
-		}
-		*/
-
 		template<typename T>
 		void computewindow(const T* values, std::vector<T>& windowed_values) {
 			std::fill(windowed_values.begin(), windowed_values.end(), T(0.0)); // Reset to zero

@@ -321,7 +321,6 @@ namespace AEM::INVERTER {
 		double l2_norm(const Vector& g)
 		{
 			Vector v = Obs - g;
-			Vector a = Wd * v;
 			double l2 = mtDm(v, Wd);
 			return l2;
 		}

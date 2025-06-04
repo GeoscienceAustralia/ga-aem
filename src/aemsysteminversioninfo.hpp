@@ -576,16 +576,27 @@ namespace AEM {
 			}
 		};
 
-		void estimate_noise_from_model(const size_t& soundingindex) {
+		void estimate_noise_from_model(const size_t& soundingindex, const bool& invertpsi, const bool& inverttotalfield) {
 			if (Use == false) return;
 			if (EstimateNoiseFromModel == false) return;
 			SoundingData<RT>& d = data[soundingindex];
-			bool invertpsi = true;//Todo fix this bookmark
 			if (invertpsi) {
 				double gga = get_gga(soundingindex);
 				for (size_t wi = 0; wi < nWindows(); wi++) {
 					RT val = d.T[wi];
 					val -= gga;
+					const RT mn = 0.01 * AEM::ewise_mul(multiplicative_noise[wi], val);
+					d.E[wi] = AEM::ewise_hypot(additive_noise[wi], mn);
+				}
+			}
+			else if(inverttotalfield) {
+				//Here we subtract a primary estimate of the real part so that the multiplicative noise is calculated from the secondary
+				//The primary estimate is just the real part of the first window
+				const RT one = 1.0;
+				RT primary = AEM::ewise_mul(one,d.T[0]);//zero the imaginary
+
+				for (size_t wi = 0; wi < nWindows(); wi++) {
+					RT val = d.T[wi] - primary;
 					const RT mn = 0.01 * AEM::ewise_mul(multiplicative_noise[wi], val);
 					d.E[wi] = AEM::ewise_hypot(additive_noise[wi], mn);
 				}
@@ -643,6 +654,11 @@ namespace AEM {
 				glog.warningmsg("'InvertPrimaryPlusSecondary' is deprecated, please use 'InvertTotalField' instead\n");
 			}
 			else (b.get("InvertTotalField", InvertTotalField,false));
+
+			if (InvertPSI == true && InvertTotalField == false) {
+				InvertTotalField = true;
+				glog.warningmsg("Since 'InvertPSI = yes' setting InvertTotalField = yes as well.");
+			}
 
 			ReconstructPrimary = false;
 			if (InvertTotalField) {
@@ -737,39 +753,6 @@ namespace AEM {
 			}
 			return gga;
 		};
-
-		std::vector<RT> get_predicted1(const size_t& si, const size_t& ci) const {
-			if (InvertPSI) {
-				std::vector<RT> v = predicted[si].total(ci);
-				CompInfo& C = CI[ci];
-				C.get_ga(si)
-			}
-			else if (InvertTotalField) {
-				return predicted[si].total(ci);
-			}
-			else return predicted[si].secondary(ci);
-		};
-
-		std::vector<RT> get_predicted_xzamp1(const size_t& si) const {
-			if(InvertTotalField){
-				TDEmVectorResponse<RT> T = predicted[si].totalfield();
-				return T.xzamp().storage();
-			}
-			if (InvertPSI) {
-				//const std::vector<RT>& p = predicted[si].primary(ci);
-				//const std::vector<RT>& s = predicted[si].secondary(ci);
-				//const std::vector<RT> t = tx + sx;
-			}
-		};
-
-		//std::vector<RT> get_xzamp(const size_t si) {
-		//	//if(InvertPSI)
-		//	if (InvertXZAmplitude) {
-		//		const std::vector<RT> px = predicted[si].primary(ci);
-		//		const std::vector<RT> sx = predicted[si].secondary(ci);
-		//		const std::vector<RT> tx = px + sx;
-		//	}
-		//};
 
 	private:
 		size_t _nWindows = 0;
