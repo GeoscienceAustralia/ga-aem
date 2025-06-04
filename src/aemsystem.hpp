@@ -161,6 +161,7 @@ namespace AEM {
 			InertialToRxFrame = G.inertial_to_rx_frame_rotation_matrix();
 		};
 
+		/*
 		void drx_roll(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
 			const Mat3d dM = G.rx_roll_derivative_matrix();
 			apply_rx_derivative_matrix(dM, forward_model, derivatives);
@@ -192,8 +193,9 @@ namespace AEM {
 			const Mat3d dM = G.rx_yaw_derivative_matrix();
 			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
 			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
-		};
+		};*/
 
+		/*
 		void apply_rx_derivative_matrix(const Mat3d& dM, const VectorResponse& fields, VectorResponse& derivatives) const {
 			const size_t n = fields.nWindows();
 			//if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
@@ -216,7 +218,7 @@ namespace AEM {
 					derivatives.set_vec3(wi, dM * fields.get_vec3(wi));
 				}
 			}
-		};
+		};*/
 
 	};
 };

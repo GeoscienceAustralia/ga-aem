@@ -881,6 +881,8 @@ namespace LEM2 {
 			case CMode::DH: return dPTdH();
 			default:
 				glog.errormsg(_SRC_, "Unknown calculation type %c\n", calculationtype);
+				//Never gets here just suppress warning
+				Mat3d m; return m; //Never gets here just suppress warning
 			}
 		};
 
@@ -896,6 +898,7 @@ namespace LEM2 {
 			case CMode::DH: return dSTdH();
 			default:
 				glog.errormsg(_SRC_, "Unknown calculation type %s\n", calculationtype.string().c_str());
+				Mat3cd m; return m; //Never gets here just suppress warning
 			}
 		};
 

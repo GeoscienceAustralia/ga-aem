@@ -8,6 +8,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #pragma once
 
+#include <type_traits>
 #include "vector_utils.hpp"
 #include "inputmanager.hpp"
 #include "fielddefinition.hpp"
@@ -66,7 +67,7 @@ namespace AEM {
 				return -1;
 			};
 
-			const cFieldDefinition& get_fd(const std::string & key) const {
+			cFieldDefinition get_fd(const std::string & key) const {
 				if (has(key)) return fdmap.at(key);
 				else return cFieldDefinition();
 			};
@@ -381,7 +382,7 @@ namespace AEM {
 		const size_t& nSoundings() const { return _nSoundings; };
 		const size_t& nWindows() const { return _nWindows; };
 		const size_t& nElements() const { return _nElements; };
-		const size_t& nChannels() const { return _nWindows * _nElements; };
+		const size_t nChannels() const { return _nWindows * _nElements; };
 
 		double get_ga(const size_t& si) const {
 			return data[si].GA;
@@ -399,8 +400,8 @@ namespace AEM {
 		bool getvector_ri(const cBlock& b, const std::string& key, std::vector<cdouble>& v) {
 			std::vector<double> r;
 			std::vector<double> i;
-			bool status1 = b.getvalue(key+"Real", r);
-			bool status2 = b.getvalue(key+"Imag", i);
+			bool status1 = b.getvalue(key + "Real", r);
+			bool status2 = b.getvalue(key + "Imag", i);
 			if (status1 && status2) {
 				complex_merge(r, i, v);
 				return true;
@@ -409,23 +410,17 @@ namespace AEM {
 		}
 
 		template <typename T>
-		void add_fielddefinition(const cBlock& b, const std::string& key) {};
-
-		template <> 
-		void add_fielddefinition<double>(const cBlock& b, const std::string& key) {
-			fdMap[key] = cFieldDefinition(b, key);
-		};
-
-		template <>
-		void add_fielddefinition<cdouble>(const cBlock& b, const std::string& key) {
-			std::string rkey = key + "Real";
-			std::string ikey = key + "Imag";
-			fdMap[rkey] = cFieldDefinition(b, rkey);
-			fdMap[ikey] = cFieldDefinition(b, ikey);
-		};
-
-		void add_invertiblefielddefinition(const cBlock& b, const std::string& key) {
-			ifdMap[key] = cInvertibleFieldDefinition(b, key);
+		void add_fielddefinition(const cBlock& b, const std::string& key){
+			//This is allowed in C++17 and avoids specializations
+			if constexpr (std::is_same_v<T, cdouble>) {
+				std::string rkey = key + "Real";
+				std::string ikey = key + "Imag";
+				fdMap[rkey] = cFieldDefinition(b, rkey);
+				fdMap[ikey] = cFieldDefinition(b, ikey);
+			}
+			else {
+				fdMap[key] = cFieldDefinition(b, key);
+			}
 		};
 
 		void add_fielddefinitions(const cBlock& b) {
@@ -502,14 +497,16 @@ namespace AEM {
 		}
 
 		void readdata(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
-			readdata_impl<RT>(IM, soundingindex);
-		};
+			if constexpr (std::is_same_v<RT, cdouble>) {
+				readdata_impl_complexdouble(IM, soundingindex);
+			}
+			else {
+				readdata_impl_double(IM, soundingindex);
+			}
+		}
 
-		template <typename RT>
-		void readdata_impl(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {};
-
-		template <> 
-		void readdata_impl<double>(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
+		//template <>
+		void readdata_impl_double(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
 			const size_t& si = soundingindex;
 			if (Use == false) return;
 			SoundingData<RT>& d = data[si];
@@ -530,8 +527,8 @@ namespace AEM {
 			}
 		};
 
-		template <>
-		void readdata_impl<cdouble>(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
+		//template <>
+		void readdata_impl_complexdouble(const std::unique_ptr<cInputManager>& IM, const size_t& soundingindex) {
 			
 			if (Use == false) return;
 

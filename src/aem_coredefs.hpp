@@ -43,6 +43,8 @@ namespace AEM {
 		else {
 			glog.errormsg(_SRC_, "The AEM System 'Type' must be 'Spectral Time Domain' or 'Time Domain'.\n");
 		}
+		//never gets here but suppresses warning
+		return aem_system_type(typestr);
 	};
 
 	// Get AEM SystemType from stmfile
@@ -51,6 +53,9 @@ namespace AEM {
 		std::string typestr;
 		if (b.getvalue("Type", typestr)) return aem_system_type(typestr);
 		else glog.errormsg(_SRC_, "The AEM System 'Type' is not specified.\n");
+		
+		//never gets here but suppresses warning
+		return aem_system_type(typestr);
 	};
 
 	// Get AEM SystemType from template parameter
@@ -149,7 +154,7 @@ namespace AEM {
 	};
 
 	template <typename T>
-	size_t value_size() {};
+	size_t value_size() { return 1; };
 	template<> size_t value_size<double>() { return 1; };
 	template<> size_t value_size<cdouble>() { return 2; };
 

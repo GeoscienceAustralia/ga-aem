@@ -300,9 +300,9 @@ namespace AEM {
 		};
 
 		TDEmVectorResponse<T> totalfield() const {
-			TDEmVectorResponse T = S;
-			T += P;
-			return T;
+			TDEmVectorResponse V = S;
+			V += P;
+			return V;
 		};
 
 		TDEmResponse& operator*=(const double& s) {

@@ -14,10 +14,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "file_utils.hpp"
 #include "vector_utils.hpp"
 #include "streamredirecter.hpp"
-
 #include "gaaem_version.hpp"
 #include "aem_coredefs.hpp"
-#include "sbsinverter.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 
@@ -29,6 +27,7 @@ class cLogger glog; //The global instance of the log file manager
 //This thread lock must be set when fftw is being initialised
 omp_lock_t fftw_thread_lock;
 #endif
+#include "sbsinverter.hpp"
 
 using namespace AEM;
 using namespace AEM::INVERTER::SBSINVERTER;

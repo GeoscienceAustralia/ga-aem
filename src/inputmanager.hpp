@@ -124,7 +124,6 @@ namespace IOManager {
 			}
 
 			std::vector<T> vec;
-			//file_read_impl<T>(fd, vec, 1);
 			file_read(fd, vec, 1);
 			v = vec[0];
 			if (iotype != IOType::ASCII) {//Don't flip if ASCII reader as it already does this - to be fixed
@@ -174,23 +173,16 @@ namespace IOManager {
 			std::vector<T> vi(n);
 			bool status1 = read(fdr, vr, n);
 			bool status2 = read(fdi, vi, n);
-			complex_merge(vr, vi, complexvec);
+			AEM::complex_merge(vr, vi, complexvec);
 			return status1 && status2;
 		}
-
-		//template<typename T>
-		//bool file_read(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n) {
-		//	std::string s = function_not_yet_implmented_msg<T>(__FUNCTION__);
-		//	glog.errormsg(_SRC_,"%s",s.c_str());
-		//	return false;
-		//};
 
 		//virtual template classes are not allowed - therefore repeated
 		virtual bool file_read(const cFieldDefinition& fd, std::vector<char>& vec, const size_t n) = 0;
 		virtual bool file_read(const cFieldDefinition& fd, std::vector<int>& vec, const size_t n) = 0;
 		virtual bool file_read(const cFieldDefinition& fd, std::vector<float>& vec, const size_t n) = 0;
 		virtual bool file_read(const cFieldDefinition& fd, std::vector<double>& vec, const size_t n) = 0;
-		virtual bool file_read(const cFieldDefinition& fd, std::vector<cdouble>& vec, const size_t n) = 0;
+		//virtual bool file_read(const cFieldDefinition& fd, std::vector<cdouble>& vec, const size_t n) = 0;
 	};
 
 	class cASCIIInputManager : public cInputManager {
@@ -376,16 +368,16 @@ namespace IOManager {
 		bool file_read(const cFieldDefinition& fd, std::vector<int>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
 		bool file_read(const cFieldDefinition& fd, std::vector<float>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
 		bool file_read(const cFieldDefinition& fd, std::vector<double>& vec, const size_t n) { return file_read_impl(fd, vec, n); }
-		bool file_read(const cFieldDefinition& fd, std::vector<cdouble>& vec, const size_t n) { return file_read_impl(fd, vec, n); };
-
+		//bool file_read(const cFieldDefinition& fd, std::vector<cdouble>& vec, const size_t n) { return file_read_impl(fd, vec, n); };
+		
 		template <typename T>
-		bool file_read_impl(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n)
-		{
+		bool file_read_impl(const cFieldDefinition& fd, std::vector<T>& vec, const size_t n){
 			bool status = AF.getvec_fielddefinition(fd, vec, n);
 			return status;
-		}
+		};
 
-		template<>
+		//This turned out to not be required
+		/*template<> 
 		bool file_read_impl<cdouble>(const cFieldDefinition& fd, std::vector<cdouble>& vec, const size_t n) {
 			std::vector<double> vecr(n);
 			std::vector<double> veci(n);
@@ -393,7 +385,8 @@ namespace IOManager {
 			bool status2 = AF.getvec_fielddefinition(fd, veci, n);
 			AEM::complex_merge(vecr, veci, vec);
 			return status1 && status2;
-		}
+		};*/
+		
 
 		bool get_acsiicolumnfield(const cFieldDefinition& fd, cAsciiColumnField& c) const {
 			int findex = -1;
@@ -409,7 +402,7 @@ namespace IOManager {
 				return true;
 			}
 			return false;
-		}
+		};
 
 		bool set_variant_type(const cFieldDefinition& fd, cVrnt& vnt) const {
 			cAsciiColumnField c;
@@ -422,7 +415,7 @@ namespace IOManager {
 				glog.errormsg(_SRC_, "Could not find field %s\n", fd.get_varname().c_str());
 				return false;
 			}
-		}
+		};
 
 	};
 

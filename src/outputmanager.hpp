@@ -76,11 +76,11 @@ namespace IOManager {
 
 		cOutputField() {};
 
-		cOutputField(const std::string& _name, const std::string& _description, const std::string& _units, const size_t& _bands, const cOutputField::BinaryStorageType& _ncstoragetype, const std::string& _ncdimname, const char& _fmtchar, const size_t& _width, const size_t& _decimals) {
+		cOutputField(const std::string& _name, const std::string& _description, const std::string& _units, const size_t& _bands, const IOManager::BinaryStorageType& _ncstoragetype, const std::string& _ncdimname, const char& _fmtchar, const size_t& _width, const size_t& _decimals) {
 			initialise(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, _fmtchar, _width, _decimals);
 		};
 
-		cOutputField(const std::string& _name, const std::string& _description, const std::string& _units, const size_t& _bands, const cOutputField::BinaryStorageType& _ncstoragetype, const std::string& _ncdimname, const cAsciiColumnFormat& fmt) {
+		cOutputField(const std::string& _name, const std::string& _description, const std::string& _units, const size_t& _bands, const IOManager::BinaryStorageType& _ncstoragetype, const std::string& _ncdimname, const cAsciiColumnFormat& fmt) {
 			initialise(_name, _description, _units, _bands, _ncstoragetype, _ncdimname, fmt.fmtchar, fmt.width, fmt.decimals);
 		};
 

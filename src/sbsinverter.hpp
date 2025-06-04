@@ -286,6 +286,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 		else {
 			glog.errormsg(_SRC_, "No 'SystemFile' has been specified.\n");
 		}
+		return fs::path(stmfile);
 	};
 
 	template<typename AEMSystemClass, typename RT>
@@ -445,7 +446,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return mcull;
 		}
 
-		const AEM::SystemType& aem_system_type() const {
+		AEM::SystemType aem_system_type() const {
 			return AEM::aem_system_type<AEMSystemClass>();
 		};
 
