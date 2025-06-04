@@ -8,5 +8,5 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #pragma once
 
-constexpr auto GAAEM_VERSION = "v2.0.4-Release-2024xxxx";
+constexpr auto GAAEM_VERSION = "v3.0.0-Release-20250605";
 
