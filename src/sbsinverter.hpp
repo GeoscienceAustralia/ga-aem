@@ -397,18 +397,6 @@ namespace AEM::INVERTER::SBSINVERTER {
 		std::vector<SampleId> Id;
 		std::vector<cKeyVec<std::string, cFdVrnt, caseinsensetiveequal<std::string>>> AncFld;
 
-		/*
-		// Cull data vector to only the active (non-null) data
-		Vector cullxxx(const std::vector<double>& vall) const {
-			assert(ActiveData.size() == nData);
-			assert(vall.size() == nAllData);
-			Vector vcull(nData);
-			for (size_t i = 0; i < nData; i++) {
-				vcull[i] = vall[ActiveData[i]];
-			}
-			return vcull;
-		};*/
-
 		// Cull data vector to only the active (non-null) data
 		Vector cull(const Vector& vall) const {
 			assert(ActiveData.size() == nData);
@@ -554,12 +542,12 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 		bool solve_geometry() const {
 			if (nGeomParamPerSounding > 0) return true;
-			return true;
+			return false;
 		};
 
 		bool solve_ggaoffsets() const {
 			if (nGGAOffsetParamPerSounding > 0) return true;
-			return true;
+			return false;
 		};
 		
 		bool solve_scalingfactor(const size_t sysi, const size_t ci) const {
@@ -1091,7 +1079,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 		void initialise_Wg() {
 			cLinearConstraint& C = LCrefg;
 			C.W = Matrix::Zero(nParam, nParam);
-			if (solve_geometry() <= 0)return;
+			if (solve_geometry() == false)return;
 
 			double s = C.alpha / (double)(nGeomParamPerSounding * nSoundings);
 			for (size_t si = 0; si < nSoundings; si++) {
