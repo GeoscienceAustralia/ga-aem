@@ -23,6 +23,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "geophysics_netcdf.hpp"
 using namespace GeophysicsNetCDF;
 #endif
+#include <file_utils.hpp>
+#include <string_utils.hpp>
+#include <filesystem>
 
 //template<class T>
 //std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values) {
@@ -156,6 +159,17 @@ namespace IOManager {
 
 		virtual ~cOutputManager() {};
 
+		void initialise(const fs::path& filename, const int& size = 0, const int& rank = 0) {
+			Size = size;
+			Rank = rank;
+			DataFileName = filename.string();
+			fixseparator(DataFileName);
+			if (Size > 0) {
+				std::string suffix = stringvalue(Rank, ".%04d");
+				DataFileName = insert_after_filename(DataFileName, suffix);
+			}
+		};
+
 		void initialise(const cBlock& b, const int& size, const int& rank) {
 			Size = size;
 			Rank = rank;
@@ -163,7 +177,7 @@ namespace IOManager {
 			fixseparator(DataFileName);
 			std::string suffix = stringvalue(Rank, ".%04d");
 			DataFileName = insert_after_filename(DataFileName, suffix);
-		}
+		};
 
 		static bool isnetcdf(const cBlock& b) {
 			std::string fname = b.getstringvalue("DataFile");
@@ -172,7 +186,7 @@ namespace IOManager {
 				return true;
 			}
 			return false;
-		}
+		};
 
 		const std::string& datafilename() { return DataFileName; }
 
@@ -340,10 +354,14 @@ namespace IOManager {
 
 	public:
 
+		cASCIIOutputManager(const fs::path filename, const int& size = 0, const int& rank = 0) {
+			cOutputManager::initialise(filename, size, rank);
+		};
+
 		cASCIIOutputManager(const cBlock& b, const int& size, const int& rank) {
 			cOutputManager::initialise(b, size, rank);
 			initialise(b);
-		}
+		};
 
 		~cASCIIOutputManager() {};
 
@@ -366,6 +384,12 @@ namespace IOManager {
 				SaveHDRHeader = status;
 			};
 		}
+
+		bool opendatafile() {
+			glog.logmsg(0, "Opening Output ASCII DataFile %s\n", DataFileName.c_str());
+			filestream.open(DataFileName, std::ofstream::out);
+			return filestream.is_open();
+		};
 
 		bool opendatafile(const std::string& srcfile, const size_t& subsample) {
 			glog.logmsg(0, "Opening Output ASCII DataFile %s\n", DataFileName.c_str());
@@ -483,7 +507,6 @@ namespace IOManager {
 			}
 		};
 
-
 		bool write(const int& val, const spcOutputField& of, const int& pointindex) {
 			return write_scalar(val, of, pointindex);
 		}
@@ -503,7 +526,6 @@ namespace IOManager {
 		bool write(const char& val, const spcOutputField& of, const int& pointindex) {
 			return write_scalar(val, of, pointindex);
 		}
-
 
 		bool write(const std::vector<int>& vals, const spcOutputField& of, const int& pointindex) {
 			return write_vector(vals, of, pointindex);
@@ -624,6 +646,11 @@ namespace IOManager {
 				}
 			}
 			return v;
+		}
+
+		static cOutputField output_field(const std::string& _name, const std::string& _description, const std::string& _units, const size_t& _bands, const cAsciiColumnFormat& fmt) {
+			cOutputField of(_name, _description, _units, _bands, BinaryStorageType::DOUBLE, "", fmt);
+			return of;
 		}
 	};
 
