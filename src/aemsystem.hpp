@@ -153,7 +153,7 @@ namespace AEM {
 			const double& h = G.tx_height();
 			const double& x = sep.x();
 			const double& y = sep.y();
-			const double& z = h + sep.z();
+			const double  z = h + sep.z();
 			
 			Tx.Orientation = G.tx_orientation(Tx.Reference_Orientation);
 			lem().set_geometry(Tx.Orientation, h, x, y, z);
