@@ -305,7 +305,7 @@ namespace AEM {
 		};
 
 		void setup_frequencies() {
-			size_t N = (Rx.SamplingFrequency / Tx.BaseFrequency) / 2.0 / 2.0;
+			size_t N = (size_t) ((Rx.SamplingFrequency / Tx.BaseFrequency) / 2.0 / 2.0);
 			FrequencySeries = increment(N, Tx.BaseFrequency, Tx.BaseFrequency * 2.0);
 			FrequencySeriesLog10 = log10(FrequencySeries);
 

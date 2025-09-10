@@ -7,19 +7,24 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 /* Example driver program for simple forward model*/
+#include <exception>
 #include <vector>
 #include <cstring>
 #include <iostream>
 #include <ostream>
 
-#include "spectralaemsystem.hpp"
+#include "logger.hpp"
+#include "general_types.hpp"
+#include "file_formats.hpp"
+#include "outputmanager.hpp"
 #include "vector_utils.hpp"
 #include "general_utils.hpp"
 #include "file_utils.hpp"
 #include "random_utils.hpp"
-#include "blocklanguage.hpp"
-#include "lem.hpp"
+#include "spectralaemsystem.hpp"
 #include "tdemsystem.hpp"
+
+
 class cLogger glog; //The global instance of the log file manager
 
 using namespace AEM;
@@ -404,17 +409,160 @@ static void test_spectral() {
 	
 };
 
+static void test_simple() {
+	//fs::path stmpath = "C:/Users/rossc/Work/Tempest_Spectral/stmfiles/Tempest-Spectral.stm";
+	
+	TDEmGeometry G;
+	G.tx_height() = 30;
+	G.tx_roll() = 0;	G.tx_pitch() = 0;	G.tx_yaw() = 0;
+	G.txrx_dx() = -12;	G.txrx_dy() = -12;	G.txrx_dz() = 0;
+	G.rx_roll() = 0;	G.rx_pitch() = 0;	G.rx_yaw() = 0;
+
+	//G.tx_height() = 120;
+	//G.tx_roll() = 0;	G.tx_pitch() = 0;	G.tx_yaw() = 0;
+	//G.txrx_dx() = -110;	G.txrx_dy() = 0;	G.txrx_dz() = -40;
+	//G.rx_roll() = 0;	G.rx_pitch() = 0;	G.rx_yaw() = 0;
+
+	std::vector<double> c = { 0.1 };
+	std::vector<double> t = {  };
+	Earth1D E(c, t);
+
+	std::vector<double> frequencies;
+	for (double k = 0; k <= 5; k = k + 0.5) {
+		frequencies.push_back(std::pow(10.0, k));
+	}
+
+	size_t numabscissa = 41;
+	double modelling_loop_radius = 0.0;
+	Vec3d tx_orientation(0,0,1);
+
+	AEM::LEModeller S;
+	S.initialise(frequencies, numabscissa, modelling_loop_radius);
+	const double rxh = G.tx_height() + G.txrx_dz();
+	S.set_earth(E);
+	S.set_geometry(tx_orientation, G.tx_height(), G.txrx_dx(), G.txrx_dy(), rxh);
+	S.setup_computations();
+	S.set_calculationtype(CMode::FM);
+
+	double muzero = MUZERO<double>;
+
+	std::ofstream ofs("1d_results.txt");
+	for (size_t fi = 0; fi < frequencies.size(); fi++) {
+		Vec3d  pf = 1e15 * muzero * S.primaryfield_inertial(tx_orientation);
+		Vec3cd sf = 1e15 * muzero * S.secondaryfield_inertial(fi, tx_orientation);
+		ofs << frequencies[fi] << ","
+			<< pf[0] << "," << pf[1] << "," << pf[2] << ","
+			<< sf[0].real() << "," << sf[0].imag() << ","
+			<< sf[1].real() << "," << sf[1].imag() << ","
+			<< sf[2].real() << "," << sf[2].imag() << std::endl;
+	}
+	//prompttocontinue();
+};
+
+static int generate_synthetic_data() {
+	using namespace IOManager;
+	fs::path stmpath = "../stmfiles/Helitem-21m-25Hz-LM_25_w.stm";
+	fs::path outfilepath = "../data/Helitem-21m-25Hz-LM_25_w.dat";
+	makedirectory_for(outfilepath);
+
+	TDEmSystem S(stmpath);
+
+	double s = 0;
+	TDEmGeometry G;
+	double roll  = 5;
+	double pitch = -10;
+	double yaw   = 3;
+	G.tx_height() = 30;
+	G.tx_roll() = roll;   G.tx_pitch() = pitch;   G.tx_yaw()  = yaw;
+	G.txrx_dx() = 0;      G.txrx_dy()  = 0;       G.txrx_dz() = 0;
+	G.rx_roll() = roll;   G.rx_pitch() = pitch;   G.rx_yaw()  = yaw;
+	std::cout << G.string();
+
+	Earth1D E(3);
+	E.conductivity[0] = 0.010;
+	E.conductivity[1] = 0.100;
+	E.conductivity[2] = 0.001;
+	E.thickness[0] = 20;
+	E.thickness[1] = 40;
+	
+	
+	const size_t nw = S.nWindows();
+	const size_t nl = E.nlayers();
+	cASCIIOutputManager AM(outfilepath);
+	cOutputField of_flight = cASCIIOutputManager::output_field("Flight", "Flight number", "", 1, cAsciiColumnFormat('I', 4, 0));
+	cOutputField of_line = cASCIIOutputManager::output_field("Line", "Line number", "", 1, cAsciiColumnFormat('I', 7, 0));
+	cOutputField of_fid  = cASCIIOutputManager::output_field("Fiducial", "Fiducial number", "", 1, cAsciiColumnFormat('I', 6, 0));
+	cOutputField of_e = cASCIIOutputManager::output_field("Tx_Easting", "Transmitter Easting", "m", 1, cAsciiColumnFormat('F', 12, 2));
+	cOutputField of_n = cASCIIOutputManager::output_field("Tx_Northing", "Transmitter Northing", "m", 1, cAsciiColumnFormat('F', 12, 2));
+	cOutputField of_dtm = cASCIIOutputManager::output_field("DTM", "Ground elevation digital terrain model", "m", 1, cAsciiColumnFormat('F', 12, 2));
+
+	std::vector<cOutputField> of_g;
+	for (size_t gi = 0; gi < G.nelem(); gi++) {
+		of_g.push_back(cASCIIOutputManager::output_field(G.element_name(gi), G.description(gi), G.units(gi), 1, cAsciiColumnFormat('F', 8, 3)));
+	};
+
+	cOutputField of_c = cASCIIOutputManager::output_field("Conductivity", "Conductivity", "S/m", nl, cAsciiColumnFormat('F', 10, 6));
+	cOutputField of_t = cASCIIOutputManager::output_field("Thickness", "Thickness", "m", nl-1, cAsciiColumnFormat('F', 8, 2));
+
+	cOutputField of_emx = cASCIIOutputManager::output_field("EMX", "EM X-component secondary field", "", nw, cAsciiColumnFormat('E', 14, 6));
+	cOutputField of_emy = cASCIIOutputManager::output_field("EMY", "EM Y-component secondary field", "", nw, cAsciiColumnFormat('E', 14, 6));
+	cOutputField of_emz = cASCIIOutputManager::output_field("EMZ", "EM Z-component secondary field", "", nw, cAsciiColumnFormat('E', 14, 6));
+		
+	AEM::TDEmResponse<double> R;
+	bool status = AM.opendatafile();
+	
+	size_t np = 10;
+	for (unsigned int pi = 0; pi < 10; pi++) {
+
+		E.thickness[0] = 10 + 200 * (double)pi / (double)np;
+		std::cout << E.thickness[0] << std::endl;
+		R = S.forward_model(E, G);
+		
+		AM.begin_point_output();
+		AM.writefield(pi, 100, of_flight);
+		AM.writefield(pi, 10010, of_line);
+		AM.writefield(pi, pi, of_fid);
+		AM.writefield(pi, 200000+10*pi, of_e);
+		AM.writefield(pi, 5000000.0, of_n);
+		AM.writefield(pi, 0.0, of_dtm);
+
+		for (size_t gi = 0; gi < G.nelem(); gi++) {
+			AM.writefield(pi, G[gi], of_g[gi]);
+		};
+
+		AM.writefield(pi, E.conductivity, of_c);
+		AM.writefield(pi, E.thickness, of_t);
+
+		AM.writefield(pi, R.secondary(XCOMP), of_emx);
+		AM.writefield(pi, R.secondary(YCOMP), of_emy);
+		AM.writefield(pi, R.secondary(ZCOMP), of_emz);
+		AM.end_point_output();
+
+		if(pi==0) AM.end_first_record();  //Writes headers etc
+	}
+
+	for (size_t wi = 0; wi < nw; wi++) {
+		std::cout << ixd(3) << wi;
+		for (size_t ci = 0; ci < NCOMP; ci++) std::cout << exd(14, 6) << R.secondary(ci, wi);
+		std::cout << std::endl;
+	};
+
+	return 0;
+};
+
 int main(int argc, char* argv[]) {
 	try {
 		//skytem_example();
 		//skytem_example_ip();
 		//skytem_computation_time();
-		test_derivatives();
+		//test_derivatives();
 		//test_spectral();
+		//test_simple();
+		generate_synthetic_data();
 	}
 	catch (std::exception& e) {
 		std::cout << e.what();
 	}
 	return 0;
-}
+};
 

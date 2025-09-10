@@ -52,7 +52,7 @@ namespace AEM {
 			return oss.str();
 		};
 
-		static Mode lookup_mode(size_t index) {
+		static Mode lookup_mode(const int& index) {
 			if (index > last_index()) {
 				glog.errormsg(_SRC_, "Bad index (%zu) for calculation mode lookup.\n%s", index, possible_values_message().c_str());
 			}

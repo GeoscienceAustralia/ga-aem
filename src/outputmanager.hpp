@@ -42,6 +42,10 @@ namespace IOManager {
 	auto constexpr ST_FLOAT = BinaryStorageType::FLOAT;
 	auto constexpr ST_DOUBLE = BinaryStorageType::DOUBLE;
 
+	constexpr auto DN_LAYER = "layer";
+	constexpr auto DN_NONE = "";
+	constexpr auto UNITLESS = "";
+
 	class cOutputField {
 
 	public:
@@ -131,7 +135,7 @@ namespace IOManager {
 			asciicolumn.decimals = c.decimals;
 
 			btype = IOManager::BinaryStorageType::DOUBLE;
-			ncdimname = DN_NONE;
+			ncdimname = IOManager::DN_NONE;
 		}
 
 	};

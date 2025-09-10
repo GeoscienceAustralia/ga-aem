@@ -703,19 +703,43 @@ namespace LEM2 {
 			const cdouble& T1 = integrals[1];
 			const cdouble& T2 = integrals[2];
 			
+			bool axial = false;
+			if (r == 0 && T1.real() == 0 && T2.real() == 0) {
+				axial = true;
+			}
+
 			Mat3cd m;
-			m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
-			m(0, 1) = (x * y / r2) * (2.0 * T2 / r - T0);
-			m(0, 2) = (-x / r) * T1;
+			if (axial == false) {
+				m(0, 0) = ((x2 / r2 - y2 / r2) * T2 / r - T0 * x2 / r2);
+				m(0, 1) = (x * y / r2) * (2.0 * T2 / r - T0);
+				m(0, 2) = (-x / r) * T1;
 
-			//Note error in Fitterman and Yin paper should not be minus sign at element 2,1
-			m(1, 0) = m(0, 1);
-			m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
-			m(1, 2) = (-y / r) * T1;
+				//Note error in Fitterman and Yin paper should not be minus sign at element 2,1
+				m(1, 0) = m(0, 1);
+				m(1, 1) = ((y2 / r2 - x2 / r2) * T2 / r - T0 * y2 / r2);
+				m(1, 2) = (-y / r) * T1;
 
-			m(2, 0) = -m(0, 2);
-			m(2, 1) = -m(1, 2);
-			m(2, 2) = -T0;
+				m(2, 0) = -m(0, 2);
+				m(2, 1) = -m(1, 2);
+				m(2, 2) = -T0;
+			}
+			else {
+				m(0, 0) = -T0;
+				m(0, 1) = 0;
+				m(0, 2) = 0;
+
+				//Note error in Fitterman and Yin paper should not be minus sign at element 2,1
+				m(1, 0) = m(0, 1);
+				m(1, 1) = -T0;
+				m(1, 2) = 0;
+
+				m(2, 0) = -m(0, 2);
+				m(2, 1) = -m(1, 2);
+				m(2, 2) = -T0;
+			}
+			//std::cout << m << std::endl;
+			//int dummy; std::cin >> dummy;
+
 			_STFM_ = ONEONFOURPI<double> * m;
 			return _STFM_;
 		};

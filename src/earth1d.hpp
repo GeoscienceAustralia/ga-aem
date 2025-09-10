@@ -10,10 +10,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <vector>
 #include <cassert>
-
-constexpr auto DN_LAYER = "layer";
-const std::string DN_NONE;
-const std::string UNITLESS;
+#include <string>
 
 namespace AEM {
 	enum class IPType { NONE, COLECOLE, PELTON };

@@ -17,19 +17,24 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "rollpitchyaw.hpp"
 #include "aem_coredefs.hpp"
 #include "calculation_type.hpp"
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <undefinedvalues.hpp>
+#include <vector>
 
 namespace AEM {
 
-	static constexpr const char TX_HEIGHT[] = "TX_HEIGHT";
-	static constexpr const char TX_ROLL[] = "TX_ROLL";
-	static constexpr const char TX_PITCH[] = "TX_PITCH";
-	static constexpr const char TX_YAW[] = "TX_YAW";
-	static constexpr const char TXRX_DX[] = "TXRX_DX";
-	static constexpr const char TXRX_DY[] = "TXRX_DY";
-	static constexpr const char TXRX_DZ[] = "TXRX_DZ";
-	static constexpr const char RX_ROLL[] = "RX_ROLL";
-	static constexpr const char RX_PITCH[] = "RX_PITCH";
-	static constexpr const char RX_YAW[] = "RX_YAW";
+	static constexpr const char TX_HEIGHT[] = "Tx_Height";
+	static constexpr const char TX_ROLL[] = "Tx_Roll";
+	static constexpr const char TX_PITCH[] = "Tx_Pitch";
+	static constexpr const char TX_YAW[] = "Tx_Yaw";
+	static constexpr const char TXRX_DX[] = "TxRx_Dx";
+	static constexpr const char TXRX_DY[] = "TxRx_Dy";
+	static constexpr const char TXRX_DZ[] = "TxRx_Dz";
+	static constexpr const char RX_ROLL[] = "Rx_Roll";
+	static constexpr const char RX_PITCH[] = "Rx_Pitch";
+	static constexpr const char RX_YAW[] = "Rx_Yaw";
 
 	class TDEmGeometry {
 
@@ -204,12 +209,20 @@ namespace AEM {
 			return TDEmGeometry::defined_derivative_modes[index];
 		};
 
+		std::string string() const {
+			std::ostringstream oss;
+			for (size_t i = 0; i < NELEM; i++) {
+				oss << element_name(i) << "\t" << _elements_[i] << std::endl;
+			}
+			return oss.str();
+		};
+
 		void write(std::string path) const {
 			std::ofstream ofs(path);
 			for (size_t i = 0; i < NELEM; i++) {
 				ofs << element_name(i) << "\t" << _elements_[i] << std::endl;
 			}
-		}
+		};
 
 		double txrx_dh() const {
 			return std::hypot(txrx_dx(), txrx_dy());

@@ -72,7 +72,7 @@ namespace AEM {
 			set_nWindows(_nwindows);
 		};
 
-		inline const size_t nWindows() const { return nwindows; }
+		inline const size_t& nWindows() const { return nwindows; }
 
 		void set_nWindows(const size_t _nwindows) {
 			nwindows = _nwindows;

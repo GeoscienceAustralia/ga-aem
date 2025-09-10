@@ -11,7 +11,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <cassert>
 #include <stdexcept>
 #include <complex>
+#include <iostream>
 
+#include <fftw3.h>
 #include "aemsystem.hpp"
 #include "fftwplanwrapper.hpp"
 #include "vector_utils.hpp"
@@ -22,6 +24,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "earth1d.hpp"
 #include "fixed_point_spline.hpp"
 #include "tdemgeometry.hpp"
+
 
 namespace AEM {
 
@@ -235,11 +238,9 @@ namespace AEM {
 
 		void set_primaryfields(VectorResponse& P, const Vec3d& txvec, const Mat3d& rxmat) {
 			Vec3d v = lem().primaryfield_inertial(txvec);
-			//std::cout << v << std::endl;
 
 			// Rotate field to Rx frame
 			v = rxmat * v;
-			//std::cout << v << std::endl;
 
 			if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
 				v *= 2.0;
@@ -250,30 +251,16 @@ namespace AEM {
 				v *= Tx.PeakdIdT;
 			}
 
-			v[XCOMP] *= Scale[XCOMP];
-			v[YCOMP] *= Scale[YCOMP];
-			v[ZCOMP] *= Scale[ZCOMP];
-
-			//WR.P[XCOMP][0] = v.x() * Scale[XCOMP];
-			//WR.P[YCOMP][0] = v.y() * Scale[YCOMP];
-			//WR.P[ZCOMP][0] = v.z() * Scale[ZCOMP];
-			//for (size_t wi = 1; wi < nWindows(); wi++) {
-			//	WR.P[XCOMP][wi] = WR.P[XCOMP][0];
-			//	WR.P[YCOMP][wi] = WR.P[XCOMP][0];
-			//	WR.P[ZCOMP][wi] = WR.P[XCOMP][0];
-			//}
-
-			std::fill(P[XCOMP].begin(), P[XCOMP].end(), v[XCOMP]);
-			std::fill(P[YCOMP].begin(), P[YCOMP].end(), v[YCOMP]);
-			std::fill(P[ZCOMP].begin(), P[ZCOMP].end(), v[ZCOMP]);
+			for (size_t ci = 0; ci < NCOMP; ci++) {
+				v[ci] *= Scale[ci];
+				std::fill(P[ci].begin(), P[ci].end(), v[ci]);
+			}
 		};
 
 		void set_secondaryfields(VectorResponse& S, const Vec3d& txvec, const Mat3d& rxmat) {
 			//Computation for discrete frequencies 	
 			for (size_t fi = 0; fi < NumberOfDiscreteFrequencies; fi++) {
 				Vec3cd v = lem().secondaryfield_inertial(fi,txvec);
-				//std::cout << v << std::endl;
-
 				// Rotate field to Rx frame
 				v = rxmat * v;
 
@@ -308,16 +295,16 @@ namespace AEM {
 				WvForm.FFT_Frequency[k] = WvForm.calculate_fft_frequency(k);
 			}
 
-			int N = WvForm.NumSamples;
-			size_t NComplex = N;
-			size_t NReal = 2 * (N / 2 + 1);
+			const size_t N = WvForm.NumSamples;
+			const size_t NComplex = N;
+			const size_t NReal = 2 * (N / 2 + 1);
 
 			// Forward transform
 			WvForm.FD_Waveform.resize(NComplex);
 			WvForm.FFT_WorkArray.resize(NReal);//Inverse transform work array	
 			WvForm.TransferFunction.resize(WvForm.NumFrequencies);
 
-			FFTWPlanWrapper ForwardFFTPlan(fftw_plan_dft_r2c_1d(N, (double*)WvForm.TD_Waveform.data(), (fftw_complex*)WvForm.FD_Waveform.data(), FFTW_ESTIMATE));
+			FFTWPlanWrapper ForwardFFTPlan(fftw_plan_dft_r2c_1d((int)N, (double*)WvForm.TD_Waveform.data(), (fftw_complex*)WvForm.FD_Waveform.data(), FFTW_ESTIMATE));
 			ForwardFFTPlan.execute();
 			const double scale = 1.0 / (double)WvForm.NumSamples;
 			WvForm.FD_Waveform *= scale; // Scale the spectrum
@@ -366,7 +353,7 @@ namespace AEM {
 			unsigned int FFTW_FLAGS = FFTW_MEASURE;
 #endif
 
-			InverseFFTPlan.setplan(fftw_plan_dft_c2r_1d(N, (fftw_complex*)WvForm.FFT_WorkArray.data(), (double*)WvForm.FFT_WorkArray.data(), FFTW_FLAGS));
+			InverseFFTPlan.setplan(fftw_plan_dft_c2r_1d((int)N, (fftw_complex*)WvForm.FFT_WorkArray.data(), (double*)WvForm.FFT_WorkArray.data(), FFTW_FLAGS));
 		};
 
 		void setup_scaling() {

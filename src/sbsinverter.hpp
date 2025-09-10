@@ -2709,7 +2709,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			std::string comma = ",";
 			of << "Index" << comma
 				<< "Name" << comma
-				<< "SystemTyps" << comma
+				<< "SystemType" << comma
 				<< "Units" << comma
 				<< "InvertTotalField" << comma
 				<< "InvertPSI" << comma
@@ -3133,7 +3133,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			OM->begin_point_output();
 
 			//Ancillary	
-			OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", UNITLESS, 1, ST_UINT, DN_NONE, 'I', 12, 0);
+			OM->writefield(pi, Id[si].uniqueid, "uniqueid", "Inversion sequence number", IOManager::UNITLESS, 1, ST_UINT, DN_NONE, 'I', 12, 0);
 			for (size_t fi = 0; fi < AncFld[si].size(); fi++) {
 				cFdVrnt& fdv = AncFld[si][fi].second;
 				cAsciiColumnField c;
