@@ -220,14 +220,14 @@ namespace IOManager {
 			const size_t& _decimals//ascii number of decimals places			
 		) = 0;
 
-		virtual bool writevrnt(const int& pointindex, const cVrnt& vrnt, const cAsciiColumnField& c) {
+		virtual bool writevrnt(const size_t& pointindex, const cVrnt& vrnt, const cAsciiColumnField& c) {
 			std::string msg = func_nyi_msg(__FUNCTION__);
 			glog.errormsg(_SRC_, msg);
 			return false;
 		};
 
 		template <typename T>
-		bool writefield(const int& pointindex, const T& vals, const cOutputField& of) {
+		bool writefield(const size_t& pointindex, const T& vals, const cOutputField& of) {
 			spcOutputField f;
 			if (firstpointwritten == false) {
 				f = addfield(of);
@@ -241,7 +241,7 @@ namespace IOManager {
 
 		template <typename T>
 		bool writefield(
-			const int& pointindex,//point index of sample in the file
+			const size_t& pointindex,//point index of sample in the file
 			const T& vals,//values to be written
 			const std::string& _name,//name
 			const std::string& _description,//description
@@ -276,45 +276,21 @@ namespace IOManager {
 		//virtual bool addvar(cOutputField& of) { return true; }
 
 		//Cannot templatize these virtual functions
-		virtual bool write(const int& val, const spcOutputField& of, const int& pointindex) = 0;
-		virtual bool write(const size_t& val, const spcOutputField& of, const int& pointindex) = 0;
-		virtual bool write(const float& val, const spcOutputField& of, const int& pointindex) = 0;
-		virtual bool write(const double& val, const spcOutputField& of, const int& pointindex) = 0;
-		virtual bool write(const std::vector<int>& vals, const spcOutputField& of, const int& pointindex) = 0;
-		virtual bool write(const std::vector<size_t>& vals, const spcOutputField& of, const int& pointindex) = 0;
-		virtual bool write(const std::vector<float>& vals, const spcOutputField& of, const int& pointindex) = 0;
-		virtual bool write(const std::vector<double>& vals, const spcOutputField& of, const int& pointindex) = 0;
+		virtual bool write(const int& val, const spcOutputField& of, const size_t& pointindex) = 0;
+		virtual bool write(const size_t& val, const spcOutputField& of, const size_t& pointindex) = 0;
+		virtual bool write(const float& val, const spcOutputField& of, const size_t& pointindex) = 0;
+		virtual bool write(const double& val, const spcOutputField& of, const size_t& pointindex) = 0;
+		virtual bool write(const std::vector<int>& vals, const spcOutputField& of, const size_t& pointindex) = 0;
+		virtual bool write(const std::vector<size_t>& vals, const spcOutputField& of, const size_t& pointindex) = 0;
+		virtual bool write(const std::vector<float>& vals, const spcOutputField& of, const size_t& pointindex) = 0;
+		virtual bool write(const std::vector<double>& vals, const spcOutputField& of, const size_t& pointindex) = 0;
 
 		template<typename T>
-		bool write(const T& val, const spcOutputField& of, const int& pointindex) {
+		bool write(const T& val, const spcOutputField& of, const size_t& pointindex) {
 			std::string msg = template_func_nyi_msg<T>(__FUNCTION__);
 			glog.errormsg(_SRC_, msg);
 			return false;
 		}
-
-		//bool write(const char& val, const spcOutputField& of, const int& pointindex) {
-		//	std::string msg = template_func_nyi_msg<const char&>(__FUNCTION__);
-		//	glog.errormsg(_SRC_, msg);
-		//	return false;
-		//}
-
-		//bool write(const std::complex<double>& val, const spcOutputField& of, const int& pointindex) {
-		//	std::string msg = template_func_nyi_msg<const std::complex<double>&>(__FUNCTION__);
-		//	glog.errormsg(_SRC_, msg);
-		//	return false;
-		//}
-
-		//bool write(const std::vector<std::complex<double>>& vals, const spcOutputField& of, const int& pointindex) {
-		//	std::string msg = template_func_nyi_msg<const std::vector<std::complex<double>>&>(__FUNCTION__);
-		//	glog.errormsg(_SRC_, msg);
-		//	return false;
-		//}
-
-		//bool write(const std::vector<char>& vals, const spcOutputField& of, const int& pointindex) {
-		//	std::string msg = template_func_nyi_msg<const std::vector<char>&>(__FUNCTION__);
-		//	glog.errormsg(_SRC_, msg);
-		//	return false;
-		//}
 
 		static std::vector<std::string> preferred_sort_order() {
 			static const std::vector<std::string> porder = {
@@ -511,47 +487,47 @@ namespace IOManager {
 			}
 		};
 
-		bool write(const int& val, const spcOutputField& of, const int& pointindex) {
+		bool write(const int& val, const spcOutputField& of, const size_t& pointindex) {
 			return write_scalar(val, of, pointindex);
 		}
 
-		bool write(const size_t& val, const spcOutputField& of, const int& pointindex) {
+		bool write(const size_t& val, const spcOutputField& of, const size_t& pointindex) {
 			return write_scalar(val, of, pointindex);
 		}
 
-		bool write(const float& val, const spcOutputField& of, const int& pointindex) {
+		bool write(const float& val, const spcOutputField& of, const size_t& pointindex) {
 			return write_scalar(val, of, pointindex);
 		}
 
-		bool write(const double& val, const spcOutputField& of, const int& pointindex) {
+		bool write(const double& val, const spcOutputField& of, const size_t& pointindex) {
 			return write_scalar(val, of, pointindex);
 		}
 
-		bool write(const char& val, const spcOutputField& of, const int& pointindex) {
+		bool write(const char& val, const spcOutputField& of, const size_t& pointindex) {
 			return write_scalar(val, of, pointindex);
 		}
 
-		bool write(const std::vector<int>& vals, const spcOutputField& of, const int& pointindex) {
+		bool write(const std::vector<int>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return write_vector(vals, of, pointindex);
 		}
 
-		bool write(const std::vector<size_t>& vals, const spcOutputField& of, const int& pointindex) {
+		bool write(const std::vector<size_t>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return write_vector(vals, of, pointindex);
 		}
 
-		bool write(const std::vector<float>& vals, const spcOutputField& of, const int& pointindex) {
+		bool write(const std::vector<float>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return write_vector(vals, of, pointindex);
 		}
 
-		bool write(const std::vector<double>& vals, const spcOutputField& of, const int& pointindex) {
+		bool write(const std::vector<double>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return write_vector(vals, of, pointindex);
 		}
-		bool write(const std::vector<char>& vals, const spcOutputField& of, const int& pointindex) {
+		bool write(const std::vector<char>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return write_vector(vals, of, pointindex);
 		}
 
 		template <typename T>
-		bool write_scalar(const T& val, const spcOutputField& f, const int& pointindex) {
+		bool write_scalar(const T& val, const spcOutputField& f, const size_t& pointindex) {
 			set_formatflags(f);
 			const size_t& w = f->asciicolumn.width;
 			const size_t& d = f->asciicolumn.decimals;
@@ -560,7 +536,7 @@ namespace IOManager {
 		}
 
 		template <typename T>
-		bool write_vector(const std::vector<T>& vals, const spcOutputField& f, const int& pointindex) {
+		bool write_vector(const std::vector<T>& vals, const spcOutputField& f, const size_t& pointindex) {
 			set_formatflags(f);
 			const size_t& w = f->asciicolumn.width;
 			const size_t& d = f->asciicolumn.decimals;
@@ -570,7 +546,7 @@ namespace IOManager {
 			return true;
 		}
 
-		bool writevrnt(const int& pointindex, const cVrnt& vrnt, const cAsciiColumnField& c) {
+		bool writevrnt(const size_t& pointindex, const cVrnt& vrnt, const cAsciiColumnField& c) {
 			spcOutputField sp = getfield(c.name);
 			if (!sp) {
 				sp = addfield(c);
@@ -578,7 +554,7 @@ namespace IOManager {
 
 			auto WriteVisitor = [&](auto& vals) {
 				write(vals, sp, pointindex);
-				};
+			};
 
 			std::visit(WriteVisitor, vrnt);
 
@@ -755,7 +731,7 @@ namespace IOManager {
 			const char& _fmtchar,//ascii form I, F, E
 			const size_t& _width,//ascii width
 			const size_t& _decimals,//ascii number of decimals places			
-			const int& pointindex,
+			const size_t& pointindex,
 			const size_t& vals
 		) {
 			spcOutputField of = getfield(_name);
@@ -802,33 +778,33 @@ namespace IOManager {
 		}
 
 		template <typename T>
-		bool write(spcOutputField of, const int& pointindex, const T& val) {
+		bool write(spcOutputField of, const size_t& pointindex, const T& val) {
 			return of->var->putRecord(pointindex, val);
 		}
 
-		virtual bool write(const int& val, const spcOutputField& of, const int& pointindex) {
+		virtual bool write(const int& val, const spcOutputField& of, const size_t& pointindex) {
 			return of->var->putRecord(pointindex, val);
 		}
-		virtual bool write(const size_t& val, const spcOutputField& of, const int& pointindex) {
+		virtual bool write(const size_t& val, const spcOutputField& of, const size_t& pointindex) {
 			return of->var->putRecord(pointindex, val);
 		}
-		virtual bool write(const float& val, const spcOutputField& of, const int& pointindex) {
+		virtual bool write(const float& val, const spcOutputField& of, const size_t& pointindex) {
 			return of->var->putRecord(pointindex, val);
 		}
-		virtual bool write(const double& val, const spcOutputField& of, const int& pointindex) {
+		virtual bool write(const double& val, const spcOutputField& of, const size_t& pointindex) {
 			return of->var->putRecord(pointindex, val);
 		}
 
-		virtual bool write(const std::vector<int>& vals, const spcOutputField& of, const int& pointindex) {
+		virtual bool write(const std::vector<int>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return of->var->putRecord(pointindex, vals);
 		}
-		virtual bool write(const std::vector<size_t>& vals, const spcOutputField& of, const int& pointindex) {
+		virtual bool write(const std::vector<size_t>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return of->var->putRecord(pointindex, vals);
 		}
-		virtual bool write(const std::vector<float>& vals, const spcOutputField& of, const int& pointindex) {
+		virtual bool write(const std::vector<float>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return of->var->putRecord(pointindex, vals);
 		}
-		virtual bool write(const std::vector<double>& vals, const spcOutputField& of, const int& pointindex) {
+		virtual bool write(const std::vector<double>& vals, const spcOutputField& of, const size_t& pointindex) {
 			return of->var->putRecord(pointindex, vals);
 		}
 	};
