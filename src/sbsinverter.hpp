@@ -28,6 +28,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "samplebunch.hpp"
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
+#include <omp.h>
 
 inline void function_trace(const char* filename, const char* functionname, int linenumber) {
 	std::cout << filename << " " << functionname << " " << linenumber << std::endl;
@@ -292,6 +293,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 	template<typename AEMSystemClass, typename RT>
 	class SBSInverter : public Inverter {
 
+	private:
+		omp_lock_t* ptr_fftw_thread_lock=nullptr;
+
 	public:
 
 		struct SampleId {
@@ -306,10 +310,11 @@ namespace AEM::INVERTER::SBSINVERTER {
 			double elevation = 0.0;
 		};
 
-		SBSInverter(const fs::path& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline)
+		SBSInverter(const fs::path& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline, omp_lock_t* _ptr_fftw_thread_lock=nullptr)
 			: Inverter(controlfile, size, rank, usingopenmp, commandline)
 		{
 			try {
+				ptr_fftw_thread_lock = _ptr_fftw_thread_lock;
 				initialise(controlfile);
 			}
 			catch (const std::string& msg) {
@@ -1652,18 +1657,22 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 		void set_fftw_lock() {
 			#if defined _OPENMP
-			//If OpenMP is being used set the thread lock while FFTW initialises
-			if (UsingOpenMP) {
-				omp_set_lock(&fftw_thread_lock);
-			}
+				//If OpenMP is being used set the thread lock while FFTW plans are initialises
+				if (UsingOpenMP) {
+					omp_set_lock(ptr_fftw_thread_lock);
+					//std::cerr << "Setting fftw lock on thread " << omp_get_thread_num() << std::endl;
+					//std::cout << "Setting fftw lock on thread " << omp_get_thread_num() << std::endl;
+				}
 			#endif
 		};
 
 		void unset_fftw_lock() {
 			#if defined _OPENMP
-			if (UsingOpenMP) {
-				omp_unset_lock(&fftw_thread_lock);
-			}
+				if (UsingOpenMP) {
+					omp_unset_lock(ptr_fftw_thread_lock);
+					//std::cerr << "Releasing fftw lock on thread " << omp_get_thread_num() << std::endl;
+					//std::cout << "Releasing fftw lock on thread " << omp_get_thread_num() << std::endl;
+				}
 			#endif
 		};
 
@@ -1917,7 +1926,8 @@ namespace AEM::INVERTER::SBSINVERTER {
 			}
 
 			if (ErrorAddition > 0.0) {
-				for (size_t k = 0; k < Error_unculled.size(); k++) {
+				const size_t n = Error_unculled.size();
+				for (size_t k = 0; k < n; k++) {
 					Error_unculled[k] = Error_unculled[k] + ErrorAddition;
 				}
 			}
@@ -3121,7 +3131,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return vout;
 		}
 
-		void write_result(const int& pointindex) {
+		void write_result(const size_t& pointindex) {
 			//bookmark
 			const Vector& m = CIS.param;
 			const Vector& m0 = RefParam;
@@ -3319,7 +3329,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			nPointsOutput++;
 		};
 
-		void write_result(const int& pointindex, const cLinearConstraint& C, const Vector& m, const Vector& m0) {
+		void write_result(const size_t& pointindex, const cLinearConstraint& C, const Vector& m, const Vector& m0) {
 			if (C.alpha == 0.0) return;
 
 			double phi = 0.0;
@@ -3331,7 +3341,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			OM->writefield(pointindex, phi, C.phi_field_name(), C.phi_field_description(), UNITLESS, 1, ST_FLOAT, DN_NONE, 'E', 15, 6);
 		};
 
-		void write_result(const int& pointindex, const cNonLinearConstraint& C, const Vector& predicted) {
+		void write_result(const size_t& pointindex, const cNonLinearConstraint& C, const Vector& predicted) {
 			if (C.alpha == 0.0)return;
 			double phi = 0.0;
 			if (C.alpha > 0.0) {
@@ -3342,16 +3352,16 @@ namespace AEM::INVERTER::SBSINVERTER {
 		};
 
 		template <typename T>
-		void write_plain(const int& pointindex, const cOutputField& of, const std::vector<T>& values) {
+		void write_plain(const size_t& pointindex, const cOutputField& of, const std::vector<T>& values) {
 			OM->writefield(pointindex, values, of);
 		}
 
 		template <typename T>
-		void write_plain_or_complex(const int& pointindex, const cOutputField& of, const std::vector<T>& values) {
+		void write_plain_or_complex(const size_t& pointindex, const cOutputField& of, const std::vector<T>& values) {
 			write_plain(pointindex, of, values);
 		};
 
-		void write_plain_or_complex(const int& pointindex, const cOutputField& of, const std::vector<cdouble>& values) {
+		void write_plain_or_complex(const size_t& pointindex, const cOutputField& of, const std::vector<cdouble>& values) {
 			cOutputField ofr = of;
 			ofr.name += "_Real";
 			std::string& s = ofr.atts.refval(cAsciiColumnField::DESC);
@@ -3407,7 +3417,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 		};
 
 		//bookmark
-		void writeresult_emdata_array(const int& pointindex,
+		void writeresult_emdata_array(const size_t& pointindex,
 			const size_t& sysindex,
 			const std::string& vname, //Observed Predicted Noise
 			const std::string& qname, //Primary Secondary Total PSI
@@ -3422,9 +3432,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 			const SystemInversionInfo<AEMSystemClass, RT>& S = SI[sysindex];
 			const BinaryStorageType btype = ST_FLOAT;
 			std::string dimensionname = "em_window";
-			std::string sysname = strprint("EMSystem_%d_", (int)sysindex + 1);
-			std::string sysdesc = strprint("EMSystem %d ", (int)sysindex + 1);
-			const int nbands = array.size();
+			std::string sysname = strprint("EMSystem_%d_", static_cast<int>(sysindex) + 1);
+			std::string sysdesc = strprint("EMSystem %d ", static_cast<int>(sysindex) + 1);
+			const size_t nbands = array.size();
 			
 			std::string name = sysname + vname + "_" + qname + "_" + cname;
 			std::string desc = sysdesc + vdesc + " " + qdesc + " " + cdesc;

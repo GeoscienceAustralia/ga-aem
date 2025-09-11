@@ -8,26 +8,34 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #include <cassert>
 #include <iostream>
+#include <string>
+#include <memory>
+#include <filesystem>
+#include <complex>
 
 #include "string_print.hpp"
 #include "logger.hpp"
 #include "file_utils.hpp"
+#include "general_utils.hpp"
 #include "vector_utils.hpp"
 #include "streamredirecter.hpp"
 #include "gaaem_version.hpp"
 #include "aem_coredefs.hpp"
+#include "sbsinverter.hpp"
+#include "spectralaemsystem.hpp"
+#include "tdemsystem.hpp"
+#include "inverter.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 
 #ifdef ENABLE_MPI
-#include "mpi_wrapper.hpp"
+	#include "mpi_wrapper.hpp"
 #endif
 
 #ifdef _OPENMP
-//This thread lock must be set when fftw is being initialised
-omp_lock_t fftw_thread_lock;
+	#include <omp.h>
 #endif
-#include "sbsinverter.hpp"
+
 
 using namespace AEM;
 using namespace AEM::INVERTER::SBSINVERTER;
@@ -45,7 +53,6 @@ int finaliseandexit() {
 };
 
 fs::path get_warning_log_path() {
-	
 	std::string s = "warning.log";
 	int k = 1;
 	do {
@@ -63,21 +70,20 @@ fs::path get_warning_log_path() {
 	} while(true);
 };
 
-
 int main(int argc, char** argv) {
 
 	std::string commandline = commandlinestring(argc, argv);
-	int mpisize = 1;
-	int mpirank = 0;
+	int size = 1;
+	int rank = 0;
 	bool usingopenmp = false;
-	int openmpsize = 1;
+	//int openmpsize = 1;
 	fs::path controlfile;
 	std::string mpipname = "No MPI - Standalone";
 
 	#ifdef ENABLE_MPI
 		cMpiEnv::start(argc, argv);
-		mpirank = cMpiEnv::world_rank();
-		mpisize = cMpiEnv::world_size();
+		rank = cMpiEnv::world_rank();
+		size = cMpiEnv::world_size();
 		mpipname = cMpiEnv::processor_name();
 		//glog.logmsg(0, "%s\n", commandline.c_str());
 		//glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
@@ -85,7 +91,7 @@ int main(int argc, char** argv) {
 	#endif
 
 	fs::path wlogpath;
-	if (mpirank == 0) {
+	if (rank == 0) {
 		wlogpath = get_warning_log_path();
 	};
 
@@ -95,7 +101,7 @@ int main(int argc, char** argv) {
 
 	std::ofstream log(wlogpath, std::ios_base::app);
 	cStreamRedirecter cerrredirect(log, std::cerr);
-	if (mpirank == 0) std::cerr << "Warning log opening " << timestamp() << std::endl;
+	if (rank == 0) std::cerr << "Warning log opening " << timestamp() << std::endl;
 
 	if (argc < 2) {
 		glog.logmsg(0, "Usage: %s control_file_name [number_of_openmp_threads]\n", argv[0]);
@@ -108,27 +114,28 @@ int main(int argc, char** argv) {
 		return finaliseandexit();
 	}
 	else if (argc == 2) {
-		controlfile = argv[1];
+		controlfile = fs::path(argv[1]);
 		usingopenmp = false;
 	}
-	else if (argc == 3 && mpisize > 1) {
+	else if (argc == 3 && size > 1) {
 		glog.logmsg(0, "**Error: You may not use OpenMP with MPI\n");
 		glog.logmsg(0, "**       Do not use [number_of_openmp_threads] when launched with mpiexec or mpirun\n");
 		return finaliseandexit();
 	}
 	else if (argc == 3) {
-		usingopenmp = true;
-		openmpsize = atoi(argv[2]);
 		#if defined _OPENMP
-			glog.set_num_omp_threads(openmpsize);
+			usingopenmp = true;
+			controlfile = fs::path(argv[1]);
+			size = atoi(argv[2]);
+			glog.set_num_omp_threads(size);
 			int openmpmaxthreads = omp_get_max_threads();
-			if (openmpsize > openmpmaxthreads) {
-				std::string msg = strprint("**Warning: The number of requested threads (%d) is more than the processors available (%d).\n", openmpsize, openmpmaxthreads);
+			if (size > openmpmaxthreads) {
+				std::string msg = strprint("**Warning: The number of requested threads (%d) is more than the processors available (%d).\n", size, openmpmaxthreads);
 				std::cerr << msg << std::endl;
 				glog.logmsg(0, msg);
 			}
-			else if (openmpsize < 1) {
-				glog.logmsg(0, "%d is a silly number of threads.\n", openmpsize);
+			else if (size < 1) {
+				glog.logmsg(0, "%d is a silly number of threads.\n", size);
 				return finaliseandexit();
 			}
 		#elif 
@@ -139,42 +146,43 @@ int main(int argc, char** argv) {
 		#endif
 	}
 
-	controlfile = fs::path(argv[1]);
-
 	AEM::SystemType systype = AEM::aem_system_type(SBSINVERTER::get_stmpath(controlfile));
 
 	if (usingopenmp) {
 		#if defined _OPENMP
-		if (systype == AEM::SystemType::TimeDomain) omp_init_lock(&fftw_thread_lock);
-		#pragma omp parallel num_threads(openmpsize)
-		{
-			int openmprank = omp_get_thread_num();
-			std::unique_ptr<Inverter> I;
 			if (systype == AEM::SystemType::SpectralTimeDomain) {
-				I = std::make_unique<SBSInverter<SpectralAEMSystem,cdouble>>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
+				#pragma omp parallel num_threads(size)
+				{
+					rank = omp_get_thread_num();
+					SBSInverter<SpectralAEMSystem, std::complex<double>> I(controlfile, size, rank, usingopenmp, commandline);
+				}
 			}
-			else {
-				I = std::make_unique<SBSInverter<TDEmSystem,double>>(controlfile, openmpsize, openmprank, usingopenmp, commandline);
+			else{
+				//For OpenMP the FFTW planning cannot be done in parallel
+				omp_lock_t fftw_thread_lock;
+				omp_init_lock(&fftw_thread_lock);
+				#pragma omp parallel num_threads(size)
+				{
+					int openmprank = omp_get_thread_num();
+					SBSInverter<TDEmSystem, double> I(controlfile, size, rank, usingopenmp, commandline, &fftw_thread_lock);
+				}
 			}
-		}
-		std::cerr << "Warning log closing " << timestamp() << std::endl;
+			std::cerr << "Warning log closing " << timestamp() << std::endl;
 		#endif
 	}
 	else {
-		std::unique_ptr<Inverter> I;
 		if (systype == AEM::SystemType::SpectralTimeDomain) {
-			I = std::make_unique<SBSInverter<SpectralAEMSystem,cdouble>>(controlfile, mpisize, mpirank, usingopenmp, commandline);
+			SBSInverter<SpectralAEMSystem, std::complex<double>> I(controlfile, size, rank, usingopenmp, commandline);
 		}
 		else {
-			I = std::make_unique<SBSInverter<TDEmSystem,double>>(controlfile, mpisize, mpirank, usingopenmp, commandline);
+			SBSInverter<TDEmSystem, double> I(controlfile, size, rank, usingopenmp, commandline);
 		}
-
 		#ifdef ENABLE_MPI
 			cMpiEnv::world_barrier();
 		#endif
-		if (mpirank == 0) std::cerr << "Warning log closing " << timestamp() << std::endl;
+		if (rank == 0) std::cerr << "Warning log closing " << timestamp() << std::endl;
 	}
-
 	finalise();
 	return EXIT_SUCCESS;
 }
+
