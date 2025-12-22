@@ -88,8 +88,8 @@ public:
 		}
 
 		if (min.thickness.size() > 0) {
-			if (min.thickness.size() != nc) oss << "The thickness min does not have the correct number of layer\n";
-			if (max.thickness.size() != nc) oss << "The thickness max does not have the correct number of layer\n";
+			if (min.thickness.size() != nt) oss << "The thickness min does not have the correct number of layer\n";
+			if (max.thickness.size() != nt) oss << "The thickness max does not have the correct number of layer\n";
 			if (::min(min.thickness) <= 0) oss << "The thickness min is <= 0 in at least one layer\n";
 			if (::min(max.thickness) <= 0) oss << "The thickness max is <= 0 in at least one layer\n";
 			if (::min(max.thickness - min.thickness) <= 0) oss << "The thickness max <= min in at least one layer\n";
