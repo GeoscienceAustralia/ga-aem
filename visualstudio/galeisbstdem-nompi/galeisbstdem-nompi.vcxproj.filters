@@ -44,10 +44,7 @@
     <ClInclude Include="..\..\src\outputmanager.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\cinverter.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\csbsinverter.hpp">
+    <ClInclude Include="..\..\src\sbsinverter.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
