@@ -2,8 +2,8 @@ Control Begin
 
 	EMSystem Begin
 		SystemFile   = ../stmfiles/Skytem-LM.stm
-		InvertXPlusZ = no
-		InvertPrimaryPlusSecondary = no
+		InvertXZAmplitude = no
+		InvertTotalField = no
 		ReconstructPrimaryFieldFromInputGeometry = no
 
 		XComponent Begin
@@ -20,8 +20,8 @@ Control Begin
 	
 	EMSystem Begin
 		SystemFile   = ../stmfiles/Skytem-HM.stm
-		InvertXPlusZ = no
-		InvertPrimaryPlusSecondary = no
+		InvertXZAmplitude = no
+		InvertTotalField = no
 		ReconstructPrimaryFieldFromInputGeometry = no
 
 		XComponent Begin

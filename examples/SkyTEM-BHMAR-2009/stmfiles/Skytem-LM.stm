@@ -34,7 +34,7 @@ System Begin
 		WindowWeightingScheme = AreaUnderCurve
 
 		//Gate04 (0.00001139 0.00001500) was removed as too close to 11.5us front gate
-		WindowTimes Begin
+		Windows Begin
 			0.00001539 0.00001900
 			0.00001939 0.00002400
 			0.00002439 0.00003100
@@ -53,7 +53,7 @@ System Begin
 			0.00050039 0.00063000
 			0.00063039 0.00079300
 			0.00079339 0.00099900
-		WindowTimes End
+		Windows End
 
 		LowPassFilter Begin
 			//Rx Electronics 1st order at 300Khz 

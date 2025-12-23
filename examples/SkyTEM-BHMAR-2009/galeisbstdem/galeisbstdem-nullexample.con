@@ -74,7 +74,7 @@ Control Begin
 	Options End
 
 	Input Begin
-		DataFile		= ..\data\bhmar-skytem.dat
+		DataFile		= ..\data\bhmar-skytem-nullexample.dat
 		HeaderFile	    = ..\data\bhmar-skytem.dfn	//Can use either of the .dfn style header file
 		//HeaderFile	= ..\data\bhmar-skytem.csv	//    or the .csv style header file
 		//HeaderFile	= ..\data\bhmar-skytem.hdr	//    or the .hdr style header file
