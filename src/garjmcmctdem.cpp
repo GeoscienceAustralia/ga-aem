@@ -6,13 +6,15 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include <vector>
+#include "general_utils.hpp"
 
 #include "gaaem_version.hpp"
 #include "general_utils.hpp"
 #include "file_utils.hpp"
 #include "rjmcmc1dtdeminverter.hpp"
 #include "logger.hpp"
+
+#include <vector>
 
 #ifdef ENABLE_MPI
 	#include "mpi_wrapper.hpp"

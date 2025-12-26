@@ -9,8 +9,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #pragma once
 
 #include <vector>
-#include "general_constants.h"
-#include "geometry3d.h"
+#include "general_constants.hpp"
+#include "geometry3d.hpp"
 
 class cLargeLoop {
 

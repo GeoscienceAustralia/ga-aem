@@ -160,66 +160,6 @@ namespace AEM {
 			// Set the rotation matrix for rotating vector fields to Rx frame of reference
 			InertialToRxFrame = G.inertial_to_rx_frame_rotation_matrix();
 		};
-
-		/*
-		void drx_roll(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
-			const Mat3d dM = G.rx_roll_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model, derivatives);
-		};
-
-		void drx_pitch(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
-			const Mat3d dM = G.rx_pitch_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model, derivatives);
-		};
-
-		void drx_yaw(const TDEmGeometry& G, const VectorResponse& forward_model, VectorResponse& derivatives) const {
-			const Mat3d dM = G.rx_yaw_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model, derivatives);
-		};
-
-		void drx_roll(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
-			const Mat3d dM = G.rx_roll_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
-			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
-		};
-
-		void drx_pitch(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
-			const Mat3d dM = G.rx_pitch_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
-			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
-		};
-
-		void drx_yaw(const TDEmGeometry& G, const Response& forward_model, Response& derivatives) const {
-			const Mat3d dM = G.rx_yaw_derivative_matrix();
-			apply_rx_derivative_matrix(dM, forward_model.P, derivatives.P);
-			apply_rx_derivative_matrix(dM, forward_model.S, derivatives.S);
-		};*/
-
-		/*
-		void apply_rx_derivative_matrix(const Mat3d& dM, const VectorResponse& fields, VectorResponse& derivatives) const {
-			const size_t n = fields.nWindows();
-			//if (MO.NormalisationType == ModellingOptions::NormalizationType::PPM || MO.NormalisationType == ModellingOptions::NormalizationType::PPM_PEAKTOPEAK) {
-			if(is_ppm_system()){
-				for (size_t i = 0; i < n; i++) {
-					auto ftrue = fields.get_vec3(i);
-					//Must work with true field vector directions (not the PPM scaled versinn)
-					ftrue[XCOMP] *= RefGeomPrimary[XCOMP];
-					ftrue[YCOMP] *= RefGeomPrimary[YCOMP];
-					ftrue[ZCOMP] *= RefGeomPrimary[ZCOMP];
-					derivatives.set_vec3(i, dM * ftrue);
-					//Convert back to PPMS
-					derivatives[XCOMP][i] /= RefGeomPrimary[XCOMP];
-					derivatives[YCOMP][i] /= RefGeomPrimary[YCOMP];
-					derivatives[ZCOMP][i] /= RefGeomPrimary[ZCOMP];
-				}
-			}
-			else {
-				for (size_t wi = 0; wi < n; wi++) {
-					derivatives.set_vec3(wi, dM * fields.get_vec3(wi));
-				}
-			}
-		};*/
-
 	};
 };
 

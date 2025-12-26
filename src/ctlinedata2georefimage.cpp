@@ -6,7 +6,7 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <numeric>
 #include <vector>

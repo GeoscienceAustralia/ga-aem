@@ -409,52 +409,67 @@ static void test_spectral() {
 	
 };
 
-static void test_simple() {
-	//fs::path stmpath = "C:/Users/rossc/Work/Tempest_Spectral/stmfiles/Tempest-Spectral.stm";
-	
+static void test_simple() {		
 	TDEmGeometry G;
 	G.tx_height() = 30;
 	G.tx_roll() = 0;	G.tx_pitch() = 0;	G.tx_yaw() = 0;
 	G.txrx_dx() = -12;	G.txrx_dy() = -12;	G.txrx_dz() = 0;
 	G.rx_roll() = 0;	G.rx_pitch() = 0;	G.rx_yaw() = 0;
 
-	//G.tx_height() = 120;
-	//G.tx_roll() = 0;	G.tx_pitch() = 0;	G.tx_yaw() = 0;
-	//G.txrx_dx() = -110;	G.txrx_dy() = 0;	G.txrx_dz() = -40;
-	//G.rx_roll() = 0;	G.rx_pitch() = 0;	G.rx_yaw() = 0;
-
 	std::vector<double> c = { 0.1 };
 	std::vector<double> t = {  };
 	Earth1D E(c, t);
 
 	std::vector<double> frequencies;
-	for (double k = 0; k <= 5; k = k + 0.5) {
+	for (double k = 0; k <= 6; k = k + 0.5) {
 		frequencies.push_back(std::pow(10.0, k));
 	}
 
-	size_t numabscissa = 41;
+	size_t numabscissa = 181;
 	double modelling_loop_radius = 0.0;
 	Vec3d tx_orientation(0,0,1);
+
+	std::filesystem::path outdir = "C:/Users/rossc/Work/code/repos/deal_ii_tests/aem_solver/analytic";
+	std::filesystem::create_directory(outdir);
+	std::filesystem::path outfile = outdir / "1d_results.txt";
+	std::ofstream ofs(outfile);
+	const size_t np = 31;
+	std::vector<Vec3d> rx_points(np);
+	for (size_t pi = 0; pi < np; pi++) {
+		Vec3d& p = rx_points[pi];
+		p[0] = -150.0 + 10.0 * pi;
+		p[1] = -12;
+		p[2] = 30;
+	}
 
 	AEM::LEModeller S;
 	S.initialise(frequencies, numabscissa, modelling_loop_radius);
 	const double rxh = G.tx_height() + G.txrx_dz();
 	S.set_earth(E);
-	S.set_geometry(tx_orientation, G.tx_height(), G.txrx_dx(), G.txrx_dy(), rxh);
-	S.setup_computations();
-	S.set_calculationtype(CMode::FM);
+	for (size_t pi = 0; pi < np; pi++) {
+		const Vec3d rxpos = rx_points[pi];
+		G.txrx_dx() = rxpos[0];
+		G.txrx_dy() = rxpos[1];
+		G.txrx_dz() = 0;
+		//const double rxh = G.tx_height() + G.txrx_dz();
 
-	double muzero = MUZERO<double>;
-
-	std::ofstream ofs("1d_results.txt");
-	for (size_t fi = 0; fi < frequencies.size(); fi++) {
-		Vec3d  pf = 1e15 * muzero * S.primaryfield_inertial(tx_orientation);
-		Vec3cd sf = 1e15 * muzero * S.secondaryfield_inertial(fi, tx_orientation);
-		ofs << frequencies[fi] << ","
-			<< pf[0] << "," << pf[1] << "," << pf[2] << ","
-			<< sf[0].real() << "," << sf[0].imag() << ","
-			<< sf[1].real() << "," << sf[1].imag() << ","
-			<< sf[2].real() << "," << sf[2].imag() << std::endl;
+		S.set_geometry(tx_orientation, G.tx_height(), G.txrx_dx(), G.txrx_dy(), rxh);
+		S.setup_computations();
+		S.set_calculationtype(CMode::FM);
+		double muzero = MUZERO<double>;
+		for (size_t fi = 0; fi < frequencies.size(); fi++) {
+			Vec3d  pf = 1e15 * muzero * S.primaryfield_inertial(tx_orientation);
+			Vec3cd sf = 1e15 * muzero * S.secondaryfield_inertial(fi, tx_orientation);
+			ofs << pi << ","
+				<< rxpos[0] << ","
+				<< rxpos[1] << ","
+				<< rxpos[2] << ","
+				<< frequencies[fi] << ","
+				<< sf[0].real() << "," << sf[0].imag() << ","
+				<< sf[1].real() << "," << sf[1].imag() << ","
+				<< sf[2].real() << "," << sf[2].imag() << std::endl;
+				//<< pf[0] << "," << pf[1] << "," << pf[2] << ","
+		}
 	}
 	//prompttocontinue();
 };
@@ -552,13 +567,13 @@ static int generate_synthetic_data() {
 
 int main(int argc, char* argv[]) {
 	try {
-		//skytem_example();
+		skytem_example();
 		//skytem_example_ip();
 		//skytem_computation_time();
 		//test_derivatives();
 		//test_spectral();
 		//test_simple();
-		generate_synthetic_data();
+		//generate_synthetic_data();
 	}
 	catch (std::exception& e) {
 		std::cout << e.what();

@@ -11,6 +11,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <cassert>
 #include <string>
+#include <filesystem>
+#include <iostream>
+
+#include "logger.hpp"
+#include "general_types.hpp"
+#include "file_utils.hpp"
 
 namespace AEM {
 	enum class IPType { NONE, COLECOLE, PELTON };

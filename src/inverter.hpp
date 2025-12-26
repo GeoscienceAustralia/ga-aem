@@ -8,7 +8,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #pragma once
 
-#include <stdio.h>
+#include <cstdio>
 #include <sstream>
 #include <vector>
 #include <cstring>

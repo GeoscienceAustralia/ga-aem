@@ -8,8 +8,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 /* Example C (not C++) driver program for simple forward model*/
 
-#include "stdio.h"
-#include "malloc.h"
+#include <stdio.h>
+#include <malloc.h>
 #include "gatdaem1d.h"
 
 int main(int argc, char* argv[])
@@ -35,6 +35,12 @@ int main(int argc, char* argv[])
 	int  nlayers = 3;
 	double *conductivity = (double*)malloc(nlayers * sizeof(double));
 	double *thickness = (double*)malloc((nlayers - 1) * sizeof(double));
+	conductivity[0] = 0.05;
+	conductivity[1] = 0.20;
+	conductivity[2] = 0.01;
+	thickness[0] = 30.0;
+	thickness[1] = 20.0;
+
 
 	double PX;//X Primary field
 	double PY;//Y Primary field
@@ -43,14 +49,6 @@ int main(int argc, char* argv[])
 	double* SY = (double*)malloc(nw*sizeof(double));//Y Secondary field windows
 	double* SZ = (double*)malloc(nw*sizeof(double));//Z Secondary field windows
 
-	conductivity[0] = 0.05;
-	conductivity[1] = 0.20;
-	conductivity[2] = 0.01;
-
-	thickness[0] = 30.0;
-	thickness[1] = 20.0;
-	
-	
 	int nloops = 10;
 	for (int i = 0; i < nloops; i++) {
 		//For each forward model just change the geometry and earth as required

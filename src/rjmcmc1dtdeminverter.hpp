@@ -20,6 +20,7 @@ Richard L. Taylor, Geoscience Australia.
 #include "tdemsystem.hpp"
 #include "file_formats.hpp"
 #include "rjmcmc1d.hpp"
+#include "aem_coredefs.hpp"
 
 using namespace AEM;
 
@@ -587,7 +588,6 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			TDEmSystem& T = S.T;
 
 			if (S.reconstructPrimary) {
-				T.set_geometry(IG);
 				T.lem().set_calculationtype(CMode::FM);
 				auto P = T.forward_model_primary_field(IG);
 				S.oPX = P(XCOMP,0);

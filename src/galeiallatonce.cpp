@@ -6,15 +6,6 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include <cstdio>
-#include <cfloat>
-#include <cmath>
-#include <cstring>
-#include <vector>
-#include <iostream>
-#include <stdexcept>
-#include <mpi.h>
-
 #include "gaaem_version.hpp"
 #include "radius_searcher.hpp"
 #include "file_utils.hpp"
@@ -29,6 +20,18 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "conductivity_logs.hpp"
 #include "radius_searcher.hpp"
 #include "inversion_line_searcher.hpp"
+#include "calculation_type.hpp"
+
+#include <cstdio>
+#include <cfloat>
+#include <cmath>
+#include <cstring>
+#include <vector>
+#include <iostream>
+#include <stdexcept>
+#include <mpi.h>
+#include "earth1d.hpp"
+#include "tdemgeometry.hpp"
 
 class cLogger glog; //The global instance of the log file manager
 
@@ -397,10 +400,10 @@ public:
 		return v;
 	}
 
-	bool forward_model_and_derivatives(const Earth1D& E, const TDEmGeometry& geometry, std::vector<double>&predicted, std::vector<std::vector<double>>&derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
+	bool forward_model_and_derivatives(const Earth1D& E, const TDEmGeometry& G, std::vector<double>&predicted, std::vector<std::vector<double>>&derivatives, const bool computederivatives, const std::vector<size_t> UGI) {
 		const size_t nlayers = E.nlayers();
 		const size_t nw = T.nWindows();
-		auto R = T.forward_model(E, geometry);
+		auto R = T.forward_model(E, G);
 		
 		TDEmVectorResponse<double> FM;
 		if (InvertTotalField) FM = R.totalfield();
@@ -422,7 +425,7 @@ public:
 
 			TDEmVectorResponse<double> DRV;
 			for (size_t li = 0; li < nlayers; li++) {
-				R = T.derivative(CalculationType(CMode::DC, li));
+				R = T.derivative(G,CalculationType(CMode::DC, li));
 				if (InvertTotalField) DRV = R.totalfield();
 				else DRV = R.S;
 
@@ -435,20 +438,26 @@ public:
 			}
 
 			for (size_t gi = 0; gi < UGI.size(); gi++) {
-				if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_roll) {	
-					DRV = T.derivative(CMode::DRX_ROLL, geometry, FM);
-				}
-				else if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_pitch) {
-					DRV = T.derivative(CMode::DRX_PITCH, geometry, FM);
-				}
-				else if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_yaw) {
-					DRV = T.derivative(CMode::DRX_YAW, geometry, FM);
-				}
-				else {
-					R = T.derivative(TDEmGeometry::derivativetype(UGI[gi]));
-					if (InvertTotalField) DRV = R.totalfield();
-					else DRV = R.S;
-				}
+
+				auto mode = TDEmGeometry::derivative_mode(gi);
+				R = T.derivative(G, mode);
+				if (InvertTotalField) DRV = R.totalfield();
+				else DRV = R.S;
+
+				//if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_roll) {	
+				//	DRV = T.derivative(G, CMode::DRX_ROLL);
+				//}
+				//else if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_pitch) {
+				//	DRV = T.derivative(G, CMode::DRX_PITCH);
+				//}
+				//else if (TDEmGeometry::elementtype(UGI[gi]) == TDEmGeometry::ElementType::rx_yaw) {
+				//	DRV = T.derivative(G, CMode::DRX_YAW);
+				//}
+				//else {
+				//	R = T.derivative(TDEmGeometry::derivativetype(UGI[gi]));
+				//	if (InvertTotalField) DRV = R.totalfield();
+				//	else DRV = R.S;
+				//}
 
 				for (size_t ci = 0; ci < Comp.size(); ci++) {
 					if (Comp[ci].Use == false) continue;
