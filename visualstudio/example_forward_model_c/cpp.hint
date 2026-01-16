@@ -1,0 +1,6 @@
+// Hint files help the Visual Studio IDE interpret Visual C++ identifiers
+// such as names of functions and macros.
+// For more information see https://go.microsoft.com/fwlink/?linkid=865984
+#define GATDAEM1D_API
+#define GATDAEM1D_API GATDAEM1D_EXTERN_C __declspec(dllexport)
+#define GATDAEM1D_API GATDAEM1D_EXTERN_C __declspec(dllimport)

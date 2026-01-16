@@ -13,54 +13,25 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <vector>
 #include <Eigen/Dense>
 
+#include "aem_types.hpp"
+#include "aem_coredefs.hpp"
 #include "general_constants.hpp"
 #include "general_utils.hpp"
 #include "earth1d.hpp"
 #include "calculation_type.hpp"
+#include "induced_polarization.hpp"
 #include "eigen_utils.hpp"
 
 //Formulation mainly from the book 
 //Geo-Electromagnetism, Wait James, R. Academic Press 1982
 namespace AEM {
-namespace LEM1 {
-	using cdouble = std::complex<double>;
-	using cvector = std::vector<std::complex<double>>;
+
+namespace LEM1 {	
 	using CalculationType = AEM::CalculationType;
 	using CMode = AEM::CalculationType::Mode;
 	enum class RZeroMethod { PROPOGATIONMATRIX, RECURSIVE };
 	constexpr double DefaultLowerFractionalWidth = 4.44;
 	constexpr double DefaultUpperFractionalWidth = 1.84;
-
-	inline cdouble ip_colecole_conductivity(const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
-		//c = c0 - c0*(N / (1 + (1 - N)*(j*omega*T) ^ K));
-		if (chargeability == 0.0) {
-			return cdouble(conductivity, 0.0);
-		}
-		else {
-			cdouble c = conductivity - conductivity * (chargeability / (1.0 + (1.0 - chargeability) * (std::pow(cdouble(0.0, omega * timeconstant), frequencydependence))));
-			return  c;
-		}
-	};
-
-	inline cdouble ip_pelton_conductivity(const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
-		//p = p0[1 - m*(1 - (1 - 1/(1 + (j*omega*T) ^ K));
-		if (chargeability == 0.0) {
-			return cdouble(conductivity, 0.0);
-		}
-		else {
-			double  rho0 = 1.0 / conductivity;
-			cdouble rho = rho0 * (1.0 - chargeability * (1.0 - (1.0 / (1.0 + std::pow(cdouble(0.0, omega * timeconstant), frequencydependence)))));
-			return  1.0 / rho;
-		}
-	};
-
-	inline cdouble ip_complex_conductivity(const IPType& iptype, const double& conductivity, const double& chargeability, const double& timeconstant, const double& frequencydependence, const double& omega) {
-		cdouble complex_conductivity;
-		if (iptype == IPType::NONE) complex_conductivity = conductivity;
-		else if (iptype == IPType::COLECOLE) complex_conductivity = ip_colecole_conductivity(conductivity, chargeability, timeconstant, frequencydependence, omega);
-		else complex_conductivity = ip_pelton_conductivity(conductivity, chargeability, timeconstant, frequencydependence, omega);
-		return complex_conductivity;
-	};
 
 	struct HankelTransform {
 		cdouble FM = 0.0;
@@ -407,7 +378,7 @@ namespace LEM1 {
 			for (size_t li = 0; li < nl; li++) {
 				cdouble c = Earth.conductivity[li];
 				if (Earth.chargeability.size() > 0) {
-					c = ip_complex_conductivity(Earth.get_iptype(), Earth.conductivity[li], Earth.chargeability[li], Earth.timeconstant[li], Earth.frequencydependence[li], Frequencies[fi].Omega);
+					c = AEM::ip_complex_conductivity(Earth.get_iptype(), Earth.conductivity[li], Earth.chargeability[li], Earth.timeconstant[li], Earth.frequencydependence[li], Frequencies[fi].Omega);
 				};
 				const cdouble gamma2 = c * cdouble(0.0, Frequencies[fi].MuZeroOmega);
 				const cdouble u = std::sqrt(Frequencies[fi].Abscissa[ai].Lambda2 + gamma2);

@@ -7,12 +7,9 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #pragma once
+#include <complex>
 
-#include <cstdint>
-
-//constexpr auto GAAEM_VERSION = "v3.0.0-Release-20250605";
-constexpr const char* GAAEM_VERSION = "vSpectral-20250910";
-//constexpr int32_t GAAEM_VERSION_MAJOR = 3;
-//constexpr int32_t GAAEM_VERSION_MINOR = 0;
-//constexpr int32_t GAAEM_VERSION_PATCH = 0;
-
+namespace AEM {
+	using cdouble = std::complex<double>;
+	using cvector = std::vector<std::complex<double>>;
+};

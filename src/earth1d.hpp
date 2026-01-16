@@ -8,18 +8,19 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #pragma once
 
+#include "logger.hpp"
+#include "general_types.hpp"
+#include "file_utils.hpp"
+#include "induced_polarization.hpp"
+
 #include <vector>
 #include <cassert>
 #include <string>
 #include <filesystem>
 #include <iostream>
-
-#include "logger.hpp"
-#include "general_types.hpp"
-#include "file_utils.hpp"
+#include <stdexcept>
 
 namespace AEM {
-	enum class IPType { NONE, COLECOLE, PELTON };
 	
 	class Earth1D {
 
@@ -50,12 +51,7 @@ namespace AEM {
 			thickness = _thickness;
 		}
 
-		Earth1D(
-			const std::vector<double>& _conductivity,
-			const std::vector<double>& _thickness,
-			const std::vector<double>& _chargeability,
-			const std::vector<double>& _timeconstant,
-			const std::vector<double>& _frequencydependence)
+		Earth1D(const std::vector<double>& _conductivity, const std::vector<double>& _thickness, const std::vector<double>& _chargeability, const std::vector<double>& _timeconstant, const std::vector<double>& _frequencydependence)
 		{
 			conductivity = _conductivity;
 			thickness = _thickness;
@@ -64,22 +60,44 @@ namespace AEM {
 			frequencydependence = _frequencydependence;
 		}
 
-		Earth1D(const size_t nlayers, const double* _conductivity, const double* _thickness) {
+		Earth1D(const size_t nlayers, const double* _conductivity, const double* _thickness) 
+		{
+			if (_thickness == nullptr) throw std::runtime_error("_thickness is NULL");
+			if (_conductivity == nullptr) throw std::runtime_error("_conductivity is NULL");
 			conductivity = std::vector<double>(_conductivity, _conductivity + nlayers);
 			thickness = std::vector<double>(_thickness, _thickness + nlayers - 1);
 		}
 
 		Earth1D(const size_t nlayers, const double* _conductivity, const double* _thickness, const double* _chargeability, const double* _timeconstant, const double* _frequencydependence) {
-			conductivity = std::vector<double>(_conductivity, _conductivity + nlayers);
+			if(_thickness ==  nullptr) throw std::runtime_error("_thickness is NULL");
+			if (_conductivity == nullptr) throw std::runtime_error("_conductivity is NULL");
 			thickness = std::vector<double>(_thickness, _thickness + nlayers - 1);
-			chargeability = std::vector<double>(_chargeability, _chargeability + nlayers);
-			timeconstant = std::vector<double>(_timeconstant, _timeconstant + nlayers);
-			frequencydependence = std::vector<double>(_frequencydependence, _frequencydependence + nlayers);
+			conductivity = std::vector<double>(_conductivity, _conductivity + nlayers);
+
+			if (_chargeability != nullptr) chargeability = std::vector<double>(_chargeability, _chargeability + nlayers);
+			if (_timeconstant != nullptr) timeconstant = std::vector<double>(_timeconstant, _timeconstant + nlayers);
+			if (_frequencydependence != nullptr) frequencydependence = std::vector<double>(_frequencydependence, _frequencydependence + nlayers);
 		}
 
 		const IPType& get_iptype() { return ip_type; }
-		void set_iptype(const IPType& _iptype) {
-			ip_type = _iptype;
+
+		void set_iptype(const IPType& _iptype) { ip_type = _iptype; };
+
+		inline cdouble ip_complex_conductivity(const size_t li, const double& omega) {
+			cdouble complex_conductivity = AEM::ip_complex_conductivity(ip_type, conductivity[li],chargeability[li],timeconstant[li], frequencydependence[li], omega);
+			return complex_conductivity;
+		};
+
+		inline cdouble gamma2(const size_t li, const double& omega, const double& mu) {
+			if(ip_type == IPType::NONE){
+				const cdouble gamma2 = cdouble(0.0, conductivity[li] * mu * omega);
+				return gamma2;
+			}
+			else {
+				cdouble complex_conductivity = AEM::ip_complex_conductivity(ip_type, conductivity[li], chargeability[li], timeconstant[li], frequencydependence[li], omega);
+				const cdouble gamma2 = complex_conductivity * cdouble(0.0, mu * omega);
+				return gamma2;
+			}
 		};
 
 		std::vector<double> layer_top_depth() const {

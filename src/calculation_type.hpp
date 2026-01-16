@@ -1,17 +1,73 @@
 #pragma once
 
+#include "logger.hpp"
+
 #include <string>
 #include <iostream>
-#include "logger.hpp"
+#include <vector>
+#include <sstream>
+#include <string_utils.hpp>
 
 namespace AEM {
 	class CalculationType {
 
-	public: enum class Mode { FM, DC, DT, DH, DR, DX, DY, DZ, DTX_HEIGHT, DTX_ROLL, DTX_PITCH, DTX_YAW, DRX_ROLL, DRX_PITCH, DRX_YAW, NONE };
-	private: inline static std::vector<std::string> ModeNames{ "FM", "DC", "DT", "DH", "DR", "DX", "DY", "DZ", "NONE" };
-	private: inline static std::vector<std::string> ModeDescriptions{ "Forward Model", "Layer conductivity derivative", "Layer thickness derivative", "Tx Height derivative", "Tx-Rx radial distance derivative", "Tx-Rx Dx horizontal distance derivative", "Tx-Rx Dy horizontal distance derivative", "Tx-Rx Dz horizontal distance derivative", "No calculation" };
+	public: enum class Mode { 
+		FM, 
+		DC, 
+		DT, 
+		DH, 
+		DR, 
+		DX, 
+		DY, 
+		DZ, 
+		DTX_HEIGHT, 
+		DTX_ROLL, 
+		DTX_PITCH, 
+		DTX_YAW, 
+		DRX_ROLL, 
+		DRX_PITCH, 
+		DRX_YAW, 
+		NONE };
+
+	private: inline static std::vector<std::string> ModeNames{
+		"FM",
+		"DC",
+		"DT",
+		"DH",
+		"DR",
+		"DX",
+		"DY",
+		"DZ",
+		"DTX_HEIGHT",
+		"DTX_ROLL",
+		"DTX_PITCH",
+		"DTX_YAW",
+		"DRX_ROLL",
+		"DRX_PITCH",
+		"DRX_YAW",
+		"NONE" };
+
+	private: inline static std::vector<std::string> ModeDescriptions{ 
+		"Forward Model",
+		"Layer conductivity derivative",
+		"Layer thickness derivative",
+		"Coupled Tx&Rx Height derivative",
+		"Tx-Rx radial distance derivative",
+		"Tx-Rx Dx horizontal distance derivative",
+		"Tx-Rx Dy horizontal distance derivative",
+		"Tx-Rx Dz horizontal distance derivative",
+		"Tx Height derivative",
+		"Tx Roll derivative",
+		"Tx Pitch derivative",
+		"Tx Yaw derivative",
+		"Rx Roll derivative",
+		"Rx Pitch derivative",
+		"Rx Yaw derivative",
+		"No calculation" 
+	};
 
 	public:
+
 		CalculationType() {};
 
 		CalculationType(Mode _mode, size_t _layer) : mode(_mode), layer(_layer) {
@@ -41,7 +97,7 @@ namespace AEM {
 		std::string mode_name() const {
 			size_t index = get_index_from_mode(mode);
 			return ModeNames[index];
-		}
+		};
 
 		std::string string() const {
 			std::ostringstream oss;
@@ -68,20 +124,31 @@ namespace AEM {
 		};
 
 		static size_t get_index_from_mode(const Mode& _mode) {
-			return static_cast<int>(_mode);
+			return static_cast<size_t>(_mode);
 		};
 
 		static size_t last_index() {
 			return get_index_from_mode(Mode::NONE);
 		};
 
+	public:
 		static std::string possible_values_message() {
 			std::ostringstream oss;
-			oss << "Possible values for calculation mode index are" << std::endl;
-			for (int i = 0; i < last_index(); i++) {
-				oss << i << " (" << ModeNames[i] << ") " << ModeDescriptions[i] << std::endl;
+			oss << "Possible values for calculation mode are:" << std::endl;
+			const size_t last = last_index();
+			for (int i = 0; i < last; i++) {
+				oss << i << " (" << ModeNames[i] << ") ->" << ModeDescriptions[i] << std::endl;
 			}
 			return oss.str();
-		}
+		};
+
+		static Mode get_mode_from_string(const std::string& str) {
+			for (size_t i = 0; i < ModeNames.size(); i++) {
+				if (ciequal(ModeNames[i], str)) {
+					return Mode(i);
+				}
+			}
+			return Mode::NONE;
+		};
 	};
 }

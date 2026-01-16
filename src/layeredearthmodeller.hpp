@@ -16,16 +16,16 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "logger.hpp"
 #include "general_constants.hpp"
 #include "eigen_utils.hpp"
-#include "calculation_type.hpp"
+#include "aem_types.hpp"
 #include "earth1d.hpp"
+#include "induced_polarization.hpp"
+#include "calculation_type.hpp"
 
 //Formulation mainly from the book 
 //Geo-Electromagnetism, Wait James, R. Academic Press 1982.
 
 namespace AEM {
 namespace LEM2 {
-	using cdouble = std::complex<double>;
-	using cvector = std::vector<std::complex<double>>;
 	using CalculationType = AEM::CalculationType;
 	using CMode = AEM::CalculationType::Mode;
 	using PropogationMatrix = Eigen::Matrix2cd;
@@ -155,7 +155,10 @@ namespace LEM2 {
 
 		size_t nAbscissa() const { return Abscissa.size(); }
 		
-		size_t nLayers() const { return EarthPtr->nlayers(); }
+		size_t nLayers() const { 
+			if (EarthPtr) return EarthPtr->nlayers();
+			else return 0;
+		}
 		
 		void initialise(const double& frequency, 
 			const size_t& numabscissa, 
@@ -212,7 +215,7 @@ namespace LEM2 {
 		void set_frequency(const double& frequency) {
 			Frequency = frequency;
 			Omega = TWOPI<double> *frequency;
-			MuZeroOmega = MUZERO<double> *Omega;
+			MuZeroOmega = MUZERO<double> * Omega;
 			iMuZeroOmega = cdouble(0.0, MuZeroOmega);
 		};
 
@@ -222,8 +225,12 @@ namespace LEM2 {
 			const size_t na = nAbscissa();
 			for (size_t ai = 0; ai < na; ai++) {
 				for (size_t li = 0; li < nl; li++) {
-					double gamma2 = EarthPtr->conductivity[li] * MuZeroOmega;
-					cdouble u = std::sqrt(cdouble(Abscissa[ai].Lambda2, gamma2));
+					//double gamma2 = EarthPtr->conductivity[li] * MuZeroOmega;
+					//cdouble u = std::sqrt(cdouble(Abscissa[ai].Lambda2, gamma2));
+
+					const cdouble gamma2 = EarthPtr->gamma2(li,Omega,MUZERO<double>);
+					const cdouble u = std::sqrt(Abscissa[ai].Lambda2 + gamma2);
+
 					Abscissa[ai].Layer[li].U = u;
 					if (li < nl - 1) Abscissa[ai].Layer[li].Exp2UT = exp(-2.0 * u * EarthPtr->thickness[li]);
 				}
@@ -290,16 +297,22 @@ namespace LEM2 {
 		cdouble rzero_recursive(const double lambda) const {
 			//Wait's recursive formulation
 			const int nl = (int)nLayers();
-			double lambda2 = lambda * lambda;
-			double muzeroomega = MuZeroOmega;
+			const double lambda2 = lambda * lambda;
+			const double muzeroomega = MuZeroOmega;
 			cdouble imuzeroomega(0.0, muzeroomega);
 
-			double gamma2 = muzeroomega * EarthPtr->conductivity[nl - 1];
-			cdouble u = std::sqrt(cdouble(lambda2, gamma2));
+			
+			cdouble gamma2 = EarthPtr->gamma2(nl - 1, Omega, MUZERO<double>);
+			cdouble u = std::sqrt( lambda2 + gamma2);
+			//double gamma2 = muzeroomega * EarthPtr->conductivity[nl - 1];
+			//cdouble u = std::sqrt(cdouble(lambda2, gamma2));
 			cdouble y = u / imuzeroomega;
 			for (int li = nl - 2; li >= 0; li--) {
-				gamma2 = muzeroomega * EarthPtr->conductivity[li];
-				u = std::sqrt(cdouble(lambda2, gamma2));
+				//gamma2 = muzeroomega * EarthPtr->conductivity[li];
+				//u = std::sqrt(cdouble(lambda2, gamma2));
+				gamma2 = EarthPtr->gamma2(li, Omega, MUZERO<double>);
+				u = std::sqrt(lambda2 + gamma2);
+
 				const cdouble Nn = u / imuzeroomega;
 
 				const cdouble v1 = u * EarthPtr->thickness[li];
@@ -634,7 +647,6 @@ namespace LEM2 {
 		};
 
 		inline Mat3d dPTdR() const {
-			// Todo check this 
 			const Mat3d dptdx = dPTdX();
 			const Mat3d dptdy = dPTdY();
 			return (x / r) * dptdx + (y / r) * dptdy;
@@ -787,7 +799,6 @@ namespace LEM2 {
 		};
 
 		inline Mat3cd dSTdR() {
-			// Todo check this
 			const Mat3cd dstdx = dSTdX();
 			const Mat3cd dstdy = dSTdY();
 			return (x / r) * dstdx + (y / r) * dstdy;
@@ -1052,8 +1063,7 @@ namespace LEM2 {
 		size_t nFrequencies() const { return SFM.size(); };
 		
 		size_t nLayers() const { 
-			// Todo
-			return SFM[0].nLayers(); 
+			return SFM[0].nLayers();
 		};
 
 		void initialise(const std::vector<double>& discrete_frequencies, const size_t& numabscissa, const double& modelling_loop_radius) {
@@ -1121,6 +1131,7 @@ namespace LEM2 {
 		void set_iptype(const IPType& _iptype) {
 			//Todo
 			//Earth.set_iptype(_iptype);
+			int dummy = 0;
 		};
 
 	private:

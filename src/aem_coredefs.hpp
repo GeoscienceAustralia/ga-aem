@@ -7,10 +7,12 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #pragma once
+#include "aem_types.hpp"
 #include "blocklanguage.hpp"
 #include "lem.hpp"
 #include "layeredearthmodeller.hpp"
 #include "vector_utils.hpp"
+#include "calculation_type.hpp"
 
 
 namespace AEM {
@@ -26,8 +28,8 @@ namespace AEM {
 	using VectorUtils::operator<<;
 
 	using namespace LEM2;
-	using CalculationType = AEM::CalculationType;
-	using CMode = AEM::CalculationType::Mode;
+	//using CalculationType = AEM::CalculationType;
+	//using CMode = AEM::CalculationType::Mode;
 
 	enum class SystemType { TimeDomain, SpectralTimeDomain };
 

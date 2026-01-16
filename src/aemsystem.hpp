@@ -13,6 +13,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "aem_coredefs.hpp"
 #include "tdemresponse.hpp"
 #include "tdemgeometry.hpp"
+#include <string>
+#include <sstream>
 
 namespace AEM {
 	template <typename RT>
@@ -72,7 +74,13 @@ namespace AEM {
 		Response derivative(const TDEmGeometry& G, const CalculationType& calc) {
 			Response D(nWindows());
 			const CMode& cmode = calc.get_mode();
-			if (cmode == CMode::DC || cmode == CMode::DT || cmode == CMode::DX || cmode == CMode::DY || cmode == CMode::DZ || cmode == CMode::DH){
+			if (cmode == CMode::DC || 
+				cmode == CMode::DT || 
+				cmode == CMode::DR ||
+				cmode == CMode::DX || 
+				cmode == CMode::DY || 
+				cmode == CMode::DZ || 
+				cmode == CMode::DH){
 				set_calculationtype(calc);
 				set_primaryfields(D.P, Tx.Orientation, InertialToRxFrame);
 				set_secondaryfields(D.S, Tx.Orientation, InertialToRxFrame);
@@ -123,7 +131,9 @@ namespace AEM {
 				set_secondaryfields(D.S, Tx.Orientation, rxmat);
 			}
 			else {
-				glog.errormsg(_SRC_, "Invalid derivative operation.");
+				std::ostringstream oss;
+				oss << "Invalid derivative mode: " << CalculationType::possible_values_message();
+				glog.errormsg(_SRC_, oss.str());
 			};
 			return D;
 		};	
