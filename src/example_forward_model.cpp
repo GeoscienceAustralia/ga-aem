@@ -7,13 +7,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 /* Example driver program for simple forward model*/
-#include <exception>
-#include <vector>
-#include <cstring>
-#include <iostream>
-#include <ostream>
 
 #include "logger.hpp"
+CppUtils::cLogger glog; //The global instance of the log file manager
+
 #include "general_types.hpp"
 #include "file_formats.hpp"
 #include "outputmanager.hpp"
@@ -24,13 +21,16 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "spectralaemsystem.hpp"
 #include "tdemsystem.hpp"
 
-
-class cLogger glog; //The global instance of the log file manager
+#include <exception>
+#include <vector>
+#include <cstring>
+#include <iostream>
+#include <ostream>
 
 using namespace AEM;
+using namespace CppUtils;
 
-
-int skytem_example_ip() {
+static int skytem_example_ip() {
 	//Load the AEM system specification files for the Skytem moments //only do this once				
 	//TDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-LM.stm");	
 	TDEmSystem S("..\\..\\examples\\SkyTEM-BHMAR-2009\\stmfiles\\Skytem-HM.stm");
@@ -74,7 +74,7 @@ int skytem_example_ip() {
 	return 0;
 }
 
-int skytem_example() {
+static int skytem_example() {
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
 	//LM = Low moment pulse
@@ -120,7 +120,7 @@ int skytem_example() {
 	return 0;
 }
 
-int skytem_computation_time() {
+static int skytem_computation_time() {
 	//Load the AEM system specification files for the Skytem moments
 	//only do this once
 	//LM = Low moment pulse
@@ -164,7 +164,7 @@ int skytem_computation_time() {
 	return 0;
 };
 
-void write_responses(const TDEmResponse<cdouble>& R, const TDEmResponse<cdouble>& R1, const TDEmResponse<cdouble>& DA, const TDEmResponse<cdouble>& DN, const TDEmResponse<cdouble>& PCD) {
+static void write_responses(const TDEmResponse<cdouble>& R, const TDEmResponse<cdouble>& R1, const TDEmResponse<cdouble>& DA, const TDEmResponse<cdouble>& DN, const TDEmResponse<cdouble>& PCD) {
 	//using RT = TDEmResponse<cdouble>;
 	std::ofstream ofr("C:/Users/rossc/Work/Tempest_Spectral/test/r.dat");
 	std::ofstream ofr1("C:/Users/rossc/Work/Tempest_Spectral/test/r1.dat");
@@ -180,7 +180,7 @@ void write_responses(const TDEmResponse<cdouble>& R, const TDEmResponse<cdouble>
 	return;
 }
 
-void write_responses(const TDEmResponse<double>& R, const TDEmResponse<double>& R1, const TDEmResponse<double>& DA, const TDEmResponse<double>& DN, const TDEmResponse<double>& PCD) {
+static void write_responses(const TDEmResponse<double>& R, const TDEmResponse<double>& R1, const TDEmResponse<double>& DA, const TDEmResponse<double>& DN, const TDEmResponse<double>& PCD) {
 	//using RT = TDEmResponse<cdouble>;
 	std::ofstream ofr("C:/Users/rossc/Work/Tempest_Spectral/test/r.dat");
 	std::ofstream ofr1("C:/Users/rossc/Work/Tempest_Spectral/test/r1.dat");

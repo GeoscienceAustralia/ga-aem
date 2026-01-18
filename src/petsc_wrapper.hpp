@@ -8,18 +8,14 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #pragma once
 
-#include <inttypes.h>
+//#include <inttypes.h>
+#include "string_print.hpp"
+#include "file_utils.hpp"
+#include "general_utils.hpp"
 #include "petscvec.h"
 #include "petscmat.h"
 #include "petscksp.h"
 
-#include "file_utils.hpp"
-#include "general_utils.hpp"
-
-class cOwnership;//forward declaration only
-class cPetscDistVector;//forward declaration only
-class cPetscDistMatrix;//forward declaration only
-class cPetscDistShellMatrix;//forward declaration only
 
 #if PETSC_VERSION_GE(3,5,0)
 #define __SDIR__ "src\\"
@@ -33,78 +29,87 @@ class cPetscDistShellMatrix;//forward declaration only
 #define CHKERR(ierr) cPetscObject::chkerrabort(ierr, __LINE__, __FUNCTION__,__FILE__,__SDIR__)
 #define dbgprint cPetscObject::debugprint(__LINE__, __FUNCTION__,__FILE__,__SDIR__)
 
-class cSparseMatrixEntries {
+namespace PetscWrapper {
 
-public:
-	std::vector<PetscInt> rowind;
-	std::vector<PetscInt> colind;
-	std::vector<double> value;
+	using namespace CppUtils;
+	class cOwnership;//forward declaration only
+	class cPetscDistVector;//forward declaration only
+	class cPetscDistMatrix;//forward declaration only
+	class cPetscDistShellMatrix;//forward declaration only
 
-	cSparseMatrixEntries() { resize(0); }
-	cSparseMatrixEntries(const PetscInt nnz) { resize(nnz); }
 
-	void resize(const PetscInt nnz) {
-		rowind.resize(nnz);
-		colind.resize(nnz);
-		value.resize(nnz);
-	};
-};
+	class cSparseMatrixEntries {
 
-class cOwnership {
+	public:
+		std::vector<PetscInt> rowind;
+		std::vector<PetscInt> colind;
+		std::vector<double> value;
 
-public:
+		cSparseMatrixEntries() { resize(0); }
+		cSparseMatrixEntries(const PetscInt nnz) { resize(nnz); }
 
-	PetscInt start;//index of first 
-	PetscInt end;//index of last + 1
-
-	cOwnership() {
-		start = -1;
-		end = -1;
+		void resize(const PetscInt nnz) {
+			rowind.resize(nnz);
+			colind.resize(nnz);
+			value.resize(nnz);
+		};
 	};
 
-	cOwnership(const PetscInt _start, const PetscInt _end) {
-		start = _start;
-		end = _end;
-	}
+	class cOwnership {
 
-	cOwnership(const int size, const int rank, const PetscInt nglobal) {
-		set_petsc_default(size, rank, nglobal);
-	}
+	public:
 
-	void set_petsc_default(const int size, const int rank, const PetscInt nglobal)
-	{
-		end = 0;
-		for (PetscInt i = 0; i <= rank; i++) {
-			PetscInt n = nglobal / (PetscInt)size + ((nglobal % (PetscInt)size) > i);
-			end += n;
-			start = end - n;
+		PetscInt start;//index of first 
+		PetscInt end;//index of last + 1
+
+		cOwnership() {
+			start = -1;
+			end = -1;
+		};
+
+		cOwnership(const PetscInt _start, const PetscInt _end) {
+			start = _start;
+			end = _end;
 		}
-	}
 
-	PetscInt nlocal() const
-	{
-		return end - start;
-	};  //number of local items
+		cOwnership(const int size, const int rank, const PetscInt nglobal) {
+			set_petsc_default(size, rank, nglobal);
+		}
 
-	PetscInt globalind(const PetscInt& ilocal) const
-	{
-		return start + ilocal;
-	}
+		void set_petsc_default(const int size, const int rank, const PetscInt nglobal)
+		{
+			end = 0;
+			for (PetscInt i = 0; i <= rank; i++) {
+				PetscInt n = nglobal / (PetscInt)size + ((nglobal % (PetscInt)size) > i);
+				end += n;
+				start = end - n;
+			}
+		}
 
-	PetscInt localind(const PetscInt& iglobal) const
-	{
-		return iglobal - start;
-	}
+		PetscInt nlocal() const
+		{
+			return end - start;
+		};  //number of local items
 
-	bool owns(const PetscInt& iglobal) const
-	{
-		if (iglobal < start || iglobal >= end) return false;
-		return true;
-	}
+		PetscInt globalind(const PetscInt& ilocal) const
+		{
+			return start + ilocal;
+		}
 
-};
+		PetscInt localind(const PetscInt& iglobal) const
+		{
+			return iglobal - start;
+		}
 
-class cPetscObject {
+		bool owns(const PetscInt& iglobal) const
+		{
+			if (iglobal < start || iglobal >= end) return false;
+			return true;
+		}
+
+	};
+
+	class cPetscObject {
 
 private:
 
@@ -214,9 +219,7 @@ public:
 
 };
 
-
-
-class cPetscDistVector : public cPetscObject {
+	class cPetscDistVector : public cPetscObject {
 
 	friend class cPetscDistMatrix;
 	friend class cPetscDistShellMatrix;
@@ -667,7 +670,7 @@ public:
 
 };
 
-class cPetscDistVectorLocalView {
+	class cPetscDistVectorLocalView {
 
 private:
 	cPetscDistVector* pv;
@@ -690,7 +693,7 @@ public:
 
 };
 
-class cPetscDistMatrix : public cPetscObject {
+	class cPetscDistMatrix : public cPetscObject {
 
 	friend class cPetscDistShellMatrix;
 
@@ -1494,7 +1497,7 @@ public:
 
 };
 
-class cPetscDistShellMatrix : public cPetscObject {
+	class cPetscDistShellMatrix : public cPetscObject {
 
 private:
 
@@ -1702,6 +1705,7 @@ public:
 		vecmult(x, b);
 		return b;
 	}
+};
 
 };
 

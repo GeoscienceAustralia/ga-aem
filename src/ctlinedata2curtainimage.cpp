@@ -6,6 +6,26 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
+#include "logger.hpp"
+CppUtils::cLogger glog; //The global instance of the log file manager
+
+#include "gaaem_version.hpp"
+#include "general_types.hpp"
+#include "general_utils.hpp"
+#include "file_utils.hpp"
+#include "blocklanguage.hpp"
+#include "geometry3d.hpp"
+#include "crs.hpp"
+#include "gdal_utilities.hpp"
+#include "stretch.hpp"
+#include "colormap.hpp"
+#include "stopwatch.hpp"
+#include "filesplitter.hpp"
+#include "ctlinedata.hpp"
+#include "gdiplus_utils.hpp"
+#include "RamerDouglasPeucker.hpp"
+#include "ticpp.h"
+
 #include <cmath>
 #include <algorithm>
 #include <numeric>
@@ -14,31 +34,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <file_formats.hpp>
 
-#include "gaaem_version.hpp"
-#include "logger.hpp"
-#include "general_types.hpp"
-#include "general_utils.hpp"
-#include "general_types.hpp"
-#include "file_utils.hpp"
-#include "blocklanguage.hpp"
-#include "geometry3d.hpp"
-#include "crs.hpp"
-#include "gdal_utilities.hpp"
-#include "stretch.hpp"
-#include "colormap.hpp"
-#include "gdiplus_utils.hpp"
-#include "stopwatch.hpp"
-#include "filesplitter.hpp"
-#include "ctlinedata.hpp"
 
-#include "ticpp.h"
 using namespace ticpp;
-
-#include "RamerDouglasPeucker.hpp"
 using namespace RDP;
-
-class cLogger glog; //The global instance of the log file manager
+using namespace CppUtils;
+using cCTLineData = CTLineData::cCTLineData;
 
 template<typename T>
 class cBIL {

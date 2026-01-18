@@ -144,7 +144,7 @@ namespace AEM {
 
 		static Mode get_mode_from_string(const std::string& str) {
 			for (size_t i = 0; i < ModeNames.size(); i++) {
-				if (ciequal(ModeNames[i], str)) {
+				if (CppUtils::ciequal(ModeNames[i], str)) {
 					return Mode(i);
 				}
 			}

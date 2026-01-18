@@ -6,7 +6,8 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include <cstring>
+#include "logger.hpp"
+CppUtils::cLogger glog; //The global instance of the log file manager
 
 #include "gaaem_version.hpp"
 #include "general_utils.hpp"
@@ -16,7 +17,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "lem.hpp"
 #include "tdemsystem.hpp"
 
-class cLogger glog; //The global instance of the log file manager
+#include <cstring>
 
 using namespace AEM;
 

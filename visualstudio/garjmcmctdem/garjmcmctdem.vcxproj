@@ -39,7 +39,6 @@
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
-    <Import Project="..\propertysheets\eigen.props" />
     <Import Project="..\propertysheets\netcdf4.props" />
     <Import Project="..\propertysheets\netcdf4-cxx.props" />
   </ImportGroup>
@@ -48,7 +47,6 @@
     <Import Project="..\propertysheets\msmpi.x64.props" />
     <Import Project="..\propertysheets\fftw.x64.props" />
     <Import Project="..\propertysheets\ga-aem.props" />
-    <Import Project="..\propertysheets\eigen.props" />
     <Import Project="..\propertysheets\geophysics-netcdf.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />

@@ -6,15 +6,14 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include <cassert>
-#include <iostream>
-#include <string>
-#include <memory>
-#include <filesystem>
-#include <complex>
+#include "logger.hpp"
+CppUtils::cLogger glog; //The global instance of the log file manager
+
+#include "streamredirecter.hpp"
+#include "random_utils.hpp"
+#include "rollpitchyaw.hpp"
 
 #include "string_print.hpp"
-#include "logger.hpp"
 #include "file_utils.hpp"
 #include "general_utils.hpp"
 #include "vector_utils.hpp"
@@ -26,7 +25,14 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "tdemsystem.hpp"
 #include "inverter.hpp"
 
-class cLogger glog; //The global instance of the log file manager
+#include <cstdlib>
+#include <cassert>
+#include <iostream>
+#include <string>
+#include <memory>
+#include <filesystem>
+#include <complex>
+#include <system_error>
 
 #ifdef ENABLE_MPI
 	#include "mpi_wrapper.hpp"
@@ -36,23 +42,22 @@ class cLogger glog; //The global instance of the log file manager
 	#include <omp.h>
 #endif
 
-
 using namespace AEM;
 using namespace AEM::INVERTER::SBSINVERTER;
 
-void finalise() {
+static void finalise() {
 #ifdef ENABLE_MPI
 	glog.logmsg(0, "Finalizing MPI\n");
 	cMpiEnv::stop();
 #endif
 };
 
-int finaliseandexit() {
+static int finaliseandexit() {
 	finalise();
 	return EXIT_FAILURE;
 };
 
-fs::path get_warning_log_path() {
+static fs::path get_warning_log_path() {
 	std::string s = "warning.log";
 	int k = 1;
 	do {
@@ -71,6 +76,7 @@ fs::path get_warning_log_path() {
 };
 
 int main(int argc, char** argv) {
+	using namespace CppUtils;
 
 	std::string commandline = commandlinestring(argc, argv);
 	int size = 1;

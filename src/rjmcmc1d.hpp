@@ -10,18 +10,18 @@ Richard L. Taylor, Geoscience Australia.
 
 #pragma once
 
+//custom headers
+#include "general_utils.hpp"
+#include "random_utils.hpp"
+#include "vector_utils.hpp"
+#include "ptrvec.hpp"
+
 //standard library headers
 #include <climits>
 #include <cstdint>
 #include <cfloat>
 #include <memory>
 #include <iomanip>
-
-//custom headers
-#include "general_utils.hpp"
-#include "random_utils.hpp"
-#include "vector_utils.hpp"
-#include "ptrvec.hpp"
 
 //third-party headers
 #ifdef ENABLE_MPI
@@ -32,9 +32,9 @@ Richard L. Taylor, Geoscience Australia.
 #define NUM_NOISE_HISTOGRAM_BINS 17
 #define NUM_NUISANCE_HISTOGRAM_BINS 17
 
+using namespace CppUtils;
 using namespace netCDF;
 using namespace netCDF::exceptions;
-using namespace VectorUtils;
 
 class cParameterization {
 

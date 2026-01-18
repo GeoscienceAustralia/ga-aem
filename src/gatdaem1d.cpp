@@ -6,19 +6,20 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
+#include "logger.hpp"
+CppUtils::cLogger glog; //The global instance of the log file manager
+
 #include "earth1d.hpp"
 #include "tdemsystem.hpp"
 #include "tdemresponse.hpp"
 #include "tdemgeometry.hpp"
 #include "calculation_type.hpp"
-#include "logger.hpp"
 
 //GATDAEM1D_API_EXPORTS is defined because here we are implmenting/building the library
 //	must go before #include "gatdaem1d.h"
 #define GATDAEM1D_API_EXPORTS
-
 #include "gatdaem1d.h"
-#include "gaaem_version.hpp"
+
 
 #include <cstring>
 #include <cstdio>
@@ -31,10 +32,10 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <exception>
 #include <cassert>
 
-//using namespace AEM;
-class cLogger glog; //The global instance of the log file manager
-
 namespace AEM {
+
+	using namespace CppUtils;
+
 	namespace GATDAEM1D {
 		//API system handle
 		struct gatdaem1d_system_handle_tag {

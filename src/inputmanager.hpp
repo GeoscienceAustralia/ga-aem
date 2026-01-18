@@ -15,10 +15,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #if defined HAVE_NETCDF
 #include "geophysics_netcdf.hpp"
-using namespace GeophysicsNetCDF;
 #endif
 
 namespace IOManager {
+
+	#if defined HAVE_NETCDF
+		using namespace GeophysicsNetCDF;
+	#endif
 
 	class cInputManager {
 

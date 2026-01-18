@@ -7,29 +7,31 @@ Author: Ross C. Brodie, Geoscience Australia.
 */
 
 #pragma once
-#include "aem_types.hpp"
-#include "blocklanguage.hpp"
-#include "lem.hpp"
-#include "layeredearthmodeller.hpp"
-#include "vector_utils.hpp"
-#include "calculation_type.hpp"
 
+#include "general_utils.hpp"
+#include "blocklanguage.hpp"
+#include "vector_utils.hpp"
+#include "aem_types.hpp"
+#include "calculation_type.hpp"
+#include "layeredearthmodeller.hpp"
+#include "lem.hpp"
 
 namespace AEM {
-	using namespace VectorUtils;
+
+	using namespace CppUtils;
+
+	//using namespace VectorUtils;
 	// This allows the VectorUtils operator overloads to be found from this namespace 
 	// ... see https://www.reddit.com/r/cpp_questions/comments/17mdzzx/overload_resolution_fails_to_find_operator_from_a/?rdt=36798
-	using VectorUtils::operator+;
-	using VectorUtils::operator-;
-	using VectorUtils::operator*;
-	using VectorUtils::operator/;
-	using VectorUtils::operator+=;
-	using VectorUtils::operator-=;
-	using VectorUtils::operator<<;
+	using CppUtils::operator+;
+	using CppUtils::operator-;
+	using CppUtils::operator*;
+	using CppUtils::operator/;
+	using CppUtils::operator+=;
+	using CppUtils::operator-=;
+	using CppUtils::operator<<;
 
 	using namespace LEM2;
-	//using CalculationType = AEM::CalculationType;
-	//using CMode = AEM::CalculationType::Mode;
 
 	enum class SystemType { TimeDomain, SpectralTimeDomain };
 

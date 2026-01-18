@@ -6,13 +6,15 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include "general_utils.hpp"
 
+#include "logger.hpp"
+CppUtils::cLogger glog; //The global instance of the log file manager
+
+#include "general_utils.hpp"
 #include "gaaem_version.hpp"
 #include "general_utils.hpp"
 #include "file_utils.hpp"
 #include "rjmcmc1dtdeminverter.hpp"
-#include "logger.hpp"
 
 #include <vector>
 
@@ -20,7 +22,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 	#include "mpi_wrapper.hpp"
 #endif
 
-class cLogger glog; //The global instance of the log file manager
+using namespace CppUtils;
 
 int main(int argc, char* argv[])
 {	

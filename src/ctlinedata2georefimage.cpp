@@ -6,11 +6,9 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
-#include <cmath>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include <cstring>
+
+#include "logger.hpp"
+CppUtils::cLogger glog; //The global instance of the log file manager
 
 #include "gaaem_version.hpp"
 #include "undefinedvalues.hpp"
@@ -27,9 +25,16 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "gdiplus_utils.hpp"
 #include "stopwatch.hpp"
 
-using namespace Geometry3D;
+#include <cmath>
+#include <algorithm>
+#include <numeric>
+#include <vector>
+#include <cstring>
+#include <gdiplusheaders.h>
 
-class cLogger glog; //The global instance of the log file manager
+using namespace CppUtils;
+using namespace CppUtils::Geometry3D;
+using cCTLineData = CTLineData::cCTLineData;
 
 class cGeorefSection {
 
@@ -71,9 +76,6 @@ private:
 	bool autozsectionbot;
 	double zsectiontop;
 	double zsectionbot;
-	
-	//std::string imageformat = "jpg";
-	//std::string worldfileextension = "jgw";
 
 public:
 

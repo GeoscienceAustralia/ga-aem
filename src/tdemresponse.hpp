@@ -1,11 +1,16 @@
 #pragma once
 
-#include <cassert>
-#include <iostream>
 #include "numerical_utils.hpp"
 #include "vector_utils.hpp"
 
+#include <cassert>
+#include <iostream>
+#include <algorithm>
+#include <cstdlib>
+
 namespace AEM {
+
+	using namespace CppUtils;
 
 	template <typename T>
 	class TDEmScalarResponse {

@@ -17,6 +17,8 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 namespace AEM {
 
+	using namespace CppUtils;
+
 	enum class IPType { NONE, COLECOLE, PELTON };
 	
 	IPType iptype_from_string(const char* iptype_string)

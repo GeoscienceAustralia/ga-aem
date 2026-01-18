@@ -25,6 +25,8 @@ Author: Ross C. Brodie, Brodie Geophysics
 
 namespace AEM {
 
+	using namespace CppUtils;
+
 	class ComponentWorkStore {
 
 	public:

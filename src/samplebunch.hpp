@@ -8,42 +8,48 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #pragma once
 
+#include "logger.hpp"
+
 #include <vector>
 #include <algorithm>
 
-class cSampleBunch {
 
-private:
-	size_t master;//index of the "central" sample (not necessarily middle of array
-	std::vector<size_t> indices;
-public:
-	cSampleBunch() {};
-	cSampleBunch(const size_t& masterindex, const std::vector<size_t>& _indices) {
-		indices = _indices;
-		for (size_t i = 0; i < indices.size(); i++) {
-			if (indices[i] == masterindex) {
-				master = i;
-				return;
+namespace IOManager {
+	class cSampleBunch {
+
+	private:
+		size_t master = 0;//index of the "central" sample (not necessarily middle of array
+		std::vector<size_t> indices;
+	public:
+		cSampleBunch() {};
+
+		cSampleBunch(const size_t& masterindex, const std::vector<size_t>& _indices) {
+			indices = _indices;
+			for (size_t i = 0; i < indices.size(); i++) {
+				if (indices[i] == masterindex) {
+					master = i;
+					return;
+				}
 			}
+			glog.errormsg(_SRC_, "Error in cSampleBunch()");
+			return;
 		}
-		glog.errormsg(_SRC_,"Error in cSampleBunch()");
-		return;
-	}
 
-	const size_t& master_index() const {
-		return master;
-	}
+		const size_t& master_index() const {
+			return master;
+		}
 
-	const size_t& master_record() const {
-		return indices[master];
-	}
+		const size_t& master_record() const {
+			return indices[master];
+		}
 
-	const size_t& record(const size_t& bunchindex) const {
-		return indices[bunchindex];
-	}
+		const size_t& record(const size_t& bunchindex) const {
+			return indices[bunchindex];
+		}
 
-	size_t size() const {
-		return indices.size();
-	}
+		size_t size() const {
+			return indices.size();
+		}
+	};
 };
 

@@ -8,11 +8,18 @@ Author: Ross C. Brodie, Geoscience Australia.
 
 #pragma once
 
+#include "asciicolumnfile.hpp"
+#include "fielddefinition.hpp"
+#include "file_utils.hpp"
+#include "string_utils.hpp"
+#include "general_types.hpp"
+#include "file_formats.hpp"
+
+#include <filesystem>
 #include <list>
 #include <iterator>
 #include <optional>
-#include "asciicolumnfile.hpp"
-#include "fielddefinition.hpp"
+
 
 
 #ifdef ENABLE_MPI
@@ -23,9 +30,6 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include "geophysics_netcdf.hpp"
 using namespace GeophysicsNetCDF;
 #endif
-#include <file_utils.hpp>
-#include <string_utils.hpp>
-#include <filesystem>
 
 //template<class T>
 //std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values) {
@@ -35,6 +39,8 @@ using namespace GeophysicsNetCDF;
 //}
 
 namespace IOManager {
+
+	using namespace CppUtils;
 
 	enum class BinaryStorageType { FLOAT, DOUBLE, INT, UINT };//binary storagetype
 	auto constexpr ST_INT = BinaryStorageType::INT;

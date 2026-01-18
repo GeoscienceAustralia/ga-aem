@@ -296,7 +296,7 @@ namespace LEM1 {
 			Fields.t.p.z = Fields.v.p.z + Fields.h.p.z;
 		};
 
-		void set_secondaryfields(const size_t& fi) {
+		void set_secondaryfields(const size_t fi) {
 			dointegrals(fi);
 			sethorizontaldipolesecondaryfields(fi);
 			setverticaldipolesecondaryfields(fi);

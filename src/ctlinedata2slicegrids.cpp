@@ -6,6 +6,16 @@ The GNU GPL 2.0 licence is available at: http://www.gnu.org/licenses/gpl-2.0.htm
 Author: Ross C. Brodie, Geoscience Australia.
 */
 
+#include "logger.hpp"
+CppUtils::cLogger glog; //The global instance of the log file manager
+
+#include "gaaem_version.hpp"
+#include "general_utils.hpp"
+#include "file_utils.hpp"
+#include "vector_utils.hpp"
+#include "asciicolumnfile.hpp"
+#include "blocklanguage.hpp"
+
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
@@ -25,17 +35,7 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <gdal_alg.h>
 #include <ogr_spatialref.h>
 
-#include "gaaem_version.hpp"
-#include "general_utils.hpp"
-#include "file_utils.hpp"
-#include "vector_utils.hpp"
-#include "asciicolumnfile.hpp"
-#include "blocklanguage.hpp"
-
-class cLogger glog; //The global instance of the log file manager
-
-using namespace std;
-using namespace VectorUtils;
+using namespace CppUtils;
 
 class cGridOptions {
 

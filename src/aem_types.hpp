@@ -10,6 +10,13 @@ Author: Ross C. Brodie, Geoscience Australia.
 #include <complex>
 
 namespace AEM {
+
+	//using cBlock = CppUtils::cBlock;
+	//using cAsciiColumnField = CppUtils::cAsciiColumnField;
+	//using cASEGGDF2Header = CppUtils::cASEGGDF2Header;
+	//using cRangeInt = CppUtils::cRange<int>;
+	//using cHDRHeader = CppUtils::cHDRHeader;
+
 	using cdouble = std::complex<double>;
 	using cvector = std::vector<std::complex<double>>;
 };
