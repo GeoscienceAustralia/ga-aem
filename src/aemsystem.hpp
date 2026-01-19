@@ -38,7 +38,7 @@ namespace AEM {
 		
 		AEMSystem() {};
 
-		AEMSystem(const fs::path& descriptorpath) {
+		AEMSystem(const std::filesystem::path& descriptorpath) {
 			read_system_descriptor_file(descriptorpath);
 		};
 
@@ -139,7 +139,7 @@ namespace AEM {
 		};	
 
 	protected:
-		virtual void read_system_descriptor_file(const fs::path& systemdescriptorfile) = 0;
+		virtual void read_system_descriptor_file(const std::filesystem::path& systemdescriptorfile) = 0;
 		virtual bool is_ppm_system() const = 0;
 
 		virtual void set_primaryfields(VectorResponse& P, const Vec3d& txvec, const Mat3d& rxmat) = 0;

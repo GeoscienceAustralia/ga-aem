@@ -228,7 +228,7 @@ namespace AEM::INVERTER {
 			};
 		};
 
-		Inverter(const fs::path& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline) {
+		Inverter(const std::filesystem::path& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline) {
 			Size = size;
 			Rank = rank;
 			UsingOpenMP = usingopenmp;
@@ -240,12 +240,12 @@ namespace AEM::INVERTER {
 			//std::cout << "Destroying Inverter\n";
 		};
 
-		virtual void loadcontrolfile(const fs::path& filename) = 0;
+		virtual void loadcontrolfile(const std::filesystem::path& filename) = 0;
 		virtual void set_field_definitions() = 0;
 		virtual void setup_data() = 0;
 		virtual void setup_parameters() = 0;
 		virtual int  execute() = 0;
-		virtual fs::path dumppath() const = 0;
+		virtual std::filesystem::path dumppath() const = 0;
 
 		virtual void forwardmodel(const Vector& parameters, Vector& predicted) = 0;
 		virtual void forwardmodel_and_jacobian(const Vector& parameters, Vector& predicted, Matrix& jacobian) = 0;
@@ -253,7 +253,7 @@ namespace AEM::INVERTER {
 		virtual double phiModel(const Vector& m) const = 0;
 		virtual Vector solve_linear_system(const double& lambda, const Vector& param, const Vector& pred) = 0;
 
-		void initialise(const fs::path& controlfile) {
+		void initialise(const std::filesystem::path& controlfile) {
 			loadcontrolfile(controlfile);
 			set_field_definitions();
 			setup_data();

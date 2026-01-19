@@ -52,7 +52,7 @@ namespace AEM {
 	};
 
 	// Get AEM SystemType from stmfile
-	static AEM::SystemType aem_system_type(const fs::path& stmfile) {
+	static AEM::SystemType aem_system_type(const std::filesystem::path& stmfile) {
 		cBlock b(stmfile);
 		std::string typestr;
 		if (b.getvalue("Type", typestr)) return aem_system_type(typestr);
@@ -202,7 +202,7 @@ namespace AEM {
 		std::vector<cdouble> FFT_WorkArray; // Work array for repeated inplace inverse FFTs
 		std::vector<double>  FFT_Frequency; // Pre-computed FFT frequencies
 
-		void initialise(const cBlock& b, const fs::path& systemdescriptorfile) {
+		void initialise(const cBlock& b, const std::filesystem::path& systemdescriptorfile) {
 			BaseFrequency = b.getdoublevalue("BaseFrequency");
 			BasePeriod = 1.0 / BaseFrequency;
 			SampleFrequency = b.getdoublevalue("WaveformDigitisingFrequency");
@@ -271,7 +271,7 @@ namespace AEM {
 		static std::vector<std::vector<double>> readwaveformfile(const std::string& filename)
 		{
 			std::vector<std::vector<double>> w;
-			if (!fs::exists(filename)) {
+			if (!std::filesystem::exists(filename)) {
 				glog.errormsg(_SRC_, "\n\tD'Oh! the specified waveform file (%s) does not exist\n", filename.c_str());
 			}
 
@@ -368,21 +368,21 @@ namespace AEM {
 			return maxdidt;
 		}
 
-		void write_timedomainwaveform(const fs::path& path) const {
+		void write_timedomainwaveform(const std::filesystem::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumSamples; i++) {
 				ofs << strprint("%20le\t%20le\n", Time[i], TD_Waveform[i]);
 			}
 		}
 
-		void write_frequencydomainwaveform(const fs::path& path) const {
+		void write_frequencydomainwaveform(const std::filesystem::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumFrequencies; i++) {
 				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\n", FFT_Frequency[i], FD_Waveform[i].real(), FD_Waveform[i].imag(), TransferFunction[i].real(), TransferFunction[i].imag());
 			}
 		}
 
-		void write_frequencyseries(const fs::path& path) const {
+		void write_frequencyseries(const std::filesystem::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumFrequencies; i++) {
 				ofs << strprint("%15le\t%15le\t%15le\n", FFT_Frequency[i], FFT_WorkArray[i].real(), FFT_WorkArray[i].imag());
@@ -706,7 +706,7 @@ namespace AEM {
 		};
 
 		template<typename T, template<typename> typename V>
-		void write_windows(const fs::path& path, 
+		void write_windows(const std::filesystem::path& path, 
 			const V<T>& SX, 
 			const V<T>& SY, 
 			const V<T>& SZ) const {
@@ -717,7 +717,7 @@ namespace AEM {
 		};
 
 		template<typename T, template<typename> typename V>
-		void write_windows(const fs::path& path, const V<std::complex<T>>& SX, const V<std::complex<T>>& SY, const V<std::complex<T>>& SZ) const {
+		void write_windows(const std::filesystem::path& path, const V<std::complex<T>>& SX, const V<std::complex<T>>& SY, const V<std::complex<T>>& SZ) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t w = 0; w < nwindows; w++) {
 				ofs << strprint("%2zu\t%20e\t%20e\t%15e%15e%15e\n", w + 1, Windows[w].Low, Windows[w].High, SX[w], SY[w], SZ[w]);

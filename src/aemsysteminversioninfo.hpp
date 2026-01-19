@@ -633,7 +633,7 @@ namespace AEM {
 		bool ReconstructPrimary = false;
 
 		SystemInversionInfo(cBlock& b, const size_t nsoundings){
-			fs::path stmfile = b.getstringvalue("SystemFile");
+			std::filesystem::path stmfile = b.getstringvalue("SystemFile");
 			System = AEMSystemClass::unique_ptr(stmfile);
 			initialise(b, nsoundings);
 		};

@@ -137,7 +137,7 @@ namespace AEM {
 			std::cout << *this;
 		}
 
-		void write(const fs::path& filepath) const {
+		void write(const std::filesystem::path& filepath) const {
 			std::ofstream ofs = ofstream_ex(filepath);
 			ofs << *this;
 		}

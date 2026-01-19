@@ -215,14 +215,14 @@ namespace IOManager {
 
 			if (isdefined(HeaderFileName)) {
 				fixseparator(HeaderFileName);
-				if (!fs::exists(HeaderFileName)) {
+				if (!std::filesystem::exists(HeaderFileName)) {
 					std::string msg = strprint("D'oh! the specified header file (%s) does not exist.", HeaderFileName.c_str());
 					glog.errormsg(_SRC_, msg);
 				}
 			}
 
 			fixseparator(DataFileName);
-			if (!fs::exists(DataFileName)) {
+			if (!std::filesystem::exists(DataFileName)) {
 				std::string msg = strprint("D'Oh! the specified data file (%s) does not exist.", DataFileName.c_str());
 				glog.errormsg(_SRC_, msg);
 			}

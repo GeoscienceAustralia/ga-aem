@@ -169,7 +169,7 @@ namespace IOManager {
 
 		virtual ~cOutputManager() {};
 
-		void initialise(const fs::path& filename, const int& size = 0, const int& rank = 0) {
+		void initialise(const std::filesystem::path& filename, const int& size = 0, const int& rank = 0) {
 			Size = size;
 			Rank = rank;
 			DataFileName = filename.string();
@@ -340,7 +340,7 @@ namespace IOManager {
 
 	public:
 
-		cASCIIOutputManager(const fs::path filename, const int& size = 0, const int& rank = 0) {
+		cASCIIOutputManager(const std::filesystem::path filename, const int& size = 0, const int& rank = 0) {
 			cOutputManager::initialise(filename, size, rank);
 		};
 

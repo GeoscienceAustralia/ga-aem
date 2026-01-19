@@ -25,15 +25,6 @@ CppUtils::cLogger glog; //The global instance of the log file manager
 #include "tdemsystem.hpp"
 #include "inverter.hpp"
 
-#include <cstdlib>
-#include <cassert>
-#include <iostream>
-#include <string>
-#include <memory>
-#include <filesystem>
-#include <complex>
-#include <system_error>
-
 #ifdef ENABLE_MPI
 	#include "mpi_wrapper.hpp"
 #endif
@@ -42,8 +33,19 @@ CppUtils::cLogger glog; //The global instance of the log file manager
 	#include <omp.h>
 #endif
 
+#include <cstdlib>
+#include <cassert>
+#include <iostream>
+#include <string>
+#include <memory>
+#include <filesystem>
+#include <complex>
+#include <system_error>
+#include <fstream>
+
 using namespace AEM;
 using namespace AEM::INVERTER::SBSINVERTER;
+using namespace CppUtils;
 
 static void finalise() {
 #ifdef ENABLE_MPI
@@ -57,11 +59,11 @@ static int finaliseandexit() {
 	return EXIT_FAILURE;
 };
 
-static fs::path get_warning_log_path() {
+static std::filesystem::path get_warning_log_path() {
 	std::string s = "warning.log";
 	int k = 1;
 	do {
-		if (fs::exists(s)) {
+		if (std::filesystem::exists(s)) {
 			std::error_code ec;
 			bool status = std::filesystem::remove(s, ec);
 			if (status == false) {
@@ -69,21 +71,19 @@ static fs::path get_warning_log_path() {
 				s = strprint("warning_%d.log", k);
 				k++;
 			}
-			else return fs::path(s);
+			else return std::filesystem::path(s);
 		}
-		else return fs::path(s);
+		else return std::filesystem::path(s);
 	} while(true);
 };
 
 int main(int argc, char** argv) {
-	using namespace CppUtils;
-
 	std::string commandline = commandlinestring(argc, argv);
 	int size = 1;
 	int rank = 0;
 	bool usingopenmp = false;
 	//int openmpsize = 1;
-	fs::path controlfile;
+	std::filesystem::path controlfile;
 	std::string mpipname = "No MPI - Standalone";
 
 	#ifdef ENABLE_MPI
@@ -91,12 +91,13 @@ int main(int argc, char** argv) {
 		rank = cMpiEnv::world_rank();
 		size = cMpiEnv::world_size();
 		mpipname = cMpiEnv::processor_name();
-		//glog.logmsg(0, "%s\n", commandline.c_str());
-		//glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
-		//glog.logmsg(0, "MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", mpisize, mpirank, mpipname.c_str());
 	#endif
 
-	fs::path wlogpath;
+	glog.logmsg(0, "%s\n", commandline.c_str());
+	glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
+	if(size>0) glog.logmsg(0, "MPI Started Processes=%d\tRank=%d\tProcessor name = %s\n", size, rank, mpipname.c_str());
+
+	std::filesystem::path wlogpath;
 	if (rank == 0) {
 		wlogpath = get_warning_log_path();
 	};
@@ -106,7 +107,7 @@ int main(int argc, char** argv) {
 	#endif
 
 	std::ofstream log(wlogpath, std::ios_base::app);
-	cStreamRedirecter cerrredirect(log, std::cerr);
+	StreamRedirecter cerrredirect(log, std::cerr);
 	if (rank == 0) std::cerr << "Warning log opening " << timestamp() << std::endl;
 
 	if (argc < 2) {
@@ -120,7 +121,7 @@ int main(int argc, char** argv) {
 		return finaliseandexit();
 	}
 	else if (argc == 2) {
-		controlfile = fs::path(argv[1]);
+		controlfile = std::filesystem::path(argv[1]);
 		usingopenmp = false;
 	}
 	else if (argc == 3 && size > 1) {
@@ -131,7 +132,7 @@ int main(int argc, char** argv) {
 	else if (argc == 3) {
 		#if defined _OPENMP
 			usingopenmp = true;
-			controlfile = fs::path(argv[1]);
+			controlfile = std::filesystem::path(argv[1]);
 			size = atoi(argv[2]);
 			glog.set_num_omp_threads(size);
 			int openmpmaxthreads = omp_get_max_threads();
@@ -190,5 +191,5 @@ int main(int argc, char** argv) {
 	}
 	finalise();
 	return EXIT_SUCCESS;
-}
+};
 

@@ -43,10 +43,10 @@ namespace AEM::INVERTER::SBSINVERTER {
 	class cOutputOptions {
 
 	private:
-		fs::path DumpBasePath;
+		std::filesystem::path DumpBasePath;
 
 	public:
-		fs::path LogFile;
+		std::filesystem::path LogFile;
 		bool PositiveLayerTopDepths = false;
 		bool NegativeLayerTopDepths = false;
 		bool PositiveLayerBottomDepths = false;
@@ -59,12 +59,12 @@ namespace AEM::INVERTER::SBSINVERTER {
 		bool PredictedData = false;
 		bool Dump = false;
 
-		fs::path DumpPath(const size_t datafilerecord, const size_t iteration) const {
-			fs::path p = DumpBasePath;
+		std::filesystem::path DumpPath(const size_t datafilerecord, const size_t iteration) const {
+			std::filesystem::path p = DumpBasePath;
 			p += strprint("rec_%07d", (int)datafilerecord + 1);
-			p += fs::path::preferred_separator;
+			p += std::filesystem::path::preferred_separator;
 			p += strprint("it_%03d", (int)iteration);
-			p += fs::path::preferred_separator;
+			p += std::filesystem::path::preferred_separator;
 			return p;
 		};
 
@@ -91,7 +91,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			if (b.getvalue("Dump", Dump)) {
 				if (Dump) {
 					if (b.getvalue("DumpPath", DumpBasePath)) {
-						DumpBasePath += fs::path::preferred_separator;
+						DumpBasePath += std::filesystem::path::preferred_separator;
 						DumpBasePath.make_preferred();
 						makedirectory(DumpBasePath);
 					}
@@ -277,17 +277,17 @@ namespace AEM::INVERTER::SBSINVERTER {
 	};
 
 	// A non-class memeber to get a stmfile path from a SBSInverter control file
-	fs::path get_stmpath(const fs::path& controlfile) {
+	std::filesystem::path get_stmpath(const std::filesystem::path& controlfile) {
 		cBlock b(controlfile);
 		cBlock sb = b.findblock("EMSystem");
 		std::string stmfile;
 		if (sb.getvalue("SystemFile", stmfile)) {
-			return fs::path(stmfile);
+			return std::filesystem::path(stmfile);
 		}
 		else {
 			glog.errormsg(_SRC_, "No 'SystemFile' has been specified.\n");
 		}
-		return fs::path(stmfile);
+		return std::filesystem::path(stmfile);
 	};
 
 	template<typename AEMSystemClass, typename RT>
@@ -310,7 +310,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			double elevation = 0.0;
 		};
 
-		SBSInverter(const fs::path& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline, omp_lock_t* _ptr_fftw_thread_lock=nullptr)
+		SBSInverter(const std::filesystem::path& controlfile, const int& size, const int& rank, const bool& usingopenmp, const std::string commandline, omp_lock_t* _ptr_fftw_thread_lock=nullptr)
 			: Inverter(controlfile, size, rank, usingopenmp, commandline)
 		{
 			try {
@@ -462,7 +462,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 		cNonLinearConstraint NLCbounds;//Log-barrier bounds constraint
 		cNonLinearConstraint NLCcablen;//Cable length constraint
 
-		void loadcontrolfile(const fs::path& filename)
+		void loadcontrolfile(const std::filesystem::path& filename)
 		{
 			glog.logmsg(0, "Loading control file %s\n", filename.string().c_str());
 			Control = cBlock(filename);
@@ -588,9 +588,9 @@ namespace AEM::INVERTER::SBSINVERTER {
 			return s.str();
 		}
 
-		fs::path dumppath() const {
+		std::filesystem::path dumppath() const {
 			const size_t& record = Bunch.master_record();
-			fs::path p = OutputOpt.DumpPath(record, CIS.iteration);
+			std::filesystem::path p = OutputOpt.DumpPath(record, CIS.iteration);
 			return p;
 		};
 
@@ -1684,7 +1684,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			const size_t nsys = B.size();
 			for (size_t sysi = 0; sysi < nsys; sysi++) {
 				cBlock& b = B[sysi];
-				fs::path stmfile;
+				std::filesystem::path stmfile;
 				if (b.getvalue("SystemFile", stmfile)) {
 					glog.logmsg(0, "Reading AEM system file %s\n", stmfile.string().c_str());
 					SI.emplace_back(SystemInversionInfo<AEMSystemClass, RT>(b, nSoundings));
@@ -2701,7 +2701,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 
 		};
 
-		void dump_id_info(const SampleId& id, const fs::path& path) {
+		void dump_id_info(const SampleId& id, const std::filesystem::path& path) {
 			std::ofstream of(path);
 			of << "UniquwId " << id.uniqueid << std::endl;
 			of << "Survey " << id.survey << std::endl;
@@ -2714,7 +2714,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			of << "Elevation " << id.elevation << std::endl; \
 		};
 
-		void dump_system_info(const fs::path& path) {
+		void dump_system_info(const std::filesystem::path& path) {
 			std::ofstream of(path);
 			std::string comma = ",";
 			of << "Index" << comma
@@ -2741,7 +2741,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			}
 		};
 
-		void dump_component_info(const fs::path& path) {
+		void dump_component_info(const std::filesystem::path& path) {
 			std::ofstream of(path);
 			of	<< "SystemIndex" << ","
 				<< "ComponentIndex" << ","
@@ -2788,7 +2788,7 @@ namespace AEM::INVERTER::SBSINVERTER {
 			}
 		};
 
-		void dump_gga_info(const fs::path& path) {
+		void dump_gga_info(const std::filesystem::path& path) {
 			std::ofstream of(path);
 			of  << "SystemIndex" << ","
 				<< "ComponentIndex" << ","

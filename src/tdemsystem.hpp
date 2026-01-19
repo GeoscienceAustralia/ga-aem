@@ -155,7 +155,7 @@ namespace AEM {
 
 		ModellingOptions MO;
 
-		TDEmSystem(const fs::path& descriptorpath) {
+		TDEmSystem(const std::filesystem::path& descriptorpath) {
 			read_system_descriptor_file(descriptorpath);
 		};
 
@@ -163,7 +163,7 @@ namespace AEM {
 
 		static AEM::SystemType get_type() { return AEM::SystemType::TimeDomain; };
 
-		static std::unique_ptr<AEMSystem<double>> unique_ptr(const fs::path stmfile) {
+		static std::unique_ptr<AEMSystem<double>> unique_ptr(const std::filesystem::path stmfile) {
 			return std::make_unique<TDEmSystem>(stmfile);
 		};
 
@@ -176,8 +176,8 @@ namespace AEM {
 			return "TimeDomain";
 		};
 
-		void read_system_descriptor_file(const fs::path& systemdescriptorfile) {
-			if (!fs::exists(systemdescriptorfile)) {
+		void read_system_descriptor_file(const std::filesystem::path& systemdescriptorfile) {
+			if (!std::filesystem::exists(systemdescriptorfile)) {
 				std::string msg = strprint("\n\tD'Oh! the specified system descriptor file (%s) does not exist\n", systemdescriptorfile.string().c_str());
 				glog.errormsg(_SRC_, msg);
 			}
@@ -469,7 +469,7 @@ namespace AEM {
 			S[component] *= Scale[component];
 		};
 
-		void write_discretefrequencies(const fs::path& path) const {
+		void write_discretefrequencies(const std::filesystem::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumberOfDiscreteFrequencies; i++) {
 				ofs << strprint("%15le\t%15le\t%15le\t%15le\t%15le\t%15le\t%15le\n", DiscreteFrequencies[i],
@@ -482,7 +482,7 @@ namespace AEM {
 			}
 		};
 
-		void write_splinedfrequencies(const fs::path& path) const {
+		void write_splinedfrequencies(const std::filesystem::path& path) const {
 			std::ofstream ofs = ofstream_ex(path);
 			for (size_t i = 0; i < NumberOfSplinedFrequencies; i++) {
 				double f = pow10(SplinedFrequencieslog10[i]);
