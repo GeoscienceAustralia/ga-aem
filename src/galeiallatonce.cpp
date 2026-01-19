@@ -599,7 +599,7 @@ namespace AllAtOnce {
 				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 				throw e;
 			}
-			else if (fs::exists(DataFile) == false) {
+			else if (std::filesystem::exists(DataFile) == false) {
 				glog.logmsg(0, "Input DataFile %s not found\n", DataFile.c_str());
 				std::string e = strprint("Error: exception thrown from %s (%d) %s\n", __FILE__, __LINE__, __FUNCTION__);
 				throw e;
@@ -823,7 +823,7 @@ namespace AllAtOnce {
 			mpirank = mpicomm.rank();
 
 			std::string ControlFile = std::string(argv[1]);
-			if (fs::exists(ControlFile) == false) {
+			if (std::filesystem::exists(ControlFile) == false) {
 				glog.logmsg(0, "%s\n", commandlinestring(argc, argv).c_str());
 				glog.logmsg(0, "%s\n", versionstring(GAAEM_VERSION, __TIME__, __DATE__).c_str());
 				glog.logmsg(0, "Controlfile %s was not found\n", ControlFile.c_str());

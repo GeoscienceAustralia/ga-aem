@@ -200,7 +200,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		std::string OutputDirectory = OB.getstringvalue("Directory");
 		fixseparator(OutputDirectory);
 		add_trailing_separator(OutputDirectory);
-		if (fs::exists(OutputDirectory) == false) {
+		if (std::filesystem::exists(OutputDirectory) == false) {
 			glog.logmsg(0, "Creating OutputDirectory: %s\n", OutputDirectory.c_str());
 			makedirectory(OutputDirectory);
 		}
@@ -251,7 +251,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 			MapsDirectory = OB.getstringvalue("MapsDirectory");
 			fixseparator(MapsDirectory);
 			add_trailing_separator(MapsDirectory);
-			if (fs::exists(MapsDirectory) == false) {
+			if (std::filesystem::exists(MapsDirectory) == false) {
 				glog.logmsg(0, "Creating MapsDirectory: %s\n", MapsDirectory.c_str());
 				makedirectory(MapsDirectory);
 			}
@@ -729,7 +729,7 @@ class rjmcmc1dTDEmInverter : public rjMcMC1DSampler{
 		std::string aseggdffile = fpp.directory + fpp.stem + ".dfn";
 
 		//Output header file
-		if (fs::exists(hdrfile) == false) {
+		if (std::filesystem::exists(hdrfile) == false) {
 			OI.write_simple_header(hdrfile);
 			OI.write_aseggdf_header(aseggdffile);
 		}

@@ -198,7 +198,7 @@ static void write_responses(const TDEmResponse<double>& R, const TDEmResponse<do
 
 static void test_derivatives() {
 	//using RT = TDEmResponse<double>;
-	//fs::path stmpath = "../../examples/SkyTEM-BHMAR-2009/stmfiles/Skytem-LM.stm";
+	//std::filesystem::path stmpath = "../../examples/SkyTEM-BHMAR-2009/stmfiles/Skytem-LM.stm";
 	//TDEmSystem T(stmpath);
 	//TDEmGeometry G;
 	//G.tx_height() = 30;
@@ -208,11 +208,11 @@ static void test_derivatives() {
 	// The G.txrx_dy = 12 is so that we get some Y-component response
 	
 	//using RT = TDEmResponse<double>;
-	//fs::path stmpath = "../../examples/Tempest-AusAEM-2020/stmfiles/Tempest-25.0Hz.stm";
+	//std::filesystem::path stmpath = "../../examples/Tempest-AusAEM-2020/stmfiles/Tempest-25.0Hz.stm";
 	//TDEmSystem T(stmpath);
 
 	using RT = TDEmResponse<cdouble>;
-	fs::path stmpath = "C:/Users/rossc/Work/Tempest_Spectral/stmfiles/Tempest-Spectral.stm";
+	std::filesystem::path stmpath = "C:/Users/rossc/Work/Tempest_Spectral/stmfiles/Tempest-Spectral.stm";
 	SpectralAEMSystem T(stmpath);
 
 	//Reference Geometry model
@@ -377,7 +377,7 @@ static void test_derivatives() {
  };
 
 static void test_spectral() {
-	fs::path stmpath = "C:/Users/rossc/Work/Tempest_Spectral/stmfiles/Tempest-Spectral.stm";
+	std::filesystem::path stmpath = "C:/Users/rossc/Work/Tempest_Spectral/stmfiles/Tempest-Spectral.stm";
 	SpectralAEMSystem S(stmpath);
 	TDEmGeometry G;
 	
@@ -476,8 +476,8 @@ static void test_simple() {
 
 static int generate_synthetic_data() {
 	using namespace IOManager;
-	fs::path stmpath = "../stmfiles/Helitem-21m-25Hz-LM_25_w.stm";
-	fs::path outfilepath = "../data/Helitem-21m-25Hz-LM_25_w.dat";
+	std::filesystem::path stmpath = "../stmfiles/Helitem-21m-25Hz-LM_25_w.stm";
+	std::filesystem::path outfilepath = "../data/Helitem-21m-25Hz-LM_25_w.dat";
 	makedirectory_for(outfilepath);
 
 	TDEmSystem S(stmpath);
